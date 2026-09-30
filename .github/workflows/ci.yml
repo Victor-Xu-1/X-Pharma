@@ -76,6 +76,7 @@ jobs:
         with:
           context: .
           file: deploy/postgres-rdkit.Dockerfile
+          build-args: DOCKER_LIBRARY_REGISTRY=docker.io/library
           load: true
           tags: pharma-postgres-rdkit:18.4-2026.03.3
           cache-from: type=gha,scope=postgres-rdkit
@@ -329,6 +330,7 @@ jobs:
         with:
           context: .
           file: deploy/postgres-rdkit.Dockerfile
+          build-args: DOCKER_LIBRARY_REGISTRY=docker.io/library
           load: true
           tags: pharma-postgres-rdkit:18.4-2026.03.3
           cache-from: type=gha,scope=postgres-rdkit

@@ -389,7 +389,7 @@ if docker image inspect "$postgres_image" >/dev/null 2>&1; then
   )
 fi
 if [[ "$postgres_image_definition" != "$postgres_definition_sha256" ]]; then
-  postgres_build_arguments=()
+  postgres_build_arguments=(--build-arg "DOCKER_LIBRARY_REGISTRY=${DOCKER_LIBRARY_REGISTRY:-public.ecr.aws/docker/library}")
   if [[ -n "${APT_HTTP_PROXY:-}" ]]; then
     [[ "$APT_HTTP_PROXY" =~ ^http://[A-Za-z0-9._:-]+$ ]] || {
       echo "APT_HTTP_PROXY must be a credential-free HTTP proxy URL" >&2

@@ -1,4 +1,5 @@
-FROM public.ecr.aws/docker/library/python:3.13.14-slim@sha256:9662417aace5ae7b8e2609cce472b72a8958e134ba372808abe9cc1a0c0125e6
+ARG DOCKER_LIBRARY_REGISTRY=public.ecr.aws/docker/library
+FROM ${DOCKER_LIBRARY_REGISTRY}/python:3.13.14-slim@sha256:9662417aace5ae7b8e2609cce472b72a8958e134ba372808abe9cc1a0c0125e6
 
 ARG OCR_PYPI_INDEX_URL=https://pypi.org/simple
 ARG CPYTHON_HTML_PARSER_COMMIT=7933f4bf7131aa4140750f9404f5de0aa2969ced
