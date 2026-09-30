@@ -3,6 +3,23 @@ import { expect, it, vi } from "vitest";
 
 import { WorkspaceShell } from "../components/WorkspaceShell";
 
+it.each(["research", "internal"] as const)("uses the same supplied logo in the %s sidebar", (workbench) => {
+  render(
+    <WorkspaceShell
+      user={{ id: "admin", tenant_id: "tenant", email: "admin@example.test", display_name: "Admin", role: "admin" }}
+      activeWorkbench={workbench}
+      activeView={workbench === "research" ? "explorer" : "factory"}
+      onView={vi.fn()}
+    >
+      <div>workspace</div>
+    </WorkspaceShell>,
+  );
+  const mark = document.querySelector(".brand-symbol");
+  expect(mark?.querySelector("img")).toHaveAttribute("src", expect.stringContaining("X-Pharma-logo-128.png"));
+  expect(mark?.querySelector("svg")).toBeNull();
+  expect(screen.getByText("X-Pharma")).toBeInTheDocument();
+});
+
 it("keeps the external workbench focused while retaining progressive access to specialist databases", () => {
   render(
     <WorkspaceShell

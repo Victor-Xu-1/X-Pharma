@@ -1,5 +1,7 @@
 # X-Pharma
 
+<img src="apps/web/src/assets/brand/X-Pharma-logo-128.png" width="96" height="96" alt="X-Pharma logo" />
+
 [Apache-2.0](LICENSE) · [架构](docs/architecture.md) · [源码导航](docs/codebase-guide.md) · [设计系统](docs/design-system.md) · [贡献指南](CONTRIBUTING.md) · [安全](SECURITY.md)
 
 X-Pharma is an open-source pharmaceutical intelligence platform for people and
@@ -56,7 +58,7 @@ E 盘 WSL 工作区使用以下位置：
 这些 Linux 路径属于 E 盘的 WSL ext4；Windows 可通过 `\\wsl.localhost\WSL\srv\wsl\projects\x-pharma` 访问。先确认目标发行版的磁盘位置，命令不能保证一个未经核对的 WSL 环境位于 E 盘。
 
 ```bash
-git clone https://github.com/Victor-Xu-1/x-pharma.git /srv/wsl/projects/x-pharma
+git clone https://github.com/Victor-Xu-1/X-Pharma.git /srv/wsl/projects/x-pharma
 cd /srv/wsl/projects/x-pharma
 export UV_CACHE_DIR=/srv/wsl/cache/uv
 export COREPACK_HOME=/srv/wsl/cache/x-pharma/corepack

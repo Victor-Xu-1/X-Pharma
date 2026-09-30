@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { Database, LockKeyhole, LogIn } from "lucide-react";
+import { LockKeyhole, LogIn } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
 
 import { ApiError } from "../lib/api";
@@ -7,6 +7,7 @@ import { login } from "../lib/contracts/session";
 import { PRODUCT_NAME } from "../lib/product";
 import type { User } from "../lib/types";
 import type { WorkbenchKey } from "../lib/workspaceRouting";
+import { BrandMark } from "./BrandMark";
 
 function loginErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.status === 401) return "邮箱或密码不正确，请检查后重试";
@@ -57,11 +58,9 @@ export function LoginScreen({
     <main className="login-screen">
       <section className="login-brand" aria-label={internal ? "内部管理平台" : PRODUCT_NAME}>
         <div className="brand-lockup brand-lockup-large">
-          <span className="brand-symbol">
-            <Database size={22} />
-          </span>
+          <BrandMark />
           <span>
-            <strong>{internal ? "内部管理平台" : PRODUCT_NAME}</strong>
+            <strong>{PRODUCT_NAME}</strong>
             <small>{internal ? "数据治理与运营管理" : "生物医药研发情报平台"}</small>
           </span>
         </div>

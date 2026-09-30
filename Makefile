@@ -12,6 +12,7 @@ PYTHON_TOOL_SCRIPTS = scripts/capture_ingestion_readiness.py scripts/capture_loc
 YAML_CONFIG_PATHS = compose.yaml compose.dev.yaml compose.telemetry.yaml compose.ocr.yaml deploy/kubernetes
 PYTHON_TOOL_SCRIPTS += scripts/configure-development.py
 PYTHON_TOOL_SCRIPTS += scripts/verify_cpython_tarfile.py
+PYTHON_TOOL_SCRIPTS += scripts/generate_brand_assets.py
 
 install:
 	uv sync --locked --dev

@@ -25,6 +25,12 @@ def test_hashed_workspace_assets_are_immutable() -> None:
     }
 
 
+def test_hashed_browser_icons_revalidate_by_content_identity() -> None:
+    for path in ("/assets/X-Pharma-favicon-Abcd0123.ico", "/assets/X-Pharma-favicon-32-Abcd0123.png"):
+        assert workspace_cache_headers_for_path(path) == {"Cache-Control": "public, max-age=31536000, immutable"}
+    assert workspace_cache_headers_for_path("/favicon.ico") == {}
+
+
 def test_non_workspace_api_paths_keep_existing_cache_policy() -> None:
     assert workspace_cache_headers_for_path("/api/v1/entities") == {}
 

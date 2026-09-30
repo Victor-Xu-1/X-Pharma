@@ -7,7 +7,9 @@ import re
 WORKSPACE_ENTRIES = frozenset(
     {"/", "/index.html", "/research.html", "/internal.html", "/workspace/research", "/workspace/internal"}
 )
-HASHED_ASSET = re.compile(r"^/assets/[A-Za-z0-9_.-]+-[A-Za-z0-9_-]{8,}\.(?:js|css|wasm|woff2?|png|jpg|jpeg|svg|webp)$")
+HASHED_ASSET = re.compile(
+    r"^/assets/[A-Za-z0-9_.-]+-[A-Za-z0-9_-]{8,}\.(?:js|css|wasm|woff2?|png|jpg|jpeg|svg|webp|ico)$"
+)
 
 
 def workspace_cache_headers_for_path(path: str) -> dict[str, str]:

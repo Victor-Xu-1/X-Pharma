@@ -2,8 +2,8 @@ import { readFile } from "node:fs/promises";
 
 import { expect, type Locator, type Page, type Route, test } from "@playwright/test";
 
-import { browserProjectNames, resolveBrowserCredentials } from "../src/lib/browserAcceptanceCredentials";
-import type { WebVitalBatchCreate } from "../src/lib/generated";
+import { resolveBrowserCredentials } from "../src/lib/browserAcceptanceCredentials";
+import type { EnterpriseApiKeyCatalogRead, WebVitalBatchCreate } from "../src/lib/generated";
 
 type BrowserQualityMetrics = {
   cls: number;
@@ -88,12 +88,6 @@ async function openNavigation(page: Page) {
     await openButton.click();
     await expect(sidebar).toHaveClass(/mobile-open/);
   }
-}
-
-async function expandNavigationGroup(page: Page, name: "专业数据库" | "我的工作") {
-  const group = page.getByRole("navigation", { name: "主导航" }).getByRole("button", { name, exact: true });
-  if ((await group.getAttribute("aria-expanded")) !== "true") await group.click();
-  await expect(group).toHaveAttribute("aria-expanded", "true");
 }
 
 async function findDataFactoryRunRow(page: Page, workflowId: string): Promise<Locator> {
@@ -421,27 +415,15 @@ test("[workspace-navigation][workspace-isolation][research-workbench][internal-w
   await installBrowserQualityProbe(page);
   await page.goto("/");
   expect(await page.evaluate(() => document.documentElement.dataset.workbench)).toBe("research");
-  const overviewEntityResponse = page.waitForResponse((response) => {
-    const url = new URL(response.url());
-    return (
-      response.request().method() === "GET" &&
-      url.pathname === "/api/v1/entities" &&
-      url.searchParams.get("limit") === "1" &&
-      !url.searchParams.has("q")
-    );
-  });
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
-  const entityResponse = await overviewEntityResponse;
-  expect(entityResponse.ok()).toBe(true);
-  const entityPayload = (await entityResponse.json()) as { total: number };
-  const workOverview = page.getByRole("region", { name: "工作概览" });
-  await expect(workOverview).toBeVisible();
-  await expect(workOverview).toContainText("可查询数据");
-  await expect(workOverview).toContainText(new Intl.NumberFormat("zh-CN").format(entityPayload.total));
-  await expect(page.getByRole("region", { name: "账户与安全" })).toContainText(credentials.email);
+  await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
+  await openNavigation(page);
+  await page.getByRole("navigation", { name: "账户导航" }).getByRole("button", { name: "用户中心" }).click();
+  await expect(page.getByRole("heading", { name: "用户中心", level: 1 })).toBeVisible();
+  await expect(page.getByRole("region", { name: "个人资料" })).toBeVisible();
+  await expect(page.getByLabel("邮箱", { exact: true })).toHaveValue(credentials.email);
   await expect(page.getByText(/租户|治理状态|权限角色/)).toHaveCount(0);
   await expect(page).toHaveURL(/\/workspace\/research/);
   const initialAssetResources = await page.evaluate(() =>
@@ -472,7 +454,8 @@ test("[workspace-navigation][workspace-isolation][research-workbench][internal-w
   for (const internalView of ["数据工厂", "AI 审核", "商业运营", "企业管理"]) {
     await expect(researchNavigation.getByRole("button", { name: internalView, exact: true })).toHaveCount(0);
   }
-  const professionalLauncher = page.getByRole("region", { name: "专业数据库" });
+  await openNavigation(page);
+  const professionalLauncher = page.getByRole("navigation", { name: "主导航" });
   for (const domain of [
     "药物与管线",
     "临床试验",
@@ -483,9 +466,9 @@ test("[workspace-navigation][workspace-isolation][research-workbench][internal-w
     "新闻与会议",
     "结构检索",
   ]) {
-    await expect(professionalLauncher.getByRole("button", { name: `进入 ${domain}` })).toBeVisible();
+    await expect(professionalLauncher.getByRole("button", { name: domain, exact: true })).toBeVisible();
   }
-  await professionalLauncher.getByRole("button", { name: "进入 专利情报" }).click();
+  await professionalLauncher.getByRole("button", { name: "专利情报", exact: true }).click();
   await expect(page).toHaveURL(/view=patents/);
   await expect(page.getByRole("heading", { name: "专利族与资产关联", level: 1 })).toBeVisible();
   await page.goBack();
@@ -2854,26 +2837,19 @@ test("[workspace-navigation][workspace-isolation][research-workbench][internal-w
   });
   expect(overflowingElements).toEqual([]);
 
-  await page.goto("/workspace/research");
+  await page.goto("/workspace/research?view=overview");
   expect(await page.evaluate(() => document.documentElement.dataset.workbench)).toBe("research");
   await expect(page).toHaveURL(/\/workspace\/research/);
   await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
-  const recentEntities = page.getByRole("table", { name: "最近访问实体" });
-  await expect(recentEntities).toContainText(`Browser pipeline target ${fixtureKeyBase}`);
-  for (const otherProject of browserProjectNames.filter((project) => project !== testInfo.project.name)) {
-    await expect(recentEntities).not.toContainText(`-${otherProject}`);
-  }
-  await recentEntities.getByRole("button", { name: `打开 Browser pipeline target ${fixtureKeyBase} 档案` }).click();
+  await expect(page.getByLabel("邮箱", { exact: true })).toHaveValue(credentials.email);
+  await page.goto(`/workspace/research?view=target&entity=${pipelineTargetId}`);
   await expect(page).toHaveURL(new RegExp(`view=target&entity=${pipelineTargetId}`));
   await page.goBack();
   await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
-  await openNavigation(page);
-  await expandNavigationGroup(page, "我的工作");
-  await page.getByRole("navigation", { name: "主导航" }).getByRole("button", { name: "知识专题" }).click();
+  await page.goto("/workspace/research?view=knowledge");
   await expect(page.getByRole("heading", { name: "版本化知识专题" })).toBeVisible();
 
-  await openNavigation(page);
-  await page.getByRole("button", { name: "原始证据" }).click();
+  await page.goto("/workspace/research?view=evidence");
   await expect(page.getByRole("heading", { name: "原始资料查证" })).toBeVisible();
   await page.getByPlaceholder("输入靶点、活性值、专利号、试验号或项目事实").fill(`No evidence ${fixtureKey}`);
   await page.getByRole("button", { name: "查证原文" }).click();
@@ -2935,7 +2911,7 @@ test("[professional-error-permission-matrix] fails safely and recovers every pro
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
 
   const domains: Array<{ endpoint: string; resultSurface: () => Locator; url: string }> = [
     {
@@ -3031,7 +3007,7 @@ test("[clinical-normalized-drug-or][clinical-role-groups][clinical-role-correctn
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
   await page.goto(
     `/workspace/research?view=trials&investigational_drug_entity_ids=${regulatorySubjectId}` +
       `&combination_drug_entity_ids=${pipelineDrugBId}` +
@@ -3174,7 +3150,7 @@ test("[pipeline-drug-entity-filter] keyboard-disambiguates one governed drug int
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
 
   await page.goto("/workspace/research?view=pipeline");
   const filters = page.getByRole("form", { name: "药物与管线筛选" });
@@ -3239,7 +3215,7 @@ test("[clinical-trial-subscription] saves, subscribes and replays the complete a
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
 
   const query = new URLSearchParams({
     view: "trials",
@@ -3332,7 +3308,7 @@ test("[epidemiology-news-subscription][epidemiology-trend-correctness][news-resu
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
 
   const epidemiologyQuery = new URLSearchParams({
     view: "epidemiology",
@@ -3513,7 +3489,7 @@ test("[patent-deal-subscription] [patent-result-correctness] [deal-entity-query]
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
 
   const crossAssetQuery = new URLSearchParams({
     view: "deals",
@@ -3752,7 +3728,7 @@ test("[entity-research-continuity] preserves dossier sections across keyboard, r
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
 
   const csrfCookie = (await page.context().cookies()).find((cookie) => cookie.name === "pharma_csrf");
   if (!csrfCookie?.value) throw new Error("Authenticated session did not issue the CSRF cookie");
@@ -3819,7 +3795,7 @@ test("[dense-server-sorting][disease-dossier] preserves governed ordering and di
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
 
   await page.goto(`/workspace/research?view=trials&q=${encodeURIComponent(fixtureKey)}`);
   const trialTable = page.getByRole("table", { name: "临床试验结果" });
@@ -3948,7 +3924,7 @@ test("[dense-server-sorting-secondary] preserves governed deal, regulatory and e
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
 
   await page.goto(`/workspace/research?view=deals&q=${encodeURIComponent(fixtureKey)}`);
   const dealTable = page.getByRole("table", { name: "交易结果" });
@@ -4151,6 +4127,8 @@ test("[billing-dispute] opens and acknowledges a billing dispute in the human wo
 });
 
 test("[enterprise-administration] manages tenant roles through the governed human workspace", async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
   const users = [
     {
       id: "browser-admin",
@@ -4312,6 +4290,16 @@ test("[enterprise-administration] manages tenant roles through the governed huma
       });
     }
     if (path === "/api/v1/enterprise/users" && request.method() === "GET") return route.fulfill({ json: users });
+    if (path === "/api/v1/enterprise/api-keys" && request.method() === "GET") {
+      const catalog = {
+        items: [],
+        required_scope: "mcp:connect",
+        allowed_scopes: ["mcp:connect", "entities:read", "targets:read"],
+        min_ttl_hours: 1,
+        max_ttl_days: 366,
+      } satisfies EnterpriseApiKeyCatalogRead;
+      return route.fulfill({ json: catalog });
+    }
     if (path === "/api/v1/enterprise/datasets") {
       return route.fulfill({
         json: [
@@ -4423,6 +4411,7 @@ test("[enterprise-administration] manages tenant roles through the governed huma
   await expect(page.getByRole("table", { name: "平台服务状态" })).toContainText("platform-operations");
   await expect(page.getByRole("table", { name: "平台 SLO" })).toContainText("web-availability");
   await expect(page.getByRole("table", { name: "平台发布证据" })).toContainText("backup_restore");
+  expect(pageErrors).toEqual([]);
   const hasOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
@@ -4526,11 +4515,7 @@ test("[monitoring] reviews saved searches and acknowledges a durable monitoring 
     return route.fulfill({ json: [] });
   });
 
-  await page.goto("/");
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
-  await openNavigation(page);
-  await expandNavigationGroup(page, "我的工作");
-  await page.getByRole("navigation", { name: "主导航" }).getByRole("button", { name: "监控与提醒" }).click();
+  await page.goto("/workspace/research?view=monitoring");
   await expect(page.getByRole("heading", { name: "情报监控与变更提醒" })).toBeVisible();
   await expect(page.getByText("EGFR changes", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "将 EGFR 提醒标记已读" }).click();
@@ -4708,7 +4693,7 @@ test("[knowledge-governance] inspects governed coverage and traceable version ch
   await page.getByRole("button", { name: /EGFR competitive landscape/ }).click();
   await expect(page.getByRole("heading", { name: "EGFR competitive landscape" })).toBeVisible();
   await page.getByRole("tab", { name: "覆盖与版本" }).click();
-  await expect(page.getByRole("region", { name: "专题覆盖摘要" })).toContainText("治理事实");
+  await expect(page.getByRole("region", { name: "专题覆盖摘要" })).toContainText("3专题要点");
   await expect(page.getByRole("cell", { name: "has_competitor" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "v1 → v2" })).toBeVisible();
   await expect(page.getByText("Competitive landscape update", { exact: true })).toBeVisible();
@@ -4732,7 +4717,7 @@ test("[knowledge-research-continuity] preserves a real governed topic across URL
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
 
   const pagesResponsePromise = page.waitForResponse((response) => {
     const url = new URL(response.url());
@@ -4787,7 +4772,7 @@ test("[evidence-research-continuity] preserves a real licensed citation across U
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
 
   const catalogResponsePromise = page.waitForResponse((response) => {
     const url = new URL(response.url());
@@ -5253,7 +5238,7 @@ test("[real-permission-boundary] keeps external reads and rejects internal opera
   await page.getByLabel("工作邮箱").fill(email);
   await page.getByLabel("密码").fill(password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
 
   const externalRead = await page.request.get("/api/v1/entities?limit=1&offset=0");
   expect(externalRead.status()).toBe(200);
@@ -5287,7 +5272,7 @@ test("[real-target-dossier] traverses a target dossier across governed domains t
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
 
   const dossierResponsePromise = page.waitForResponse((response) => {
     const url = new URL(response.url());
@@ -5454,9 +5439,8 @@ test("[chemistry][chemistry-real-api] queries governed structures with the bundl
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
   await openNavigation(page);
-  await expandNavigationGroup(page, "专业数据库");
   await page.getByRole("navigation", { name: "主导航" }).getByRole("button", { name: "结构检索", exact: true }).click();
   const deferredResourcePattern = /(?:\.wasm$|rdkit|indigo|ketcher|structureeditor)/i;
   const chemistryResourcesBeforeEditor = await page.evaluate(() =>

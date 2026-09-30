@@ -7,10 +7,12 @@ from fastapi.testclient import TestClient
 from pharma_intel import __version__
 from pharma_intel.api import app
 from pharma_intel.mcp_server import mcp
-from pharma_intel.product import PRODUCT_NAME
+from pharma_intel.product import PRODUCT_NAME, PROJECT_URL
 
 
 def test_product_metadata_and_both_interfaces_expose_x_pharma() -> None:
+    assert metadata("x-pharma")["Name"] == "X-Pharma"
+    assert PROJECT_URL == "https://github.com/Victor-Xu-1/X-Pharma"
     assert metadata("x-pharma")["License-Expression"] == "Apache-2.0"
     assert metadata("x-pharma")["Version"] == __version__
     assert app.openapi()["info"]["title"] == PRODUCT_NAME == "X-Pharma"

@@ -28,6 +28,17 @@ describe("LoginScreen", () => {
     vi.clearAllMocks();
   });
 
+  it.each(["research", "internal"] as const)("uses the supplied X-Pharma logo in the %s login", (workbench) => {
+    renderLogin(workbench);
+    const mark = document.querySelector(".brand-symbol");
+    const image = mark?.querySelector("img");
+    expect(image).toHaveAttribute("src", expect.stringContaining("X-Pharma-logo-128.png"));
+    expect(image).toHaveAttribute("alt", "");
+    expect(mark).toHaveAttribute("aria-hidden", "true");
+    expect(mark?.querySelector("svg")).toBeNull();
+    expect(screen.getByText("X-Pharma")).toBeInTheDocument();
+  });
+
   it("keeps the public login shell free of internal workspace language", () => {
     renderLogin();
 

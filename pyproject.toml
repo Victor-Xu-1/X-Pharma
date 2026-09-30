@@ -3,7 +3,7 @@ requires = ["hatchling==1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "x-pharma"
+name = "X-Pharma"
 version = "0.1.0"
 description = "Enterprise pharmaceutical intelligence database with human and agent interfaces"
 readme = "README.md"
@@ -54,13 +54,14 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Victor-Xu-1/x-pharma"
-Repository = "https://github.com/Victor-Xu-1/x-pharma"
-Issues = "https://github.com/Victor-Xu-1/x-pharma/issues"
+Homepage = "https://github.com/Victor-Xu-1/X-Pharma"
+Repository = "https://github.com/Victor-Xu-1/X-Pharma"
+Issues = "https://github.com/Victor-Xu-1/X-Pharma/issues"
 
 [dependency-groups]
 dev = [
   "mypy==1.17.1",
+  "Pillow==12.3.0",
   "pip-audit==2.10.1",
   "pytest==9.0.3",
   "pytest-asyncio==1.4.0",

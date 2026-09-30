@@ -109,6 +109,7 @@ def test_bootstrap_creates_logical_opensearch_dataset(
     dataset = session.scalar(select(TenantDataset).where(TenantDataset.tenant_id == tenant.id))
     assert dataset is not None
     assert dataset.dataset_key == "literature"
+    assert dataset.active is True
 
 
 def test_bootstrap_rejects_source_bound_to_expired_dataset_license(

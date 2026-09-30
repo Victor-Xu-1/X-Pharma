@@ -58,10 +58,41 @@ cannot be updated, and enforces bounded network and wall-clock timeouts. Proxy
 credentials are deliberately unsupported.
 
 The application image carries official CPython 3.13 backports for
-`CVE-2026-15308`, `CVE-2026-11940`, and `CVE-2026-11972`, verified by SHA-256
+`CVE-2026-15308`, `CVE-2026-11940`, `CVE-2026-11972`, and `CVE-2026-82049`, verified by SHA-256
 during the image build. The corresponding OpenVEX statements are in
 `deploy/security/api.openvex.json`. The untrusted HTML ingestion path also selects
 `lxml` explicitly.
+
+### OCR transitive media-library reachability
+
+The pinned OpenCV contribution wheel bundles FFmpeg 5.1.4. Its vulnerable library
+is retained in the complete SBOM and raw scan inventory; a VEX `not_affected`
+statement is not a binary patch or a claim of zero vulnerabilities. The OCR API
+has no video, audio, stream URL, DASH, subtitle or muxing input. Authentication,
+bounded input, SHA-256 and generated local paths precede inference. Pillow's
+decoded format must exactly match the allowed PNG/JPEG/TIFF extension; PDFs use
+strict `PdfReader` preflight. Merely calling Pillow `verify()` was insufficient:
+a real MPEG sequence header renamed to PNG reached the engine before this fix.
+
+`tests/test_ocr_service.py` uses the real HTTP handler and Pillow parser to reject
+that MPEG input, GIF, PPM and JPEG disguised as PNG with HTTP 415 and zero engine
+calls. Separate tests preserve all five supported still-image suffixes. The
+engine boundary is isolated in these tests; they do not claim model-inference
+quality or a real-model acceptance run.
+
+The reviewed findings recorded individually in `deploy/security/ocr.openvex.json` are:
+
+| Finding | Affected upstream path | OCR reachability |
+| --- | --- | --- |
+| [CVE-2026-70628](https://security-tracker.debian.org/tracker/CVE-2026-70628) | DVB subtitle parser / WTV input | No subtitle or video input |
+| [CVE-2026-70632](https://security-tracker.debian.org/tracker/CVE-2026-70632) | CineForm HD decoder / AVI input | No video decoding input |
+| [CVE-2026-75142](https://www.cve.org/CVERecord?id=CVE-2026-75142) | MPEG-PS muxer | No video muxing or encoding operation |
+| [CVE-2026-75146](https://www.cve.org/CVERecord?id=CVE-2026-75146) | DASH live-manifest demuxer | No stream manifest or input URL |
+
+Any relaxation of the input-format contract, or addition of video/audio,
+subtitles, streaming or encoding, invalidates these reachability statements and
+requires dependency remediation plus new real-path security acceptance. Do not
+generalize them to another use of OpenCV or FFmpeg.
 
 Run locally; the gate performs deterministic target image builds itself:
 

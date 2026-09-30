@@ -23,7 +23,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pypdf import PdfReader
 
 OCR_PROTOCOL_VERSION = 1
-SUPPORTED_SUFFIXES = frozenset({".jpeg", ".jpg", ".pdf", ".png", ".tif", ".tiff"})
+IMAGE_FORMAT_BY_SUFFIX = {".jpeg": "JPEG", ".jpg": "JPEG", ".png": "PNG", ".tif": "TIFF", ".tiff": "TIFF"}
+SUPPORTED_SUFFIXES = frozenset({".pdf", *IMAGE_FORMAT_BY_SUFFIX})
 SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
 LOGGER = logging.getLogger("pharma_ocr")
 
@@ -115,7 +116,7 @@ def create_app(settings: OcrSettings, engine: OcrEngine | None = None) -> FastAP
     settings.validate_runtime()
     selected_engine = engine or PaddleOcrEngine(settings)
     request_slots = anyio.Semaphore(settings.max_concurrent_requests)
-    app = FastAPI(title="Pharma OCR Sandbox", docs_url=None, redoc_url=None, openapi_url=None)
+    app = FastAPI(title="X-Pharma OCR Sandbox", docs_url=None, redoc_url=None, openapi_url=None)
 
     @app.get("/health/live")
     def live() -> dict[str, object]:
@@ -252,6 +253,11 @@ def _preflight(path: Path, settings: OcrSettings) -> None:
         return
     try:
         with Image.open(path) as image:
+            # Pillow can identify MPEG without decoding it. verify() is not a format allowlist.
+            if image.format != IMAGE_FORMAT_BY_SUFFIX.get(path.suffix.casefold()):
+                raise _http_error(
+                    415, "document_format_mismatch", "Document format does not match a permitted still-image extension"
+                )
             image.verify()
             width, height = image.size
     except (OSError, UnidentifiedImageError) as exc:

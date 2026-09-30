@@ -71,6 +71,11 @@ export default defineConfig({
     maxWorkers: 1,
   },
   build: {
+    assetsInlineLimit(filePath) {
+      // Fingerprinted files invalidate cached browser icons after a brand update.
+      if (filePath.includes("/src/assets/brand/")) return false;
+      return undefined;
+    },
     manifest: true,
     rollupOptions: {
       input: {

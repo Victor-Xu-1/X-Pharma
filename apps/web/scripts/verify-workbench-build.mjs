@@ -69,6 +69,7 @@ function fail(message) {
 function readEntry(name, workbench) {
   const body = readFileSync(resolve(dist, name), "utf8");
   if (!body.includes(`data-workbench="${workbench}"`)) fail(`${name} has the wrong workbench marker`);
+  verifyBrandAssets(name, body);
   const scripts = [...body.matchAll(/<script[^>]+src="\/?([^"?]+)"/g)].map((match) => match[1]);
   if (scripts.length === 0 || scripts.some((script) => !script.startsWith("assets/") || !script.endsWith(".js")))
     fail(`${name} contains an invalid built module script`);
@@ -81,6 +82,25 @@ function readEntry(name, workbench) {
     script: entryScripts[0],
     sha256: createHash("sha256").update(body).digest("hex"),
   };
+}
+
+function verifyBrandAssets(name, body) {
+  const links = [...body.matchAll(/<link\b([^>]+)>/g)].map((match) =>
+    Object.fromEntries([...match[1].matchAll(/([a-z-]+)="([^"]*)"/g)].map((attribute) => [attribute[1], attribute[2]])),
+  );
+  for (const [rel, sizes, prefix, extension] of [
+    ["icon", "16x16", "X-Pharma-favicon-16", "png"],
+    ["icon", "32x32", "X-Pharma-favicon-32", "png"],
+    ["icon", "16x16 32x32 48x48 64x64", "X-Pharma-favicon", "ico"],
+    ["apple-touch-icon", "180x180", "X-Pharma-apple-touch-180", "png"],
+  ]) {
+    const link = links.find((item) => item.rel === rel && item.sizes === sizes);
+    const path = link?.href?.replace(/^\//, "") ?? "";
+    if (!new RegExp(`^assets/${prefix}-[A-Za-z0-9_-]{8,}\\.${extension}$`).test(path)) {
+      fail(`${name} must emit a fingerprinted ${sizes} X-Pharma brand icon`);
+    }
+    if (statSync(resolve(dist, path)).size === 0) fail(`${name} contains an empty brand icon: ${path}`);
+  }
 }
 
 function findChunkRecord(script) {

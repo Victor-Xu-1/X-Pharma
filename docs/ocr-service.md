@@ -5,7 +5,7 @@ OCR 是自动数据工厂的内部解析能力，不是第三个产品入口。�
 ## 信任边界
 
 - 服务仅接受 PNG、JPEG、TIFF 和 PDF 的 `application/octet-stream`，要求 Bearer token、精确长度、文件名后缀和源 SHA-256。
-- 图片在推理前验证格式和像素上限；PDF 使用严格模式验证加密状态与页数。
+- 图片在推理前验证解码器实际识别的格式必须与允许的扩展名一致（PNG/JPEG/TIFF），再验证图像和像素上限；PDF 使用严格模式验证加密状态与页数。不能只依赖文件名或 `Image.verify()`：Pillow 能识别但不解码 MPEG，单独调用 `verify()` 不会阻止重命名的视频输入。
 - PaddleOCR `3.5.0`、PaddlePaddle `3.3.1`、`PP-OCRv5_server_det` 和 `PP-OCRv5_server_rec` 被固定；启动时重新计算两个模型目录摘要，漂移立即失败。
 - 输出只接受结构完整、坐标有界、置信度在 `[0,1]` 的结果；低置信度行丢弃，文本、行数、页数和并发均有硬上限。
 - worker 重新验证响应 schema、源摘要和文本摘要。结果携带 `[[page:n]]` 与 `[[region:x1,y1,x2,y2;confidence:s]]`，供后续引用回溯。

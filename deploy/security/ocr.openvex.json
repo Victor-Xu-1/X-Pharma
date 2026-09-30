@@ -1,10 +1,38 @@
 {
   "@context": "https://openvex.dev/ns/v0.2.0",
-  "@id": "https://github.com/Victor-Xu-1/x-pharma/blob/main/deploy/security/ocr.openvex.json",
+  "@id": "https://github.com/Victor-Xu-1/X-Pharma/blob/main/deploy/security/ocr.openvex.json",
   "author": "X-Pharma Security",
-  "timestamp": "2026-09-30T14:29:32Z",
-  "version": 3,
+  "timestamp": "2026-09-30T16:07:00Z",
+  "version": 4,
   "statements": [
+    {
+      "vulnerability": {"name": "CVE-2026-70628"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "The affected DVB subtitle parser consumes WTV/video input, which is not a supported OCR document path. services/ocr/service.py verifies the decoded Pillow format matches the PNG/JPEG/TIFF suffix, and parses PDF with strict PdfReader before calling the engine. tests/test_ocr_service.py verifies real MPEG metadata renamed as PNG is rejected with HTTP 415 and the engine is never invoked; permitted still-image formats remain accepted. FFmpeg remains inventoried, not patched or removed. See docs/security-gates.md for the reviewed reachability boundary."
+    },
+    {
+      "vulnerability": {"name": "CVE-2026-70632"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "The affected CineForm HD decoder consumes AVI/video streams. The OCR service accepts only format-matched PNG/JPEG/TIFF and strictly parsed PDF, never video paths or URLs. Real-parser HTTP tests reject MPEG, GIF, PPM and JPEG disguised as PNG before any engine call, including Pillow-identifiable MPEG that verify() alone would accept. This is a reachability statement for this OCR boundary, not a claim that the transitive FFmpeg binary is fixed."
+    },
+    {
+      "vulnerability": {"name": "CVE-2026-75142"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "The vulnerable MPEG-PS muxing path is not called by still-image/PDF OCR; the service exposes no video encoding or stream muxing API. The explicit decoded-format allowlist and real-parser HTTP tests in tests/test_ocr_service.py ensure MPEG renamed with an allowed image extension cannot reach inference. Adding any video or encoding feature requires revisiting this statement; the vulnerable library remains in the full SBOM and scan inventory."
+    },
+    {
+      "vulnerability": {"name": "CVE-2026-75146"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "The affected DASH demuxer requires a live media manifest/stream. The OCR endpoint receives authenticated bounded bytes into a generated local file, accepts no input URL, rejects formats outside exact PNG/JPEG/TIFF matching or strict PDF, and has no DASH or media-stream path. tests/test_ocr_service.py exercises the real format parser before an engine call. The binary is not represented as fixed, and any future streaming support invalidates this statement."
+    },
     {
       "vulnerability": {
         "name": "CVE-2026-15308"

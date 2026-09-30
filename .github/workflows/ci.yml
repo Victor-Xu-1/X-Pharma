@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      refresh_visual_baselines:
+        description: "Regenerate intentionally changed visual baselines, then verify them read-only"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -198,7 +204,7 @@ jobs:
 
   two-entry-smoke:
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: ${{ inputs.refresh_visual_baselines && 60 || 35 }}
     env:
       E2E_EMAIL: analyst@example.test
       E2E_PASSWORD: ci-workspace-password
@@ -238,7 +244,7 @@ jobs:
           docker compose ps
       - name: Bootstrap ephemeral tenant
         run: |
-          output=$(docker compose run --rm api pharma-bootstrap --tenant-slug e2e --tenant-name "E2E Tenant" --admin-email "$E2E_EMAIL" --admin-password "$E2E_PASSWORD")
+          output=$(docker compose run --rm api pharma-bootstrap --tenant-slug e2e --tenant-name "E2E Tenant" --dataset ci_e2e --admin-email "$E2E_EMAIL" --admin-password "$E2E_PASSWORD")
           token=$(printf '%s\n' "$output" | grep '^phk_' | head -n 1)
           key_id=$(printf '%s\n' "$output" | sed -n 's/^API key identity for commercial client binding: //p' | head -n 1)
           test -n "$token"
@@ -261,7 +267,20 @@ jobs:
             --subscription-key e2e-2026 --units 1000 --external-reference CI-E2E-CREDIT \
             --reason "Ephemeral integration allocation"
       - name: Browser workbench smoke
-        run: ./scripts/run-browser-acceptance.sh --output /tmp/browser-acceptance-report.json
+        env:
+          REFRESH_VISUAL_BASELINES: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
+        run: |
+          if [[ "$REFRESH_VISUAL_BASELINES" == "true" ]]; then
+            ./scripts/run-browser-acceptance.sh --update-snapshots
+          fi
+          ./scripts/run-browser-acceptance.sh --output /tmp/browser-acceptance-report.json
+      - name: Archive visual baseline candidates for review
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: X-Pharma-visual-baseline-candidates
+          path: apps/web/e2e/visual-baselines/
+          if-no-files-found: error
       - name: Real MCP streamable HTTP smoke
         run: uv run pytest tests/test_mcp_integration.py
       - name: Independent MCP dual-client interoperability

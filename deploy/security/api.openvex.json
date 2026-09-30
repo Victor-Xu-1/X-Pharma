@@ -1,6 +1,6 @@
 {
   "@context": "https://openvex.dev/ns/v0.2.0",
-  "@id": "https://github.com/Victor-Xu-1/x-pharma/blob/main/deploy/security/api.openvex.json",
+  "@id": "https://github.com/Victor-Xu-1/X-Pharma/blob/main/deploy/security/api.openvex.json",
   "author": "X-Pharma Security",
   "timestamp": "2026-09-30T14:29:32Z",
   "version": 3,

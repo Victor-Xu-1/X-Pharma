@@ -5,7 +5,7 @@ Status: accepted, 2026-09-30.
 ## Decision
 
 The product is X-Pharma and the Python distribution is `x-pharma`.
-The public repository is `Victor-Xu-1/x-pharma`. First-party source and
+The public repository is `Victor-Xu-1/X-Pharma`. First-party source and
 documentation use Apache-2.0. Third-party licenses and data permissions retain
 their original scope; CPython attribution accompanies the vendored files.
 

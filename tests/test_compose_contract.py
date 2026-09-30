@@ -6,6 +6,30 @@ from pathlib import Path
 import yaml
 
 
+def test_ephemeral_browser_ci_provisions_the_required_governed_dataset() -> None:
+    root = Path(__file__).parents[1]
+    workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text(encoding="utf-8"))
+    bootstrap = next(
+        step["run"]
+        for step in workflow["jobs"]["two-entry-smoke"]["steps"]
+        if step.get("name") == "Bootstrap ephemeral tenant"
+    )
+    assert "--tenant-slug e2e" in bootstrap
+    assert "--dataset ci_e2e" in bootstrap
+
+
+def test_ci_visual_refresh_is_explicit_and_always_followed_by_readonly_acceptance() -> None:
+    root = Path(__file__).parents[1]
+    workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["two-entry-smoke"]["steps"]
+    browser = next(step for step in steps if step.get("name") == "Browser workbench smoke")
+    assert "workflow_dispatch" in browser["env"]["REFRESH_VISUAL_BASELINES"]
+    assert 'if [[ "$REFRESH_VISUAL_BASELINES" == "true" ]]' in browser["run"]
+    assert browser["run"].index("--update-snapshots") < browser["run"].index(
+        "--output /tmp/browser-acceptance-report.json"
+    )
+
+
 def test_runtime_contract_prohibits_local_llm_services_and_overlays() -> None:
     root = Path(__file__).parents[1]
     compose = yaml.safe_load((root / "compose.yaml").read_text(encoding="utf-8"))

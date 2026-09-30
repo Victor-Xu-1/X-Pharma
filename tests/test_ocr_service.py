@@ -23,8 +23,10 @@ class Result:
 class Engine:
     def __init__(self, results: list[object]) -> None:
         self.results = results
+        self.calls = 0
 
     def predict(self, _path: Path) -> list[object]:
+        self.calls += 1
         return self.results
 
 
@@ -74,6 +76,53 @@ def _valid_result() -> Result:
             "rec_boxes": [[10, 20, 300, 50], [10, 60, 100, 90]],
         }
     )
+
+
+@pytest.mark.parametrize("actual_format", ["MPEG", "GIF", "PPM", "JPEG"])
+def test_ocr_service_rejects_formats_masquerading_as_png_before_the_engine(
+    actual_format: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if actual_format == "MPEG":
+        # Pillow identifies MPEG metadata without decoding it; verify() alone accepts this stream.
+        payload = b"\x00\x00\x01\xb3" + ((320 << 12) | 120).to_bytes(3, "big") + b"\x00" * 16
+    else:
+        output = BytesIO()
+        Image.new("RGB", (320, 120), "white").save(output, format=actual_format)
+        payload = output.getvalue()
+    with Image.open(BytesIO(payload)) as identified:
+        assert identified.format == actual_format
+    engine = Engine([_valid_result()])
+    client = TestClient(create_app(_settings(tmp_path, monkeypatch), engine))
+    response = client.post(
+        "/internal/v1/parse",
+        params={"filename": "renamed.png", "max_chars": 100_000},
+        headers=_headers(payload),
+        content=payload,
+    )
+    assert response.status_code == 415
+    assert response.json()["detail"]["code"] == "document_format_mismatch"
+    assert engine.calls == 0
+
+
+@pytest.mark.parametrize(
+    "suffix, actual_format", [("png", "PNG"), ("jpg", "JPEG"), ("jpeg", "JPEG"), ("tif", "TIFF"), ("tiff", "TIFF")]
+)
+def test_ocr_service_preserves_supported_still_image_formats(
+    suffix: str, actual_format: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = BytesIO()
+    Image.new("RGB", (320, 120), "white").save(output, format=actual_format)
+    payload = output.getvalue()
+    engine = Engine([_valid_result()])
+    client = TestClient(create_app(_settings(tmp_path, monkeypatch), engine))
+    response = client.post(
+        "/internal/v1/parse",
+        params={"filename": f"scan.{suffix}", "max_chars": 100_000},
+        headers=_headers(payload),
+        content=payload,
+    )
+    assert response.status_code == 200
+    assert engine.calls == 1
 
 
 def test_ocr_service_returns_governed_text_locators_and_model_provenance(

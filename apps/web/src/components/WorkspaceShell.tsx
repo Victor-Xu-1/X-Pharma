@@ -26,6 +26,7 @@ import { OPERATIONS_NAME, PRODUCT_NAME } from "../lib/product";
 import type { User } from "../lib/types";
 import { useModalFocus } from "../lib/useModalFocus";
 import { canAccessView, type ViewKey, type WorkbenchKey } from "../lib/workspaceRouting";
+import { BrandMark } from "./BrandMark";
 
 type NavigationItem = { key: ViewKey; label: string; icon: typeof Search };
 
@@ -138,9 +139,7 @@ export function WorkspaceShell({
       >
         <div className="sidebar-head">
           <div className="brand-lockup" title={researchWorkbench ? PRODUCT_NAME : OPERATIONS_NAME}>
-            <span className="brand-symbol">
-              <FlaskConical size={19} />
-            </span>
+            <BrandMark />
             <span className="brand-copy">
               <strong>{PRODUCT_NAME}</strong>
               <small>{researchWorkbench ? "医药研发情报" : "内部管理工作台"}</small>
