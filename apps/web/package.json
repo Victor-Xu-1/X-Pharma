@@ -17,7 +17,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@rdkit/rdkit": "2025.3.4-1.0.0",
+    "@rdkit/rdkit": "2026.3.6",
     "@tanstack/react-query": "5.101.2",
     "@tanstack/react-table": "8.21.3",
     "@tanstack/react-virtual": "3.14.6",
