@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
-
+import { AccountInvitationPanel } from "../components/AccountInvitationPanel";
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "../components/common";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
 import {
@@ -45,7 +45,7 @@ import type { AuthMode } from "../lib/contracts/session";
 import type { User, UserRole } from "../lib/types";
 import { useModalFocus } from "../lib/useModalFocus";
 
-type EnterpriseTab = "overview" | "users" | "groups" | "access" | "models" | "platform" | "audit";
+type EnterpriseTab = "overview" | "users" | "groups" | "access" | "models" | "platform" | "audit" | "invites";
 type UserAction = { user: EnterpriseUser; kind: "role" | "status" };
 type GroupAction = { group: EnterpriseGroup; kind: "edit" | "members" };
 type AccessAction =
@@ -84,6 +84,7 @@ const roleLabels: Record<UserRole, string> = { admin: "管理员", analyst: "分
 const enterpriseTabs: Array<ResearchTabOption<EnterpriseTab>> = [
   { key: "overview", label: "租户概况" },
   { key: "users", label: "用户与角色" },
+  { key: "invites", label: "注册邀请" },
   { key: "groups", label: "用户组" },
   { key: "access", label: "访问与生命周期" },
   { key: "models", label: "模型设置" },
@@ -109,6 +110,7 @@ export function EnterpriseView({ user, authMode }: { user: User; authMode: AuthM
   const workspaceQuery = useQuery({
     queryKey: enterpriseKeys.workspace,
     queryFn: ({ signal }) => loadEnterpriseWorkspace(signal),
+    enabled: tab !== "invites",
   });
   const auditQuery = useQuery({
     queryKey: enterpriseKeys.audit(auditFilters),
@@ -184,16 +186,14 @@ export function EnterpriseView({ user, authMode }: { user: User; authMode: AuthM
     }
   }
 
-  const queryError = workspaceQuery.error ?? auditQuery.error;
+  const queryError = tab === "invites" ? null : (workspaceQuery.error ?? auditQuery.error);
   const visibleError =
     actionError || (queryError instanceof Error ? queryError.message : queryError ? "企业管理数据加载失败" : "");
-  if (!workspace && workspaceQuery.isPending) return <Spinner label="正在读取企业管理数据" />;
-  if (!workspace) return <ErrorState message={visibleError || "企业管理数据加载失败"} retry={workspaceQuery.refetch} />;
 
   return (
     <section className="enterprise-workbench">
       <div className="enterprise-toolbar">
-        <span>{workspace.overview.tenant.name}</span>
+        <span>{workspace?.overview.tenant.name ?? "企业管理"}</span>
         <button
           className="secondary-button"
           type="button"
@@ -218,54 +218,71 @@ export function EnterpriseView({ user, authMode }: { user: User; authMode: AuthM
       />
 
       <div id={`enterprise-panel-${tab}`} role="tabpanel" aria-labelledby={`enterprise-tab-${tab}`}>
-        {tab === "overview" ? <EnterpriseOverview workspace={workspace} /> : null}
-        {tab === "users" ? (
-          <UsersPanel
-            users={workspace.users}
-            currentUserId={user.id}
-            busy={busy}
-            onCreate={() => setCreateUserOpen(true)}
-            onAction={setUserAction}
-          />
-        ) : null}
-        {tab === "groups" ? (
-          <GroupsPanel
-            groups={workspace.groups}
-            busy={busy}
-            onCreate={() => setCreateGroupOpen(true)}
-            onAction={setGroupAction}
-          />
-        ) : null}
-        {tab === "access" ? (
-          <AccessPanel workspace={workspace} onAction={setAccessAction} onApiKeyAction={setApiKeyAction} busy={busy} />
-        ) : null}
-        {tab === "models" ? (
-          <LLMProvidersPanel
-            providers={workspace.llmProviders}
-            busy={busy}
-            onCreate={() => setLlmAction({ kind: "create" })}
-            onEdit={(provider) => setLlmAction({ kind: "edit", provider })}
-            onPrimary={(provider) => setLlmAction({ kind: "primary", provider })}
-            onTest={(provider) =>
-              void runLlmOperation(
-                `llm:test:${provider.id}`,
-                { kind: "test-llm-provider", providerId: provider.id },
-                "模型连接测试失败",
-              )
-            }
-          />
-        ) : null}
-        {tab === "platform" ? <PlatformOperationsPanel workspace={workspace} /> : null}
-        {tab === "audit" ? (
-          <AuditPanel
-            filters={auditFilters}
-            draftAction={auditDraftAction}
-            setDraftAction={setAuditDraftAction}
-            setFilters={setAuditFilters}
-            page={auditQuery.data}
-            loading={auditQuery.isFetching}
-          />
-        ) : null}
+        {tab === "invites" ? (
+          <AccountInvitationPanel authMode={authMode} />
+        ) : !workspace ? (
+          workspaceQuery.isPending ? (
+            <Spinner label="正在读取企业管理数据" />
+          ) : (
+            <ErrorState message={visibleError || "企业管理数据加载失败"} retry={workspaceQuery.refetch} />
+          )
+        ) : (
+          <>
+            {tab === "overview" ? <EnterpriseOverview workspace={workspace} /> : null}
+            {tab === "users" ? (
+              <UsersPanel
+                users={workspace.users}
+                currentUserId={user.id}
+                busy={busy}
+                onCreate={() => setCreateUserOpen(true)}
+                onAction={setUserAction}
+              />
+            ) : null}
+            {tab === "groups" ? (
+              <GroupsPanel
+                groups={workspace.groups}
+                busy={busy}
+                onCreate={() => setCreateGroupOpen(true)}
+                onAction={setGroupAction}
+              />
+            ) : null}
+            {tab === "access" ? (
+              <AccessPanel
+                workspace={workspace}
+                onAction={setAccessAction}
+                onApiKeyAction={setApiKeyAction}
+                busy={busy}
+              />
+            ) : null}
+            {tab === "models" ? (
+              <LLMProvidersPanel
+                providers={workspace.llmProviders}
+                busy={busy}
+                onCreate={() => setLlmAction({ kind: "create" })}
+                onEdit={(provider) => setLlmAction({ kind: "edit", provider })}
+                onPrimary={(provider) => setLlmAction({ kind: "primary", provider })}
+                onTest={(provider) =>
+                  void runLlmOperation(
+                    `llm:test:${provider.id}`,
+                    { kind: "test-llm-provider", providerId: provider.id },
+                    "模型连接测试失败",
+                  )
+                }
+              />
+            ) : null}
+            {tab === "platform" ? <PlatformOperationsPanel workspace={workspace} /> : null}
+            {tab === "audit" ? (
+              <AuditPanel
+                filters={auditFilters}
+                draftAction={auditDraftAction}
+                setDraftAction={setAuditDraftAction}
+                setFilters={setAuditFilters}
+                page={auditQuery.data}
+                loading={auditQuery.isFetching}
+              />
+            ) : null}
+          </>
+        )}
       </div>
 
       {createUserOpen ? (
@@ -297,7 +314,7 @@ export function EnterpriseView({ user, authMode }: { user: User; authMode: AuthM
           }}
         />
       ) : null}
-      {groupAction ? (
+      {groupAction && workspace ? (
         <GroupActionModal
           action={groupAction}
           users={workspace.users}
@@ -322,7 +339,7 @@ export function EnterpriseView({ user, authMode }: { user: User; authMode: AuthM
           }}
         />
       ) : null}
-      {apiKeyAction ? (
+      {apiKeyAction && workspace ? (
         <ApiKeyActionModal
           action={apiKeyAction}
           catalog={workspace.apiKeyCatalog}

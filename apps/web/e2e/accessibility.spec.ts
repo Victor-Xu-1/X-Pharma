@@ -203,7 +203,7 @@ test("[reflow-keyboard] preserves the primary research path at 320 CSS pixels wi
   await expect(submit).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "全局情报检索", level: 1 })).toBeVisible();
-  await expect(page).toHaveURL(/\/workspace\/research$/);
+  await expect(page).toHaveURL(/\/workspace\/research\?view=explorer$/);
   await expectPageReflow(page, "research overview");
 
   const openNavigation = page.getByTitle("打开导航");

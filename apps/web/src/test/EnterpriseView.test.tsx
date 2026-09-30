@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-
+import { accountInvitations } from "../lib/contracts/accounts";
 import {
   executeEnterpriseApiKeyOperation,
   executeEnterpriseLLMProviderOperation,
@@ -24,6 +24,22 @@ vi.mock("../lib/contracts/enterprise", () => ({
   loadEnterpriseAudit: vi.fn(),
   loadEnterpriseWorkspace: vi.fn(),
 }));
+vi.mock("../lib/contracts/accounts", () => ({
+  accountInvitations: vi.fn(),
+  issueAccountInvitation: vi.fn(),
+  revokeAccountInvitation: vi.fn(),
+}));
+
+it("keeps registration invitations usable when unrelated platform data is unavailable", async () => {
+  vi.mocked(loadEnterpriseWorkspace).mockRejectedValue(new Error("Platform status is unavailable"));
+  vi.mocked(accountInvitations).mockResolvedValue([]);
+  renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
+  await screen.findByRole("tab", { name: "注册邀请" });
+  fireEvent.click(screen.getByRole("tab", { name: "注册邀请" }));
+  await screen.findByText("暂无注册邀请");
+  expect(accountInvitations).toHaveBeenCalled();
+  expect(screen.getByRole("button", { name: "生成注册邀请码" })).toBeDisabled();
+});
 
 const user: User = {
   id: "admin-1",

@@ -17,5 +17,5 @@
 /repo/docs/design-qa.md:generic-api-key:9
 # Synthetic 16-character fingerprints in mocked EnterpriseView provider fixtures.
 # These are displayed hash identifiers, not API credentials.
-/repo/apps/web/src/test/EnterpriseView.test.tsx:generic-api-key:279
-/repo/apps/web/src/test/EnterpriseView.test.tsx:generic-api-key:301
+/repo/apps/web/src/test/EnterpriseView.test.tsx:generic-api-key:295
+/repo/apps/web/src/test/EnterpriseView.test.tsx:generic-api-key:317

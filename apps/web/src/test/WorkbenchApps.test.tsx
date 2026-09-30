@@ -297,7 +297,7 @@ it("rejects a viewer at the internal application boundary without protected API 
   renderWithQueryClient(<InternalApp />);
 
   expect(await screen.findByText("无权访问该工作区")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "退出内部工作台" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "退出账号" })).toBeInTheDocument();
   expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/api/v1/admin/"))).toBe(false);
   expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/governance/"))).toBe(false);
 });

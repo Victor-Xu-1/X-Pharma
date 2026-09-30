@@ -6,6 +6,7 @@
 | --- | --- | --- |
 | 应用进程 | `gateway.py`、`jobs.py`、`job_roles.py` | 单网关和受监督后台角色 |
 | Web/API | `api.py`、`security.py`、`human_oidc.py` | 人员/Agent 身份、租户、scope 与会话 |
+| 账号注册 | `accounts/` | 独立 viewer 租户、签名邀请码、事务领取、管理员权限与注册预算 |
 | 领域查询 | `intelligence.py`、`repository.py`、`dossier.py` | Web 与 MCP 共用的事实查询 |
 | 数据库 | `models.py`、`schemas.py`、`db.py`、`migrations/` | 数据模型、事务和签名 RLS |
 | 数据工厂 | `ingest/` | 来源、快照、安全解析、Temporal 和恢复 |
@@ -16,6 +17,8 @@
 | 部署与工具 | `deploy/`、`services/`、`scripts/`、`runbooks/` | 安装、隔离组件、门禁、恢复与运维 |
 
 入口、领域、持久化和适配器各自负责一层。新增规则进入对应领域模块，不能在 UI、路由和 MCP 重复实现。数据流见 [architecture.md](architecture.md)。
+
+`RegistrationForm`、`AccountInvitationPanel` 和 `SessionBoundary` 分别拥有注册交互、管理员邀请管理和共享会话生命周期；两套工作台只消费同一会话状态和退出动作。注册与邀请通过生成的 OpenAPI client 调用 `accounts/` 服务，不在 `api.py` 或大型企业视图堆叠业务规则。
 
 ## 本次整理
 

@@ -12,6 +12,11 @@ type BrowserQualityMetrics = {
   lcp_ms: number;
 };
 
+async function expandProfessionalQuery(page: Page) {
+  const filters = page.locator("details.explorer-professional-query");
+  if ((await filters.getAttribute("open")) === null) await filters.locator("summary").click();
+}
+
 async function installBrowserQualityProbe(page: Page) {
   await page.addInitScript(() => {
     const metrics = {
@@ -486,6 +491,7 @@ test("[workspace-navigation][workspace-isolation][research-workbench][internal-w
   const emptyEntityState = page.getByRole("status").filter({ hasText: "未找到匹配实体" });
   await expect(emptyEntityState).toBeVisible();
   await expect(emptyEntityState).toHaveAttribute("aria-live", "polite");
+  await expandProfessionalQuery(page);
   await expect(
     page
       .getByRole("region", { name: "专业条件查询" })
@@ -1039,6 +1045,7 @@ test("[workspace-navigation][workspace-isolation][research-workbench][internal-w
   await page.goBack();
   await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
   const professionalQuery = page.getByRole("region", { name: "专业条件查询" });
+  await expandProfessionalQuery(page);
   await expect(professionalQuery).toContainText("已选 1 项");
   const modalityFacet = professionalQuery.getByRole("group", { name: "药物模态" });
   await modalityFacet.getByLabel("药物模态：全部").click();
@@ -1334,6 +1341,7 @@ test("[workspace-navigation][workspace-isolation][research-workbench][internal-w
 
   await page.goto(`/workspace/research?view=explorer&q=${encodeURIComponent(fixtureKeyBase)}`);
   const patentProfessionalQuery = page.getByRole("region", { name: "专业条件查询" });
+  await expandProfessionalQuery(page);
   await patentProfessionalQuery.getByRole("button", { name: "专利情报", exact: true }).click();
   await expect(patentProfessionalQuery.getByLabel("法律状态")).toContainText("有效");
   await expect(patentProfessionalQuery.getByLabel("关联实体类型")).toHaveValue("target");
@@ -1398,6 +1406,7 @@ test("[workspace-navigation][workspace-isolation][research-workbench][internal-w
 
   await page.goto(`/workspace/research?view=explorer&q=${encodeURIComponent(fixtureKeyBase)}`);
   const dealProfessionalQuery = page.getByRole("region", { name: "专业条件查询" });
+  await expandProfessionalQuery(page);
   await dealProfessionalQuery.getByRole("button", { name: "交易与公司", exact: true }).click();
   await expect(dealProfessionalQuery.getByLabel("交易类型")).toContainText("许可");
   const professionalDealAssetName = `Browser regulatory drug ${fixtureKeyBase}`;
@@ -1508,6 +1517,7 @@ test("[workspace-navigation][workspace-isolation][research-workbench][internal-w
 
   await page.goto(`/workspace/research?view=explorer&q=${encodeURIComponent(fixtureKeyBase)}`);
   const regulatoryProfessionalQuery = page.getByRole("region", { name: "专业条件查询" });
+  await expandProfessionalQuery(page);
   await regulatoryProfessionalQuery.getByRole("button", { name: "监管与安全", exact: true }).click();
   await expect(regulatoryProfessionalQuery.getByLabel("监管机构")).toContainText("FDA (2)");
   await regulatoryProfessionalQuery.getByLabel("监管机构").selectOption("FDA");
@@ -1588,6 +1598,7 @@ test("[workspace-navigation][workspace-isolation][research-workbench][internal-w
 
   await page.goto(`/workspace/research?view=explorer&q=${encodeURIComponent(fixtureKeyBase)}`);
   const epidemiologyProfessionalQuery = page.getByRole("region", { name: "专业条件查询" });
+  await expandProfessionalQuery(page);
   await epidemiologyProfessionalQuery.getByRole("button", { name: "流行病学", exact: true }).click();
   const professionalEpidemiologyDiseaseName = `Browser epidemiology disease ${fixtureKeyBase}`;
   await epidemiologyProfessionalQuery.getByLabel("疾病筛选").fill(professionalEpidemiologyDiseaseName);
@@ -1664,6 +1675,7 @@ test("[workspace-navigation][workspace-isolation][research-workbench][internal-w
 
   await page.goto(`/workspace/research?view=explorer&q=${encodeURIComponent(fixtureKeyBase)}`);
   const newsProfessionalQuery = page.getByRole("region", { name: "专业条件查询" });
+  await expandProfessionalQuery(page);
   await newsProfessionalQuery.getByRole("button", { name: "资讯与会议", exact: true }).click();
   const professionalNewsEntityName = `Browser pipeline target ${fixtureKeyBase}`;
   await newsProfessionalQuery.getByLabel("关联实体筛选").fill(professionalNewsEntityName);
@@ -3024,7 +3036,7 @@ test("[clinical-normalized-drug-or][clinical-role-groups][clinical-role-correctn
   );
   expect(roleListboxes.every(Boolean)).toBe(true);
   expect(new Set(roleListboxes).size).toBe(roleListboxes.length);
-  const investigationalDrugCombobox = clinicalFilters.getByLabel("规范试验药物（任一）筛选");
+  const investigationalDrugCombobox = clinicalFilters.getByLabel("试验药物（任一）筛选");
   await investigationalDrugCombobox.fill(`Browser antibody alias ${fixtureKeyBase}`);
   const disambiguatedCandidate = clinicalFilters.getByRole("option", {
     name: new RegExp(`Browser pipeline antibody ${fixtureKeyBase}`),

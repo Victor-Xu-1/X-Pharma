@@ -376,6 +376,10 @@ const workbenchPaths: Record<WorkbenchKey, string> = {
   internal: "/workspace/internal",
 };
 
+export function workbenchPath(workbench: WorkbenchKey): string {
+  return workbenchPaths[workbench];
+}
+
 const workbenchDefaults: Record<WorkbenchKey, ViewKey> = {
   research: "explorer",
   internal: "factory",

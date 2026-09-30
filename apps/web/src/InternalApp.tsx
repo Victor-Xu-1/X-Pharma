@@ -31,12 +31,32 @@ const GovernanceView = lazy(() =>
 export function InternalApp() {
   return (
     <SessionBoundary workbench="internal">
-      {({ authMode, user, logout }) => <InternalWorkspace authMode={authMode} user={user} onLogout={logout} />}
+      {({ authMode, user, logout, logoutPending, logoutError }) => (
+        <InternalWorkspace
+          authMode={authMode}
+          user={user}
+          onLogout={logout}
+          logoutPending={logoutPending}
+          logoutError={logoutError}
+        />
+      )}
     </SessionBoundary>
   );
 }
 
-function InternalWorkspace({ authMode, user, onLogout }: { authMode: AuthMode; user: User; onLogout: () => void }) {
+function InternalWorkspace({
+  authMode,
+  user,
+  onLogout,
+  logoutPending,
+  logoutError,
+}: {
+  authMode: AuthMode;
+  user: User;
+  onLogout: () => void;
+  logoutPending: boolean;
+  logoutError: string | null;
+}) {
   const [location, setLocation] = useState<WorkspaceLocation>(() =>
     parseWorkbenchLocation("internal", window.location.search),
   );
@@ -73,7 +93,12 @@ function InternalWorkspace({ authMode, user, onLogout }: { authMode: AuthMode; u
   if (!canAccessWorkbench("internal", user.role)) {
     return (
       <div className="session-loading">
-        <AccessDeniedState onReturn={onLogout} actionLabel="退出内部工作台" />
+        <AccessDeniedState onReturn={onLogout} actionLabel={logoutPending ? "退出中…" : "退出账号"} />
+        {logoutError ? (
+          <p className="form-error" role="alert">
+            {logoutError}
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -86,6 +111,8 @@ function InternalWorkspace({ authMode, user, onLogout }: { authMode: AuthMode; u
       activeView={location.view}
       onView={navigateToView}
       onLogout={onLogout}
+      logoutPending={logoutPending}
+      logoutError={logoutError}
     >
       <Suspense fallback={<Spinner label="正在加载内部工作区" />}>
         {!allowed ? <AccessDeniedState onReturn={() => navigateToView("factory", true)} /> : null}

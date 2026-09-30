@@ -13,6 +13,8 @@ from urllib.parse import urlsplit
 import structlog
 import uvicorn
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -27,6 +29,8 @@ from temporalio.exceptions import WorkflowAlreadyStartedError
 
 import pharma_intel.object_store as object_store_module
 from pharma_intel import __version__
+from pharma_intel.accounts.request_limits import RegistrationRequestLimits
+from pharma_intel.accounts.routes import router as account_registration_router
 from pharma_intel.api_key_lifecycle import (
     API_KEY_MAX_TTL,
     API_KEY_MIN_TTL,
@@ -533,7 +537,20 @@ app = FastAPI(
 # FastAPI defaults to 3.1.0; the release contract is pinned independently of
 # whether interactive documentation is exposed in a production deployment.
 app.openapi_version = "3.1.2"
+app.include_router(account_registration_router)
+app.add_middleware(RegistrationRequestLimits)
 install_web_branding(app, get_settings().web_root, docs_enabled=get_settings().api_docs_enabled)
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_errors(request: Request, error: RequestValidationError) -> Response:
+    if request.url.path != "/api/v1/auth/register":
+        return await request_validation_exception_handler(request, error)
+    # Framework errors otherwise echo the raw password or invitation input.
+    detail = [{key: item[key] for key in ("type", "loc", "msg")} for item in error.errors()]
+    return JSONResponse(status_code=422, content={"detail": detail})
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[get_settings().public_base_url],

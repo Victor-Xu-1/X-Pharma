@@ -2,6 +2,25 @@
 .enterprise-workbench {
   min-width: 0;
 }
+.account-invitation-form,
+.account-invitation-content {
+  display: grid;
+  gap: 12px;
+}
+.account-invitation-form {
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  align-items: end;
+  margin: 20px 0;
+}
+.account-invitation-content {
+  padding: 20px 21px;
+}
+.account-invitation-form label,
+.account-invitation-content label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
 .enterprise-toolbar {
   min-height: 38px;
   display: flex;

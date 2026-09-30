@@ -20,6 +20,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -511,6 +512,47 @@ class UserSession(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     revoked_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), index=True)
     revoke_reason: Mapped[str | None] = mapped_column(String(500))
+
+
+class AccountInvitation(Base, TimestampMixin):
+    """Tenant-scoped invitations; signed codes establish the pre-auth tenant context."""
+
+    __tablename__ = "account_invitations"
+    __table_args__ = (
+        ForeignKeyConstraint(["tenant_id", "created_by_user_id"], ["users.tenant_id", "users.id"]),
+        ForeignKeyConstraint(["tenant_id", "claimed_user_id"], ["users.tenant_id", "users.id"]),
+        CheckConstraint("expires_at > created_at", name="ck_account_invitation_expiry"),
+        CheckConstraint(
+            "(claimed_at IS NULL) = (claimed_user_id IS NULL)", name="ck_account_invitation_claim_complete"
+        ),
+        Index("ix_account_invitation_tenant_created", "tenant_id", "created_at"),
+        Index(
+            "uq_account_invitation_pending",
+            "tenant_id",
+            "normalized_email",
+            unique=True,
+            postgresql_where=text("claimed_at IS NULL AND revoked_at IS NULL"),
+            sqlite_where=text("claimed_at IS NULL AND revoked_at IS NULL"),
+        ),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), nullable=False, index=True)
+    created_by_user_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    email: Mapped[str] = mapped_column(String(320), nullable=False)
+    normalized_email: Mapped[str] = mapped_column(String(320), nullable=False, index=True)
+    token_digest: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    claimed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    claimed_user_id: Mapped[str | None] = mapped_column(String(36))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AccountRegistrationBudget(Base):
+    __tablename__ = "account_registration_budgets"
+    __table_args__ = (CheckConstraint("attempts > 0", name="ck_account_registration_attempts"),)
+    peer_digest: Mapped[str] = mapped_column(String(64), primary_key=True)
+    window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    attempts: Mapped[int] = mapped_column(nullable=False)
 
 
 class WorkspaceTablePreference(Base, TimestampMixin):

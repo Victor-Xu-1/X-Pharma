@@ -4,6 +4,7 @@ const browserExecutable = process.env.E2E_BROWSER_EXECUTABLE ?? process.env.E2E_
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: "**/account-registration.spec.ts",
   snapshotPathTemplate: "{testDir}/visual-baselines/{arg}-{projectName}{ext}",
   fullyParallel: false,
   forbidOnly: true,

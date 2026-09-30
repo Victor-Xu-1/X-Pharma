@@ -1,15 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
 
+import { ApiError } from "../lib/api";
 import { type AuthMode, loadSession, logout, type SessionSnapshot, sessionKeys } from "../lib/contracts/session";
 import type { User } from "../lib/types";
-import type { WorkbenchKey } from "../lib/workspaceRouting";
+import { type WorkbenchKey, workbenchPath } from "../lib/workspaceRouting";
 import { ErrorState, Spinner } from "./common";
 import { LoginScreen } from "./LoginScreen";
 
 export interface AuthenticatedSession {
   authMode: AuthMode;
   logout: () => void;
+  logoutPending: boolean;
+  logoutError: string | null;
   updateUser: (user: User) => void;
   user: User;
 }
@@ -70,7 +73,17 @@ export function SessionBoundary({
     })();
     unauthorizedProbe.current = probe;
   }, [clearSession, queryClient]);
-  const logoutRequest = useMutation({ mutationFn: logout, onSettled: clearSession });
+  const finishLogout = useCallback(() => {
+    window.history.replaceState(null, "", workbenchPath(workbench));
+    clearSession();
+  }, [clearSession, workbench]);
+  const logoutRequest = useMutation({
+    mutationFn: logout,
+    onSuccess: finishLogout,
+    onError: (error) => {
+      if (error instanceof ApiError && error.status === 401) finishLogout();
+    },
+  });
   const updateUser = useCallback(
     (nextUser: User) => {
       queryClient.setQueryData<SessionSnapshot>(sessionKeys.current, (current) =>
@@ -109,7 +122,10 @@ export function SessionBoundary({
       <LoginScreen
         mode={authMode}
         workbench={workbench}
-        onLogin={(nextUser) => queryClient.setQueryData(sessionKeys.current, { mode: authMode, user: nextUser })}
+        onLogin={(nextUser) => {
+          logoutRequest.reset();
+          queryClient.setQueryData(sessionKeys.current, { mode: authMode, user: nextUser });
+        }}
       />
     );
   }
@@ -118,6 +134,8 @@ export function SessionBoundary({
     authMode,
     user,
     logout: () => logoutRequest.mutate(),
+    logoutPending: logoutRequest.isPending,
+    logoutError: logoutRequest.isError ? "退出失败，请重试" : null,
     updateUser,
   });
 }

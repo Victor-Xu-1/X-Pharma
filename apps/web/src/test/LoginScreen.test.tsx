@@ -61,7 +61,7 @@ describe("LoginScreen", () => {
     expect(screen.getByRole("region", { name: "内部管理平台" })).toBeInTheDocument();
     expect(screen.getByText("数据治理与运营管理")).toBeInTheDocument();
     expect(screen.getByText("内部管理")).toBeInTheDocument();
-    expect(screen.getByText("仅限授权管理员")).toBeInTheDocument();
+    expect(screen.getByText("仅限授权内部人员")).toBeInTheDocument();
     expect(screen.getByText("管理员登录")).toBeInTheDocument();
     expect(screen.queryByText("Internal Management Workspace")).not.toBeInTheDocument();
     expect(screen.queryByText("INTERNAL ACCESS")).not.toBeInTheDocument();

@@ -13,6 +13,7 @@ YAML_CONFIG_PATHS = compose.yaml compose.dev.yaml compose.telemetry.yaml compose
 PYTHON_TOOL_SCRIPTS += scripts/configure-development.py
 PYTHON_TOOL_SCRIPTS += scripts/verify_cpython_tarfile.py
 PYTHON_TOOL_SCRIPTS += scripts/generate_brand_assets.py
+PYTHON_TOOL_SCRIPTS += scripts/run_account_browser_acceptance.py
 
 install:
 	uv sync --locked --dev
@@ -50,6 +51,11 @@ observability-acceptance:
 
 browser-acceptance:
 	./scripts/run-browser-acceptance.sh
+
+.PHONY: account-browser-acceptance
+account-browser-acceptance:
+	$(PNPM) --dir apps/web build
+	uv run python scripts/run_account_browser_acceptance.py
 
 browser-acceptance-edge-current:
 	./scripts/run-browser-acceptance.sh --browser edge-current

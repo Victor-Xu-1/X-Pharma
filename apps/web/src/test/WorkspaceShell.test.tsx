@@ -10,6 +10,7 @@ it.each(["research", "internal"] as const)("uses the same supplied logo in the %
       activeWorkbench={workbench}
       activeView={workbench === "research" ? "explorer" : "factory"}
       onView={vi.fn()}
+      onLogout={vi.fn()}
     >
       <div>workspace</div>
     </WorkspaceShell>,
@@ -247,7 +248,7 @@ it("shows only governed operational navigation in the internal workbench", () =>
   expect(screen.queryByText("医药情报平台")).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "情报检索" })).not.toBeInTheDocument();
   expect(screen.queryByLabelText("全局搜索")).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "退出当前账号" }));
+  fireEvent.click(screen.getByRole("button", { name: "退出账号" }));
   expect(onLogout).toHaveBeenCalledOnce();
 });
 

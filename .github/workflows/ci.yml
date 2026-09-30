@@ -121,6 +121,10 @@ jobs:
         run: |
           uv run pharma-bootstrap --tenant-slug ci --tenant-name "CI Tenant" --skip-api-key
           uv run pharma-verify-rls
+      - name: Verify account invitation RLS and concurrent registration
+        env:
+          TEST_ACCOUNT_REGISTRATION_DATABASE_URL: postgresql+psycopg://pharma_runtime:ci-runtime-password@127.0.0.1:5432/pharma_migration
+        run: uv run pytest -m integration tests/test_account_registration_postgres.py
       - name: OpenBao dynamic PostgreSQL group-role contract
         run: |
           uv run python -c "import psycopg; c=psycopg.connect('postgresql://postgres:postgres@127.0.0.1:5432/postgres', autocommit=True); c.execute('CREATE DATABASE provision_test'); c.close()"
@@ -266,6 +270,10 @@ jobs:
             pharma-commercial --tenant-slug e2e --actor CI-E2E grant-credit \
             --subscription-key e2e-2026 --units 1000 --external-reference CI-E2E-CREDIT \
             --reason "Ephemeral integration allocation"
+      - name: Isolated real Chrome account registration and logout
+        run: |
+          corepack pnpm@11.7.0 --dir apps/web build
+          uv run python scripts/run_account_browser_acceptance.py --output /tmp/account-browser-acceptance-report.json
       - name: Browser workbench smoke
         env:
           REFRESH_VISUAL_BASELINES: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
@@ -298,6 +306,7 @@ jobs:
           name: two-entry-protocol-and-load-evidence
           path: |
             /tmp/browser-acceptance-report.json
+            /tmp/account-browser-acceptance-report.json
             /tmp/mcp-interoperability-report.json
             /tmp/entry-consistency-report.json
             /tmp/mcp-load-report.json

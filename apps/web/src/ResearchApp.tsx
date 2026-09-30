@@ -267,7 +267,15 @@ function savedSort<Field extends string>(
 export function ResearchApp() {
   return (
     <SessionBoundary workbench="research">
-      {({ user, logout, updateUser }) => <ResearchWorkspace user={user} onLogout={logout} onUserUpdated={updateUser} />}
+      {({ user, logout, updateUser, logoutPending, logoutError }) => (
+        <ResearchWorkspace
+          user={user}
+          onLogout={logout}
+          onUserUpdated={updateUser}
+          logoutPending={logoutPending}
+          logoutError={logoutError}
+        />
+      )}
     </SessionBoundary>
   );
 }
@@ -276,10 +284,14 @@ function ResearchWorkspace({
   user,
   onLogout,
   onUserUpdated,
+  logoutPending,
+  logoutError,
 }: {
   user: User;
   onLogout: () => void;
   onUserUpdated: (user: User) => void;
+  logoutPending: boolean;
+  logoutError: string | null;
 }) {
   const [location, setLocation] = useState<WorkspaceLocation>(() =>
     parseWorkbenchLocation("research", window.location.search),
@@ -1015,6 +1027,9 @@ function ResearchWorkspace({
       activeWorkbench="research"
       activeView={location.view}
       pendingView={pendingNavigationView}
+      onLogout={onLogout}
+      logoutPending={logoutPending}
+      logoutError={logoutError}
       onView={navigateToView}
     >
       <Suspense fallback={<Spinner label="正在加载研究工作区" />}>

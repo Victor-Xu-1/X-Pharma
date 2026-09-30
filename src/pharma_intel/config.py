@@ -66,6 +66,7 @@ class Settings(BaseSettings):
     internal_token_lifetime_seconds: int = Field(default=300, ge=120, le=900)
     session_lifetime_minutes: int = 480
     human_auth_mode: Literal["local", "oidc"] = "local"
+    human_self_registration_enabled: bool = False
     human_oidc_issuer_url: str = ""
     human_oidc_authorization_url: str = ""
     human_oidc_token_url: str = ""

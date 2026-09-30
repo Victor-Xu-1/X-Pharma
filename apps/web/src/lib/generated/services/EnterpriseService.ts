@@ -22,6 +22,9 @@ import type { EnterpriseUserCreate } from '../models/EnterpriseUserCreate';
 import type { EnterpriseUserRead } from '../models/EnterpriseUserRead';
 import type { EnterpriseUserRoleUpdate } from '../models/EnterpriseUserRoleUpdate';
 import type { EnterpriseUserStatusUpdate } from '../models/EnterpriseUserStatusUpdate';
+import type { InvitationCreate } from '../models/InvitationCreate';
+import type { InvitationIssued } from '../models/InvitationIssued';
+import type { InvitationRead } from '../models/InvitationRead';
 import type { PlatformOperationsRead } from '../models/PlatformOperationsRead';
 import type { UserGroupCreate } from '../models/UserGroupCreate';
 import type { UserGroupMembershipUpdate } from '../models/UserGroupMembershipUpdate';
@@ -31,6 +34,58 @@ import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class EnterpriseService {
+  /**
+   * List Account Invitations
+   * @returns InvitationRead Successful Response
+   * @throws ApiError
+   */
+  public static listAccountInvitationsApiV1EnterpriseAccountInvitationsGet(): CancelablePromise<Array<InvitationRead>> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v1/enterprise/account-invitations',
+    });
+  }
+  /**
+   * Create Account Invitation
+   * @returns InvitationIssued Successful Response
+   * @throws ApiError
+   */
+  public static createAccountInvitationApiV1EnterpriseAccountInvitationsPost({
+    requestBody,
+  }: {
+    requestBody: InvitationCreate,
+  }): CancelablePromise<InvitationIssued> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v1/enterprise/account-invitations',
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Revoke Account Invitation
+   * @returns void
+   * @throws ApiError
+   */
+  public static revokeAccountInvitationApiV1EnterpriseAccountInvitationsInvitationIdDelete({
+    invitationId,
+  }: {
+    invitationId: string,
+  }): CancelablePromise<void> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/api/v1/enterprise/account-invitations/{invitation_id}',
+      path: {
+        'invitation_id': invitationId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
   /**
    * List Enterprise Api Keys
    * @returns EnterpriseApiKeyCatalogRead Successful Response

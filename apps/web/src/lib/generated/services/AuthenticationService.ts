@@ -2,7 +2,12 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { InvitationCreate } from '../models/InvitationCreate';
+import type { InvitationIssued } from '../models/InvitationIssued';
+import type { InvitationRead } from '../models/InvitationRead';
 import type { LoginRequest } from '../models/LoginRequest';
+import type { RegistrationPolicy } from '../models/RegistrationPolicy';
+import type { RegistrationRequest } from '../models/RegistrationRequest';
 import type { UserPasswordChange } from '../models/UserPasswordChange';
 import type { UserProfileUpdate } from '../models/UserProfileUpdate';
 import type { UserRead } from '../models/UserRead';
@@ -136,6 +141,89 @@ export class AuthenticationService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/api/v1/auth/oidc/login',
+    });
+  }
+  /**
+   * Register Account
+   * @returns UserRead Successful Response
+   * @throws ApiError
+   */
+  public static registerAccountApiV1AuthRegisterPost({
+    requestBody,
+  }: {
+    requestBody: RegistrationRequest,
+  }): CancelablePromise<UserRead> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Registration Policy
+   * @returns RegistrationPolicy Successful Response
+   * @throws ApiError
+   */
+  public static registrationPolicyApiV1AuthRegistrationPolicyGet(): CancelablePromise<RegistrationPolicy> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v1/auth/registration-policy',
+    });
+  }
+  /**
+   * List Account Invitations
+   * @returns InvitationRead Successful Response
+   * @throws ApiError
+   */
+  public static listAccountInvitationsApiV1EnterpriseAccountInvitationsGet(): CancelablePromise<Array<InvitationRead>> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v1/enterprise/account-invitations',
+    });
+  }
+  /**
+   * Create Account Invitation
+   * @returns InvitationIssued Successful Response
+   * @throws ApiError
+   */
+  public static createAccountInvitationApiV1EnterpriseAccountInvitationsPost({
+    requestBody,
+  }: {
+    requestBody: InvitationCreate,
+  }): CancelablePromise<InvitationIssued> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v1/enterprise/account-invitations',
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Revoke Account Invitation
+   * @returns void
+   * @throws ApiError
+   */
+  public static revokeAccountInvitationApiV1EnterpriseAccountInvitationsInvitationIdDelete({
+    invitationId,
+  }: {
+    invitationId: string,
+  }): CancelablePromise<void> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/api/v1/enterprise/account-invitations/{invitation_id}',
+      path: {
+        'invitation_id': invitationId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
     });
   }
 }

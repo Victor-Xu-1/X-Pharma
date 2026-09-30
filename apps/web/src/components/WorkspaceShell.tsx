@@ -83,6 +83,8 @@ export function WorkspaceShell({
   pendingView = null,
   onView,
   onLogout,
+  logoutPending = false,
+  logoutError = null,
   children,
 }: {
   user: User;
@@ -90,8 +92,9 @@ export function WorkspaceShell({
   activeView: ViewKey;
   pendingView?: ViewKey | null;
   onView: (view: ViewKey) => void;
-  /** Kept for callers compiled against the pre-user-center shell contract. */
-  onLogout?: () => void;
+  onLogout: () => void;
+  logoutPending?: boolean;
+  logoutError?: string | null;
   children: ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -123,6 +126,26 @@ export function WorkspaceShell({
     >
       {collapsed ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
     </button>
+  );
+  const logoutControl = (
+    <>
+      <button
+        className="nav-button"
+        type="button"
+        onClick={onLogout}
+        disabled={logoutPending}
+        title="退出账号"
+        aria-label="退出账号"
+      >
+        <LogOut size={18} />
+        <span>{logoutPending ? "退出中…" : "退出账号"}</span>
+      </button>
+      {logoutError ? (
+        <p className="form-error" role="alert">
+          {logoutError}
+        </p>
+      ) : null}
+    </>
   );
 
   return (
@@ -213,6 +236,7 @@ export function WorkspaceShell({
               </button>
               {collapseControl}
             </div>
+            {logoutControl}
           </nav>
         ) : (
           <>
@@ -224,18 +248,8 @@ export function WorkspaceShell({
                 <small>{user.display_name} · 全链路审计</small>
               </span>
               <i role="status" aria-label="在线" />
-              {onLogout ? (
-                <button
-                  className="icon-button"
-                  type="button"
-                  onClick={onLogout}
-                  title="退出当前账号"
-                  aria-label="退出当前账号"
-                >
-                  <LogOut size={16} />
-                </button>
-              ) : null}
             </div>
+            {logoutControl}
           </>
         )}
       </aside>

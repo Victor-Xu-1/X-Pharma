@@ -26,6 +26,57 @@ from pharma_intel.models import (
 )
 
 
+def test_registration_migration_preserves_existing_accounts_and_refuses_invitation_loss(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pharma_intel.accounts.contracts import InvitationCreate
+    from pharma_intel.accounts.service import AccountRegistrationService
+    from pharma_intel.models import AccountInvitation, User, UserRole
+    from pharma_intel.security import Principal
+
+    url = f"sqlite:///{tmp_path / 'registration-migration.db'}"
+    monkeypatch.setenv("DATABASE_URL", url)
+    monkeypatch.setenv("HUMAN_AUTH_MODE", "local")
+    get_settings.cache_clear()
+    config = Config(str(Path(__file__).parents[1] / "alembic.ini"))
+    command.upgrade(config, "b6e4c9a2d781")
+    engine = create_engine(url)
+    unusable_hash = "not-a-login-account"
+    try:
+        with Session(engine, expire_on_commit=False) as session:
+            tenant = Tenant(slug="migration-account-test", name="Migration account test")
+            session.add(tenant)
+            session.flush()
+            user = User(
+                tenant_id=tenant.id,
+                email="migration@example.test",
+                normalized_email="migration@example.test",
+                display_name="Existing administrator",
+                role=UserRole.ADMIN,
+                password_hash=unusable_hash,
+            )
+            session.add(user)
+            session.commit()
+            tenant_id, user_id = tenant.id, user.id
+        command.upgrade(config, "head")
+        with Session(engine, expire_on_commit=False) as session:
+            existing = session.get(User, user_id)
+            assert existing is not None and existing.password_hash == unusable_hash
+            assert existing.tenant_id == tenant_id and existing.role == UserRole.ADMIN
+            issued = AccountRegistrationService(session, "migration-invitation-test").issue_invitation(
+                Principal(tenant_id, user_id, "user", frozenset()), InvitationCreate(email="invited@example.test")
+            )
+            invitation_id = issued.invitation.id
+        with pytest.raises(RuntimeError, match="Archive registration invitations"):
+            command.downgrade(config, "b6e4c9a2d781")
+        with Session(engine) as session:
+            assert session.get(AccountInvitation, invitation_id) is not None
+            assert session.get(User, user_id) is not None
+    finally:
+        engine.dispose()
+        get_settings.cache_clear()
+
+
 def test_full_migration_chain_round_trips_and_matches_models(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
