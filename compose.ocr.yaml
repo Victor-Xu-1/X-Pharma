@@ -5,6 +5,7 @@ services:
       context: .
       dockerfile: services/ocr/Dockerfile
       args:
+        DOCKER_LIBRARY_REGISTRY: ${DOCKER_LIBRARY_REGISTRY:-public.ecr.aws/docker/library}
         OCR_PYPI_INDEX_URL: ${OCR_PYPI_INDEX_URL:-https://pypi.org/simple}
     environment:
       OCR_SERVICE_HOST: 0.0.0.0

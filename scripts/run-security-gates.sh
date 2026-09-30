@@ -359,7 +359,7 @@ ocr_build_labels=(
   --label "org.opencontainers.image.revision=$git_commit"
   --label "io.pharma.source-tree-sha256=$source_tree_sha256"
 )
-ocr_build_arguments=()
+ocr_build_arguments=(--build-arg "DOCKER_LIBRARY_REGISTRY=${DOCKER_LIBRARY_REGISTRY:-public.ecr.aws/docker/library}")
 if [[ -n "${OCR_PYPI_INDEX_URL:-}" ]]; then
   [[ "$OCR_PYPI_INDEX_URL" =~ ^https://[A-Za-z0-9._:-]+(/[A-Za-z0-9._~/-]*)?$ ]] || {
     echo "OCR_PYPI_INDEX_URL must be a credential-free HTTPS package index URL" >&2

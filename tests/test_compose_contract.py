@@ -303,7 +303,10 @@ def test_optional_ocr_profile_is_private_pinned_bounded_and_secret_minimized() -
     assert ocr["build"] == {
         "context": ".",
         "dockerfile": "services/ocr/Dockerfile",
-        "args": {"OCR_PYPI_INDEX_URL": "${OCR_PYPI_INDEX_URL:-https://pypi.org/simple}"},
+        "args": {
+            "DOCKER_LIBRARY_REGISTRY": "${DOCKER_LIBRARY_REGISTRY:-public.ecr.aws/docker/library}",
+            "OCR_PYPI_INDEX_URL": "${OCR_PYPI_INDEX_URL:-https://pypi.org/simple}",
+        },
     }
     assert "python:3.13.14-slim@sha256:9662417aace5ae7b" in dockerfile
     assert "libgl1 libglib2.0-0t64 libgomp1" in dockerfile
