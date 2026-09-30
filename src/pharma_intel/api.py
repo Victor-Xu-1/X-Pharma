@@ -506,6 +506,7 @@ from pharma_intel.security import (
 from pharma_intel.sorting import SortClause, SortValidationError, resolve_sort_clauses
 from pharma_intel.telemetry import instrument_fastapi
 from pharma_intel.web_assets import workspace_cache_headers_for_path
+from pharma_intel.web_branding import install_web_branding
 from pharma_intel.workspace_preferences import (
     WorkspaceTablePreferenceConflict,
     WorkspaceTablePreferenceService,
@@ -525,13 +526,14 @@ app = FastAPI(
     version=__version__,
     description="Structured pharmaceutical intelligence and evidence retrieval API",
     lifespan=lifespan,
-    docs_url="/docs" if get_settings().api_docs_enabled else None,
-    redoc_url="/redoc" if get_settings().api_docs_enabled else None,
+    docs_url=None,
+    redoc_url=None,
     openapi_url="/openapi.json" if get_settings().api_docs_enabled else None,
 )
 # FastAPI defaults to 3.1.0; the release contract is pinned independently of
 # whether interactive documentation is exposed in a production deployment.
 app.openapi_version = "3.1.2"
+install_web_branding(app, get_settings().web_root, docs_enabled=get_settings().api_docs_enabled)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[get_settings().public_base_url],

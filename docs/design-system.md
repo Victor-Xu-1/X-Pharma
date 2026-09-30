@@ -16,6 +16,8 @@
 
 浏览器使用 16/32 px PNG、含 16/32/48/64 px 的 ICO 和 180 px Apple Touch 图标。三个 HTML 入口的声明由契约测试校验；Vite 产出带内容指纹的文件名，HTML 不缓存，从而在品牌更新后载入新图标。无需外部图片或字体服务。
 
+默认 `/favicon.ico` 和可选 Swagger/ReDoc 文档同样使用这套构建产物，不另存第二份图标。默认图标地址强制重新验证，缺失、歧义或符号链接不提供任意文件；文档开关仍默认关闭，不因品牌调整开放 API 文档。
+
 更新素材时替换原图、审查并更新生成器内的原图摘要，然后运行 `uv run python scripts/generate_brand_assets.py`；运行 `uv run python scripts/generate_brand_assets.py --check` 只读验证派生物。派生 PNG/ICO 不手工编辑。品牌图像按维护者提供的项目标识使用；Apache-2.0 不授予商标权。
 
 ## 唯一样式权威

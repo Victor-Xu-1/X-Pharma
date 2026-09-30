@@ -27,6 +27,14 @@ for (const entry of ["/", "/workspace/research", "/workspace/internal"]) {
       expect(response.headers()["cache-control"]).toBe("public, max-age=31536000, immutable");
       expect((await response.body()).length).toBeGreaterThan(100);
     }
+    const defaultIcon = await page.request.get("/favicon.ico");
+    expect(defaultIcon.status()).toBe(200);
+    expect(defaultIcon.headers()["content-type"]).toMatch(/image\/x-icon/);
+    expect(defaultIcon.headers()["cache-control"]).toBe("no-cache, must-revalidate");
+    const linkedIco = icons.find((icon) => icon.href.endsWith(".ico"));
+    expect(linkedIco).toBeDefined();
+    const fingerprintedIcon = await page.request.get(linkedIco?.href ?? "");
+    expect(await defaultIcon.body()).toEqual(await fingerprintedIcon.body());
     await page.reload();
     await expect(mark).toBeVisible();
     await expect.poll(() => mark.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth)).toBe(128);
