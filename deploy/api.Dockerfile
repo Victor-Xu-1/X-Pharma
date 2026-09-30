@@ -17,12 +17,12 @@ CMD ["sh", "-ec", "pnpm api:check && pnpm check && pnpm typecheck && pnpm test &
 
 FROM ghcr.io/astral-sh/uv:0.11.28@sha256:0f36cb9361a3346885ca3677e3767016687b5a170c1a6b88465ec14aefec90aa AS uv
 
-FROM ${DOCKER_LIBRARY_REGISTRY}/python:3.13.14-slim@sha256:6771159cd4fa5d9bba1258caf0b82e6b73458c694d178ad97c5e925c2d0e1a91 AS builder
+FROM ${DOCKER_LIBRARY_REGISTRY}/python:3.13.14-slim@sha256:9662417aace5ae7b8e2609cce472b72a8958e134ba372808abe9cc1a0c0125e6 AS builder
 
 ARG CPYTHON_HTML_PARSER_COMMIT=7933f4bf7131aa4140750f9404f5de0aa2969ced
 ARG CPYTHON_HTML_PARSER_SHA256=4274e9112adf3fa57c7f9afa7c9b5c631456b18b7403cc627cc5027d02cdd2ae
-ARG CPYTHON_TARFILE_COMMIT=771d12dda5140313db0ac550292987975651bbde
-ARG CPYTHON_TARFILE_SHA256=0ad8c3869f9ab172fc5fc539528eb94c44d0745aef15dc8a0f1a773fae3b6c52
+ARG CPYTHON_TARFILE_COMMIT=9c17bace90f88dfba6d0e2fe23c8e7ae35f83955
+ARG CPYTHON_TARFILE_SHA256=0fd87b49826f745c16e3ee68b2390a206b2dfcfe9a0b1118bd7fcd7c06deaff1
 LABEL io.pharma.cpython-html-parser-commit=${CPYTHON_HTML_PARSER_COMMIT} \
       io.pharma.cpython-tarfile-commit=${CPYTHON_TARFILE_COMMIT}
 
@@ -36,6 +36,7 @@ COPY --from=uv /uv /bin/uv
 WORKDIR /app
 COPY deploy/cpython/html-parser.py /tmp/cpython-html-parser.py
 COPY deploy/cpython/tarfile.py /tmp/cpython-tarfile.py
+COPY scripts/verify_cpython_tarfile.py /tmp/verify-tarfile.py
 RUN echo "${CPYTHON_HTML_PARSER_SHA256}  /tmp/cpython-html-parser.py" | sha256sum --check --strict \
     && install -m 0644 /tmp/cpython-html-parser.py /usr/local/lib/python3.13/html/parser.py \
     && rm -f /tmp/cpython-html-parser.py \
@@ -46,6 +47,7 @@ RUN echo "${CPYTHON_TARFILE_SHA256}  /tmp/cpython-tarfile.py" | sha256sum --chec
     && rm -f /tmp/cpython-tarfile.py \
     && rm -f /usr/local/lib/python3.13/__pycache__/tarfile.*.pyc \
     && python -c "import inspect, tarfile; assert 'if not data:' in inspect.getsource(tarfile._Stream.seek); assert 'unfiltered.replace(name=tarinfo.name' in inspect.getsource(tarfile.TarFile.makelink_with_filter)"
+RUN python /tmp/verify-tarfile.py && rm -f /tmp/verify-tarfile.py
 COPY pyproject.toml uv.lock README.md ./
 COPY LICENSE NOTICE THIRD_PARTY_NOTICES.md ./
 COPY licenses ./licenses
@@ -111,9 +113,14 @@ RUN groupadd --gid 10001 tester \
 USER tester
 CMD ["uv", "run", "--no-sync", "pytest", "-m", "not integration"]
 
-FROM ${DOCKER_LIBRARY_REGISTRY}/python:3.13.14-slim@sha256:6771159cd4fa5d9bba1258caf0b82e6b73458c694d178ad97c5e925c2d0e1a91
+FROM ${DOCKER_LIBRARY_REGISTRY}/python:3.13.14-slim@sha256:9662417aace5ae7b8e2609cce472b72a8958e134ba372808abe9cc1a0c0125e6
 
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+COPY deploy/security/debian13-runtime-packages.lock /tmp/security-packages.lock
+COPY deploy/security/install-runtime-security-packages.sh /tmp/install-security-packages.sh
+RUN bash /tmp/install-security-packages.sh /tmp/security-packages.lock \
+    && rm -f /tmp/security-packages.lock /tmp/install-security-packages.sh \
+    && rm -rf /var/lib/apt/lists/*
 RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --create-home app
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 COPY --from=builder /usr/local/lib/python3.13/html/parser.py /usr/local/lib/python3.13/html/parser.py

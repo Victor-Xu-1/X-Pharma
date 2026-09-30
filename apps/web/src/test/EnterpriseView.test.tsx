@@ -542,7 +542,9 @@ it("creates a scoped API key and clears its one-time secret after acknowledgemen
   });
   const secretInput = await screen.findByLabelText("API 密钥");
   expect(secretInput).toHaveValue("phk_one-time-secret");
-  expect(secretInput).toHaveFocus();
+  await waitFor(() => expect(secretInput).toHaveFocus());
+  expect((secretInput as HTMLInputElement).selectionStart).toBe(0);
+  expect((secretInput as HTMLInputElement).selectionEnd).toBe("phk_one-time-secret".length);
   fireEvent.click(screen.getByRole("button", { name: "已安全保存" }));
   expect(screen.queryByDisplayValue("phk_one-time-secret")).not.toBeInTheDocument();
 });

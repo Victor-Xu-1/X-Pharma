@@ -16,7 +16,7 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "../components/common";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
@@ -2042,12 +2042,6 @@ function ApiKeyActionModal({
 
 function ApiKeySecretModal({ item, close }: { item: EnterpriseApiKeySecret; close: () => void }) {
   const [copyStatus, setCopyStatus] = useState("");
-  const secretInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    secretInputRef.current?.focus();
-    secretInputRef.current?.select();
-  }, []);
 
   return (
     <ModalShell title="立即保存 API 密钥" close={close}>
@@ -2056,7 +2050,14 @@ function ApiKeySecretModal({ item, close }: { item: EnterpriseApiKeySecret; clos
       </p>
       <label>
         API 密钥
-        <input ref={secretInputRef} className="mono-value" aria-label="API 密钥" readOnly value={item.secret} />
+        <input
+          className="mono-value"
+          aria-label="API 密钥"
+          data-modal-autofocus="true"
+          onFocus={(event) => event.currentTarget.select()}
+          readOnly
+          value={item.secret}
+        />
       </label>
       <p className="enterprise-modal-subject">
         {item.name}

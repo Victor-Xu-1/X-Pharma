@@ -196,19 +196,15 @@ a:hover,
 }
 
 .workspace-sidebar small,
-.nav-section-label,
 .collapse-button {
   color: var(--ds-nav-muted);
 }
 
-.nav-button,
-.nav-group-toggle {
+.nav-button {
   color: var(--ds-nav-muted);
 }
 
-.nav-button:hover,
-.nav-group-toggle:hover,
-.nav-group.expanded > .nav-group-toggle {
+.nav-button:hover {
   background: var(--ds-nav-hover);
   color: var(--ds-nav-text);
 }
@@ -228,7 +224,6 @@ a:hover,
   background: var(--ds-success-indicator);
 }
 
-.nav-group-toggle > span,
 .sidebar-account-copy strong,
 .sidebar-agent-status strong {
   font-size: var(--ds-text-sm);
@@ -243,7 +238,6 @@ a:hover,
 }
 
 .nav-button,
-.nav-group-toggle,
 .collapse-button,
 .workspace-identity {
   min-height: var(--ds-control-height);

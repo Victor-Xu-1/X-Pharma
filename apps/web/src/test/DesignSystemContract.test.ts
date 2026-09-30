@@ -238,7 +238,7 @@ describe("unified Claude-inspired light design system", () => {
       ".factory-warning strong",
     ]);
     const shellHierarchyRule = designSystem.match(
-      /\.nav-group-toggle > span,\s*\.sidebar-account-copy strong,\s*\.sidebar-agent-status strong\s*\{([^}]*)\}/,
+      /\.sidebar-account-copy strong,\s*\.sidebar-agent-status strong\s*\{([^}]*)\}/,
     );
     const shellContextRule = ruleContainingSelectors(designSystem, [
       ".user-copy small",
@@ -438,7 +438,7 @@ describe("unified Claude-inspired light design system", () => {
     expect(iconButton).toContain("height: var(--ds-icon-control-size);");
 
     const shellNavigation = designSystem.match(
-      /\.nav-button,\s*\.nav-group-toggle,\s*\.collapse-button,\s*\.workspace-identity\s*\{([^}]*)\}/,
+      /\.nav-button,\s*\.collapse-button,\s*\.workspace-identity\s*\{([^}]*)\}/,
     )?.[1];
     expect(shellNavigation).toContain("min-height: var(--ds-control-height);");
     expect(shellNavigation).toContain("border-radius: var(--ds-radius-control);");
@@ -532,6 +532,19 @@ describe("unified Claude-inspired light design system", () => {
     expect(secondaryAction).toContain("min-height: auto;");
     expect(secondaryAction).toContain("border-color: transparent;");
     expect(secondaryAction).toContain("box-shadow: none;");
+  });
+
+  it("preserves separate pointer targets for structure operations and their split menus", () => {
+    const designSystem = source("../design-system.css");
+    expect(
+      ruleBody(
+        designSystem,
+        '.structure-editor-canvas [class*="App-module_top"] div:has(> .MuiIconButton-root.expanded)',
+      ),
+    ).toContain("min-width: 52px;");
+    expect(
+      ruleBody(designSystem, '.structure-editor-canvas [class*="App-module_top"] .MuiIconButton-root.expanded'),
+    ).toContain("position: static;");
   });
 
   it("keeps governed facet loading states readable and theme-aligned", () => {

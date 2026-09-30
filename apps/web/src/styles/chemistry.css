@@ -538,20 +538,12 @@
   }
   .workspace-sidebar .brand-copy,
   .workspace-sidebar .nav-button span,
-  .workspace-sidebar .nav-group-toggle span,
-  .workspace-sidebar .nav-group-chevron,
   .workspace-sidebar .sidebar-agent-status > span,
   .workspace-sidebar .sidebar-agent-status i {
     display: flex;
   }
   .workspace-sidebar .nav-button {
     justify-content: flex-start;
-  }
-  .workspace-sidebar .nav-group-toggle {
-    justify-content: flex-start;
-  }
-  .workspace-sidebar .nav-section-label {
-    display: block;
   }
   .sidebar-account-row .collapse-button {
     display: inline-flex;

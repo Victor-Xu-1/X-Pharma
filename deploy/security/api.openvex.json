@@ -1,9 +1,9 @@
 {
   "@context": "https://openvex.dev/ns/v0.2.0",
-  "@id": "https://pharma-intelligence.example/vex/cpython-3.13.14-security-backports/2",
-  "author": "Pharma Intelligence Platform Security",
-  "timestamp": "2026-07-16T08:00:00Z",
-  "version": 2,
+  "@id": "https://github.com/Victor-Xu-1/x-pharma/blob/main/deploy/security/api.openvex.json",
+  "author": "X-Pharma Security",
+  "timestamp": "2026-09-30T14:29:32Z",
+  "version": 3,
   "statements": [
     {
       "vulnerability": {
@@ -27,7 +27,7 @@
         }
       ],
       "status": "fixed",
-      "status_notes": "The image replaces Lib/tarfile.py with official CPython 3.13 backport commit 771d12dda5140313db0ac550292987975651bbde after SHA-256 verification."
+      "status_notes": "The image replaces Lib/tarfile.py with official CPython 3.13 backport commit 9c17bace90f88dfba6d0e2fe23c8e7ae35f83955 after SHA-256 verification."
     },
     {
       "vulnerability": {
@@ -39,7 +39,19 @@
         }
       ],
       "status": "fixed",
-      "status_notes": "The image replaces Lib/tarfile.py with official CPython 3.13 backport commit 771d12dda5140313db0ac550292987975651bbde after SHA-256 verification."
+      "status_notes": "The image replaces Lib/tarfile.py with official CPython 3.13 backport commit 9c17bace90f88dfba6d0e2fe23c8e7ae35f83955 after SHA-256 verification."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-82049"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/python@3.13.14"
+        }
+      ],
+      "status": "fixed",
+      "status_notes": "The image installs the unmodified CPython 3.13 security backport at 9c17bace90f88dfba6d0e2fe23c8e7ae35f83955 after verifying SHA-256 0fd87b49826f745c16e3ee68b2390a206b2dfcfe9a0b1118bd7fcd7c06deaff1. The build runs scripts/verify_cpython_tarfile.py against the installed standard library; both data and tar filters must prevent hardlink relocation of a relative symlink and protect a file outside the extraction root."
     }
   ]
 }

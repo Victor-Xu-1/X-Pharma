@@ -1,4 +1,4 @@
-ARG POSTGRES_IMAGE=public.ecr.aws/docker/library/postgres:18.4-trixie@sha256:c2d42a104eb6b37b286a2d9c5cf83f349de4d6516d513d00a2bd9610e2c2e5e4
+ARG POSTGRES_IMAGE=public.ecr.aws/docker/library/postgres:18.4-trixie@sha256:a02db8cac496f15b094798a38254f14d6e00741f709360e5e00bb6668ea31636
 
 FROM ${POSTGRES_IMAGE} AS rdkit-builder
 
@@ -110,6 +110,11 @@ LABEL org.opencontainers.image.title="Pharma PostgreSQL with RDKit" \
 USER root
 
 COPY --from=rdkit-builder /tmp/rdkit-stage/ /
+COPY deploy/security/debian13-runtime-packages.lock /tmp/security-packages.lock
+COPY deploy/security/install-runtime-security-packages.sh /tmp/install-security-packages.sh
+RUN bash /tmp/install-security-packages.sh /tmp/security-packages.lock \
+    && rm -f /tmp/security-packages.lock /tmp/install-security-packages.sh \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN ldconfig \
     && test -f /usr/lib/postgresql/18/lib/rdkit.so \

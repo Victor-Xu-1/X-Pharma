@@ -11,6 +11,7 @@ PNPM = corepack $(shell node -p "require('./apps/web/package.json').packageManag
 PYTHON_TOOL_SCRIPTS = scripts/capture_ingestion_readiness.py scripts/capture_local_release_candidate.py scripts/capture_production_topology.py scripts/entry_consistency_probe.py scripts/mcp_anti_extraction_probe.py scripts/mcp_async_task_probe.py scripts/mcp_contract_fingerprint.py scripts/mcp_inspector_probe.py scripts/mcp_sdk_probe.py scripts/record_consistency_probe.py scripts/reference_visual_pair.py scripts/release_evidence.py scripts/source_tree_manifest.py scripts/validate_yaml.py scripts/verify_clean_source.py scripts/verify_local_ocr.py scripts/verify_postgres_migration_roundtrip.py
 YAML_CONFIG_PATHS = compose.yaml compose.dev.yaml compose.telemetry.yaml compose.ocr.yaml deploy/kubernetes
 PYTHON_TOOL_SCRIPTS += scripts/configure-development.py
+PYTHON_TOOL_SCRIPTS += scripts/verify_cpython_tarfile.py
 
 install:
 	uv sync --locked --dev

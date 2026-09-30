@@ -52,7 +52,7 @@ services:
       - no-new-privileges:true
 
   opensearch:
-    image: public.ecr.aws/opensearchproject/opensearch:3.7.0@sha256:44ba7ea58a319adf61c33ab16873f9ef5dbb30b291a832d375172f0b2d24e3c9
+    image: ${OPENSEARCH_REGISTRY:-public.ecr.aws}/opensearchproject/opensearch:3.7.0@sha256:44ba7ea58a319adf61c33ab16873f9ef5dbb30b291a832d375172f0b2d24e3c9
     environment:
       cluster.name: pharma-search
       node.name: pharma-search-1

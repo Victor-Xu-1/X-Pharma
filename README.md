@@ -140,8 +140,13 @@ DOCKER_LIBRARY_REGISTRY=docker.io/library docker compose build api worker
 
 此参数只改变镜像传输位置，不改变 Node/Python 版本或 SHA-256；没有自动静默 fallback。
 原生 WSL 构建仍可保留默认来源，GitHub CI 显式使用已核对摘要的 Docker Hub 来源。
+OpenSearch 使用相同的显式策略：`OPENSEARCH_REGISTRY=docker.io` 只切换传输仓库，版本和摘要保持固定。
 SMB 实协议验收须以非 root 主机用户运行；它会保持私有夹具权限并映射相同 UID，
 需要独立 Docker 网络时可设置 `SMB_TEST_DOCKER_NETWORK`，不会停用加密或开放共享。
+
+容器还应用共享的 Debian 安全包锁；固定版本、基础摘要、供应商安全补丁和 SBOM
+必须一起审阅与更新。`scripts/verify_cpython_tarfile.py` 在构建中验证真实解析器，
+不能通过忽略可修复漏洞或提高扫描阈值完成发布。
 
 ## 许可证
 

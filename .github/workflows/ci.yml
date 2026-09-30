@@ -47,7 +47,7 @@ jobs:
     timeout-minutes: 45
     services:
       opensearch:
-        image: public.ecr.aws/opensearchproject/opensearch:3.7.0@sha256:44ba7ea58a319adf61c33ab16873f9ef5dbb30b291a832d375172f0b2d24e3c9
+        image: docker.io/opensearchproject/opensearch:3.7.0@sha256:44ba7ea58a319adf61c33ab16873f9ef5dbb30b291a832d375172f0b2d24e3c9
         env:
           discovery.type: single-node
           DISABLE_INSTALL_DEMO_CONFIG: "true"
@@ -206,6 +206,7 @@ jobs:
       COMPOSE_PROJECT_NAME: x-pharma-ci
       COMPOSE_FILE: compose.yaml:compose.dev.yaml:compose.telemetry.yaml
       DOCKER_LIBRARY_REGISTRY: docker.io/library
+      OPENSEARCH_REGISTRY: docker.io
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Install pinned uv and Python
@@ -243,6 +244,7 @@ jobs:
           test -n "$key_id"
           echo "::add-mask::$token"
           echo "TEST_MCP_ACCESS_TOKEN=$token" >> "$GITHUB_ENV"
+          rate_card_revision=$(python3 -c "import json; print(json.load(open('deploy/commercial/rate-card.schema-example.json'))['revision'])")
           docker compose run --rm -v "$PWD/deploy/commercial:/commercial:ro" api \
             pharma-commercial --tenant-slug e2e --actor CI-E2E publish-rate-card \
             --file /commercial/rate-card.schema-example.json
@@ -251,7 +253,7 @@ jobs:
             --client-key e2e-agent --oauth-client-id "$key_id" --display-name "E2E Agent" \
             --actor-type api_key --subject-id "$key_id" --account-key e2e-main \
             --account-name "E2E Account" --subscription-key e2e-2026 \
-            --rate-card-key schema-example --rate-card-revision 1 \
+            --rate-card-key schema-example --rate-card-revision "$rate_card_revision" \
             --export-field-policy /commercial/export-field-policy.schema-example.json
           docker compose run --rm api \
             pharma-commercial --tenant-slug e2e --actor CI-E2E grant-credit \

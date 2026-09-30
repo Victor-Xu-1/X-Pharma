@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import os
 import re
+import runpy
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -19,8 +22,19 @@ def test_vendored_cpython_security_backports_match_reviewed_digests() -> None:
         "4274e9112adf3fa57c7f9afa7c9b5c631456b18b7403cc627cc5027d02cdd2ae"
     )
     assert hashlib.sha256((root / "tarfile.py").read_bytes()).hexdigest() == (
-        "0ad8c3869f9ab172fc5fc539528eb94c44d0745aef15dc8a0f1a773fae3b6c52"
+        "0fd87b49826f745c16e3ee68b2390a206b2dfcfe9a0b1118bd7fcd7c06deaff1"
     )
+
+
+def test_vendored_tarfile_prevents_hardlink_symlink_relocation(monkeypatch: pytest.MonkeyPatch) -> None:
+    directory = Path(__file__).parents[1] / "deploy" / "cpython"
+    spec = importlib.util.spec_from_file_location("tarfile", directory / "tarfile.py")
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, "tarfile", module)
+    spec.loader.exec_module(module)
+    probe = runpy.run_path(str(directory.parents[1] / "scripts" / "verify_cpython_tarfile.py"))
+    probe["verify_hardlink_relocation"]()
 
 
 def test_source_tree_manifest_is_deterministic_and_binds_paths(tmp_path: Path) -> None:

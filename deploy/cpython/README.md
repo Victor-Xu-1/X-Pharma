@@ -5,6 +5,8 @@ This directory vendors two unmodified CPython 3.13 standard-library files so con
 | File | Upstream commit | SHA-256 |
 |---|---|---|
 | `html-parser.py` | `7933f4bf7131aa4140750f9404f5de0aa2969ced` | `4274e9112adf3fa57c7f9afa7c9b5c631456b18b7403cc627cc5027d02cdd2ae` |
-| `tarfile.py` | `771d12dda5140313db0ac550292987975651bbde` | `0ad8c3869f9ab172fc5fc539528eb94c44d0745aef15dc8a0f1a773fae3b6c52` |
+| `tarfile.py` | `9c17bace90f88dfba6d0e2fe23c8e7ae35f83955` | `0fd87b49826f745c16e3ee68b2390a206b2dfcfe9a0b1118bd7fcd7c06deaff1` |
 
 The files retain the Python Software Foundation license terms supplied by the pinned official Python base image. Update the file, commit, digest, regression probe and corresponding OpenVEX statement as one reviewed security change.
+
+`scripts/verify_cpython_tarfile.py` checks hardlink relocation using the real installed parser and both `data` and `tar` extraction filters. The 3.13 maintenance backport includes the CVE-2026-82049 fix and its follow-up for filters returning `None`; old streaming EOF and hardlink fallback protections remain present. First-party probe code is Apache-2.0; the two unmodified supplier files retain PSF-2.0 attribution.

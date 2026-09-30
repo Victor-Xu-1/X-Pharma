@@ -158,3 +158,30 @@
   background: var(--ds-accent-soft);
   color: var(--ds-accent-strong);
 }
+
+@media (max-width: 760px) {
+  .structure-editor-canvas [class*="App-module_app"] {
+    grid-template-rows: auto 1fr;
+  }
+
+  .structure-editor-canvas [class*="App-module_top"] {
+    flex-wrap: wrap;
+    height: auto;
+  }
+
+  .structure-editor-canvas [class*="App-module_top"] > div {
+    flex-shrink: 0;
+    height: auto;
+  }
+}
+
+/* Split actions need separate hit areas for the operation and its menu. */
+.structure-editor-canvas [class*="App-module_top"] div:has(> .MuiIconButton-root.expanded) {
+  display: inline-flex;
+  min-width: 52px;
+}
+
+.structure-editor-canvas [class*="App-module_top"] .MuiIconButton-root.expanded {
+  position: static;
+  flex-shrink: 0;
+}
