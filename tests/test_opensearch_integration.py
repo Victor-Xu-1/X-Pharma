@@ -3,7 +3,10 @@ from __future__ import annotations
 import os
 import uuid
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Barrier
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy import create_engine
@@ -40,6 +43,54 @@ class DeterministicSemanticEmbedder:
                 ]
             )
         return vectors
+
+
+@pytest.mark.integration
+def test_real_opensearch_concurrent_cold_start_is_idempotent() -> None:
+    url = os.getenv("TEST_OPENSEARCH_URL")
+    if not url:
+        pytest.skip("TEST_OPENSEARCH_URL is not configured")
+    prefix = f"itest-race-{uuid.uuid4().hex[:10]}"
+    settings = Settings(_env_file=None, opensearch_url=url, opensearch_index_prefix=prefix)
+    barrier = Barrier(4)
+    observer = OpenSearchGateway(settings)
+
+    def initialize(_worker: int) -> dict[str, str]:
+        gateway = OpenSearchGateway(settings)
+        original_exists = gateway.client.indices.exists
+        synchronized = False
+
+        def synchronized_exists(*, index: str) -> bool:
+            nonlocal synchronized
+            exists = bool(original_exists(index=index))
+            if not synchronized and index.endswith(f"entities-v{SCHEMA_VERSION}-000001"):
+                assert not exists
+                synchronized = True
+                barrier.wait(timeout=30)
+            return exists
+
+        try:
+            # Only scheduling is controlled; existence, creation, aliases and mappings
+            # are all exercised through the real OpenSearch HTTP protocol.
+            with patch.object(gateway.client.indices, "exists", synchronized_exists):
+                return gateway.ensure_indices()
+        finally:
+            gateway.client.close()
+
+    try:
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            results = list(pool.map(initialize, range(4)))
+        assert len(results) == 4
+        assert all(result == results[0] for result in results)
+        assert observer.status().available
+        assert len(observer.client.indices.get(index=f"{prefix}-*")) == 3
+    finally:
+        observer.client.indices.delete(index=f"{prefix}-*", ignore=[404])
+        for definition in index_definitions(settings):
+            observer.client.indices.delete_index_template(
+                name=f"{prefix}-{definition.kind}-template-v{SCHEMA_VERSION}", ignore=[404]
+            )
+        observer.client.close()
 
 
 @pytest.mark.integration

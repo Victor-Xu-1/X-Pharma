@@ -131,6 +131,18 @@ corepack pnpm@11.7.0 --dir apps/web api:check
 
 启动失败时先检查 `make status`、容器健康和缺失的环境变量；数据库错误先核对迁移 head 与运行身份；查询为空时检查来源许可、已发布数据与搜索投影。不要通过关闭鉴权、校验或删除数据卷来绕过失败。
 
+API 构建默认从 ECR Public 读取 Docker Official Images 的固定摘要。
+遇到该镜像服务的配额限制，可显式使用相同摘要的 Docker Hub 官方副本：
+
+```bash
+DOCKER_LIBRARY_REGISTRY=docker.io/library docker compose build api worker
+```
+
+此参数只改变镜像传输位置，不改变 Node/Python 版本或 SHA-256；没有自动静默 fallback。
+原生 WSL 构建仍可保留默认来源，GitHub CI 显式使用已核对摘要的 Docker Hub 来源。
+SMB 实协议验收须以非 root 主机用户运行；它会保持私有夹具权限并映射相同 UID，
+需要独立 Docker 网络时可设置 `SMB_TEST_DOCKER_NETWORK`，不会停用加密或开放共享。
+
 ## 许可证
 
 自有源码和文档使用 [Apache License 2.0](LICENSE)，署名见 [NOTICE](NOTICE)。第三方库、CPython 安全回补、容器、模型和数据保留各自许可证，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。Apache-2.0 不授予第三方医药数据、模型权重或在线服务的访问与再分发权。

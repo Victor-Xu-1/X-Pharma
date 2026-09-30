@@ -5,6 +5,8 @@ x-application-image: &application-image
   build:
     context: .
     dockerfile: deploy/api.Dockerfile
+    args:
+      DOCKER_LIBRARY_REGISTRY: ${DOCKER_LIBRARY_REGISTRY:-public.ecr.aws/docker/library}
 
 services:
   postgres:

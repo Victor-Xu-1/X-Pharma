@@ -10,6 +10,7 @@ from functools import lru_cache
 from typing import Any, cast
 from urllib.parse import urlparse
 
+import structlog
 from opensearchpy import OpenSearch, helpers
 from opensearchpy.exceptions import OpenSearchException
 
@@ -878,7 +879,7 @@ class OpenSearchGateway:
             raise SearchProjectionError(f"{document.kind} projection has no embeddable text")
         return text[: self.settings.search_embedding_max_input_chars]
 
-    def _ensure_aliases(self, definition: IndexDefinition) -> str:
+    def _ensure_aliases(self, definition: IndexDefinition, *, allow_creation: bool = True) -> str:
         read_alias = self.read_alias(definition.kind)
         write_alias = self.write_alias(definition.kind)
         current = self.alias_indices(definition.kind)
@@ -900,15 +901,32 @@ class OpenSearchGateway:
                 }
             )
         else:
-            self.client.indices.create(
-                index=initial,
-                body={
-                    "aliases": {
-                        read_alias: {},
-                        write_alias: {"is_write_index": True},
-                    }
-                },
-            )
+            if not allow_creation:
+                raise SearchProjectionError(
+                    f"Concurrent initial {definition.kind} index disappeared before reconciliation"
+                )
+            try:
+                self.client.indices.create(
+                    index=initial,
+                    body={
+                        "aliases": {
+                            read_alias: {},
+                            write_alias: {"is_write_index": True},
+                        }
+                    },
+                )
+            except OpenSearchException as exc:
+                if (
+                    getattr(exc, "status_code", None) != 400
+                    or getattr(exc, "error", None) != "resource_already_exists_exception"
+                ):
+                    raise
+                # Another role may initialize or rebuild while this role checks existence.
+                # Re-read the authoritative aliases once; never overwrite a newer winner.
+                structlog.get_logger(__name__).info(
+                    "search_index_creation_reconciled", kind=definition.kind, index=initial
+                )
+                return self._ensure_aliases(definition, allow_creation=False)
         return initial
 
     def _indices_for_aliases(self, *aliases: str) -> list[str]:

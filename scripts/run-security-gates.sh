@@ -344,6 +344,7 @@ api_build_labels=(
 )
 checked "Application image build from staged source" docker build \
   --file "$staging_root/deploy/api.Dockerfile" \
+  --build-arg "DOCKER_LIBRARY_REGISTRY=${DOCKER_LIBRARY_REGISTRY:-public.ecr.aws/docker/library}" \
   "${api_build_labels[@]}" \
   --tag "$api_image" \
   "$staging_root"

@@ -5,7 +5,7 @@ from typing import Any, cast
 
 import pytest
 from opensearchpy import OpenSearch
-from opensearchpy.exceptions import OpenSearchException
+from opensearchpy.exceptions import OpenSearchException, RequestError
 
 from pharma_intel.config import Settings
 from pharma_intel.models import EntityType, ReviewStatus
@@ -403,6 +403,69 @@ def test_acceptance_mode_allows_browser_projection_aliases_for_projector() -> No
     active = OpenSearchGateway(settings, cast(OpenSearch, fake)).ensure_indices()
 
     assert set(active) == {"entities", "evidence", "knowledge"}
+
+
+def test_gateway_accepts_a_concurrent_initial_index_winner(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = FakeOpenSearch()
+    create = fake.indices.create
+    calls: list[str] = []
+
+    def competing_create(*, index: str, body: dict[str, Any] | None = None) -> dict[str, bool]:
+        calls.append(index)
+        create(index=index, body=body)
+        raise RequestError(400, "resource_already_exists_exception", {})
+
+    monkeypatch.setattr(fake.indices, "create", competing_create)
+    gateway = OpenSearchGateway(Settings(_env_file=None, opensearch_index_prefix="race"), cast(OpenSearch, fake))
+
+    assert set(gateway.ensure_indices()) == {"entities", "evidence", "knowledge"}
+    assert len(calls) == 3
+    assert gateway.status().available
+
+
+@pytest.mark.parametrize("error", ["mapper_parsing_exception", "security_exception"])
+def test_gateway_does_not_suppress_other_index_creation_failures(error: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = FakeOpenSearch()
+
+    def failed_create(**_kwargs: Any) -> dict[str, bool]:
+        raise RequestError(400, error, {})
+
+    monkeypatch.setattr(fake.indices, "create", failed_create)
+    gateway = OpenSearchGateway(Settings(_env_file=None), cast(OpenSearch, fake))
+    with pytest.raises(SearchProjectionError, match=error):
+        gateway.ensure_indices()
+
+
+def test_gateway_bounds_reconciliation_if_the_concurrent_index_disappears(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = FakeOpenSearch()
+    calls: list[str] = []
+
+    def vanished_create(*, index: str, **_kwargs: Any) -> dict[str, bool]:
+        calls.append(index)
+        raise RequestError(400, "resource_already_exists_exception", {})
+
+    monkeypatch.setattr(fake.indices, "create", vanished_create)
+    gateway = OpenSearchGateway(Settings(_env_file=None), cast(OpenSearch, fake))
+    with pytest.raises(SearchProjectionError, match="disappeared"):
+        gateway.ensure_indices()
+    assert len(calls) == 1
+
+
+def test_gateway_preserves_a_newer_alias_winner_during_initialization(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = FakeOpenSearch()
+    create = fake.indices.create
+
+    def rebuilt_winner(*, index: str, body: dict[str, Any] | None = None) -> dict[str, bool]:
+        fake.indices.indexes.add(index)
+        create(index=f"{index}-rebuilt", body=body)
+        raise RequestError(400, "resource_already_exists_exception", {})
+
+    monkeypatch.setattr(fake.indices, "create", rebuilt_winner)
+    gateway = OpenSearchGateway(Settings(_env_file=None, opensearch_index_prefix="race"), cast(OpenSearch, fake))
+
+    active = gateway.ensure_indices()
+    assert all(index.endswith("-rebuilt") for index in active.values())
+    assert fake.indices.alias_actions == []
 
 
 class ContractEmbedder:

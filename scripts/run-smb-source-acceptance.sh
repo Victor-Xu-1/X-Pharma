@@ -34,7 +34,24 @@ esac
   exit 2
 }
 
-work=$(mktemp -d -t pharma-smb-source-acceptance.XXXXXX)
+for command in docker python3 id realpath; do
+  command -v "$command" >/dev/null 2>&1 || {
+    echo "required command is unavailable: $command" >&2
+    exit 1
+  }
+done
+
+work_root=$(realpath "${TMPDIR:-/tmp}")
+[[ "$work_root" != / && -d "$work_root" ]] || {
+  echo "SMB acceptance temporary root must be an existing non-root directory" >&2
+  exit 1
+}
+fixture_uid=$(id -u)
+[[ "$fixture_uid" =~ ^[1-9][0-9]*$ ]] || {
+  echo "Run SMB acceptance as a non-root host user to preserve private fixture ownership" >&2
+  exit 1
+}
+work=$(mktemp -d "$work_root/pharma-smb-source-acceptance.XXXXXX")
 
 cleanup() {
   status=$?
@@ -43,19 +60,12 @@ cleanup() {
     docker rm -f "$container_name" >/dev/null 2>&1 || true
   fi
   case "$work" in
-    /tmp/pharma-smb-source-acceptance.*) rm -rf -- "$work" ;;
+    "$work_root"/pharma-smb-source-acceptance.*) rm -rf -- "$work" ;;
     *) echo "refusing to clean unexpected SMB acceptance workspace: $work" >&2 ;;
   esac
   exit "$status"
 }
 trap cleanup EXIT INT TERM
-
-for command in docker python3; do
-  command -v "$command" >/dev/null 2>&1 || {
-    echo "required command is unavailable: $command" >&2
-    exit 1
-  }
-done
 
 declare -A versions=()
 while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
@@ -96,11 +106,17 @@ print(secrets.token_urlsafe(32))
 PY
 )
 
-docker run --detach \
+network_args=()
+if [[ -n "${SMB_TEST_DOCKER_NETWORK:-}" ]]; then
+  network_args+=(--network "$SMB_TEST_DOCKER_NETWORK")
+fi
+
+docker run --detach "${network_args[@]}" \
   --name "$container_name" \
   --hostname smb-acceptance \
   --publish 127.0.0.1::445 \
   --env "ACCOUNT_sourceuser=$password" \
+  --env "UID_sourceuser=$fixture_uid" \
   --env NETBIOS_DISABLE=true \
   --env FAIL_FAST=1 \
   --env "SAMBA_GLOBAL_CONFIG_server_SPACE_min_SPACE_protocol=SMB3_00" \
