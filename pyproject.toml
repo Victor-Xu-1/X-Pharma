@@ -68,7 +68,7 @@ dev = [
   "pyyaml==6.0.3",
   "reportlab==5.0.0",
   "respx==0.22.0",
-  "ruff==0.12.7",
+  "ruff==0.16.9",
   "types-openpyxl==3.1.5.20260518",
   "types-pyyaml==6.0.12.20260518",
   "types-reportlab==4.5.1.20260712",
