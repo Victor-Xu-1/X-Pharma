@@ -6,7 +6,7 @@
   place-items: center;
   overflow: hidden;
   margin: 0;
-  background: #fff;
+  background: var(--ds-surface);
 }
 .molecule-depiction img {
   width: 100%;
@@ -34,8 +34,8 @@
 .molecule-loading {
   width: 24px;
   height: 24px;
-  border: 2px solid #bed0d5;
-  border-top-color: #356b80;
+  border: 2px solid var(--ds-border-strong);
+  border-top-color: var(--ds-border-strong);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -43,7 +43,7 @@
   display: grid;
   justify-items: center;
   gap: 7px;
-  color: #7b8c94;
+  color: var(--ds-ink-muted);
 }
 .molecule-fallback small {
   font-size: 10px;
@@ -55,7 +55,7 @@
 .chemistry-query {
   display: grid;
   gap: 16px;
-  border-bottom: 1px solid #cbd6da;
+  border-bottom: 1px solid;
   padding-bottom: 22px;
 }
 .chemistry-query fieldset {
@@ -68,7 +68,7 @@
 .chemistry-options label > span {
   display: block;
   margin-bottom: 7px;
-  color: #53646d;
+  color: var(--ds-ink);
   font-size: 10px;
   font-weight: 700;
 }
@@ -84,24 +84,19 @@
 .mode-control > div {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border: 1px solid #b9c7cd;
-  border-radius: 4px;
-  background: #fff;
+  border: 1px solid;
 }
 .mode-control button {
   min-height: 35px;
   border: 0;
-  border-right: 1px solid #d1dadd;
+  border-right: 1px solid;
   background: transparent;
-  color: #536771;
   font-size: 12px;
 }
 .mode-control button:last-child {
   border-right: 0;
 }
 .mode-control button.active {
-  background: var(--ds-accent-soft);
-  color: var(--ds-accent-strong);
   font-weight: 700;
 }
 .structure-query-input {
@@ -117,9 +112,7 @@
 .structure-input-tabs {
   display: flex;
   align-items: center;
-  border: 1px solid #b9c7cd;
-  border-radius: 4px;
-  background: #fff;
+  border: 1px solid;
 }
 .structure-input-tabs button {
   min-height: 35px;
@@ -128,9 +121,8 @@
   justify-content: center;
   gap: 7px;
   border: 0;
-  border-right: 1px solid #d1dadd;
+  border-right: 1px solid;
   background: transparent;
-  color: #536771;
   padding: 7px 12px;
   font-size: 12px;
   white-space: nowrap;
@@ -139,23 +131,18 @@
   border-right: 0;
 }
 .structure-input-tabs button.active {
-  background: var(--ds-accent-soft);
-  color: var(--ds-accent-strong);
   font-weight: 700;
 }
 .structure-editor {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid #c9d5d9;
-  border-radius: 4px;
-  background: #fff;
+  border: 1px solid;
 }
 .structure-editor-canvas {
   width: 100%;
   height: 640px;
   min-height: 600px;
   overflow: hidden;
-  background: #fff;
 }
 .structure-editor-canvas > div {
   width: 100%;
@@ -167,12 +154,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  border-top: 1px solid #d8e1e4;
-  background: #f7f9fa;
+  border-top: 1px solid;
   padding: 9px 12px;
 }
 .structure-editor-actions > span {
-  color: #596d76;
   font-size: 10px;
 }
 .structure-editor.structure-editor .structure-editor-canvas button {
@@ -189,9 +174,6 @@
 }
 .structure-editor.structure-editor .structure-editor-canvas .smallEditor .App-module_app__8cgyF {
   grid-template-columns: minmax(48px, max-content) 1fr minmax(48px, max-content);
-}
-.structure-editor.structure-editor .structure-editor-canvas .css-8amd6p > span {
-  color: var(--ds-success);
 }
 .structure-editor-actions > div {
   display: flex;
@@ -210,15 +192,13 @@
   min-height: 480px;
   display: grid;
   place-items: center;
-  border: 1px solid #c9d5d9;
-  border-radius: 4px;
-  background: #fff;
+  border: 1px solid;
 }
 .structure-editor-gate {
   min-height: 240px;
   align-content: center;
   gap: 12px;
-  color: #536771;
+  color: var(--ds-ink);
 }
 .structure-editor-gate .primary-button {
   min-height: 36px;
@@ -247,12 +227,11 @@
   justify-content: space-between;
 }
 .threshold-control output {
-  color: #356b80;
   font-family: var(--ds-font-mono);
 }
 .threshold-control input {
   min-height: 22px;
-  accent-color: #356b80;
+  accent-color: var(--ds-accent-strong);
 }
 .chemistry-more-options {
   min-width: 124px;
@@ -262,7 +241,7 @@
   display: flex;
   align-items: center;
   cursor: pointer;
-  color: #536771;
+  color: var(--ds-ink);
   padding: 6px 4px;
   font-size: 12px;
   font-weight: 700;
@@ -296,7 +275,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  border-bottom: 1px solid #ccd8dc;
+  border-bottom: 1px solid var(--ds-border);
   padding-bottom: 13px;
 }
 .chemistry-result-head > div {
@@ -305,11 +284,11 @@
   gap: 7px;
 }
 .chemistry-result-head > div strong {
-  color: #172a34;
+  color: var(--ds-ink-strong);
   font-size: 25px;
 }
 .chemistry-result-head > div span {
-  color: #72838c;
+  color: var(--ds-ink-muted);
   font-size: 10px;
 }
 .chemistry-result-head dl {
@@ -324,12 +303,12 @@
   font-size: 9px;
 }
 .chemistry-result-head dt {
-  color: #809098;
+  color: var(--ds-ink-muted);
 }
 .chemistry-result-head dd {
   min-width: 0;
   margin: 0;
-  color: #425861;
+  color: var(--ds-ink);
   overflow-wrap: anywhere;
 }
 .chemistry-result-head code {
@@ -343,12 +322,12 @@
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
   gap: 20px;
-  border-bottom: 1px solid #d5dfe3;
+  border-bottom: 1px solid var(--ds-border);
   padding: 20px 0;
 }
 .chemistry-hit > .molecule-depiction {
   align-self: start;
-  border-right: 1px solid #e0e7e9;
+  border-right: 1px solid var(--ds-border-subtle);
   padding-right: 14px;
 }
 .chemistry-hit-core {
@@ -366,14 +345,14 @@
 .chemistry-hit-core > header code {
   display: block;
   margin-top: 5px;
-  color: #74868f;
+  color: var(--ds-ink-muted);
   font-family: var(--ds-font-mono);
   font-size: 9px;
   overflow-wrap: anywhere;
 }
 .similarity-score {
   flex: 0 0 auto;
-  color: #356b80;
+  color: var(--ds-accent-strong);
   font-size: 21px;
 }
 .similarity-score small {
@@ -383,19 +362,19 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(75px, 1fr));
   margin: 15px 0;
-  border-top: 1px solid #dbe3e6;
-  border-bottom: 1px solid #dbe3e6;
+  border-top: 1px solid var(--ds-border-subtle);
+  border-bottom: 1px solid var(--ds-border-subtle);
 }
 .chemistry-properties > div {
   min-width: 0;
-  border-right: 1px solid #e1e7e9;
+  border-right: 1px solid var(--ds-border-subtle);
   padding: 9px;
 }
 .chemistry-properties > div:last-child {
   border-right: 0;
 }
 .chemistry-properties dt {
-  color: #809098;
+  color: var(--ds-ink-muted);
   font-size: 9px;
 }
 .chemistry-properties dd {
@@ -414,11 +393,11 @@
   grid-template-columns: 54px minmax(0, 1fr) 30px;
   align-items: center;
   gap: 8px;
-  background: #f3f7f8;
+  background: var(--ds-canvas);
   padding: 5px 7px;
 }
 .structure-identifiers span {
-  color: #7b8c94;
+  color: var(--ds-ink-muted);
   font-size: 8px;
   font-weight: 700;
 }
@@ -491,7 +470,7 @@
     border-right: 0;
   }
   .pipeline-stages > div:nth-child(-n + 3) {
-    border-bottom: 1px solid #e0e7e9;
+    border-bottom: 1px solid var(--ds-border-subtle);
   }
   .commercial-metrics {
     grid-template-columns: repeat(4, minmax(120px, 1fr));
@@ -500,7 +479,7 @@
     border-right: 0;
   }
   .commercial-metrics > div:nth-child(-n + 4) {
-    border-bottom: 1px solid #dde5e8;
+    border-bottom: 1px solid var(--ds-border-subtle);
   }
   .user-center-settings-grid {
     grid-template-columns: 1fr;
@@ -518,7 +497,7 @@
   .evidence-query {
     position: static;
     border-right: 0;
-    border-bottom: 1px solid #d4dee2;
+    border-bottom: 1px solid var(--ds-border);
     padding: 0 0 22px;
   }
   .knowledge-layout {
@@ -542,23 +521,6 @@
   }
   .sar-filters {
     grid-template-columns: 1fr;
-  }
-  .login-screen {
-    grid-template-columns: 1fr;
-  }
-  .login-brand {
-    min-height: 260px;
-    padding: 28px 24px;
-  }
-  .login-title h1 {
-    font-size: 29px;
-  }
-  .login-version {
-    display: none;
-  }
-  .login-form-area {
-    min-height: auto;
-    padding: 38px 22px;
   }
   .workspace-shell,
   .workspace-shell.sidebar-collapsed {
@@ -599,7 +561,7 @@
     inset: 0;
     z-index: 19;
     border: 0;
-    background: rgba(14, 30, 38, 0.5);
+    background: var(--ds-scrim);
   }
   .mobile-only {
     display: inline-flex;
@@ -627,7 +589,7 @@
     margin-bottom: 18px;
   }
   .research-workbench .page-heading h1 {
-    font-size: 22px;
+    font-size: 26px;
   }
   h1 {
     font-size: 23px;
@@ -639,7 +601,7 @@
     border-right: 0;
   }
   .factory-status-strip > div:nth-child(-n + 2) {
-    border-bottom: 1px solid #dde5e8;
+    border-bottom: 1px solid var(--ds-border-subtle);
   }
   .pipeline-panel > header,
   .quarantine-panel > header,
@@ -656,7 +618,7 @@
   .pipeline-stages > div,
   .pipeline-stages > div:nth-child(3) {
     border-right: 0;
-    border-bottom: 1px solid #e0e7e9;
+    border-bottom: 1px solid var(--ds-border-subtle);
   }
   .pipeline-stages > div:last-child {
     border-bottom: 0;
@@ -797,7 +759,6 @@
     position: static;
     width: 100%;
     margin-top: 4px;
-    box-shadow: none;
   }
   .professional-query-builder > header,
   .professional-query-builder > footer {
@@ -836,8 +797,8 @@
   }
   .commercial-metrics > div,
   .commercial-metrics > div:nth-child(3) {
-    border-right: 1px solid #dde5e8;
-    border-bottom: 1px solid #dde5e8;
+    border-right: 1px solid var(--ds-border-subtle);
+    border-bottom: 1px solid var(--ds-border-subtle);
   }
   .commercial-metrics > div:nth-child(2n) {
     border-right: 0;
@@ -862,7 +823,7 @@
     border-right: 0;
   }
   .dossier-metrics > div:nth-child(-n + 3) {
-    border-bottom: 1px solid #dce4e7;
+    border-bottom: 1px solid var(--ds-border-subtle);
   }
   .landscape-grid,
   .structure-grid {
@@ -910,7 +871,7 @@
   }
   .publication-control-body > section {
     border-right: 0;
-    border-bottom: 1px solid #dce5e8;
+    border-bottom: 1px solid var(--ds-border-subtle);
   }
   .publication-control-body > section:last-child {
     border-bottom: 0;
@@ -941,7 +902,7 @@
   .review-list {
     max-height: 300px;
     border-right: 0;
-    border-bottom: 1px solid #d7e0e4;
+    border-bottom: 1px solid var(--ds-border);
   }
   .knowledge-document,
   .review-detail {
@@ -961,7 +922,7 @@
     border-right: 0;
   }
   .identity-impact-metrics > div:nth-child(-n + 2) {
-    border-bottom: 1px solid #d9e3e6;
+    border-bottom: 1px solid var(--ds-border);
   }
   .document-metadata {
     grid-template-columns: 1fr 1fr;
@@ -976,7 +937,7 @@
     border-right: 0;
   }
   .knowledge-coverage-metrics > div:nth-child(-n + 2) {
-    border-bottom: 1px solid #dfe6e9;
+    border-bottom: 1px solid var(--ds-border-subtle);
   }
   .knowledge-history-grid {
     display: block;
@@ -986,11 +947,11 @@
     max-height: none;
     overflow-x: auto;
     border-right: 0;
-    border-bottom: 1px solid #d7e0e4;
+    border-bottom: 1px solid var(--ds-border);
   }
   .knowledge-version-list > li > button {
     min-width: 150px;
-    border-right: 1px solid #e0e7ea;
+    border-right: 1px solid var(--ds-border-subtle);
     border-bottom: 0;
   }
   .knowledge-version-diff {
@@ -1104,7 +1065,7 @@
   }
   .chemistry-hit > .molecule-depiction {
     border-right: 0;
-    border-bottom: 1px solid #e0e7e9;
+    border-bottom: 1px solid var(--ds-border-subtle);
     padding: 0 0 12px;
   }
   .chemistry-properties {
@@ -1114,7 +1075,7 @@
     border-right: 0;
   }
   .chemistry-properties > div:nth-child(-n + 2) {
-    border-bottom: 1px solid #e1e7e9;
+    border-bottom: 1px solid var(--ds-border-subtle);
   }
   .structure-grid article {
     grid-template-columns: 1fr;

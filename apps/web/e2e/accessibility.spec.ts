@@ -19,7 +19,7 @@ const researchViews = [
   ["evidence", "原始资料查证"],
   ["knowledge", "版本化知识专题"],
   ["monitoring", "情报监控与变更提醒"],
-  ["collections", "企业对比与列表"],
+  ["collections", "对比列表"],
 ] as const;
 
 function formatViolations(context: string, violations: Awaited<ReturnType<AxeBuilder["analyze"]>>["violations"]) {
@@ -41,6 +41,16 @@ async function findWcagViolations(page: Page, context: string) {
   });
   const results = await new AxeBuilder({ page }).withTags(wcagTags).analyze();
   return results.violations.length ? formatViolations(context, results.violations) : null;
+}
+
+async function expectSharedLightTheme(page: Page) {
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(250, 249, 245)");
+  await expect(page.locator("h1").first()).toHaveCSS("font-family", /Georgia/);
+  const sidebar = page.locator(".workspace-sidebar");
+  if (await sidebar.count()) {
+    await expect(sidebar).toHaveCSS("background-color", "rgb(240, 238, 230)");
+    await expect(sidebar).toHaveCSS("color", "rgb(61, 61, 58)");
+  }
 }
 
 async function expectPageReflow(page: Page, context: string) {
@@ -81,6 +91,7 @@ test("[accessibility] passes WCAG 2.2 A/AA across the public login and every ext
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "账户登录" })).toBeVisible();
+  await expectSharedLightTheme(page);
   const violations = [await findWcagViolations(page, "public login")].filter((value): value is string =>
     Boolean(value),
   );
@@ -88,12 +99,13 @@ test("[accessibility] passes WCAG 2.2 A/AA across the public login and every ext
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索", level: 1 })).toBeVisible();
 
   for (const [view, heading] of researchViews) {
     await page.goto(`/workspace/research?view=${view}`);
     await expect(page.getByRole("heading", { name: heading, level: 1 })).toBeVisible();
     await page.waitForLoadState("networkidle");
+    await expectSharedLightTheme(page);
     await expectNamedKeyboardScrollableTables(page, `${view} work domain`);
     const violation = await findWcagViolations(page, `${view} work domain`);
     if (violation) violations.push(violation);
@@ -125,7 +137,7 @@ test("[accessibility-dossier] passes WCAG 2.2 A/AA across every professional dos
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
-  await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索", level: 1 })).toBeVisible();
 
   // Professional dossiers render UI that the list-view audit never reaches: separate
   // tab lists, coverage grids, timelines, terms and provenance drawers.
@@ -190,7 +202,7 @@ test("[reflow-keyboard] preserves the primary research path at 320 CSS pixels wi
   await page.keyboard.press("Tab");
   await expect(submit).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: "用户中心", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "全局情报检索", level: 1 })).toBeVisible();
   await expect(page).toHaveURL(/\/workspace\/research$/);
   await expectPageReflow(page, "research overview");
 

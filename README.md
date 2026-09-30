@@ -1,6 +1,6 @@
 # X-Pharma
 
-[Apache-2.0](LICENSE) · [架构](docs/architecture.md) · [源码导航](docs/codebase-guide.md) · [贡献指南](CONTRIBUTING.md) · [安全](SECURITY.md)
+[Apache-2.0](LICENSE) · [架构](docs/architecture.md) · [源码导航](docs/codebase-guide.md) · [设计系统](docs/design-system.md) · [贡献指南](CONTRIBUTING.md) · [安全](SECURITY.md)
 
 X-Pharma is an open-source pharmaceutical intelligence platform for people and
 agents. It combines a research workbench, governed evidence, structured drug and

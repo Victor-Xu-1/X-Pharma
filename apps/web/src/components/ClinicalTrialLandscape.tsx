@@ -1,32 +1,32 @@
 import { BarChart3, List } from "lucide-react";
 
 import type { ClinicalTrialLandscapeMatrixRowRead, ClinicalTrialLandscapeRead } from "../lib/generated";
-import { biomedicalChartPalette } from "./chartPalette";
+import { chartPalette } from "./chartPalette";
 
 type MatrixView = "chart" | "table";
 type FilterField = "phase" | "result_evaluation";
 
 const phaseColumns = [
-  { key: "EARLY_PHASE1", label: "早期 I 期", color: biomedicalChartPalette.trialPhase.earlyPhase1 },
-  { key: "PHASE1", label: "I 期", color: biomedicalChartPalette.trialPhase.phase1 },
-  { key: "PHASE1_PHASE2", label: "I/II 期", color: biomedicalChartPalette.trialPhase.phase12 },
-  { key: "PHASE2", label: "II 期", color: biomedicalChartPalette.trialPhase.phase2 },
-  { key: "PHASE2_PHASE3", label: "II/III 期", color: biomedicalChartPalette.trialPhase.phase23 },
-  { key: "PHASE3", label: "III 期", color: biomedicalChartPalette.trialPhase.phase3 },
-  { key: "PHASE4", label: "IV 期", color: biomedicalChartPalette.trialPhase.phase4 },
-  { key: "NA", label: "不适用", color: biomedicalChartPalette.trialPhase.notApplicable },
-  { key: "__missing__", label: "未披露", color: biomedicalChartPalette.trialPhase.missing },
+  { key: "EARLY_PHASE1", label: "早期 I 期", color: chartPalette.trialPhase.earlyPhase1 },
+  { key: "PHASE1", label: "I 期", color: chartPalette.trialPhase.phase1 },
+  { key: "PHASE1_PHASE2", label: "I/II 期", color: chartPalette.trialPhase.phase12 },
+  { key: "PHASE2", label: "II 期", color: chartPalette.trialPhase.phase2 },
+  { key: "PHASE2_PHASE3", label: "II/III 期", color: chartPalette.trialPhase.phase23 },
+  { key: "PHASE3", label: "III 期", color: chartPalette.trialPhase.phase3 },
+  { key: "PHASE4", label: "IV 期", color: chartPalette.trialPhase.phase4 },
+  { key: "NA", label: "不适用", color: chartPalette.trialPhase.notApplicable },
+  { key: "__missing__", label: "未披露", color: chartPalette.trialPhase.missing },
 ] as const;
 
 const evaluationColumns = [
-  { key: "unfavorable", label: "不佳", color: biomedicalChartPalette.evaluation.unfavorable },
-  { key: "not_superior", label: "非优", color: biomedicalChartPalette.evaluation.notSuperior },
-  { key: "non_inferior", label: "非劣", color: biomedicalChartPalette.evaluation.nonInferior },
-  { key: "similar", label: "相似", color: biomedicalChartPalette.evaluation.similar },
-  { key: "positive", label: "积极", color: biomedicalChartPalette.evaluation.positive },
-  { key: "superior", label: "优效", color: biomedicalChartPalette.evaluation.superior },
-  { key: "terminated", label: "终止", color: biomedicalChartPalette.evaluation.terminated },
-  { key: "__missing__", label: "未评价", color: biomedicalChartPalette.evaluation.missing },
+  { key: "unfavorable", label: "不佳", color: chartPalette.evaluation.unfavorable },
+  { key: "not_superior", label: "非优", color: chartPalette.evaluation.notSuperior },
+  { key: "non_inferior", label: "非劣", color: chartPalette.evaluation.nonInferior },
+  { key: "similar", label: "相似", color: chartPalette.evaluation.similar },
+  { key: "positive", label: "积极", color: chartPalette.evaluation.positive },
+  { key: "superior", label: "优效", color: chartPalette.evaluation.superior },
+  { key: "terminated", label: "终止", color: chartPalette.evaluation.terminated },
+  { key: "__missing__", label: "未评价", color: chartPalette.evaluation.missing },
 ] as const;
 
 type MatrixColumn = { key: string; label: string; color: string };

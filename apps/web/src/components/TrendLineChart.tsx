@@ -4,7 +4,7 @@ import { type EChartsType, init, use } from "echarts/core";
 import { SVGRenderer } from "echarts/renderers";
 import { useEffect, useRef } from "react";
 
-import { biomedicalChartPalette } from "./chartPalette";
+import { chartPalette } from "./chartPalette";
 
 use([LineChart, GridComponent, TooltipComponent, SVGRenderer]);
 
@@ -43,15 +43,15 @@ export function TrendLineChart({
         type: "category",
         boundaryGap: false,
         data: points.map((point) => point.label),
-        axisLabel: { color: biomedicalChartPalette.axis, hideOverlap: true },
-        axisLine: { lineStyle: { color: biomedicalChartPalette.axisLine } },
+        axisLabel: { color: chartPalette.axis, hideOverlap: true },
+        axisLine: { lineStyle: { color: chartPalette.axisLine } },
       },
       yAxis: {
         type: "value",
         name: valueLabel,
-        nameTextStyle: { color: biomedicalChartPalette.axis },
-        axisLabel: { color: biomedicalChartPalette.axis },
-        splitLine: { lineStyle: { color: biomedicalChartPalette.grid } },
+        nameTextStyle: { color: chartPalette.axis },
+        axisLabel: { color: chartPalette.axis },
+        splitLine: { lineStyle: { color: chartPalette.grid } },
         scale: true,
       },
       series: [
@@ -64,13 +64,13 @@ export function TrendLineChart({
             upperBound: point.upperBound,
           })),
           symbolSize: 7,
-          lineStyle: { color: biomedicalChartPalette.primary, width: 2 },
+          lineStyle: { color: chartPalette.primary, width: 2 },
           itemStyle: {
-            color: biomedicalChartPalette.primary,
-            borderColor: biomedicalChartPalette.surface,
+            color: chartPalette.primary,
+            borderColor: chartPalette.surface,
             borderWidth: 2,
           },
-          areaStyle: { color: biomedicalChartPalette.trendArea },
+          areaStyle: { color: chartPalette.trendArea },
         },
       ],
     });

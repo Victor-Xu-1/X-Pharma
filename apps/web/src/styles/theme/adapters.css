@@ -1,0 +1,160 @@
+/* Research controls and operator controls use the same semantic tokens. */
+.collection-picker > button:hover,
+.collection-picker > button.active {
+  background: var(--ds-accent-soft);
+}
+
+.collection-picker > button.active {
+  box-shadow: inset 3px 0 var(--ds-accent-strong);
+}
+
+.collection-entity-link:hover strong,
+.comparison-entity-link:hover strong,
+.explorer-intro span,
+.entity-detail-drawer header span,
+.entity-search-match {
+  color: var(--ds-accent-strong);
+}
+
+.evidence-selection,
+.entity-filter-selection {
+  border-color: var(--ds-border-strong);
+  background: var(--ds-info-soft);
+  color: var(--ds-info);
+}
+
+.entity-match-detail {
+  border-color: var(--ds-border);
+  background: var(--ds-info-soft);
+  color: var(--ds-info);
+}
+
+.company-phase-distribution li i {
+  background: var(--ds-accent-strong);
+}
+
+.enterprise-lifecycle-summary dl > div,
+.platform-runtime-grid dl,
+.platform-migration {
+  border-left-color: var(--ds-accent);
+  background: var(--ds-surface-muted);
+}
+
+.mono-cell,
+.external-id-cell span,
+.result-summary small,
+.entity-detail-drawer dd,
+.mono-value,
+.knowledge-change-list strong,
+.quarantine-history-version,
+.source-text-preview {
+  font-family: var(--ds-font-mono);
+}
+
+.structure-editor.structure-editor .structure-editor-canvas .css-8amd6p > span {
+  color: var(--ds-success);
+}
+
+.workspace-shell details:not([open]) > :not(summary) {
+  display: none;
+}
+
+.professional-facet-placeholder > span {
+  color: var(--ds-ink-strong);
+  font-size: 12px;
+}
+
+.professional-facet-placeholder small {
+  font-size: 12px;
+}
+
+/* Keep long dossier tab rails compact while preserving a clear scroll affordance. */
+.tab-bar {
+  border-bottom-color: var(--ds-border);
+  scrollbar-color: var(--ds-border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.tab-bar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tab-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tab-bar::-webkit-scrollbar-thumb {
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-border-strong);
+}
+
+.tab-bar button {
+  color: var(--ds-ink-muted);
+}
+
+.tab-bar button.active {
+  border-bottom-color: var(--ds-accent-strong);
+  color: var(--ds-ink-strong);
+}
+
+.tab-bar button:focus-visible {
+  outline-color: var(--ds-info);
+}
+
+.table-frame,
+.virtual-table-viewport,
+.entity-comparison-region {
+  scrollbar-color: var(--ds-border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.table-frame::-webkit-scrollbar,
+.virtual-table-viewport::-webkit-scrollbar,
+.entity-comparison-region::-webkit-scrollbar {
+  width: 8px;
+  height: 6px;
+}
+
+.table-frame::-webkit-scrollbar-track,
+.virtual-table-viewport::-webkit-scrollbar-track,
+.entity-comparison-region::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-frame::-webkit-scrollbar-thumb,
+.virtual-table-viewport::-webkit-scrollbar-thumb,
+.entity-comparison-region::-webkit-scrollbar-thumb {
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-border-strong);
+}
+
+/* The third-party structure editor inherits the first-party control system. */
+.structure-editor-canvas [class*="App-module_top"] {
+  border-bottom: 1px solid var(--ds-border);
+  background: var(--ds-surface-muted);
+  box-shadow: none;
+}
+
+.structure-editor-canvas [class*="App-module_top"] button[aria-label] {
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-control);
+  color: var(--ds-ink-muted);
+}
+
+.structure-editor-canvas [class*="App-module_top"] button[aria-label]:is(:hover, :focus-visible) {
+  border-color: var(--ds-border-strong);
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-strong);
+}
+
+.structure-editor-canvas [class*="ActionButton-module_button"] {
+  border: 1px solid var(--ds-border);
+  background: var(--ds-surface);
+  color: var(--ds-ink-muted);
+}
+
+.structure-editor-canvas [class*="ActionButton-module_button"]:is(:hover, :focus-visible) {
+  border-color: var(--ds-border-strong);
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-strong);
+}

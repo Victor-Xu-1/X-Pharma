@@ -1,6 +1,6 @@
 /* Shell */
 .workspace-shell {
-  --sidebar-width: 230px;
+  --sidebar-width: 240px;
   min-height: 100vh;
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
@@ -16,17 +16,16 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #15262f;
-  color: #dce4e8;
+  border-right: 1px solid var(--ds-border-subtle);
   transition: width 0.18s ease;
 }
 .sidebar-head {
-  min-height: 70px;
+  min-height: 76px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 15px 16px;
-  border-bottom: 1px solid #29404b;
+  border-bottom: 1px solid;
 }
 .brand-copy {
   overflow: hidden;
@@ -46,7 +45,7 @@
   flex: 0 0 auto;
   display: block;
   overflow: visible;
-  border-top: 1px solid #29404b;
+  border-top: 1px solid;
   padding: 9px 10px 6px;
 }
 .sidebar-account-row {
@@ -72,17 +71,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.sidebar-account-copy strong {
-  font-size: 12px;
-}
 .sidebar-account-copy small {
-  color: #8298a2;
+  color: var(--ds-ink-muted);
   font-size: 10px;
 }
 .nav-section-label {
   display: block;
   margin: 3px 10px 7px;
-  color: #78909a;
   font-size: 9px;
   font-weight: 700;
 }
@@ -93,28 +88,19 @@
 }
 .nav-group-toggle {
   width: 100%;
-  min-height: 38px;
   display: flex;
   align-items: center;
   gap: 10px;
   border: 0;
-  border-radius: 4px;
   background: transparent;
-  color: #91a5ae;
   padding: 8px 11px;
   text-align: left;
   white-space: nowrap;
 }
-.nav-group-toggle:hover,
-.nav-group.expanded > .nav-group-toggle {
-  background: #1b333e;
-  color: #e5ecef;
-}
 .nav-group-toggle > span {
   min-width: 0;
   flex: 1;
-  font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
 }
 .nav-group-chevron {
   flex: 0 0 auto;
@@ -126,14 +112,11 @@
 .nav-button,
 .collapse-button {
   width: 100%;
-  min-height: 40px;
   display: flex;
   align-items: center;
   gap: 11px;
   border: 0;
-  border-radius: 4px;
   background: transparent;
-  color: #b9c8ce;
   padding: 9px 11px;
   text-align: left;
   white-space: nowrap;
@@ -141,14 +124,12 @@
 .nav-button svg {
   flex: 0 0 auto;
 }
-.nav-button:hover {
-  background: #203944;
-  color: #fff;
-}
 .nav-button.active {
-  background: var(--ds-accent-soft);
-  color: var(--ds-accent-strong);
-  font-weight: 700;
+  font-weight: 500;
+}
+.nav-button svg,
+.nav-group-toggle svg {
+  stroke-width: 1.6;
 }
 .nav-group-items .nav-button {
   padding-left: 23px;
@@ -160,8 +141,8 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  border-top: 1px solid #2a414c;
-  border-bottom: 1px solid #2a414c;
+  border-top: 1px solid;
+  border-bottom: 1px solid;
   padding: 10px;
   overflow: hidden;
 }
@@ -172,11 +153,8 @@
   flex-direction: column;
   white-space: nowrap;
 }
-.sidebar-agent-status strong {
-  font-size: 11px;
-}
 .sidebar-agent-status small {
-  color: #849aa4;
+  color: var(--ds-ink-faint);
   font-size: 9px;
 }
 .sidebar-agent-status i {
@@ -184,17 +162,14 @@
   height: 7px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: var(--ds-success-indicator);
 }
 .collapse-button {
   width: 30px;
-  min-height: 32px;
   flex: 0 0 30px;
   justify-content: center;
   gap: 0;
   margin: 0;
   padding: 0;
-  color: #8298a2;
 }
 .sidebar-collapsed .brand-copy,
 .sidebar-collapsed .nav-section-label,
@@ -225,31 +200,22 @@
   position: sticky;
   top: 0;
   z-index: 15;
-  min-height: 70px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   gap: 20px;
-  border-bottom: 1px solid #d7e0e4;
-  background: rgba(255, 255, 255, 0.97);
+  border-bottom: 1px solid;
   padding: 12px clamp(20px, 3vw, 40px);
 }
 .workspace-identity {
   flex: 0 0 auto;
-  min-height: 38px;
   display: flex;
   align-items: center;
   gap: 7px;
   padding: 0 11px;
-  border: 1px solid #ced8dc;
-  border-radius: 4px;
-  background: #f4f7f8;
-  color: #38505b;
-  font-size: 11px;
+  border: 1px solid;
   font-weight: 700;
   white-space: nowrap;
-}
-.workspace-identity svg {
-  color: #356b80;
 }
 .topbar-spacer {
   min-width: 0;
@@ -265,7 +231,7 @@
   margin-bottom: 24px;
 }
 .research-workbench .page-heading h1 {
-  font-size: 22px;
+  font-size: 30px;
 }
 .research-workbench .workspace-content {
   padding-top: 20px;

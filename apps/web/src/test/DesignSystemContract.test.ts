@@ -34,30 +34,8 @@ function contrast(foreground: string, background: string) {
   return (light + 0.05) / (dark + 0.05);
 }
 
-function hueSaturationLightness(hex: string) {
-  const [red, green, blue] = [1, 3, 5].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255);
-  const maximum = Math.max(red, green, blue);
-  const minimum = Math.min(red, green, blue);
-  const delta = maximum - minimum;
-  const lightness = (maximum + minimum) / 2;
-  if (delta === 0) return { hue: 0, lightness, saturation: 0 };
-
-  const saturation = delta / (1 - Math.abs(2 * lightness - 1));
-  let hueBase: number;
-  if (maximum === red) hueBase = ((green - blue) / delta) % 6;
-  else if (maximum === green) hueBase = (blue - red) / delta + 2;
-  else hueBase = (red - green) / delta + 4;
-  return { hue: (hueBase * 60 + 360) % 360, lightness, saturation };
-}
-
 function hardcodedPaletteLeaks(css: string) {
-  const colors = new Set([...css.matchAll(/#[0-9a-f]{6}\b/gi)].map((match) => match[0].toLowerCase()));
-  return [...colors].filter((color) => {
-    const { hue, lightness, saturation } = hueSaturationLightness(color);
-    const legacyGreenSurface = hue >= 135 && hue <= 185 && saturation >= 0.22 && lightness >= 0.45;
-    const legacyWarmAccent = hue >= 15 && hue <= 70 && saturation >= 0.25;
-    return legacyGreenSurface || legacyWarmAccent;
-  });
+  return [...new Set([...css.matchAll(/#[0-9a-f]{3,8}\b|rgba?\(\s*\d[^)]*\)/gi)].map((match) => match[0]))];
 }
 
 function selectorsWithPixelFontSizeBelow(css: string, minimum: number) {
@@ -122,32 +100,8 @@ function workspaceWhereRule(css: string, selector: string) {
   throw new Error(`Missing workspace :where() rule containing ${selector}`);
 }
 
-const forbiddenWarmLiterals = [
-  "#b45532",
-  "#913e27",
-  "#d9aa97",
-  "#c45b3c",
-  "#d29639",
-  "#d2a248",
-  "#b98b2e",
-  "#a56a16",
-  "#b58122",
-  "#a4332d",
-  "#865b1d",
-  "#f7eed8",
-  "#9d332c",
-  "#b33e4a",
-  "#d95763",
-  "#176443",
-  "#e8eef1",
-  "terracotta",
-  "陶土",
-  "橘色",
-  "orange",
-];
-
-describe("unified biomedical design system", () => {
-  it("keeps the Claude-direction palette on biomedical light blue tokens", () => {
+describe("unified Claude-inspired light design system", () => {
+  it("uses warm paper, neutral navigation and restrained clay accents in both entrances", () => {
     const designSystem = source("../design-system.css");
     const baseStyles = source("../styles.css");
     const mount = source("../mount.tsx");
@@ -155,20 +109,18 @@ describe("unified biomedical design system", () => {
     const internalEntry = source("../internal-main.tsx");
     const combinedStyles = `${designSystem}\n${baseStyles}`;
 
-    expect(designSystem).toContain("--ds-accent: #a6c9d6;");
-    expect(designSystem).toContain("--ds-accent-strong: #356b80;");
-    expect(designSystem).toContain("--ds-info: #356b80;");
-    expect(designSystem).toContain("--ds-ink-faint: #60737c;");
-    expect(designSystem).toContain("--ds-warning: #526b78;");
-    expect(designSystem).toContain("--ds-warning-soft: #e9f1f4;");
+    expect(designSystem).toContain("--ds-canvas: #faf9f5;");
+    expect(designSystem).toContain("--ds-nav: #f0eee6;");
+    expect(designSystem).toContain("--ds-ink-strong: #141413;");
+    expect(designSystem).toContain("--ds-accent: #d97757;");
+    expect(designSystem).toContain("--ds-accent-strong: #9c4a2b;");
+    expect(designSystem).toContain("--ds-action: #2f2e2b;");
+    expect(designSystem).toContain("--ds-font-display:");
     expect(mount).toContain('import "./design-system.css";');
     expect(mount.indexOf('import "./styles.css";')).toBeLessThan(mount.indexOf('import "./design-system.css";'));
     expect(publicEntry).toContain("mountApplication");
     expect(internalEntry).toContain("mountApplication");
-    expect(combinedStyles).not.toMatch(new RegExp(forbiddenWarmLiterals.join("|"), "i"));
-    expect(combinedStyles).not.toMatch(
-      /#e7f2f0|#07877f|#066f69|#0d948c|#067b75|#174d4a|#087d75|#086f69|#1f7d78|#0b807b|#075f5a|#087f7b/i,
-    );
+    expect(combinedStyles).not.toMatch(/#15262f|#22343d|#356b80|#a6c9d6|#f4f8fa|#dcecf2/i);
     expect(hardcodedPaletteLeaks(baseStyles)).toEqual([]);
     expect(combinedStyles).not.toMatch(
       /font-family:\s*(?:"Segoe UI"|"Cascadia Mono"|Georgia|ui-monospace|"SFMono-Regular")/i,
@@ -187,7 +139,7 @@ describe("unified biomedical design system", () => {
     expect([...used].filter((token) => !defined.has(token))).toEqual([]);
   });
 
-  it("does not reintroduce warm chart accents", () => {
+  it("uses a shared warm chart palette without per-chart color overrides", () => {
     const palette = source("../components/chartPalette.ts");
     const chartSources = [
       source("../components/ClinicalTrialLandscape.tsx"),
@@ -195,9 +147,9 @@ describe("unified biomedical design system", () => {
       source("../components/TrendLineChart.tsx"),
     ].join("\n");
 
-    expect(palette).not.toMatch(/#ea580c|#d99a58|#d87855|#ca8a04|#d3b95f/i);
-    expect(palette).toContain("#356b80");
-    expect(chartSources).toContain("biomedicalChartPalette");
+    expect(palette).not.toMatch(/#356b80|#0284c7|#a7d0d9/i);
+    expect(palette).toContain("#d97757");
+    expect(chartSources).toContain("chartPalette");
     expect(chartSources).not.toMatch(/#[0-9a-f]{6}\b|rgba\(/i);
   });
 
@@ -212,15 +164,18 @@ describe("unified biomedical design system", () => {
       ["--ds-ink", "--ds-accent-soft"],
       ["--ds-ink-strong", "--ds-accent-soft"],
       ["--ds-nav-muted", "--ds-nav"],
+      ["--ds-nav-muted", "--ds-nav-active"],
       ["--ds-success", "--ds-success-soft"],
       ["--ds-warning", "--ds-warning-soft"],
       ["--ds-danger", "--ds-danger-soft"],
-      ["--ds-ink-strong", "--ds-accent"],
-      ["--ds-surface", "--ds-accent-strong"],
+      ["--ds-action-text", "--ds-action"],
+      ["--ds-action-text", "--ds-action-hover"],
       ["--ds-accent-strong", "--ds-accent-soft"],
       ["--ds-nav-text", "--ds-nav-hover"],
       ["--ds-ink-muted", "--ds-surface-muted"],
       ["--ds-info", "--ds-info-soft"],
+      ["--ds-nav-text", "--ds-nav-active"],
+      ["--ds-ink-strong", "--ds-canvas"],
     ] as const;
 
     for (const [foregroundToken, backgroundToken] of pairs) {
@@ -233,14 +188,14 @@ describe("unified biomedical design system", () => {
     const designSystem = source("../design-system.css");
 
     expect(designSystem).toMatch(/\.workspace-sidebar\s*\{[^}]*background: var\(--ds-nav\);/s);
-    expect(ruleBody(designSystem, ".login-brand")).toContain("background: var(--ds-accent-soft);");
+    expect(ruleBody(designSystem, ".login-brand")).toContain("background: var(--ds-canvas);");
     expect(ruleContainingSelectors(designSystem, [".login-brand", ".enterprise-workbench"]).body).toContain(
       "color: var(--ds-ink);",
     );
     expect(ruleContainingSelectors(designSystem, [".brand-lockup", ".login-title h1"]).body).toContain(
       "color: var(--ds-ink-strong);",
     );
-    expect(ruleBody(designSystem, ".workspace-sidebar .brand-lockup")).toContain("color: var(--ds-surface);");
+    expect(ruleBody(designSystem, ".workspace-sidebar .brand-lockup")).toContain("color: var(--ds-ink-strong);");
     expect(ruleContainingSelectors(designSystem, [".login-title .eyebrow", ".login-form > svg"]).body).toContain(
       "color: var(--ds-accent-strong);",
     );
@@ -283,7 +238,7 @@ describe("unified biomedical design system", () => {
       ".factory-warning strong",
     ]);
     const shellHierarchyRule = designSystem.match(
-      /\.brand-lockup strong,\s*\.nav-group-toggle > span,\s*\.sidebar-account-copy strong,\s*\.sidebar-agent-status strong\s*\{([^}]*)\}/,
+      /\.nav-group-toggle > span,\s*\.sidebar-account-copy strong,\s*\.sidebar-agent-status strong\s*\{([^}]*)\}/,
     );
     const shellContextRule = ruleContainingSelectors(designSystem, [
       ".user-copy small",
@@ -368,8 +323,8 @@ describe("unified biomedical design system", () => {
     expect(ruleBody(baseStyles, ".professional-query-builder > nav button")).toContain("font-size: 10px;");
     expect(ruleBody(baseStyles, ".entity-search-candidate-heading strong")).toContain("font-size: 11px;");
     expect(ruleBody(baseStyles, ".professional-more-fields > summary")).toContain("font-size: 10px;");
-    expect(ruleBody(baseStyles, ".segmented-control button")).toContain("font-size: 10px;");
-    expect(ruleBody(baseStyles, ".advanced-filter-panel > summary")).toContain("font-size: 11px;");
+    expect(ruleBody(baseStyles, ".segmented-control button")).not.toContain("font-size: 10px;");
+    expect(ruleBody(baseStyles, ".advanced-filter-panel > summary")).not.toContain("font-size: 11px;");
   });
 
   it("keeps professional dossier prose readable without loosening dense data tools", () => {
@@ -462,8 +417,8 @@ describe("unified biomedical design system", () => {
     const designSystem = source("../design-system.css");
 
     for (const token of [
-      "--ds-radius-control: 6px;",
-      "--ds-radius-panel: 8px;",
+      "--ds-radius-control: 8px;",
+      "--ds-radius-panel: 12px;",
       "--ds-control-height: 40px;",
       "--ds-button-height: 36px;",
       "--ds-icon-control-size: 34px;",
@@ -607,7 +562,7 @@ describe("unified biomedical design system", () => {
   });
 
   it("keeps public query controls and workbench toolbars readable", () => {
-    const styles = source("../styles.css");
+    const styles = `${source("../styles.css")}\n${source("../design-system.css")}`;
     for (const selector of [
       ".explorer-intro p",
       ".inline-filter-options button",
@@ -625,7 +580,10 @@ describe("unified biomedical design system", () => {
       ".landscape-grid article > span small",
       ".landscape-grid article p",
     ]) {
-      expect(ruleContainingSelectors(styles, [selector]).body).toContain("font-size: 12px;");
+      const readableRules = [...styles.matchAll(/([^{}]+)\{([^{}]*)\}/gs)].filter(
+        (match) => match[1].includes(selector) && /font-size:\s*(?:12px|var\(--ds-text-xs\))/.test(match[2]),
+      );
+      expect(readableRules.length, `${selector} has readable shared typography`).toBeGreaterThan(0);
     }
   });
 

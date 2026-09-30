@@ -289,9 +289,9 @@ test("[public-login][external-login] renders the external research login entry w
   expect(await page.evaluate(() => document.documentElement.dataset.workbench)).toBe("research");
   await expect(page.getByRole("heading", { name: "账户登录" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "医药情报工作台" })).toBeVisible();
-  await expect(page.getByLabel("Pharma Intelligence")).toBeVisible();
+  await expect(page.getByLabel("X-Pharma", { exact: true })).toBeVisible();
   await expect(page.getByText("内部管理工作台", { exact: true })).toHaveCount(0);
-  await expect(page.getByLabel("Pharma Operations")).toHaveCount(0);
+  await expect(page.getByLabel("内部管理平台", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "进入工作台" })).toBeVisible();
   const hasOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -303,9 +303,9 @@ test("[internal-login] renders a distinct internal management entry", async ({ p
   await page.goto("/workspace/internal");
   expect(await page.evaluate(() => document.documentElement.dataset.workbench)).toBe("internal");
   await expect(page.getByRole("heading", { name: "内部管理工作台" })).toBeVisible();
-  await expect(page.getByLabel("Pharma Operations")).toBeVisible();
+  await expect(page.getByLabel("内部管理平台", { exact: true })).toBeVisible();
   await expect(page.getByText("医药情报工作台", { exact: true })).toHaveCount(0);
-  await expect(page.getByLabel("Pharma Intelligence")).toHaveCount(0);
+  await expect(page.getByLabel("X-Pharma", { exact: true })).toHaveCount(0);
   const hasOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );

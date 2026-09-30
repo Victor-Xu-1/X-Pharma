@@ -137,13 +137,13 @@ export function WorkspaceShell({
         tabIndex={mobileOpen ? -1 : undefined}
       >
         <div className="sidebar-head">
-          <div className="brand-lockup">
+          <div className="brand-lockup" title={researchWorkbench ? PRODUCT_NAME : OPERATIONS_NAME}>
             <span className="brand-symbol">
               <FlaskConical size={19} />
             </span>
             <span className="brand-copy">
-              <strong>{researchWorkbench ? PRODUCT_NAME : OPERATIONS_NAME}</strong>
-              <small>{researchWorkbench ? "医药研发情报" : "Internal Control"}</small>
+              <strong>{PRODUCT_NAME}</strong>
+              <small>{researchWorkbench ? "医药研发情报" : "内部管理工作台"}</small>
             </span>
           </div>
           <button

@@ -5,7 +5,7 @@ import { SVGRenderer } from "echarts/renderers";
 import { useEffect, useRef } from "react";
 
 import type { PipelineLandscapeBucketRead } from "../lib/generated";
-import { biomedicalChartPalette } from "./chartPalette";
+import { chartPalette } from "./chartPalette";
 
 use([BarChart, DataZoomComponent, GridComponent, LegendComponent, TooltipComponent, SVGRenderer]);
 
@@ -38,18 +38,18 @@ const phaseLabels: Record<string, string> = {
   __missing__: "未披露",
 };
 const phaseColors: Record<string, string> = {
-  approved: biomedicalChartPalette.phase.approved,
-  filed: biomedicalChartPalette.phase.filed,
-  phase_3: biomedicalChartPalette.phase.phase3,
-  phase_2_3: biomedicalChartPalette.phase.phase23,
-  phase_2: biomedicalChartPalette.phase.phase2,
-  phase_1_2: biomedicalChartPalette.phase.phase12,
-  phase_1: biomedicalChartPalette.phase.phase1,
-  ind: biomedicalChartPalette.phase.ind,
-  preclinical: biomedicalChartPalette.phase.preclinical,
-  discovery: biomedicalChartPalette.phase.discovery,
-  discontinued: biomedicalChartPalette.phase.discontinued,
-  __missing__: biomedicalChartPalette.phase.missing,
+  approved: chartPalette.phase.approved,
+  filed: chartPalette.phase.filed,
+  phase_3: chartPalette.phase.phase3,
+  phase_2_3: chartPalette.phase.phase23,
+  phase_2: chartPalette.phase.phase2,
+  phase_1_2: chartPalette.phase.phase12,
+  phase_1: chartPalette.phase.phase1,
+  ind: chartPalette.phase.ind,
+  preclinical: chartPalette.phase.preclinical,
+  discovery: chartPalette.phase.discovery,
+  discontinued: chartPalette.phase.discontinued,
+  __missing__: chartPalette.phase.missing,
 };
 
 export function LandscapeBarChart({
@@ -79,7 +79,7 @@ export function LandscapeBarChart({
         ? {
             top: 0,
             type: "scroll",
-            textStyle: { color: biomedicalChartPalette.axis, fontSize: 10 },
+            textStyle: { color: chartPalette.axis, fontSize: 10 },
             itemWidth: 10,
             itemHeight: 7,
           }
@@ -106,14 +106,14 @@ export function LandscapeBarChart({
       xAxis: {
         type: "value",
         minInterval: 1,
-        axisLabel: { color: biomedicalChartPalette.axis },
-        splitLine: { lineStyle: { color: biomedicalChartPalette.grid } },
+        axisLabel: { color: chartPalette.axis },
+        splitLine: { lineStyle: { color: chartPalette.grid } },
       },
       yAxis: {
         type: "category",
         data: visible.map((bucket) => bucket.label),
         inverse: true,
-        axisLabel: { color: biomedicalChartPalette.axisLabel, overflow: "truncate", width: 100 },
+        axisLabel: { color: chartPalette.axisLabel, overflow: "truncate", width: 100 },
         axisLine: { show: false },
         axisTick: { show: false },
       },
@@ -135,8 +135,8 @@ export function LandscapeBarChart({
               type: "bar",
               data: visible.map((bucket) => bucket.count),
               barMaxWidth: 18,
-              itemStyle: { color: biomedicalChartPalette.primary, borderRadius: [0, 2, 2, 0] },
-              emphasis: { itemStyle: { color: biomedicalChartPalette.primaryEmphasis } },
+              itemStyle: { color: chartPalette.primary, borderRadius: [0, 2, 2, 0] },
+              emphasis: { itemStyle: { color: chartPalette.primaryEmphasis } },
             },
           ],
     });

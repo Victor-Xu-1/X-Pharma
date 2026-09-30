@@ -43,6 +43,7 @@ import {
 } from "../lib/contracts/enterprise";
 import type { AuthMode } from "../lib/contracts/session";
 import type { User, UserRole } from "../lib/types";
+import { useModalFocus } from "../lib/useModalFocus";
 
 type EnterpriseTab = "overview" | "users" | "groups" | "access" | "models" | "platform" | "audit";
 type UserAction = { user: EnterpriseUser; kind: "role" | "status" };
@@ -1358,40 +1359,14 @@ function AuditPanel({
 }
 
 function ModalShell({ title, close, children }: { title: string; close: () => void; children: ReactNode }) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const previousActiveElementRef = useRef<HTMLElement | null>(
-    document.activeElement instanceof HTMLElement ? document.activeElement : null,
-  );
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      if (!dialogRef.current?.contains(document.activeElement)) {
-        closeButtonRef.current?.focus();
-      }
-    });
-
-    return () => {
-      const previousActiveElement = previousActiveElementRef.current;
-      if (previousActiveElement?.isConnected) {
-        previousActiveElement.focus();
-      }
-    };
-  }, []);
+  const dialogRef = useModalFocus<HTMLDivElement>(true, close);
 
   return (
     <div className="modal-backdrop" role="presentation">
-      <div ref={dialogRef} className="modal-panel" role="dialog" aria-modal="true" aria-label={title}>
+      <div ref={dialogRef} className="modal-panel" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1}>
         <header>
           <h2>{title}</h2>
-          <button
-            ref={closeButtonRef}
-            className="icon-button"
-            type="button"
-            onClick={close}
-            title="关闭"
-            aria-label="关闭"
-          >
+          <button className="icon-button" type="button" onClick={close} title="关闭" aria-label="关闭">
             <X size={18} />
           </button>
         </header>

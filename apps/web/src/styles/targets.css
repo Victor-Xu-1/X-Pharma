@@ -17,7 +17,7 @@
 }
 .target-title-row p {
   margin: 3px 0 0;
-  color: #5a6b74;
+  color: var(--ds-ink-muted);
   font-size: 12px;
 }
 .target-symbol {
@@ -33,23 +33,23 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(120px, 1fr));
   margin: 22px 0 0;
-  border-top: 1px solid #d5dfe3;
-  border-bottom: 1px solid #d5dfe3;
+  border-top: 1px solid var(--ds-border);
+  border-bottom: 1px solid var(--ds-border);
 }
 .dossier-metrics > div {
-  border-right: 1px solid #dce4e7;
+  border-right: 1px solid var(--ds-border-subtle);
   padding: 15px 17px;
 }
 .dossier-metrics > div:last-child {
   border-right: 0;
 }
 .dossier-metrics dt {
-  color: #5a6b74;
+  color: var(--ds-ink-muted);
   font-size: 10px;
 }
 .dossier-metrics dd {
   margin: 5px 0 0;
-  color: #21363f;
+  color: var(--ds-ink-strong);
   font-size: 15px;
   font-weight: 700;
 }
@@ -57,7 +57,7 @@
   display: flex;
   gap: 23px;
   overflow-x: auto;
-  border-bottom: 1px solid #cbd6da;
+  border-bottom: 1px solid;
   margin-top: 20px;
 }
 .tab-bar button {
@@ -65,17 +65,14 @@
   border: 0;
   border-bottom: 3px solid transparent;
   background: transparent;
-  color: #53646d;
   padding: 7px 1px;
   white-space: nowrap;
 }
 .tab-bar button.active {
-  border-bottom-color: #356b80;
-  color: #172a34;
   font-weight: 700;
 }
 .tab-bar button:focus-visible {
   border-radius: 2px;
-  outline: 2px solid #176f9c;
+  outline: 2px solid var(--ds-border-strong);
   outline-offset: -2px;
 }

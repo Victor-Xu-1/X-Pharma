@@ -11,9 +11,9 @@
   grid-template-columns: repeat(4, minmax(150px, 1fr));
 }
 .regulatory-comparison {
-  border-top: 1px solid #d8e2e5;
-  border-bottom: 1px solid #d8e2e5;
-  background: #f7fafb;
+  border-top: 1px solid var(--ds-border);
+  border-bottom: 1px solid var(--ds-border);
+  background: var(--ds-surface);
 }
 .regulatory-comparison > header {
   display: flex;
@@ -26,17 +26,17 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #243943;
+  color: var(--ds-ink-strong);
 }
 .regulatory-comparison > header span {
-  border-left: 1px solid #cbd8dc;
+  border-left: 1px solid var(--ds-border);
   padding-left: 8px;
-  color: #60747e;
+  color: var(--ds-ink-muted);
   font-size: 11px;
 }
 .regulatory-comparison-scroll {
   overflow-x: auto;
-  border-top: 1px solid #d8e2e5;
+  border-top: 1px solid var(--ds-border);
 }
 .regulatory-comparison-table {
   min-width: 760px;
@@ -47,8 +47,8 @@
 }
 .regulatory-comparison-table th,
 .regulatory-comparison-table td {
-  border-right: 1px solid #dfe7e9;
-  border-bottom: 1px solid #dfe7e9;
+  border-right: 1px solid var(--ds-border-subtle);
+  border-bottom: 1px solid var(--ds-border-subtle);
   padding: 8px 10px;
   text-align: left;
   vertical-align: top;
@@ -56,8 +56,8 @@
 }
 .regulatory-comparison-table thead th {
   position: relative;
-  background: #eef4f5;
-  color: #243943;
+  background: var(--ds-surface-muted);
+  color: var(--ds-ink-strong);
 }
 .regulatory-comparison-table thead th:first-child,
 .regulatory-comparison-table tbody th {
@@ -68,7 +68,7 @@
   border: 0;
   background: transparent;
   padding: 0;
-  color: #356b80;
+  color: var(--ds-accent-strong);
   font: inherit;
   font-weight: 750;
   text-align: left;
@@ -76,7 +76,7 @@
 .regulatory-comparison-table thead th > small {
   display: block;
   margin-top: 4px;
-  color: #60747e;
+  color: var(--ds-ink-muted);
   font-size: 9px;
   font-weight: 500;
 }
@@ -86,8 +86,8 @@
   right: 5px;
 }
 .regulatory-comparison-table tbody th {
-  background: #f7fafb;
-  color: #526771;
+  background: var(--ds-surface);
+  color: var(--ds-ink);
   font-weight: 700;
 }
 .regulatory-detail-drawer {
@@ -102,10 +102,8 @@
 }
 .regulatory-risk-actions {
   margin: 12px 0 0;
-  border-left: 3px solid var(--ds-danger);
-  background: var(--ds-danger-soft);
+  border-left: 3px solid;
   padding: 10px 12px;
-  color: var(--ds-danger);
   font-size: 11px;
   line-height: 1.55;
 }
@@ -113,7 +111,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #60747e;
+  color: var(--ds-ink-muted);
   font-size: 10px;
   overflow-wrap: anywhere;
 }
@@ -181,17 +179,17 @@
 }
 .deal-rights-table th,
 .deal-rights-table td {
-  border-bottom: 1px solid #dce4e7;
+  border-bottom: 1px solid var(--ds-border-subtle);
   padding: 9px 8px;
-  color: #40565f;
+  color: var(--ds-ink);
   font-size: 10px;
   text-align: left;
   vertical-align: top;
   overflow-wrap: anywhere;
 }
 .deal-rights-table th {
-  background: #f5f8f9;
-  color: #596d76;
+  background: var(--ds-canvas);
+  color: var(--ds-ink-muted);
   font-weight: 800;
 }
 .deal-rights-table button {
@@ -199,7 +197,7 @@
   border: 0;
   background: transparent;
   padding: 0;
-  color: #356b80;
+  color: var(--ds-accent-strong);
   font-weight: 800;
   text-align: left;
   overflow-wrap: anywhere;
@@ -364,7 +362,7 @@
   .pipeline-landscape-kpis > div,
   .pipeline-landscape-kpis > div:nth-child(3) {
     border-right: 0;
-    border-bottom: 1px solid #d8e1e4;
+    border-bottom: 1px solid var(--ds-border);
   }
   .pipeline-landscape-distribution,
   .pipeline-landscape-distribution:nth-child(2n),

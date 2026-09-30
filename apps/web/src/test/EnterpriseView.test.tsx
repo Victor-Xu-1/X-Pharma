@@ -423,6 +423,18 @@ it("moves focus into a user action dialog and returns it to the trigger", async 
   await waitFor(() => expect(document.activeElement).toBe(trigger));
 });
 
+it("closes enterprise user dialogs with Escape and restores the trigger", async () => {
+  renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
+  fireEvent.click(await screen.findByRole("tab", { name: "用户与角色" }));
+  const trigger = screen.getByRole("button", { name: "新建用户" });
+  trigger.focus();
+  fireEvent.click(trigger);
+  await screen.findByRole("dialog");
+  fireEvent.keyDown(document, { key: "Escape" });
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  await waitFor(() => expect(trigger).toHaveFocus());
+});
+
 it("creates a local account through the versioned enterprise operation", async () => {
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
   fireEvent.click(await screen.findByRole("tab", { name: "用户与角色" }));
