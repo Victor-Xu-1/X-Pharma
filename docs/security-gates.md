@@ -65,6 +65,13 @@ during the image build. The corresponding OpenVEX statements are in
 
 ### OCR transitive media-library reachability
 
+The authentication dependency is pinned to PyJWT 2.15.0 for
+[CVE-2026-101918](https://github.com/advisories/GHSA-42vr-xj54-vc7v).
+The dependency's pre-verification parser must return a controlled `DecodeError`
+for a deeply nested untrusted payload, rather than a raw `RecursionError`.
+`tests/test_security_boundary.py` captures this regression; human OIDC, MCP OIDC,
+DPoP and signed internal-token paths remain part of the affected regression set.
+
 The pinned OpenCV contribution wheel bundles FFmpeg 5.1.4. Its vulnerable library
 is retained in the complete SBOM and raw scan inventory; a VEX `not_affected`
 statement is not a binary patch or a claim of zero vulnerabilities. The OCR API

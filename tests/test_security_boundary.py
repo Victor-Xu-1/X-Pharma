@@ -14,6 +14,15 @@ from pharma_intel.models import ApiKey, Tenant, TenantDataset
 from pharma_intel.security import Principal, issue_api_key
 
 
+def test_pyjwt_preverification_deep_payload_is_a_controlled_decode_failure() -> None:
+    header = jwt.utils.base64url_encode(b'{"alg":"HS256","typ":"JWT"}')
+    payload = jwt.utils.base64url_encode(b"[" * 20_000 + b"0" + b"]" * 20_000)
+    signature = jwt.utils.base64url_encode(b"unused pre-verification signature")
+    token = b".".join((header, payload, signature)).decode("ascii")
+    with pytest.raises(jwt.DecodeError):
+        jwt.decode(token, options={"verify_signature": False})
+
+
 @pytest.mark.anyio
 async def test_mcp_api_key_is_exchanged_for_short_lived_internal_token(
     session: Session,
