@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "security_max_age_hours": {
+    "development": 168,
+    "pilot": 168,
+    "production": 72
+  },
+  "categories": {
+    "quality": {"max_age_hours": 168},
+    "source_reproducibility": {"max_age_hours": 168},
+    "database": {"max_age_hours": 168},
+    "browser": {"max_age_hours": 168},
+    "entry_consistency": {"max_age_hours": 168},
+    "record_consistency": {"max_age_hours": 168},
+    "anti_extraction_baseline": {"max_age_hours": 168},
+    "mcp_protocol": {"max_age_hours": 168},
+    "mcp_async_tasks": {"max_age_hours": 168},
+    "mcp_commercial": {"max_age_hours": 168},
+    "performance_baseline": {"max_age_hours": 168},
+    "operations_contract": {"max_age_hours": 168},
+    "parser_sandbox": {"max_age_hours": 168},
+    "ocr": {"max_age_hours": 168},
+    "ingestion_readiness": {"max_age_hours": 168},
+    "backup_restore": {"max_age_hours": 720},
+    "runtime": {"max_age_hours": 72},
+    "ingestion_pilot": {"max_age_hours": 168},
+    "ingestion": {"max_age_hours": 168},
+    "kubernetes": {"max_age_hours": 720},
+    "product_uat": {"max_age_hours": 720},
+    "data_licensing": {"max_age_hours": 720},
+    "external_services": {"max_age_hours": 168},
+    "infrastructure_ha_pitr": {"max_age_hours": 720},
+    "billing_provider": {"max_age_hours": 168},
+    "mcp_sender_constraint": {"max_age_hours": 168},
+    "anti_extraction": {"max_age_hours": 168},
+    "performance": {"max_age_hours": 168},
+    "penetration_test": {"max_age_hours": 720},
+    "disaster_recovery": {"max_age_hours": 720},
+    "operations_approval": {"max_age_hours": 720},
+    "change_approval": {"max_age_hours": 168},
+    "production_topology": {"max_age_hours": 720}
+  },
+  "production_evidence_contracts": {
+    "ingestion": {
+      "report_name": "production-evidence-report.json",
+      "checks": ["licensed_source_inventory", "automatic_discovery", "immutable_snapshot", "malware_scan", "real_parser", "ai_governance", "authoritative_publish", "opensearch_projection", "notification_delivery", "idempotent_rescan", "failure_recovery", "fact_traceability"],
+      "approval_roles": ["data_owner", "operations"],
+      "minimum_artifacts": 2,
+      "require_independent_executor": false
+    },
+    "product_uat": {
+      "report_name": "production-evidence-report.json",
+      "checks": ["approved_capability_matrix", "core_user_workflows", "supported_browsers", "loading_empty_error_permission_recovery", "search_compare_monitor", "standard_data_export", "administration_workflows", "business_uat_approval"],
+      "approval_roles": ["business_owner", "product"],
+      "minimum_artifacts": 2,
+      "require_independent_executor": false
+    },
+    "data_licensing": {
+      "report_name": "production-evidence-report.json",
+      "checks": ["contract_inventory", "literature_coverage", "patent_coverage", "target_coverage", "structure_coverage", "activity_coverage", "pipeline_coverage", "clinical_coverage", "company_coverage", "deal_coverage", "regulatory_coverage", "field_rights", "channel_rights", "retention_and_deletion", "geography", "freshness_sla", "freshness_and_coverage_report", "legal_approval"],
+      "approval_roles": ["legal", "data_owner"],
+      "minimum_artifacts": 1,
+      "require_independent_executor": false
+    },
+    "external_services": {
+      "report_name": "production-evidence-report.json",
+      "checks": ["enterprise_idp", "object_storage", "model_gateway", "model_strict_schema", "model_usage_request_ids", "model_cost_accounting", "model_citation_grounding", "model_prompt_injection_defense", "model_rate_limit_backoff", "model_failure_recovery", "opensearch", "temporal", "tls_and_waf", "central_observability"],
+      "approval_roles": ["security", "platform"],
+      "minimum_artifacts": 1,
+      "require_independent_executor": false
+    },
+    "infrastructure_ha_pitr": {
+      "report_name": "production-evidence-report.json",
+      "checks": ["postgres_multi_az", "postgres_pitr", "rdkit_compatibility", "object_versioning", "opensearch_ha", "temporal_ha", "valkey_ha", "failover"],
+      "approval_roles": ["platform", "operations"],
+      "minimum_artifacts": 1,
+      "require_independent_executor": false
+    },
+    "billing_provider": {
+      "report_name": "production-evidence-report.json",
+      "checks": ["customer_mapping", "rate_card_version", "invoice_delivery", "settlement_reconciliation", "retry_and_timeout", "cancellation_and_reversal", "concurrent_balance", "outage_recovery"],
+      "approval_roles": ["finance", "product"],
+      "minimum_artifacts": 1,
+      "require_independent_executor": false
+    },
+    "mcp_sender_constraint": {
+      "report_name": "production-evidence-report.json",
+      "checks": ["two_independent_agent_clients", "enterprise_idp_token_issuance", "mcp_resource_binding", "dpop_proof_validation", "shared_replay_protection", "bearer_rejection", "credential_revocation", "exact_proxy_boundary", "gateway_policy_enforcement", "security_approval"],
+      "approval_roles": ["security", "platform"],
+      "minimum_artifacts": 2,
+      "require_independent_executor": false
+    },
+    "anti_extraction": {
+      "report_name": "production-evidence-report.json",
+      "checks": ["normal_research", "deep_pagination", "partition_enumeration", "cross_client_coordination", "unauthorized_export", "credential_revocation", "gateway_rate_limit", "external_alerting", "audit_trace"],
+      "approval_roles": ["security", "data_owner"],
+      "minimum_artifacts": 1,
+      "require_independent_executor": false
+    },
+    "performance": {
+      "report_name": "production-evidence-report.json",
+      "checks": ["sustained_load", "peak_load", "long_running", "backpressure", "fault_injection", "web_slo", "mcp_slo", "metering_integrity", "risk_controls"],
+      "approval_roles": ["platform", "product"],
+      "minimum_artifacts": 1,
+      "require_independent_executor": false
+    },
+    "penetration_test": {
+      "report_name": "production-evidence-report.json",
+      "checks": ["cross_tenant", "privilege_escalation", "injection", "export_controls", "audit_integrity", "findings_closed_or_accepted"],
+      "approval_roles": ["security", "independent_tester"],
+      "minimum_artifacts": 1,
+      "require_independent_executor": true
+    },
+    "disaster_recovery": {
+      "report_name": "production-evidence-report.json",
+      "checks": ["postgres_pitr", "object_restore", "region_failover", "opensearch_rebuild", "ledger_reconciliation", "rpo_rto", "non_developer_operator"],
+      "approval_roles": ["operations", "business_continuity"],
+      "minimum_artifacts": 1,
+      "require_independent_executor": false
+    },
+    "operations_approval": {
+      "report_name": "production-evidence-report.json",
+      "checks": ["on_call", "actionable_alerts", "runbooks", "support_escalation", "data_quality_sla", "model_budget", "billing_support", "incident_response"],
+      "approval_roles": ["operations", "support"],
+      "minimum_artifacts": 1,
+      "require_independent_executor": false
+    },
+    "change_approval": {
+      "report_name": "production-evidence-report.json",
+      "checks": ["change_ticket", "migration_review", "rollout_plan", "rollback_plan", "monitoring_plan", "business_approval", "security_approval", "operations_approval"],
+      "approval_roles": ["engineering", "security", "operations"],
+      "minimum_artifacts": 1,
+      "require_independent_executor": false
+    },
+    "production_topology": {
+      "report_name": "production-evidence-report.json",
+      "checks": ["approved_architecture", "postgres_version", "rdkit_compatibility", "object_storage", "opensearch", "temporal", "event_projection_profile", "valkey", "identity_and_secrets", "gateway", "kubernetes", "live_cluster_probe", "observability", "version_matrix", "ragflow_exit_plan", "critical_path_validation"],
+      "approval_roles": ["architecture", "platform", "operations"],
+      "minimum_artifacts": 4,
+      "require_independent_executor": false
+    }
+  },
+  "levels": {
+    "development": {
+      "require_release_security": false,
+      "require_signed_git_tag": false,
+      "require_bundle_signature": false,
+      "required_categories": [
+        "quality",
+        "source_reproducibility",
+        "database",
+        "browser",
+        "entry_consistency",
+        "record_consistency",
+        "anti_extraction_baseline",
+        "mcp_protocol",
+        "mcp_async_tasks",
+        "mcp_commercial",
+        "performance_baseline",
+        "operations_contract",
+        "parser_sandbox",
+        "ocr",
+        "ingestion_readiness",
+        "runtime"
+      ]
+    },
+    "pilot": {
+      "require_release_security": false,
+      "require_signed_git_tag": false,
+      "require_bundle_signature": false,
+      "required_categories": [
+        "quality",
+        "source_reproducibility",
+        "database",
+        "browser",
+        "entry_consistency",
+        "record_consistency",
+        "anti_extraction_baseline",
+        "mcp_protocol",
+        "mcp_async_tasks",
+        "mcp_commercial",
+        "performance_baseline",
+        "operations_contract",
+        "parser_sandbox",
+        "ocr",
+        "ingestion_readiness",
+        "backup_restore",
+        "runtime",
+        "ingestion_pilot",
+        "kubernetes"
+      ]
+    },
+    "production": {
+      "require_release_security": true,
+      "require_signed_git_tag": true,
+      "require_bundle_signature": true,
+      "required_categories": [
+        "quality",
+        "source_reproducibility",
+        "database",
+        "browser",
+        "entry_consistency",
+        "record_consistency",
+        "anti_extraction_baseline",
+        "mcp_protocol",
+        "mcp_async_tasks",
+        "mcp_commercial",
+        "performance_baseline",
+        "operations_contract",
+        "parser_sandbox",
+        "ocr",
+        "ingestion_readiness",
+        "backup_restore",
+        "runtime",
+        "ingestion_pilot",
+        "ingestion",
+        "kubernetes",
+        "product_uat",
+        "data_licensing",
+        "external_services",
+        "infrastructure_ha_pitr",
+        "billing_provider",
+        "mcp_sender_constraint",
+        "anti_extraction",
+        "performance",
+        "penetration_test",
+        "disaster_recovery",
+        "operations_approval",
+        "change_approval",
+        "production_topology"
+      ]
+    }
+  }
+}

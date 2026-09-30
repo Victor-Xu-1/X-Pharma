@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pharma-intelligence.invalid/schemas/production-evidence-batch-intake.v1.json",
+  "title": "Complete production evidence batch intake",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "schema_version", "requests"],
+  "properties": {
+    "schema": {"const": "pharma.production-evidence-batch-intake.v1"},
+    "schema_version": {"const": 1},
+    "requests": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "request_path"],
+        "properties": {
+          "category": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$"},
+          "request_path": {"type": "string", "minLength": 1, "maxLength": 4096}
+        }
+      }
+    }
+  }
+}

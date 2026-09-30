@@ -1,0 +1,215 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/part-of
+        operator: In
+        values: [pharma-intelligence]
+      - key: app.kubernetes.io/name
+        operator: NotIn
+        values: [pharma-parser, pharma-ocr]
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-workspace-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-api
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-clamav-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-clamav
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-jobs
+      ports:
+        - protocol: TCP
+          port: 3310
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-parser-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-parser
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-jobs
+      ports:
+        - protocol: TCP
+          port: 8070
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ocr-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-ocr
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-jobs
+      ports:
+        - protocol: TCP
+          port: 8071
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-platform-service-egress
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/part-of
+        operator: In
+        values: [pharma-intelligence]
+      - key: app.kubernetes.io/name
+        operator: NotIn
+        values: [pharma-parser, pharma-ocr, pharma-clamav]
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-api
+      ports:
+        - protocol: TCP
+          port: 8080
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-clamav
+      ports:
+        - protocol: TCP
+          port: 3310
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-parser
+      ports:
+        - protocol: TCP
+          port: 8070
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-ocr
+      ports:
+        - protocol: TCP
+          port: 8071
+    - ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 6379
+        - protocol: TCP
+          port: 6380
+        - protocol: TCP
+          port: 7233
+        - protocol: TCP
+          port: 9000
+        - protocol: TCP
+          port: 9200
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-collector
+      ports:
+        - protocol: TCP
+          port: 4317
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-clamav-signature-egress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-clamav
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - protocol: TCP
+          port: 443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-otel-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-collector
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: pharma-intelligence
+      ports:
+        - protocol: TCP
+          port: 4317

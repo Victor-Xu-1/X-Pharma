@@ -1,0 +1,334 @@
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import type { ComponentProps } from "react";
+import { beforeEach, expect, it, vi } from "vitest";
+
+import {
+  emptyRegulatorySearchFilters,
+  loadRegulatoryEventDetail,
+  saveRegulatorySearch,
+  searchRegulatoryEvents,
+} from "../lib/contracts/regulatory";
+import { RegulatoryView } from "../views/RegulatoryView";
+import { renderWithQueryClient } from "./renderWithQueryClient";
+
+vi.mock("../lib/contracts/regulatory", async () => {
+  const actual = await vi.importActual<typeof import("../lib/contracts/regulatory")>("../lib/contracts/regulatory");
+  return {
+    ...actual,
+    regulatoryKeys: {
+      search: (filters: Record<string, string>, offset: number) => ["regulatory", { ...filters, offset }],
+      detail: (eventId: string) => ["regulatory", "detail", eventId],
+    },
+    searchRegulatoryEvents: vi.fn(),
+    loadRegulatoryEventDetail: vi.fn(),
+    saveRegulatorySearch: vi.fn(),
+  };
+});
+
+const eventId = "550e8400-e29b-41d4-a716-446655440010";
+const regulatoryEvent = {
+  id: eventId,
+  subject_entity_id: "550e8400-e29b-41d4-a716-446655440001",
+  agency: "FDA",
+  jurisdiction: "US",
+  event_identifier: "FDA-2026-001",
+  application_number: "NDA 219999",
+  event_type: "approval",
+  status: "approved",
+  title: "VX-101 approved for EGFR-positive NSCLC",
+  decision_date: "2026-02-20T00:00:00Z",
+  designation_type: "breakthrough_therapy" as const,
+  label_change_type: "initial_label" as const,
+  label_version: "USPI v1.0",
+  label_effective_at: "2026-02-20T00:00:00Z",
+  approved_population: "Adults with EGFR exon 20 insertion NSCLC",
+  line_of_therapy: "Second line",
+  biomarker: "EGFR exon 20 insertion",
+  route_of_administration: "Oral",
+  dosage_form: "Tablet",
+  has_boxed_warning: true,
+  safety_signal_type: "adverse_event" as const,
+  safety_term: "Interstitial lung disease",
+  safety_severity: "serious" as const,
+  safety_status: "confirmed" as const,
+  safety_identified_at: "2026-02-01T00:00:00Z",
+  safety_confirmed_at: "2026-02-10T00:00:00Z",
+  safety_resolved_at: null,
+  affected_population: "Patients with prior lung injury",
+  risk_actions: ["Monitor pulmonary symptoms"],
+  source_updated_at: "2026-02-21T00:00:00Z",
+  indication_entity_id: "550e8400-e29b-41d4-a716-446655440002",
+  organization_entity_id: "550e8400-e29b-41d4-a716-446655440003",
+  details: { review_pathway: "priority" },
+  source_document_id: "source-1",
+  subject_entity: {
+    id: "550e8400-e29b-41d4-a716-446655440001",
+    name: "VX-101",
+    entity_type: "drug" as const,
+  },
+  indication_entity: {
+    id: "550e8400-e29b-41d4-a716-446655440002",
+    name: "EGFR-positive NSCLC",
+    entity_type: "disease" as const,
+  },
+  organization_entity: {
+    id: "550e8400-e29b-41d4-a716-446655440003",
+    name: "Acme Pharma",
+    entity_type: "organization" as const,
+  },
+};
+
+const regulatoryResult = {
+  items: [regulatoryEvent],
+  total: 101,
+  limit: 100,
+  offset: 0,
+  facets: {
+    agency: { FDA: 101 },
+    jurisdiction: { US: 101 },
+    event_type: { approval: 101 },
+    status: { approved: 101 },
+    designation_type: { breakthrough_therapy: 12 },
+    label_change_type: { initial_label: 8 },
+    has_boxed_warning: { true: 3, false: 20 },
+    safety_signal_type: { adverse_event: 9 },
+    safety_severity: { serious: 7 },
+    safety_status: { confirmed: 6 },
+  },
+  landscape: {
+    total_events: 101,
+    event_type: [{ key: "approval", label: "approval", count: 101, share: 1 }],
+    agency: [{ key: "FDA", label: "FDA", count: 101, share: 1 }],
+    decision_year: [{ key: "2026", label: "2026", count: 101, share: 1 }],
+  },
+  query_schema_version: "pharma.regulatory.search.v4",
+  sort_by: "decision_date" as const,
+  sort_direction: "desc" as const,
+  applied_filters: [{ field: "q", operator: "contains" as const, value: "VX-101" }],
+  as_of: "2026-07-22T10:00:00Z",
+  warnings: ["未观察到监管事件不代表不存在；结果受监管辖区、数据授权、更新时效和治理状态限制。"],
+};
+
+function renderView(overrides: Partial<ComponentProps<typeof RegulatoryView>> = {}) {
+  return renderWithQueryClient(
+    <RegulatoryView
+      initialFilters={{ ...emptyRegulatorySearchFilters, query: "VX-101" }}
+      initialOffset={0}
+      selectedEventId={null}
+      comparedEventIds={[]}
+      onSearchChange={vi.fn()}
+      onEventChange={vi.fn()}
+      onCompareChange={vi.fn()}
+      onOpenEntity={vi.fn()}
+      {...overrides}
+    />,
+  );
+}
+
+beforeEach(() => {
+  vi.mocked(searchRegulatoryEvents).mockResolvedValue(regulatoryResult);
+  vi.mocked(loadRegulatoryEventDetail).mockResolvedValue(regulatoryEvent);
+  vi.mocked(saveRegulatorySearch).mockResolvedValue({ message: "监管检索已保存并启用监控" });
+});
+
+it("renders governed regulatory intelligence and opens a stable event detail", async () => {
+  const onEventChange = vi.fn();
+  const onOpenEntity = vi.fn();
+  const onOpenDrug = vi.fn();
+  const onOpenTarget = vi.fn();
+  const onOpenDisease = vi.fn();
+  const onOpenOrganization = vi.fn();
+  renderView({ onEventChange, onOpenEntity, onOpenDrug, onOpenTarget, onOpenDisease, onOpenOrganization });
+
+  expect(await screen.findByRole("table", { name: "监管事件结果" })).toBeInTheDocument();
+  expect(screen.getByText("结果可能受数据覆盖范围和来源更新时间影响。")).toBeInTheDocument();
+  expect(document.body).not.toHaveTextContent(/治理|数据授权/);
+  expect(searchRegulatoryEvents).toHaveBeenCalledWith(
+    { ...emptyRegulatorySearchFilters, query: "VX-101" },
+    0,
+    expect.any(AbortSignal),
+  );
+  expect(screen.getByText("突破性疗法")).toBeInTheDocument();
+  const resultTable = screen.getByRole("table", { name: "监管事件结果" });
+  fireEvent.click(within(resultTable).getByRole("button", { name: /VX-101NDA 219999/ }));
+  expect(onOpenDrug).toHaveBeenCalledWith("550e8400-e29b-41d4-a716-446655440001");
+  fireEvent.click(within(resultTable).getByRole("button", { name: "EGFR-positive NSCLC" }));
+  expect(onOpenDisease).toHaveBeenCalledWith("550e8400-e29b-41d4-a716-446655440002");
+  expect(onOpenEntity).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: /VX-101 approved/ }));
+  expect(onEventChange).toHaveBeenCalledWith(eventId);
+
+  renderView({
+    selectedEventId: eventId,
+    onEventChange,
+    onOpenEntity,
+    onOpenDrug,
+    onOpenTarget,
+    onOpenDisease,
+    onOpenOrganization,
+  });
+  expect(await screen.findByRole("dialog", { name: "VX-101 approved for EGFR-positive NSCLC" })).toBeInTheDocument();
+  expect(loadRegulatoryEventDetail).toHaveBeenCalledWith(eventId, expect.any(AbortSignal));
+  expect(screen.getByText("Monitor pulmonary symptoms")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "打开 Acme Pharma 档案" }));
+  expect(onOpenOrganization).toHaveBeenCalledWith("550e8400-e29b-41d4-a716-446655440003");
+  fireEvent.click(screen.getByTitle("关闭"));
+  expect(onEventChange).toHaveBeenCalledWith(null);
+});
+
+it("submits advanced label and safety filters and validates date ranges", async () => {
+  const onSearchChange = vi.fn();
+  renderView({ onSearchChange });
+  await screen.findByRole("table", { name: "监管事件结果" });
+
+  fireEvent.change(screen.getByLabelText("监管机构"), { target: { value: "FDA" } });
+  fireEvent.change(screen.getByLabelText("辖区"), { target: { value: "US" } });
+  fireEvent.change(screen.getByLabelText("事件类型"), { target: { value: "approval" } });
+  fireEvent.change(screen.getByLabelText("认定资格"), { target: { value: "breakthrough_therapy" } });
+  fireEvent.click(screen.getByText("更多监管与安全条件"));
+  fireEvent.change(screen.getByLabelText("标签变更"), { target: { value: "initial_label" } });
+  fireEvent.change(screen.getByLabelText("黑框警告"), { target: { value: "true" } });
+  fireEvent.change(screen.getByLabelText("安全信号"), { target: { value: "adverse_event" } });
+  fireEvent.change(screen.getByLabelText("严重程度"), { target: { value: "serious" } });
+  fireEvent.change(screen.getByLabelText("信号状态"), { target: { value: "confirmed" } });
+  const decisionDates = screen.getByRole("group", { name: "决定日期" }).querySelectorAll("input");
+  fireEvent.change(decisionDates[0], { target: { value: "2026-03-01" } });
+  fireEvent.change(decisionDates[1], { target: { value: "2026-02-01" } });
+  fireEvent.click(screen.getByRole("button", { name: "查询" }));
+  expect(screen.getByRole("alert")).toHaveTextContent("决定日期起始值不能晚于结束值");
+  expect(onSearchChange).not.toHaveBeenCalled();
+
+  fireEvent.change(decisionDates[0], { target: { value: "2026-01-01" } });
+  fireEvent.click(screen.getByRole("button", { name: "查询" }));
+  expect(onSearchChange).toHaveBeenCalledWith(
+    expect.objectContaining({
+      query: "VX-101",
+      agency: "FDA",
+      jurisdiction: "US",
+      eventType: "approval",
+      designationType: "breakthrough_therapy",
+      labelChangeType: "initial_label",
+      boxedWarning: "true",
+      safetySignalType: "adverse_event",
+      safetySeverity: "serious",
+      safetyStatus: "confirmed",
+      decisionFrom: "2026-01-01",
+      decisionTo: "2026-02-01",
+    }),
+    0,
+  );
+});
+
+it("loads and removes selected events in the semantic comparison table", async () => {
+  const onCompareChange = vi.fn();
+  renderView({ comparedEventIds: [eventId], onCompareChange });
+
+  expect(await screen.findByRole("table", { name: "监管事件对比" })).toBeInTheDocument();
+  expect(screen.getByText("Interstitial lung disease / 严重")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: `移除 ${regulatoryEvent.title}` }));
+  expect(onCompareChange).toHaveBeenCalledWith([]);
+});
+
+it("connects governed table row selection to the URL-owned comparison state", async () => {
+  const onCompareChange = vi.fn();
+  const firstRender = renderView({ onCompareChange });
+
+  expect(await screen.findByRole("table", { name: "监管事件结果" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("checkbox", { name: `选择对比 ${regulatoryEvent.title}` }));
+  expect(onCompareChange).toHaveBeenCalledWith([eventId]);
+  firstRender.unmount();
+
+  const limitIds = ["event-1", "event-2", "event-3", "event-4"];
+  vi.mocked(loadRegulatoryEventDetail).mockImplementation(async (requestedEventId) => ({
+    ...regulatoryEvent,
+    id: requestedEventId,
+    title: `Regulatory event ${requestedEventId}`,
+  }));
+  renderView({ comparedEventIds: limitIds, onCompareChange });
+  expect(await screen.findByRole("checkbox", { name: `选择对比 ${regulatoryEvent.title}` })).toBeDisabled();
+  expect(screen.queryByRole("checkbox", { name: "选择当前页" })).not.toBeInTheDocument();
+});
+
+it("renders the explicit regulatory empty state and clears active filters", async () => {
+  vi.mocked(searchRegulatoryEvents).mockResolvedValue({
+    ...regulatoryResult,
+    items: [],
+    total: 0,
+    facets: {},
+    landscape: { total_events: 0, event_type: [], agency: [], decision_year: [] },
+  });
+  const onSearchChange = vi.fn();
+  renderView({
+    initialFilters: { ...emptyRegulatorySearchFilters, query: "missing", agency: "FDA" },
+    onSearchChange,
+  });
+
+  expect(await screen.findByText("未观察到匹配监管事件")).toBeInTheDocument();
+  expect(screen.getByText("可调整药物、适应症、监管机构、事件类型或日期条件后重试。")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "清除" }));
+  await waitFor(() => expect(onSearchChange).toHaveBeenCalledWith(emptyRegulatorySearchFilters, 0));
+});
+
+it("renders a recoverable regulatory query error", async () => {
+  vi.mocked(searchRegulatoryEvents).mockRejectedValue(new Error("Regulatory source unavailable"));
+  renderView({ initialFilters: emptyRegulatorySearchFilters });
+  expect(await screen.findByText("Regulatory source unavailable")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "重试" })).toBeInTheDocument();
+});
+
+it("requests a full-result regulatory sort from a sortable header", async () => {
+  const onSearchChange = vi.fn();
+  renderView({ onSearchChange });
+  const table = await screen.findByRole("table");
+  const titleHeader = within(table).getAllByRole("columnheader")[1];
+  fireEvent.click(within(titleHeader).getByRole("button"));
+
+  expect(onSearchChange).toHaveBeenCalledWith(
+    {
+      ...emptyRegulatorySearchFilters,
+      query: "VX-101",
+      sortBy: "title",
+      sortDirection: "asc",
+      sort: [{ field: "title", direction: "asc" }],
+    },
+    0,
+  );
+});
+
+it("saves and subscribes the authoritative applied regulatory query", async () => {
+  const filters = {
+    ...emptyRegulatorySearchFilters,
+    query: "VX-101",
+    agency: "FDA",
+    boxedWarning: "false",
+    sortBy: "source_updated_at" as const,
+    sortDirection: "asc" as const,
+  };
+  renderView({ initialFilters: filters });
+  await screen.findByRole("table", { name: "监管事件结果" });
+
+  fireEvent.click(screen.getByRole("button", { name: "保存/订阅" }));
+  expect(screen.getByRole("dialog", { name: "保存当前监管检索" })).toBeVisible();
+  fireEvent.change(screen.getByLabelText("名称"), { target: { value: "FDA safety watch" } });
+  fireEvent.click(screen.getByLabelText("企业内共享该检索"));
+  fireEvent.click(screen.getByRole("button", { name: "确认保存" }));
+
+  await waitFor(() =>
+    expect(saveRegulatorySearch).toHaveBeenCalledWith(
+      {
+        name: "FDA safety watch",
+        filters,
+        shared: true,
+        monitor: true,
+      },
+      expect.anything(),
+    ),
+  );
+  expect(await screen.findByRole("status")).toHaveTextContent("监管检索已保存并启用监控");
+});
+
+it("does not save a regulatory search that only contains sorting defaults", async () => {
+  renderView({ initialFilters: emptyRegulatorySearchFilters });
+  await screen.findByRole("table", { name: "监管事件结果" });
+  expect(screen.getByRole("button", { name: "保存/订阅" })).toBeDisabled();
+});

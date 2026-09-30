@@ -1,0 +1,238 @@
+schema_version: 1
+services:
+  - id: workspace
+    owner: product-operations
+    escalation_policy: role://product-operations/on-call
+  - id: api
+    owner: platform-operations
+    escalation_policy: role://platform-operations/on-call
+  - id: mcp
+    owner: platform-operations
+    escalation_policy: role://platform-operations/on-call
+  - id: data-factory
+    owner: data-operations
+    escalation_policy: role://data-operations/on-call
+  - id: search-projector
+    owner: search-operations
+    escalation_policy: role://search-operations/on-call
+  - id: search-maintenance
+    owner: search-operations
+    escalation_policy: role://search-operations/on-call
+  - id: monitoring-worker
+    owner: intelligence-operations
+    escalation_policy: role://intelligence-operations/on-call
+  - id: billing-provider
+    owner: finance-operations
+    escalation_policy: role://finance-operations/on-call
+  - id: parser
+    owner: security-operations
+    escalation_policy: role://security-operations/on-call
+  - id: clamav
+    owner: security-operations
+    escalation_policy: role://security-operations/on-call
+objectives:
+  - id: web-availability
+    service: api
+    indicator:
+      metric: http.server.duration
+      measurement: success_ratio
+      filters: {entry: workspace}
+    target: 0.999
+    window: 30d
+    error_budget_policy: freeze_noncritical_changes
+  - id: web-latency
+    service: api
+    indicator:
+      metric: http.server.duration
+      measurement: p95_seconds
+      filters: {entry: workspace}
+    target: 0.8
+    window: 28d
+    error_budget_policy: investigate_regression
+  - id: workspace-lcp
+    service: workspace
+    indicator:
+      metric: pharma.web.vitals.duration
+      measurement: p75_milliseconds
+      filters: {web_vital.name: lcp}
+    target: 2500
+    window: 28d
+    error_budget_policy: investigate_regression
+  - id: workspace-inp
+    service: workspace
+    indicator:
+      metric: pharma.web.vitals.duration
+      measurement: p75_milliseconds
+      filters: {web_vital.name: inp}
+    target: 200
+    window: 28d
+    error_budget_policy: investigate_regression
+  - id: workspace-cls
+    service: workspace
+    indicator:
+      metric: pharma.web.vitals.cls
+      measurement: p75_ratio
+      filters: {web_vital.name: cls}
+    target: 0.1
+    window: 28d
+    error_budget_policy: investigate_regression
+  - id: workspace-ttfb
+    service: workspace
+    indicator:
+      metric: pharma.web.vitals.duration
+      measurement: p75_milliseconds
+      filters: {web_vital.name: ttfb}
+    target: 800
+    window: 28d
+    error_budget_policy: investigate_regression
+  - id: mcp-commercial-availability
+    service: mcp
+    indicator:
+      metric: pharma.mcp.commercial.calls
+      measurement: settlement_ratio
+      filters: {}
+    target: 1.0
+    window: 30d
+    error_budget_policy: stop_commercial_traffic
+  - id: mcp-commercial-latency
+    service: mcp
+    indicator:
+      metric: pharma.mcp.commercial.duration
+      measurement: p95_seconds
+      filters: {outcome: settled}
+    target: 2.0
+    window: 28d
+    error_budget_policy: investigate_regression
+  - id: ingestion-success
+    service: data-factory
+    indicator:
+      metric: pharma.ingestion.operations
+      measurement: success_ratio
+      filters: {operation: process}
+    target: 0.99
+    window: 24h
+    error_budget_policy: pause_affected_source
+  - id: projection-delivery
+    service: search-projector
+    indicator:
+      metric: pharma.projection.deliveries
+      measurement: success_ratio
+      filters: {consumer: opensearch}
+    target: 0.999
+    window: 24h
+    error_budget_policy: stop_index_cutover
+  - id: billing-delivery
+    service: billing-provider
+    indicator:
+      metric: pharma.projection.deliveries
+      measurement: success_ratio
+      filters: {consumer: billing_provider}
+    target: 1.0
+    window: 30d
+    error_budget_policy: stop_billing_close
+  - id: monitoring-delivery
+    service: monitoring-worker
+    indicator:
+      metric: pharma.projection.deliveries
+      measurement: success_ratio
+      filters: {consumer: monitoring}
+    target: 0.999
+    window: 24h
+    error_budget_policy: pause_monitoring_changes
+  - id: clamav-scan-availability
+    service: clamav
+    indicator:
+      metric: pharma.ingestion.operations
+      measurement: success_ratio
+      filters: {operation: scan}
+    target: 1.0
+    window: 24h
+    error_budget_policy: pause_ingestion_until_scanner_recovers
+alerts:
+  - id: web-availability-fast-burn
+    objective: web-availability
+    severity: critical
+    threshold: 14.4
+    lookback: 1h
+    runbook: runbooks/slo-operations.md
+  - id: web-latency-regression
+    objective: web-latency
+    severity: warning
+    threshold: 0.8
+    lookback: 15m
+    runbook: runbooks/slo-operations.md
+  - id: workspace-lcp-regression
+    objective: workspace-lcp
+    severity: warning
+    threshold: 2500
+    lookback: 30m
+    runbook: runbooks/slo-operations.md
+  - id: workspace-inp-regression
+    objective: workspace-inp
+    severity: warning
+    threshold: 200
+    lookback: 30m
+    runbook: runbooks/slo-operations.md
+  - id: workspace-cls-regression
+    objective: workspace-cls
+    severity: warning
+    threshold: 0.1
+    lookback: 30m
+    runbook: runbooks/slo-operations.md
+  - id: workspace-ttfb-regression
+    objective: workspace-ttfb
+    severity: warning
+    threshold: 800
+    lookback: 30m
+    runbook: runbooks/slo-operations.md
+  - id: mcp-unsettled-result
+    objective: mcp-commercial-availability
+    severity: critical
+    threshold: 0.0
+    lookback: 5m
+    runbook: runbooks/incident-response.md
+  - id: mcp-latency-regression
+    objective: mcp-commercial-latency
+    severity: warning
+    threshold: 2.0
+    lookback: 15m
+    runbook: runbooks/slo-operations.md
+  - id: ingestion-failure-budget
+    objective: ingestion-success
+    severity: warning
+    threshold: 0.99
+    lookback: 30m
+    runbook: runbooks/source-onboarding.md
+  - id: projection-dead-letter
+    objective: projection-delivery
+    severity: critical
+    threshold: 0.0
+    lookback: 5m
+    runbook: runbooks/opensearch-operations.md
+  - id: billing-delivery-dead-letter
+    objective: billing-delivery
+    severity: critical
+    threshold: 0.0
+    lookback: 5m
+    runbook: runbooks/commercial-mcp.md
+  - id: monitoring-delivery-dead-letter
+    objective: monitoring-delivery
+    severity: critical
+    threshold: 0.0
+    lookback: 5m
+    runbook: runbooks/monitoring-operations.md
+  - id: clamav-scan-unavailable
+    objective: clamav-scan-availability
+    severity: critical
+    threshold: 1.0
+    lookback: 5m
+    runbook: runbooks/source-onboarding.md
+responsibilities:
+  on_call: platform-operations
+  incident_command: operations-duty-manager
+  customer_communications: support-operations
+  data_quality: data-operations
+  model_budget: ai-governance-owner
+  billing_support: finance-operations
+  security_incidents: security-operations
+  change_approval: change-advisory-board

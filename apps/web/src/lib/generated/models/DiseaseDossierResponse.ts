@@ -1,0 +1,36 @@
+/* generated using openapi-typescript-codegen -- do not edit */
+/* istanbul ignore file */
+/* tslint:disable */
+/* eslint-disable */
+import type { BioactivityRead } from './BioactivityRead';
+import type { ClinicalTrialSearchItemRead } from './ClinicalTrialSearchItemRead';
+import type { CompetitiveProgramRead } from './CompetitiveProgramRead';
+import type { CompoundStructureRead } from './CompoundStructureRead';
+import type { DealSearchItemRead } from './DealSearchItemRead';
+import type { DiseaseDossierSummaryRead } from './DiseaseDossierSummaryRead';
+import type { EntityDossierCoverageRead } from './EntityDossierCoverageRead';
+import type { EntityRead } from './EntityRead';
+import type { EntityRelationshipRead } from './EntityRelationshipRead';
+import type { EpidemiologyObservationSearchResult } from './EpidemiologyObservationSearchResult';
+import type { NewsEventSearchItemRead } from './NewsEventSearchItemRead';
+import type { PatentFamilyRead } from './PatentFamilyRead';
+import type { RegulatoryEventSearchItemRead } from './RegulatoryEventSearchItemRead';
+import type { TargetEvidenceRead } from './TargetEvidenceRead';
+export type DiseaseDossierResponse = {
+  activities: Array<BioactivityRead>;
+  as_of: string;
+  clinical_trials: Array<ClinicalTrialSearchItemRead>;
+  coverage: Array<EntityDossierCoverageRead>;
+  deals: Array<DealSearchItemRead>;
+  entity: EntityRead;
+  epidemiology: EpidemiologyObservationSearchResult;
+  news_events: Array<NewsEventSearchItemRead>;
+  patents: Array<PatentFamilyRead>;
+  programs: Array<CompetitiveProgramRead>;
+  regulatory_events: Array<RegulatoryEventSearchItemRead>;
+  relationships: Array<EntityRelationshipRead>;
+  structures: Array<CompoundStructureRead>;
+  summary: DiseaseDossierSummaryRead;
+  target_evidence: Array<TargetEvidenceRead>;
+  warnings?: Array<string>;
+};

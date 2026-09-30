@@ -1,0 +1,317 @@
+name: pharma-intelligence
+
+x-application-image: &application-image
+  image: pharma-intelligence-api:${APP_IMAGE_TAG:-latest}
+  build:
+    context: .
+    dockerfile: deploy/api.Dockerfile
+
+services:
+  postgres:
+    image: pharma-postgres-rdkit:18.4-2026.03.3
+    build:
+      context: .
+      dockerfile: deploy/postgres-rdkit.Dockerfile
+    command:
+      - postgres
+      - -c
+      - checkpoint_timeout=${POSTGRES_CHECKPOINT_TIMEOUT:-15min}
+      - -c
+      - max_wal_size=${POSTGRES_MAX_WAL_SIZE:-4GB}
+      - -c
+      - checkpoint_completion_target=${POSTGRES_CHECKPOINT_COMPLETION_TARGET:-0.9}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pharma_postgres18_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  redis:
+    image: valkey/valkey:8.0.2-alpine@sha256:752ba000a58bc8925d11ee863a39b5225617cd2cb3dbc9ec8ac65268b65ebb6d
+    command: ["valkey-server", "--appendonly", "yes", "--save", "60", "1000"]
+    volumes:
+      - pharma_redis_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  opensearch:
+    image: public.ecr.aws/opensearchproject/opensearch:3.7.0@sha256:44ba7ea58a319adf61c33ab16873f9ef5dbb30b291a832d375172f0b2d24e3c9
+    environment:
+      cluster.name: pharma-search
+      node.name: pharma-search-1
+      discovery.type: single-node
+      bootstrap.memory_lock: "false"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      DISABLE_SECURITY_PLUGIN: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+    volumes:
+      - pharma_opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9200/_cluster/health | grep -Eq '\"status\":\"(yellow|green)\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  temporal:
+    image: temporalio/auto-setup:1.29.6@sha256:1263120feed69d82e4ca23b8ca6f1d702c3029fe70714e382966d0192318eab6
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PWD: ${POSTGRES_PASSWORD}
+      POSTGRES_SEEDS: postgres
+      SKIP_DEFAULT_NAMESPACE_CREATION: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "tctl", "--address", "temporal:7233", "cluster", "health"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 10s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  clamav:
+    image: clamav/clamav:1.4@sha256:e7ead98e7e07231b151bce988e0cfb0a3b46e6e7046d9dd44fd838c0df724a03
+    environment:
+      CLAMD_STARTUP_TIMEOUT: "600"
+      FRESHCLAM_CHECKS: "12"
+      CLAMD_CONF_StreamMaxLength: 256M
+      CLAMD_CONF_MaxFileSize: 256M
+      CLAMD_CONF_MaxScanSize: 512M
+      CLAMD_CONF_MaxThreads: "4"
+      CLAMD_CONF_ReadTimeout: "300"
+      CLAMD_CONF_CommandReadTimeout: "30"
+      CLAMD_CONF_MaxConnectionQueueLength: "100"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  parser:
+    <<: *application-image
+    command: ["pharma-parser-service"]
+    environment:
+      PARSER_SERVICE_HOST: 0.0.0.0
+      PARSER_SERVICE_PORT: "8070"
+      PARSER_SERVICE_TOKEN: ${PARSER_SERVICE_TOKEN:-local-parser-service-token-change-before-production}
+      PARSER_SERVICE_MAX_FILE_BYTES: "268435456"
+      PARSER_SERVICE_MAX_TEXT_CHARS: "50000000"
+      PARSER_SERVICE_PARSER_TIMEOUT_SECONDS: "120"
+      PARSER_SERVICE_PARSER_CPU_SECONDS: "90"
+      PARSER_SERVICE_PARSER_MEMORY_BYTES: "2147483648"
+      PARSER_SERVICE_MAX_CONCURRENT_PARSES: "1"
+      PARSER_SERVICE_CAPACITY_WAIT_SECONDS: "30"
+      PARSER_SERVICE_LIMIT_CONCURRENCY: "8"
+    expose:
+      - "8070"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8070/health/ready')
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=3g
+    pids_limit: 64
+    mem_limit: 3g
+    cpus: 2.0
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - parser-sandbox
+
+  migrate:
+    <<: *application-image
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      POSTGRES_RUNTIME_USER: ${POSTGRES_RUNTIME_USER:?POSTGRES_RUNTIME_USER must be set in .env}
+      POSTGRES_RUNTIME_PASSWORD: ${POSTGRES_RUNTIME_PASSWORD:?POSTGRES_RUNTIME_PASSWORD must be set in .env}
+    command: ["sh", "-c", "alembic upgrade head && exec pharma-db-provision"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+  storage-init:
+    image: busybox:1.36.1@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662
+    user: "0:0"
+    command:
+      - sh
+      - -ec
+      - |
+        mkdir -p /data/object-store/.tmp /data/markdown-wiki
+        chown -R 10001:10001 /data/object-store /data/markdown-wiki
+        chmod 0750 /data/object-store /data/object-store/.tmp /data/markdown-wiki
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - pharma_object_store:/data/object-store
+      - pharma_markdown_wiki:/data/markdown-wiki
+    security_opt:
+      - no-new-privileges:true
+
+  api:
+    <<: *application-image
+    env_file: .env
+    environment:
+      DATABASE_URL: ${RUNTIME_DATABASE_URL:?RUNTIME_DATABASE_URL must be set in .env}
+      OBJECT_STORE_ROOT: /data/object-store
+      MARKDOWN_EXPORT_ROOT: /data/markdown-wiki
+      SEARCH_BACKEND: opensearch
+      OPENSEARCH_URL: http://opensearch:9200
+      TEMPORAL_ENABLED: "true"
+      TEMPORAL_ADDRESS: temporal:7233
+      MALWARE_SCAN_ENABLED: "true"
+      MALWARE_SCAN_MAX_FILE_BYTES: "268435456"
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: "3310"
+      PARSER_BACKEND: service
+      PARSER_SERVICE_URL: http://parser:8070
+      PARSER_SERVICE_TOKEN: ${PARSER_SERVICE_TOKEN:-local-parser-service-token-change-before-production}
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: "8080"
+      AGENT_API_BASE_URL: http://127.0.0.1:8080
+      PUBLIC_BASE_URL: http://127.0.0.1:${WEB_PORT:-18380}
+      MCP_AUTH_ISSUER_URL: http://127.0.0.1:${WEB_PORT:-18380}
+      MCP_RESOURCE_SERVER_URL: http://127.0.0.1:${MCP_PORT:-18390}/mcp
+    command: ["pharma-gateway"]
+    ports:
+      - "127.0.0.1:${WEB_PORT:-18380}:8080"
+      - "127.0.0.1:${MCP_PORT:-18390}:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      storage-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pharma-gateway-health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - pharma_object_store:/data/object-store
+      - pharma_markdown_wiki:/data/markdown-wiki
+    security_opt:
+      - no-new-privileges:true
+
+  worker:
+    <<: *application-image
+    command: ["pharma-jobs"]
+    env_file: .env
+    environment:
+      DATABASE_URL: ${RUNTIME_DATABASE_URL:?RUNTIME_DATABASE_URL must be set in .env}
+      TEMPORAL_ENABLED: "true"
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+      TEMPORAL_TASK_QUEUE: ${TEMPORAL_TASK_QUEUE:-pharma-data-factory}
+      TEMPORAL_WORKER_ENABLED: ${TEMPORAL_WORKER_ENABLED:-true}
+      TEMPORAL_SCHEDULER_ENABLED: ${TEMPORAL_SCHEDULER_ENABLED:-true}
+      TEMPORAL_SCHEDULER_POLL_SECONDS: ${TEMPORAL_SCHEDULER_POLL_SECONDS:-30}
+      TEMPORAL_MAX_CONCURRENT_ACTIVITIES: ${TEMPORAL_MAX_CONCURRENT_ACTIVITIES:-20}
+      OBJECT_STORE_ROOT: /data/object-store
+      MARKDOWN_EXPORT_ROOT: /data/markdown-wiki
+      SEARCH_BACKEND: opensearch
+      OPENSEARCH_URL: http://opensearch:9200
+      OPENSEARCH_VERIFY_CERTS: "false"
+      SEARCH_PROJECTION_ENABLED: "true"
+      SEARCH_ALLOW_NON_AUTHORITATIVE_PROJECTION: ${SEARCH_ALLOW_NON_AUTHORITATIVE_PROJECTION:-false}
+      MONITORING_ENABLED: "true"
+      MALWARE_SCAN_ENABLED: "true"
+      MALWARE_SCAN_MAX_FILE_BYTES: "268435456"
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: "3310"
+      PARSER_BACKEND: service
+      PARSER_SERVICE_URL: http://parser:8070
+      PARSER_SERVICE_TOKEN: ${PARSER_SERVICE_TOKEN:-local-parser-service-token-change-before-production}
+      PARSER_SERVICE_MAX_FILE_BYTES: "268435456"
+      PARSER_SERVICE_REQUEST_TIMEOUT_SECONDS: "180"
+      PARSER_SERVICE_VERIFY_CERTS: "false"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      storage-init:
+        condition: service_completed_successfully
+      temporal:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+      clamav:
+        condition: service_healthy
+      parser:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pharma-jobs-health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    volumes:
+      - ${KNOWLEDGE_SOURCE_ROOT:-./data/sources/empty}:/sources/knowledge:ro
+      - pharma_object_store:/data/object-store
+      - pharma_markdown_wiki:/data/markdown-wiki
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - default
+      - parser-sandbox
+
+volumes:
+  pharma_postgres18_data:
+  pharma_redis_data:
+  pharma_object_store:
+  pharma_markdown_wiki:
+  pharma_opensearch_data:
+
+networks:
+  parser-sandbox:
+    internal: true

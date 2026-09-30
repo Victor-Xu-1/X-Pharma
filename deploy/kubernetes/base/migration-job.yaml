@@ -1,0 +1,68 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pharma-migrate-0-1-0
+  labels:
+    app.kubernetes.io/name: pharma-migrate
+    app.kubernetes.io/component: migration
+    app.kubernetes.io/part-of: pharma-intelligence
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 900
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pharma-migrate
+        app.kubernetes.io/component: migration
+        app.kubernetes.io/part-of: pharma-intelligence
+    spec:
+      restartPolicy: Never
+      serviceAccountName: pharma-platform
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migrate
+          image: ghcr.io/replace-org/pharma-intelligence-platform:0.1.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -ec
+            - alembic upgrade head && alembic check && exec pharma-db-provision
+          envFrom:
+            - configMapRef:
+                name: pharma-platform-config
+            - secretRef:
+                name: pharma-platform-secrets
+            - secretRef:
+                name: pharma-migration-secrets
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: pharma-migration-secrets
+                  key: MIGRATION_DATABASE_URL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi

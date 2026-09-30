@@ -1,0 +1,157 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pharma-parser
+  labels:
+    app.kubernetes.io/name: pharma-parser
+    app.kubernetes.io/component: parser-sandbox
+    app.kubernetes.io/part-of: pharma-intelligence
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-parser
+  template:
+    metadata:
+      annotations:
+        secret.reloader.stakater.com/reload: pharma-document-processing-secrets,pharma-parser-server-tls,pharma-parser-client-tls
+      labels:
+        app.kubernetes.io/name: pharma-parser
+        app.kubernetes.io/component: parser-sandbox
+        app.kubernetes.io/part-of: pharma-intelligence
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-parser
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-parser
+      containers:
+        - name: parser
+          image: ghcr.io/replace-org/pharma-intelligence-platform:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["pharma-parser-service"]
+          env:
+            - name: PARSER_SERVICE_HOST
+              value: 0.0.0.0
+            - name: PARSER_SERVICE_PORT
+              value: "8070"
+            - name: PARSER_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pharma-document-processing-secrets
+                  key: PARSER_SERVICE_TOKEN
+            - name: PARSER_SERVICE_MAX_FILE_BYTES
+              value: "268435456"
+            - name: PARSER_SERVICE_MAX_TEXT_CHARS
+              value: "50000000"
+            - name: PARSER_SERVICE_PARSER_TIMEOUT_SECONDS
+              value: "120"
+            - name: PARSER_SERVICE_PARSER_CPU_SECONDS
+              value: "90"
+            - name: PARSER_SERVICE_PARSER_MEMORY_BYTES
+              value: "2147483648"
+            - name: PARSER_SERVICE_MAX_CONCURRENT_PARSES
+              value: "1"
+            - name: PARSER_SERVICE_CAPACITY_WAIT_SECONDS
+              value: "30"
+            - name: PARSER_SERVICE_LIMIT_CONCURRENCY
+              value: "8"
+            - name: PARSER_SERVICE_TLS_CERT_FILE
+              value: /etc/pharma-parser-server-tls/tls.crt
+            - name: PARSER_SERVICE_TLS_KEY_FILE
+              value: /etc/pharma-parser-server-tls/tls.key
+            - name: PARSER_SERVICE_TLS_CLIENT_CA_FILE
+              value: /etc/pharma-parser-client-ca/ca.crt
+          ports:
+            - name: https
+              containerPort: 8070
+          startupProbe:
+            tcpSocket:
+              port: https
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            tcpSocket:
+              port: https
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: https
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 3Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: parser-server-tls
+              mountPath: /etc/pharma-parser-server-tls
+              readOnly: true
+            - name: parser-client-ca
+              mountPath: /etc/pharma-parser-client-ca
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 3Gi
+        - name: parser-server-tls
+          secret:
+            secretName: pharma-parser-server-tls
+            defaultMode: 0440
+        - name: parser-client-ca
+          secret:
+            secretName: pharma-parser-client-tls
+            defaultMode: 0440
+            items:
+              - key: ca.crt
+                path: ca.crt
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pharma-parser
+  labels:
+    app.kubernetes.io/name: pharma-parser
+    app.kubernetes.io/part-of: pharma-intelligence
+spec:
+  selector:
+    app.kubernetes.io/name: pharma-parser
+  ports:
+    - name: https
+      port: 8070
+      targetPort: https

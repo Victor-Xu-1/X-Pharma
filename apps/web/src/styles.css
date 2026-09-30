@@ -1,0 +1,17 @@
+/* Preserve the original cascade; tokens are overlaid by design-system.css. */
+@import "./styles/base.css";
+@import "./styles/login.css";
+@import "./styles/navigation.css";
+@import "./styles/data-surfaces.css";
+@import "./styles/research.css";
+@import "./styles/user-center.css";
+@import "./styles/targets.css";
+@import "./styles/dossiers.css";
+@import "./styles/commercial.css";
+@import "./styles/enterprise.css";
+@import "./styles/knowledge.css";
+@import "./styles/data-factory.css";
+@import "./styles/governance.css";
+@import "./styles/chemistry.css";
+@import "./styles/clinical-trials.css";
+@import "./styles/regulatory.css";

@@ -1,0 +1,223 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pharma-clamav-config
+data:
+  clamd.conf: |
+    DatabaseDirectory /var/lib/clamav
+    Foreground yes
+    LocalSocket /tmp/clamd.sock
+    FixStaleSocket yes
+    TCPSocket 3310
+    TCPAddr 0.0.0.0
+    User clamav
+    ReadTimeout 300
+    CommandReadTimeout 30
+    MaxConnectionQueueLength 100
+    MaxThreads 4
+    StreamMaxLength 256M
+    MaxFileSize 256M
+    MaxScanSize 512M
+    MaxRecursion 16
+    MaxFiles 10000
+    LogTime yes
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pharma-clamav
+  labels:
+    app.kubernetes.io/name: pharma-clamav
+    app.kubernetes.io/component: ingestion-security
+    app.kubernetes.io/part-of: pharma-intelligence
+spec:
+  serviceName: pharma-clamav-headless
+  replicas: 2
+  podManagementPolicy: Parallel
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-clamav
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pharma-clamav
+        app.kubernetes.io/component: ingestion-security
+        app.kubernetes.io/part-of: pharma-intelligence
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-clamav
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-clamav
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: seed-signatures
+          image: clamav/clamav:1.4@sha256:e7ead98e7e07231b151bce988e0cfb0a3b46e6e7046d9dd44fd838c0df724a03
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-ec"]
+          args:
+            - >-
+              for file in /var/lib/clamav/*.cvd /var/lib/clamav/*.cld; do
+                test -f "$file" || continue;
+                target="/signatures/${file##*/}";
+                test -f "$target" || cp -p "$file" "$target";
+              done;
+              test ! -f /var/lib/clamav/freshclam.dat ||
+                test -f /signatures/freshclam.dat ||
+                cp -p /var/lib/clamav/freshclam.dat /signatures/freshclam.dat
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: signatures
+              mountPath: /signatures
+      containers:
+        - name: clamav
+          image: clamav/clamav:1.4@sha256:e7ead98e7e07231b151bce988e0cfb0a3b46e6e7046d9dd44fd838c0df724a03
+          imagePullPolicy: IfNotPresent
+          command: ["/init-unprivileged"]
+          env:
+            - name: CLAMD_STARTUP_TIMEOUT
+              value: "600"
+            - name: FRESHCLAM_CHECKS
+              value: "12"
+          ports:
+            - name: clamd
+              containerPort: 3310
+          startupProbe:
+            exec:
+              command:
+                - clamdscan
+                - --config-file=/etc/clamav/clamd.conf
+                - --ping=1
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - >-
+                  clamdscan --config-file=/etc/clamav/clamd.conf --ping=1 >/dev/null &&
+                  find /var/lib/clamav -maxdepth 1 -type f \( -name '*.cvd' -o -name '*.cld' \)
+                  -mmin -2160 -print -quit | grep -q .
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - clamdscan
+                - --config-file=/etc/clamav/clamd.conf
+                - --ping=1
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 500m
+              memory: 2Gi
+            limits:
+              cpu: "4"
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: logs
+              mountPath: /var/log/clamav
+            - name: signatures
+              mountPath: /var/lib/clamav
+            - name: config
+              mountPath: /etc/clamav/clamd.conf
+              subPath: clamd.conf
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: logs
+          emptyDir:
+            sizeLimit: 256Mi
+        - name: config
+          configMap:
+            name: pharma-clamav-config
+  volumeClaimTemplates:
+    - metadata:
+        name: signatures
+        labels:
+          app.kubernetes.io/name: pharma-clamav
+          app.kubernetes.io/component: virus-signatures
+          app.kubernetes.io/part-of: pharma-intelligence
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: replace-with-rwo-storage-class
+        resources:
+          requests:
+            storage: 4Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pharma-clamav-headless
+  labels:
+    app.kubernetes.io/name: pharma-clamav
+    app.kubernetes.io/part-of: pharma-intelligence
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app.kubernetes.io/name: pharma-clamav
+  ports:
+    - name: clamd
+      port: 3310
+      targetPort: clamd
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pharma-clamav
+  labels:
+    app.kubernetes.io/name: pharma-clamav
+    app.kubernetes.io/part-of: pharma-intelligence
+spec:
+  selector:
+    app.kubernetes.io/name: pharma-clamav
+  ports:
+    - name: clamd
+      port: 3310
+      targetPort: clamd

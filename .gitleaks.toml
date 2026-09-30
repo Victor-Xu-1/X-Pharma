@@ -1,0 +1,4 @@
+title = "X-Pharma secret detection"
+
+[extend]
+useDefault = true

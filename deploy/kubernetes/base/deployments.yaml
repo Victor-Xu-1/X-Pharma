@@ -1,0 +1,292 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pharma-api
+  labels:
+    app.kubernetes.io/name: pharma-api
+    app.kubernetes.io/component: unified-gateway
+    app.kubernetes.io/part-of: pharma-intelligence
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-api
+  template:
+    metadata:
+      annotations:
+        secret.reloader.stakater.com/reload: pharma-platform-secrets,pharma-embedding-secrets,pharma-opensearch-query-secrets
+      labels:
+        app.kubernetes.io/name: pharma-api
+        app.kubernetes.io/component: unified-gateway
+        app.kubernetes.io/part-of: pharma-intelligence
+    spec:
+      serviceAccountName: pharma-platform
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-api
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-api
+      containers:
+        - name: gateway
+          image: ghcr.io/replace-org/pharma-intelligence-platform:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["pharma-gateway"]
+          envFrom:
+            - configMapRef:
+                name: pharma-platform-config
+            - secretRef:
+                name: pharma-platform-secrets
+            - secretRef:
+                name: pharma-embedding-secrets
+            - secretRef:
+                name: pharma-opensearch-query-secrets
+          env:
+            - name: MCP_PORT
+              value: "8080"
+            - name: AGENT_API_BASE_URL
+              value: http://127.0.0.1:8080
+          ports:
+            - name: http
+              containerPort: 8080
+          startupProbe:
+            exec:
+              command: ["pharma-gateway-health"]
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            exec:
+              command: ["pharma-gateway-health"]
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 300m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: compiled-wiki
+              mountPath: /data/markdown-wiki
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: compiled-wiki
+          persistentVolumeClaim:
+            claimName: pharma-compiled-wiki
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pharma-jobs
+  labels:
+    app.kubernetes.io/name: pharma-jobs
+    app.kubernetes.io/component: unified-jobs
+    app.kubernetes.io/part-of: pharma-intelligence
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-jobs
+  template:
+    metadata:
+      annotations:
+        secret.reloader.stakater.com/reload: pharma-platform-secrets,pharma-document-processing-secrets,pharma-embedding-secrets,pharma-opensearch-jobs-secrets,pharma-billing-provider-secrets,pharma-parser-server-tls,pharma-parser-client-tls,pharma-ocr-server-tls,pharma-ocr-client-tls
+      labels:
+        app.kubernetes.io/name: pharma-jobs
+        app.kubernetes.io/component: unified-jobs
+        app.kubernetes.io/part-of: pharma-intelligence
+    spec:
+      serviceAccountName: pharma-platform
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-jobs
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-jobs
+      containers:
+        - name: jobs
+          image: ghcr.io/replace-org/pharma-intelligence-platform:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["pharma-jobs"]
+          envFrom:
+            - configMapRef:
+                name: pharma-platform-config
+            - secretRef:
+                name: pharma-platform-secrets
+            - secretRef:
+                name: pharma-document-processing-secrets
+            - secretRef:
+                name: pharma-embedding-secrets
+            - secretRef:
+                name: pharma-opensearch-jobs-secrets
+            - secretRef:
+                name: pharma-billing-provider-secrets
+          env:
+            - name: DOCUMENT_PROCESSING_CREDENTIALS_REQUIRED
+              value: "true"
+            - name: TEMPORAL_WORKER_ENABLED
+              value: "true"
+            - name: TEMPORAL_SCHEDULER_ENABLED
+              value: "true"
+            - name: SEARCH_PROJECTION_ENABLED
+              value: "true"
+            - name: MONITORING_ENABLED
+              value: "true"
+            - name: BILLING_PROVIDER_ENABLED
+              value: "true"
+            - name: BILLING_PROVIDER_NAME
+              value: approved-erp
+            - name: BILLING_PROVIDER_BASE_URL
+              value: https://billing.example.com
+          startupProbe:
+            exec:
+              command: ["pharma-jobs-health"]
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            exec:
+              command: ["pharma-jobs-health"]
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["pharma-jobs-health"]
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              cpu: "6"
+              memory: 8Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: source
+              mountPath: /sources/enterprise
+              readOnly: true
+            - name: compiled-wiki
+              mountPath: /data/markdown-wiki
+            - name: parser-server-ca
+              mountPath: /etc/pharma-parser-server-ca
+              readOnly: true
+            - name: parser-client-tls
+              mountPath: /etc/pharma-parser-client-tls
+              readOnly: true
+            - name: ocr-server-ca
+              mountPath: /etc/pharma-ocr-server-ca
+              readOnly: true
+            - name: ocr-client-tls
+              mountPath: /etc/pharma-ocr-client-tls
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 10Gi
+        - name: source
+          persistentVolumeClaim:
+            claimName: pharma-source-readonly
+            readOnly: true
+        - name: compiled-wiki
+          persistentVolumeClaim:
+            claimName: pharma-compiled-wiki
+        - name: parser-server-ca
+          secret:
+            secretName: pharma-parser-server-tls
+            defaultMode: 0440
+            items:
+              - key: ca.crt
+                path: ca.crt
+        - name: parser-client-tls
+          secret:
+            secretName: pharma-parser-client-tls
+            defaultMode: 0440
+            items:
+              - key: tls.crt
+                path: tls.crt
+              - key: tls.key
+                path: tls.key
+        - name: ocr-server-ca
+          secret:
+            secretName: pharma-ocr-server-tls
+            defaultMode: 0440
+            items:
+              - key: ca.crt
+                path: ca.crt
+        - name: ocr-client-tls
+          secret:
+            secretName: pharma-ocr-client-tls
+            defaultMode: 0440
+            items:
+              - key: tls.crt
+                path: tls.crt
+              - key: tls.key
+                path: tls.key

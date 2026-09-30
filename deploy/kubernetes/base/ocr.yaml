@@ -1,0 +1,169 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pharma-ocr
+  labels:
+    app.kubernetes.io/name: pharma-ocr
+    app.kubernetes.io/component: ocr-sandbox
+    app.kubernetes.io/part-of: pharma-intelligence
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-ocr
+  template:
+    metadata:
+      annotations:
+        secret.reloader.stakater.com/reload: pharma-document-processing-secrets,pharma-ocr-server-tls,pharma-ocr-client-tls
+      labels:
+        app.kubernetes.io/name: pharma-ocr
+        app.kubernetes.io/component: ocr-sandbox
+        app.kubernetes.io/part-of: pharma-intelligence
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharma-ocr
+      containers:
+        - name: ocr
+          image: ghcr.io/replace-org/pharma-intelligence-ocr:3.5.0-paddle3.3.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCR_SERVICE_HOST
+              value: 0.0.0.0
+            - name: OCR_SERVICE_PORT
+              value: "8071"
+            - name: OCR_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pharma-document-processing-secrets
+                  key: OCR_SERVICE_TOKEN
+            - name: OCR_SERVICE_MAX_FILE_BYTES
+              value: "268435456"
+            - name: OCR_SERVICE_MAX_TEXT_CHARS
+              value: "50000000"
+            - name: OCR_SERVICE_MAX_PAGES
+              value: "100"
+            - name: OCR_SERVICE_MAX_PAGE_PIXELS
+              value: "100000000"
+            - name: OCR_SERVICE_MAX_LINES
+              value: "1000000"
+            - name: OCR_SERVICE_MIN_CONFIDENCE
+              value: "0.5"
+            - name: OCR_SERVICE_MAX_CONCURRENT_REQUESTS
+              value: "1"
+            - name: OCR_SERVICE_LIMIT_CONCURRENCY
+              value: "4"
+            - name: OCR_SERVICE_DETECTION_MODEL_DIR
+              value: /models/PP-OCRv5_server_det
+            - name: OCR_SERVICE_RECOGNITION_MODEL_DIR
+              value: /models/PP-OCRv5_server_rec
+            - name: OCR_SERVICE_DETECTION_MODEL_SHA256
+              value: ec4f33f2eaedab78202156d61c79e2b81c020d2007a0336aa3777bb44a5a5ad0
+            - name: OCR_SERVICE_RECOGNITION_MODEL_SHA256
+              value: 02369df6f07caf77a9892b0d598b4fa71a831e31b087aa8d727d34ef5cee3a8f
+            - name: OCR_SERVICE_PADDLEOCR_VERSION
+              value: 3.5.0
+            - name: OCR_SERVICE_PADDLEPADDLE_VERSION
+              value: 3.3.1
+            - name: OCR_SERVICE_TLS_CERT_FILE
+              value: /etc/pharma-ocr-server-tls/tls.crt
+            - name: OCR_SERVICE_TLS_KEY_FILE
+              value: /etc/pharma-ocr-server-tls/tls.key
+            - name: OCR_SERVICE_TLS_CLIENT_CA_FILE
+              value: /etc/pharma-ocr-client-ca/ca.crt
+          ports:
+            - name: https
+              containerPort: 8071
+          startupProbe:
+            tcpSocket:
+              port: https
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            tcpSocket:
+              port: https
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: https
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "1"
+              memory: 3Gi
+            limits:
+              cpu: "4"
+              memory: 8Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: models
+              mountPath: /models
+              readOnly: true
+            - name: ocr-server-tls
+              mountPath: /etc/pharma-ocr-server-tls
+              readOnly: true
+            - name: ocr-client-ca
+              mountPath: /etc/pharma-ocr-client-ca
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 3Gi
+        - name: models
+          persistentVolumeClaim:
+            claimName: pharma-ocr-models
+            readOnly: true
+        - name: ocr-server-tls
+          secret:
+            secretName: pharma-ocr-server-tls
+            defaultMode: 0440
+        - name: ocr-client-ca
+          secret:
+            secretName: pharma-ocr-client-tls
+            defaultMode: 0440
+            items:
+              - key: ca.crt
+                path: ca.crt
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pharma-ocr
+  labels:
+    app.kubernetes.io/name: pharma-ocr
+    app.kubernetes.io/part-of: pharma-intelligence
+spec:
+  selector:
+    app.kubernetes.io/name: pharma-ocr
+  ports:
+    - name: https
+      port: 8071
+      targetPort: https

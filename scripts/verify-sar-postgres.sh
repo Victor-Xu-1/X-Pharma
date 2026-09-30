@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+umask 077
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+cd "$root"
+
+set -a
+# shellcheck disable=SC1091
+source .env
+set +a
+for variable in POSTGRES_USER POSTGRES_PASSWORD POSTGRES_RUNTIME_USER POSTGRES_RUNTIME_PASSWORD; do
+  [[ -n "${!variable:-}" ]] || { echo "$variable is required" >&2; exit 1; }
+done
+
+compose=(docker compose -f compose.yaml -f compose.dev.yaml -f compose.telemetry.yaml)
+database_name="pharma_sar_test_$(date -u +%Y%m%d%H%M%S)_$$"
+cleanup() {
+  "${compose[@]}" exec -T postgres dropdb --if-exists --force -U "$POSTGRES_USER" "$database_name" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT INT TERM
+"${compose[@]}" exec -T postgres createdb -U "$POSTGRES_USER" "$database_name"
+
+database_url() {
+  DB_USER=$1 DB_PASSWORD=$2 DB_NAME=$database_name uv run python -c \
+    'import os; from sqlalchemy.engine import URL; print(URL.create("postgresql+psycopg", username=os.environ["DB_USER"], password=os.environ["DB_PASSWORD"], host="127.0.0.1", port=5433, database=os.environ["DB_NAME"]).render_as_string(hide_password=False))'
+}
+admin_url=$(database_url "$POSTGRES_USER" "$POSTGRES_PASSWORD")
+runtime_url=$(database_url "$POSTGRES_RUNTIME_USER" "$POSTGRES_RUNTIME_PASSWORD")
+DATABASE_URL=$admin_url uv run alembic upgrade head >/dev/null
+DATABASE_URL=$admin_url POSTGRES_RUNTIME_USER=$POSTGRES_RUNTIME_USER POSTGRES_RUNTIME_PASSWORD=$POSTGRES_RUNTIME_PASSWORD \
+  uv run pharma-db-provision >/dev/null
+DATABASE_URL=$runtime_url TEST_SAR_DATABASE_URL=$runtime_url \
+  uv run pytest -q tests/test_sar_comparison_postgres.py --no-cov

@@ -1,0 +1,277 @@
+import {
+  Activity,
+  Atom,
+  Building2,
+  ChevronLeft,
+  ChevronRight,
+  CircleUserRound,
+  ClipboardList,
+  CreditCard,
+  Database,
+  FileBadge2,
+  FlaskConical,
+  Handshake,
+  Landmark,
+  ListChecks,
+  LogOut,
+  Menu,
+  Newspaper,
+  Search,
+  ShieldCheck,
+  X,
+} from "lucide-react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+
+import { OPERATIONS_NAME, PRODUCT_NAME } from "../lib/product";
+import type { User } from "../lib/types";
+import { useModalFocus } from "../lib/useModalFocus";
+import { canAccessView, type ViewKey, type WorkbenchKey } from "../lib/workspaceRouting";
+
+type NavigationItem = { key: ViewKey; label: string; icon: typeof Search };
+
+const primaryResearchNavigation: NavigationItem[] = [
+  { key: "explorer", label: "情报检索", icon: Search },
+  { key: "pipeline", label: "药物与管线", icon: FlaskConical },
+  { key: "trials", label: "临床试验", icon: ClipboardList },
+  { key: "patents", label: "专利情报", icon: FileBadge2 },
+  { key: "deals", label: "交易与公司", icon: Handshake },
+  { key: "regulatory", label: "监管与安全", icon: Landmark },
+  { key: "epidemiology", label: "流行病学", icon: Activity },
+  { key: "news", label: "新闻与会议", icon: Newspaper },
+  { key: "chemistry", label: "结构检索", icon: Atom },
+  { key: "collections", label: "对比列表", icon: ListChecks },
+];
+
+const internalNavigation: NavigationItem[] = [
+  { key: "factory", label: "数据工厂", icon: Database },
+  { key: "governance", label: "AI 审核", icon: ShieldCheck },
+  { key: "commercial", label: "商业运营", icon: CreditCard },
+  { key: "enterprise", label: "企业管理", icon: Building2 },
+];
+
+const titles: Record<ViewKey, { eyebrow: string; title: string }> = {
+  overview: { eyebrow: "ACCOUNT", title: "用户中心" },
+  explorer: { eyebrow: "INTELLIGENCE SEARCH", title: "全局情报检索" },
+  chemistry: { eyebrow: "CHEMICAL SEARCH", title: "化学结构检索" },
+  pipeline: { eyebrow: "DRUG AND PIPELINE", title: "药物与研发管线" },
+  trials: { eyebrow: "CLINICAL TRIALS", title: "临床试验与结果" },
+  patents: { eyebrow: "PATENT INTELLIGENCE", title: "专利族与资产关联" },
+  deals: { eyebrow: "DEALS AND COMPANIES", title: "交易、参与方与资产关联" },
+  regulatory: { eyebrow: "REGULATORY AND SAFETY", title: "监管事件与安全时间线" },
+  epidemiology: { eyebrow: "EPIDEMIOLOGY AND BURDEN", title: "流行病学与疾病负担" },
+  news: { eyebrow: "NEWS AND CONFERENCE", title: "新闻、公告与会议动态" },
+  target: { eyebrow: "TARGET LANDSCAPE", title: "靶点全景档案" },
+  drug: { eyebrow: "DRUG DOSSIER", title: "药物专业档案" },
+  company: { eyebrow: "COMPANY DOSSIER", title: "公司专业档案" },
+  disease: { eyebrow: "DISEASE DOSSIER", title: "疾病专业档案" },
+  entity: { eyebrow: "ENTITY DOSSIER", title: "多领域情报档案" },
+  evidence: { eyebrow: "SOURCE EVIDENCE", title: "原始资料查证" },
+  knowledge: { eyebrow: "COMPILED KNOWLEDGE", title: "版本化知识专题" },
+  monitoring: { eyebrow: "MONITORING", title: "情报监控与变更提醒" },
+  collections: { eyebrow: "项目对比", title: "对比列表" },
+  factory: { eyebrow: "DATA OPERATIONS", title: "自动数据工厂" },
+  governance: { eyebrow: "GOVERNANCE", title: "AI 信息审核" },
+  commercial: { eyebrow: "COMMERCIAL OPERATIONS", title: "Agent 商业运营" },
+  enterprise: { eyebrow: "ENTERPRISE ADMINISTRATION", title: "企业账户与审计" },
+};
+
+export function WorkspaceShell({
+  user,
+  activeWorkbench,
+  activeView,
+  pendingView = null,
+  onView,
+  onLogout,
+  children,
+}: {
+  user: User;
+  activeWorkbench: WorkbenchKey;
+  activeView: ViewKey;
+  pendingView?: ViewKey | null;
+  onView: (view: ViewKey) => void;
+  /** Kept for callers compiled against the pre-user-center shell contract. */
+  onLogout?: () => void;
+  children: ReactNode;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileNavigationRef = useModalFocus<HTMLElement>(mobileOpen, () => setMobileOpen(false));
+  const pageHeadingRef = useRef<HTMLHeadingElement>(null);
+  const previousView = useRef(activeView);
+  const heading = titles[activeView];
+  const navigationView = pendingView ?? activeView;
+  const researchWorkbench = activeWorkbench === "research";
+  useEffect(() => {
+    if (previousView.current === activeView) return;
+    previousView.current = activeView;
+    pageHeadingRef.current?.focus({ preventScroll: true });
+  }, [activeView]);
+
+  function navigate(view: ViewKey) {
+    onView(view);
+    setMobileOpen(false);
+  }
+
+  const collapseControl = (
+    <button
+      className="collapse-button"
+      type="button"
+      onClick={() => setCollapsed((value) => !value)}
+      title={collapsed ? "展开导航" : "收起导航"}
+      aria-label={collapsed ? "展开导航" : "收起导航"}
+    >
+      {collapsed ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
+    </button>
+  );
+
+  return (
+    <div
+      className={`workspace-shell ${researchWorkbench ? "research-workbench" : "internal-workbench"} ${
+        collapsed ? "sidebar-collapsed" : ""
+      }`}
+    >
+      <aside
+        ref={mobileNavigationRef}
+        className={`workspace-sidebar ${mobileOpen ? "mobile-open" : ""}`}
+        aria-label="工作台导航"
+        tabIndex={mobileOpen ? -1 : undefined}
+      >
+        <div className="sidebar-head">
+          <div className="brand-lockup">
+            <span className="brand-symbol">
+              <FlaskConical size={19} />
+            </span>
+            <span className="brand-copy">
+              <strong>{researchWorkbench ? PRODUCT_NAME : OPERATIONS_NAME}</strong>
+              <small>{researchWorkbench ? "医药研发情报" : "Internal Control"}</small>
+            </span>
+          </div>
+          <button
+            className="icon-button mobile-only"
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            title="关闭导航"
+            aria-label="关闭导航"
+          >
+            <X size={19} />
+          </button>
+        </div>
+        <nav className="sidebar-primary-nav" aria-label="主导航">
+          {researchWorkbench
+            ? primaryResearchNavigation
+                .filter((item) => canAccessView(item.key, user.role))
+                .map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.key}
+                      className={`nav-button ${navigationView === item.key ? "active" : ""}`}
+                      type="button"
+                      onClick={() => navigate(item.key)}
+                      aria-current={navigationView === item.key ? "page" : undefined}
+                      title={collapsed ? item.label : undefined}
+                    >
+                      <Icon size={18} />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })
+            : internalNavigation
+                .filter((item) => canAccessView(item.key, user.role))
+                .map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.key}
+                      className={`nav-button ${navigationView === item.key ? "active" : ""}`}
+                      type="button"
+                      onClick={() => navigate(item.key)}
+                      aria-current={navigationView === item.key ? "page" : undefined}
+                      title={collapsed ? item.label : undefined}
+                    >
+                      <Icon size={18} />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+        </nav>
+        {researchWorkbench ? (
+          <nav className="sidebar-account-nav" aria-label="账户导航">
+            <div className="sidebar-account-row">
+              <button
+                className={`nav-button sidebar-account-button ${navigationView === "overview" ? "active" : ""}`}
+                type="button"
+                onClick={() => navigate("overview")}
+                aria-current={navigationView === "overview" ? "page" : undefined}
+                aria-label="用户中心"
+                title={collapsed ? "用户中心" : undefined}
+              >
+                <CircleUserRound size={19} />
+                <span className="sidebar-account-copy">
+                  <strong>用户中心</strong>
+                  <small>{user.display_name}</small>
+                </span>
+              </button>
+              {collapseControl}
+            </div>
+          </nav>
+        ) : (
+          <>
+            {collapseControl}
+            <div className="sidebar-agent-status">
+              <ShieldCheck size={17} />
+              <span>
+                <strong>Governed Operations</strong>
+                <small>{user.display_name} · 全链路审计</small>
+              </span>
+              <i role="status" aria-label="在线" />
+              {onLogout ? (
+                <button
+                  className="icon-button"
+                  type="button"
+                  onClick={onLogout}
+                  title="退出当前账号"
+                  aria-label="退出当前账号"
+                >
+                  <LogOut size={16} />
+                </button>
+              ) : null}
+            </div>
+          </>
+        )}
+      </aside>
+      {mobileOpen ? (
+        <button type="button" className="sidebar-scrim" aria-label="关闭导航" onClick={() => setMobileOpen(false)} />
+      ) : null}
+      <div className="workspace-main">
+        <header className={`topbar ${researchWorkbench ? "public-topbar" : ""}`}>
+          <button
+            className="icon-button mobile-only"
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            title="打开导航"
+            aria-label="打开导航"
+          >
+            <Menu size={20} />
+          </button>
+          {!researchWorkbench ? (
+            <section className="workspace-identity" aria-label="内部管理工作台">
+              <Database size={16} />
+              <span>内部管理平台</span>
+            </section>
+          ) : null}
+          {!researchWorkbench ? <div className="topbar-spacer" /> : null}
+        </header>
+        <main className="workspace-content" aria-busy={pendingView ? "true" : undefined}>
+          <div className="page-heading">
+            {!researchWorkbench ? <p className="eyebrow">{heading.eyebrow}</p> : null}
+            <h1 ref={pageHeadingRef} tabIndex={-1} style={{ outline: "none" }}>
+              {heading.title}
+            </h1>
+          </div>
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}

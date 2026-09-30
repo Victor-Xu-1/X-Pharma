@@ -1,0 +1,1122 @@
+/* Governed chemistry search and browser-only molecular depiction */
+.molecule-depiction {
+  width: 100%;
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  margin: 0;
+  background: #fff;
+}
+.molecule-depiction img {
+  width: 100%;
+  height: 180px;
+  display: block;
+  object-fit: contain;
+}
+.drug-profile-structure-content .molecule-depiction {
+  width: 100%;
+  min-height: 190px;
+  aspect-ratio: 4 / 3;
+}
+
+.sar-structure .molecule-depiction {
+  width: 104px;
+  min-height: 72px;
+  height: 72px;
+}
+
+.sar-structure .molecule-depiction img {
+  width: 100%;
+  height: 72px;
+  object-fit: contain;
+}
+.molecule-loading {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #bed0d5;
+  border-top-color: #356b80;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.molecule-fallback {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  color: #7b8c94;
+}
+.molecule-fallback small {
+  font-size: 10px;
+}
+.chemistry-workbench {
+  display: grid;
+  gap: 28px;
+}
+.chemistry-query {
+  display: grid;
+  gap: 16px;
+  border-bottom: 1px solid #cbd6da;
+  padding-bottom: 22px;
+}
+.chemistry-query fieldset {
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+.mode-control legend,
+.structure-query-input > span,
+.chemistry-options label > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #53646d;
+  font-size: 10px;
+  font-weight: 700;
+}
+.chemistry-query-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+.mode-control {
+  width: min(440px, 100%);
+}
+.mode-control > div {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid #b9c7cd;
+  border-radius: 4px;
+  background: #fff;
+}
+.mode-control button {
+  min-height: 35px;
+  border: 0;
+  border-right: 1px solid #d1dadd;
+  background: transparent;
+  color: #536771;
+  font-size: 12px;
+}
+.mode-control button:last-child {
+  border-right: 0;
+}
+.mode-control button.active {
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-strong);
+  font-weight: 700;
+}
+.structure-query-input {
+  display: block;
+}
+.structure-query-input textarea {
+  min-height: 112px;
+  resize: vertical;
+  font-family: var(--ds-font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.structure-input-tabs {
+  display: flex;
+  align-items: center;
+  border: 1px solid #b9c7cd;
+  border-radius: 4px;
+  background: #fff;
+}
+.structure-input-tabs button {
+  min-height: 35px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  border-right: 1px solid #d1dadd;
+  background: transparent;
+  color: #536771;
+  padding: 7px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.structure-input-tabs button:last-child {
+  border-right: 0;
+}
+.structure-input-tabs button.active {
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-strong);
+  font-weight: 700;
+}
+.structure-editor {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #c9d5d9;
+  border-radius: 4px;
+  background: #fff;
+}
+.structure-editor-canvas {
+  width: 100%;
+  height: 640px;
+  min-height: 600px;
+  overflow: hidden;
+  background: #fff;
+}
+.structure-editor-canvas > div {
+  width: 100%;
+  height: 100%;
+}
+.structure-editor-actions {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid #d8e1e4;
+  background: #f7f9fa;
+  padding: 9px 12px;
+}
+.structure-editor-actions > span {
+  color: #596d76;
+  font-size: 10px;
+}
+.structure-editor.structure-editor .structure-editor-canvas button {
+  min-width: 24px;
+  min-height: 24px;
+}
+.structure-editor.structure-editor .structure-editor-canvas .ArrowScroll-module_down__yDzZX,
+.structure-editor.structure-editor .structure-editor-canvas .ArrowScroll-module_up__Q1ubd {
+  min-height: 24px;
+}
+.structure-editor.structure-editor .structure-editor-canvas .ArrowScroll-module_scroll__h9kCx {
+  min-height: 48px;
+  width: 48px;
+}
+.structure-editor.structure-editor .structure-editor-canvas .smallEditor .App-module_app__8cgyF {
+  grid-template-columns: minmax(48px, max-content) 1fr minmax(48px, max-content);
+}
+.structure-editor.structure-editor .structure-editor-canvas .css-8amd6p > span {
+  color: var(--ds-success);
+}
+.structure-editor-actions > div {
+  display: flex;
+  gap: 8px;
+}
+.structure-editor-actions button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.structure-editor-loading,
+.structure-editor-fallback,
+.structure-editor-gate {
+  min-height: 480px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #c9d5d9;
+  border-radius: 4px;
+  background: #fff;
+}
+.structure-editor-gate {
+  min-height: 240px;
+  align-content: center;
+  gap: 12px;
+  color: #536771;
+}
+.structure-editor-gate .primary-button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.structure-editor-fallback {
+  align-content: center;
+  gap: 14px;
+  color: var(--ds-danger);
+}
+.chemistry-options {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 16px;
+}
+.threshold-control {
+  width: min(440px, 100%);
+  margin-right: auto;
+}
+.threshold-control > span {
+  display: flex;
+  justify-content: space-between;
+}
+.threshold-control output {
+  color: #356b80;
+  font-family: var(--ds-font-mono);
+}
+.threshold-control input {
+  min-height: 22px;
+  accent-color: #356b80;
+}
+.chemistry-more-options {
+  min-width: 124px;
+}
+.chemistry-more-options summary {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: #536771;
+  padding: 6px 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.chemistry-more-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+}
+.chemistry-more-options label > span {
+  margin: 0;
+  white-space: nowrap;
+}
+.chemistry-more-options select {
+  min-width: 76px;
+}
+.chemistry-search-button {
+  min-width: 118px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.chemistry-results {
+  min-width: 0;
+}
+.chemistry-result-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid #ccd8dc;
+  padding-bottom: 13px;
+}
+.chemistry-result-head > div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.chemistry-result-head > div strong {
+  color: #172a34;
+  font-size: 25px;
+}
+.chemistry-result-head > div span {
+  color: #72838c;
+  font-size: 10px;
+}
+.chemistry-result-head dl {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+}
+.chemistry-result-head dl div {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 8px;
+  font-size: 9px;
+}
+.chemistry-result-head dt {
+  color: #809098;
+}
+.chemistry-result-head dd {
+  min-width: 0;
+  margin: 0;
+  color: #425861;
+  overflow-wrap: anywhere;
+}
+.chemistry-result-head code {
+  font-family: var(--ds-font-mono);
+}
+.chemistry-hit-list {
+  display: grid;
+}
+.chemistry-hit {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 20px;
+  border-bottom: 1px solid #d5dfe3;
+  padding: 20px 0;
+}
+.chemistry-hit > .molecule-depiction {
+  align-self: start;
+  border-right: 1px solid #e0e7e9;
+  padding-right: 14px;
+}
+.chemistry-hit-core {
+  min-width: 0;
+}
+.chemistry-hit-core > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.chemistry-hit-core > header h3 {
+  font-size: 16px;
+}
+.chemistry-hit-core > header code {
+  display: block;
+  margin-top: 5px;
+  color: #74868f;
+  font-family: var(--ds-font-mono);
+  font-size: 9px;
+  overflow-wrap: anywhere;
+}
+.similarity-score {
+  flex: 0 0 auto;
+  color: #356b80;
+  font-size: 21px;
+}
+.similarity-score small {
+  font-size: 9px;
+}
+.chemistry-properties {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(75px, 1fr));
+  margin: 15px 0;
+  border-top: 1px solid #dbe3e6;
+  border-bottom: 1px solid #dbe3e6;
+}
+.chemistry-properties > div {
+  min-width: 0;
+  border-right: 1px solid #e1e7e9;
+  padding: 9px;
+}
+.chemistry-properties > div:last-child {
+  border-right: 0;
+}
+.chemistry-properties dt {
+  color: #809098;
+  font-size: 9px;
+}
+.chemistry-properties dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  font-weight: 700;
+}
+.structure-identifiers {
+  display: grid;
+  gap: 5px;
+}
+.structure-identifiers > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 8px;
+  background: #f3f7f8;
+  padding: 5px 7px;
+}
+.structure-identifiers span {
+  color: #7b8c94;
+  font-size: 8px;
+  font-weight: 700;
+}
+.structure-identifiers code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--ds-font-mono);
+  font-size: 9px;
+}
+.structure-identifiers .icon-button {
+  width: 28px;
+  height: 28px;
+}
+.chemistry-hit-core > footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 11px;
+}
+.structure-grid article {
+  display: grid;
+  grid-template-columns: minmax(150px, 42%) minmax(0, 1fr);
+  align-items: center;
+}
+.structure-grid .molecule-depiction {
+  min-height: 130px;
+}
+.structure-grid .molecule-depiction img {
+  height: 130px;
+}
+
+@media (max-width: 1080px) {
+  .trial-linked-program-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sar-filters {
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+  }
+  .sar-filters > span {
+    justify-content: flex-start;
+  }
+  .domain-filter-bar {
+    grid-template-columns: minmax(260px, 1.4fr) repeat(3, minmax(130px, 0.7fr));
+  }
+  .trial-filter-bar {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
+  .patent-filter-bar {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+  .deal-filter-bar {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+  .regulatory-filter-bar {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+  .epidemiology-filter-bar {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+  .domain-filter-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+  .pipeline-stages {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .pipeline-stages > div:nth-child(3) {
+    border-right: 0;
+  }
+  .pipeline-stages > div:nth-child(-n + 3) {
+    border-bottom: 1px solid #e0e7e9;
+  }
+  .commercial-metrics {
+    grid-template-columns: repeat(4, minmax(120px, 1fr));
+  }
+  .commercial-metrics > div:nth-child(4) {
+    border-right: 0;
+  }
+  .commercial-metrics > div:nth-child(-n + 4) {
+    border-bottom: 1px solid #dde5e8;
+  }
+  .user-center-settings-grid {
+    grid-template-columns: 1fr;
+  }
+  .dossier-metrics {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .dossier-metrics > div:nth-child(3) {
+    border-right: 0;
+  }
+  .evidence-workspace,
+  .chemistry-workbench {
+    grid-template-columns: 1fr;
+  }
+  .evidence-query {
+    position: static;
+    border-right: 0;
+    border-bottom: 1px solid #d4dee2;
+    padding: 0 0 22px;
+  }
+  .knowledge-layout {
+    grid-template-columns: 250px minmax(0, 1fr);
+  }
+  .document-metadata {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.pipeline-filter-bar .entity-filter-combobox input {
+  min-height: 36px;
+  border: 0;
+  padding: 6px 0;
+  outline: 0;
+}
+
+@media (max-width: 760px) {
+  .trial-linked-program-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sar-filters {
+    grid-template-columns: 1fr;
+  }
+  .login-screen {
+    grid-template-columns: 1fr;
+  }
+  .login-brand {
+    min-height: 260px;
+    padding: 28px 24px;
+  }
+  .login-title h1 {
+    font-size: 29px;
+  }
+  .login-version {
+    display: none;
+  }
+  .login-form-area {
+    min-height: auto;
+    padding: 38px 22px;
+  }
+  .workspace-shell,
+  .workspace-shell.sidebar-collapsed {
+    display: block;
+  }
+  .workspace-sidebar {
+    position: fixed;
+    left: 0;
+    width: min(280px, 86vw);
+    transform: translateX(-105%);
+    transition: transform 0.18s ease;
+  }
+  .workspace-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  .workspace-sidebar .brand-copy,
+  .workspace-sidebar .nav-button span,
+  .workspace-sidebar .nav-group-toggle span,
+  .workspace-sidebar .nav-group-chevron,
+  .workspace-sidebar .sidebar-agent-status > span,
+  .workspace-sidebar .sidebar-agent-status i {
+    display: flex;
+  }
+  .workspace-sidebar .nav-button {
+    justify-content: flex-start;
+  }
+  .workspace-sidebar .nav-group-toggle {
+    justify-content: flex-start;
+  }
+  .workspace-sidebar .nav-section-label {
+    display: block;
+  }
+  .sidebar-account-row .collapse-button {
+    display: inline-flex;
+  }
+  .sidebar-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 19;
+    border: 0;
+    background: rgba(14, 30, 38, 0.5);
+  }
+  .mobile-only {
+    display: inline-flex;
+  }
+  .topbar {
+    gap: 9px;
+    padding: 10px 14px;
+  }
+  .workspace-identity {
+    width: 36px;
+    min-width: 36px;
+    justify-content: center;
+    padding: 0;
+  }
+  .workspace-identity span {
+    display: none;
+  }
+  .research-workbench .public-topbar {
+    display: flex;
+  }
+  .workspace-content {
+    padding: 22px 15px 40px;
+  }
+  .page-heading {
+    margin-bottom: 18px;
+  }
+  .research-workbench .page-heading h1 {
+    font-size: 22px;
+  }
+  h1 {
+    font-size: 23px;
+  }
+  .factory-status-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .factory-status-strip > div:nth-child(2) {
+    border-right: 0;
+  }
+  .factory-status-strip > div:nth-child(-n + 2) {
+    border-bottom: 1px solid #dde5e8;
+  }
+  .pipeline-panel > header,
+  .quarantine-panel > header,
+  .source-form-section > header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .pipeline-stages,
+  .quarantine-case-summary,
+  .source-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .pipeline-stages > div,
+  .pipeline-stages > div:nth-child(3) {
+    border-right: 0;
+    border-bottom: 1px solid #e0e7e9;
+  }
+  .pipeline-stages > div:last-child {
+    border-bottom: 0;
+  }
+  .source-form-grid .source-path-field {
+    grid-column: auto;
+  }
+  .factory-empty-state {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+  .factory-empty-state .secondary-button {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .factory-main .section-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .factory-main .section-actions {
+    justify-content: flex-end;
+  }
+  .factory-main .section-actions .primary-button {
+    white-space: nowrap;
+  }
+  .user-center-identity-card {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+  .user-center-identity-avatar {
+    width: 48px;
+    height: 48px;
+  }
+  .user-center-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .user-center-account-actions {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .user-center-account-actions .secondary-button {
+    align-self: flex-start;
+  }
+  .query-toolbar {
+    grid-template-columns: 1fr;
+  }
+  .explorer-intro {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .explorer-intro p {
+    text-align: left;
+  }
+  .domain-filter-bar {
+    grid-template-columns: 1fr;
+  }
+  .domain-filter-actions {
+    grid-column: auto;
+    justify-content: stretch;
+  }
+  .domain-filter-actions button {
+    flex: 1;
+    justify-content: center;
+  }
+  .domain-pagination {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .domain-pagination-context {
+    flex-wrap: wrap;
+  }
+  .domain-pagination-context small {
+    flex-basis: 100%;
+    white-space: normal;
+  }
+  .domain-pagination-controls {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .domain-pagination-pages {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  .domain-pagination-jump {
+    width: 100%;
+    justify-content: flex-end;
+    margin: 2px 0 0;
+  }
+  .domain-pagination-error {
+    grid-column: 1;
+    margin-top: -8px;
+  }
+  .query-row,
+  .filter-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .query-row > label,
+  .query-label {
+    text-align: left;
+  }
+  .query-row .primary-button,
+  .query-row .secondary-button {
+    justify-content: center;
+  }
+  .query-combobox {
+    flex-wrap: wrap;
+  }
+  .query-suggestions {
+    position: static;
+    flex: 1 0 100%;
+    width: 100%;
+    max-height: 190px;
+    box-shadow: none;
+  }
+  .virtual-table-toolbar {
+    flex-wrap: wrap;
+  }
+  .table-column-menu[open],
+  .table-sort-menu[open] {
+    flex: 1 0 100%;
+  }
+  .table-column-menu[open] summary,
+  .table-sort-menu[open] summary {
+    width: 100%;
+    justify-content: center;
+  }
+  .table-column-menu > fieldset {
+    position: static;
+    width: 100%;
+    max-height: 210px;
+    margin-top: 4px;
+    box-shadow: none;
+  }
+  .table-sort-menu > fieldset {
+    position: static;
+    width: 100%;
+    margin-top: 4px;
+    box-shadow: none;
+  }
+  .professional-query-builder > header,
+  .professional-query-builder > footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .professional-query-builder > nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .professional-query-fields,
+  .professional-entity-row,
+  .professional-more-fields-grid {
+    grid-template-columns: 1fr;
+  }
+  .professional-query-builder > footer .inline-error {
+    text-align: left;
+  }
+  .professional-query-builder > footer .primary-button {
+    width: 100%;
+  }
+  .entity-detail-drawer > header,
+  .entity-detail-drawer section,
+  .entity-detail-drawer > footer {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .commercial-toolbar {
+    align-items: flex-end;
+    margin: 0 0 14px;
+  }
+  .commercial-toolbar span {
+    flex: 1;
+  }
+  .commercial-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+  .commercial-metrics > div,
+  .commercial-metrics > div:nth-child(3) {
+    border-right: 1px solid #dde5e8;
+    border-bottom: 1px solid #dde5e8;
+  }
+  .commercial-metrics > div:nth-child(2n) {
+    border-right: 0;
+  }
+  .commercial-metrics > div:last-child {
+    grid-column: 1 / -1;
+    border-right: 0;
+    border-bottom: 0;
+  }
+  .commercial-metrics strong {
+    font-size: 18px;
+  }
+  .billing-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .dossier-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dossier-metrics > div:nth-child(2n) {
+    border-right: 0;
+  }
+  .dossier-metrics > div:nth-child(-n + 3) {
+    border-bottom: 1px solid #dce4e7;
+  }
+  .landscape-grid,
+  .structure-grid {
+    grid-template-columns: 1fr;
+  }
+  .record-list article {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+  .record-list article > .badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .record-list article > .icon-button {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .provenance-metadata {
+    grid-template-columns: 1fr;
+  }
+  .knowledge-layout,
+  .governance-layout {
+    display: block;
+  }
+  .governance-run-toolbar {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+  .governance-run-toolbar code {
+    flex-basis: 100%;
+    min-width: 0;
+    margin-left: 0;
+    overflow-wrap: anywhere;
+  }
+  .governance-run-metadata {
+    grid-template-columns: 1fr;
+  }
+  .identity-scope-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .publication-control-body {
+    grid-template-columns: 1fr;
+  }
+  .publication-control-body > section {
+    border-right: 0;
+    border-bottom: 1px solid #dce5e8;
+  }
+  .publication-control-body > section:last-child {
+    border-bottom: 0;
+  }
+  .projection-maintenance > header,
+  .projection-maintenance-result {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+  .projection-maintenance > header {
+    display: grid;
+  }
+  .projection-maintenance > header > div {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .identity-scope-toolbar > p {
+    text-align: left;
+  }
+  .identity-scope-control {
+    width: 100%;
+  }
+  .identity-scope-control button {
+    flex: 1 1 50%;
+    justify-content: center;
+  }
+  .knowledge-index,
+  .review-list {
+    max-height: 300px;
+    border-right: 0;
+    border-bottom: 1px solid #d7e0e4;
+  }
+  .knowledge-document,
+  .review-detail {
+    min-height: 360px;
+    padding: 20px 15px;
+  }
+  .canonical-choice {
+    grid-template-columns: 1fr;
+  }
+  .canonical-choice small {
+    grid-column: 1;
+  }
+  .identity-impact-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .identity-impact-metrics > div:nth-child(2n) {
+    border-right: 0;
+  }
+  .identity-impact-metrics > div:nth-child(-n + 2) {
+    border-bottom: 1px solid #d9e3e6;
+  }
+  .document-metadata {
+    grid-template-columns: 1fr 1fr;
+  }
+  .document-metadata div:nth-child(2n) {
+    border-right: 0;
+  }
+  .knowledge-coverage-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+  .knowledge-coverage-metrics > div:nth-child(2n) {
+    border-right: 0;
+  }
+  .knowledge-coverage-metrics > div:nth-child(-n + 2) {
+    border-bottom: 1px solid #dfe6e9;
+  }
+  .knowledge-history-grid {
+    display: block;
+  }
+  .knowledge-version-list {
+    display: flex;
+    max-height: none;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid #d7e0e4;
+  }
+  .knowledge-version-list > li > button {
+    min-width: 150px;
+    border-right: 1px solid #e0e7ea;
+    border-bottom: 0;
+  }
+  .knowledge-version-diff {
+    padding: 15px;
+  }
+  .knowledge-change-list article {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .news-display-control {
+    width: 100%;
+  }
+  .news-display-control button {
+    flex: 1;
+  }
+  .news-research-timeline::before {
+    left: 8px;
+  }
+  .news-research-timeline > article {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 16px 0 16px 27px;
+  }
+  .news-research-timeline > article::before {
+    top: 21px;
+    left: 4px;
+  }
+  .news-timeline-date {
+    align-items: center;
+    flex-direction: row;
+    text-align: left;
+  }
+  .news-timeline-content > header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .source-list article {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+  .source-list .row-actions {
+    grid-column: 2;
+  }
+  .review-source,
+  .payload-comparison {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .chemistry-query-head {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .mode-control {
+    width: 100%;
+  }
+  .structure-input-tabs {
+    width: 100%;
+  }
+  .structure-input-tabs button {
+    min-width: 0;
+    flex: 1;
+  }
+  .structure-editor-canvas {
+    height: 600px;
+    min-height: 560px;
+  }
+  .structure-editor-canvas button[title^="Aromatize"] {
+    display: none;
+  }
+  .structure-editor-loading,
+  .structure-editor-fallback {
+    min-height: 390px;
+  }
+  .structure-editor-gate {
+    min-height: 220px;
+  }
+  .structure-editor-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .structure-editor-actions > div {
+    width: 100%;
+  }
+  .structure-editor-actions button {
+    min-width: 0;
+    flex: 1;
+  }
+  .chemistry-options {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .threshold-control {
+    width: 100%;
+  }
+  .chemistry-more-options {
+    flex: 1;
+  }
+  .chemistry-search-button {
+    min-width: 120px;
+  }
+  .chemistry-result-head {
+    display: block;
+  }
+  .chemistry-result-head dl {
+    margin-top: 10px;
+  }
+  .chemistry-hit {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .chemistry-hit > .molecule-depiction {
+    border-right: 0;
+    border-bottom: 1px solid #e0e7e9;
+    padding: 0 0 12px;
+  }
+  .chemistry-properties {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .chemistry-properties > div:nth-child(2) {
+    border-right: 0;
+  }
+  .chemistry-properties > div:nth-child(-n + 2) {
+    border-bottom: 1px solid #e1e7e9;
+  }
+  .structure-grid article {
+    grid-template-columns: 1fr;
+  }
+}

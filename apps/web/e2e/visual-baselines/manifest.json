@@ -1,0 +1,133 @@
+{
+  "browser": "Google Chrome 150.0.7871.188",
+  "contains_production_data": false,
+  "contains_third_party_brand_assets": false,
+  "files": {
+    "research-deal-rights-desktop-1440.png": {
+      "capture": "dossier-section",
+      "sha256": "e5e294bc9eed3c0c5f54c9c50c422eeced1a3e0bcf0fbcf0430d5fa07160151b",
+      "state": "controlled-deal-rights",
+      "viewport": "1440x900"
+    },
+    "research-deal-rights-desktop-1920.png": {
+      "capture": "dossier-section",
+      "sha256": "45f8fb3976db1ec96e5e7d486c71d51c48171573d786d7a1bbd3349de7c18552",
+      "state": "controlled-deal-rights",
+      "viewport": "1920x1080"
+    },
+    "research-deal-rights-mobile-390.png": {
+      "capture": "dossier-section",
+      "sha256": "3f190e86b1075fae8ec16881a836370b60c500030f0a2e5594ec0b2494b96e90",
+      "state": "controlled-deal-rights",
+      "viewport": "390x844"
+    },
+    "research-deal-rights-tablet-1024.png": {
+      "capture": "dossier-section",
+      "sha256": "8bc08067587e0431f0c2797069065434a123a749537349074c98532469512023",
+      "state": "controlled-deal-rights",
+      "viewport": "1024x768"
+    },
+    "research-dense-results-desktop-1440.png": {
+      "capture": "table-shell",
+      "sha256": "eed12bb45f3b16986c2113cd40f14aac76ca5d3a848e5dca8eeabf783841b11d",
+      "state": "controlled-dense-results",
+      "viewport": "1440x900"
+    },
+    "research-dense-results-desktop-1920.png": {
+      "capture": "table-shell",
+      "sha256": "0aa310ff701ec48d6c253922a292d822380df071887b877a79b8fc873c7c9fab",
+      "state": "controlled-dense-results",
+      "viewport": "1920x1080"
+    },
+    "research-dense-results-mobile-390.png": {
+      "capture": "table-shell",
+      "sha256": "6a9de0339618639cffcf611fb135f6c0c0c120ea321f631c148287f04c68c77d",
+      "state": "controlled-dense-results",
+      "viewport": "390x844"
+    },
+    "research-dense-results-tablet-1024.png": {
+      "capture": "table-shell",
+      "sha256": "08e22617355d97c9a1654159e7f2e4b01ce78e4ca234421962c83ebde714e4d2",
+      "state": "controlled-dense-results",
+      "viewport": "1024x768"
+    },
+    "research-patent-timeline-desktop-1440.png": {
+      "capture": "dossier-section",
+      "sha256": "6c6470fc46c2d61783fb017f51275d5bc58ae6eb08ee6430f1853da42e406959",
+      "state": "controlled-patent-timeline",
+      "viewport": "1440x900"
+    },
+    "research-patent-timeline-desktop-1920.png": {
+      "capture": "dossier-section",
+      "sha256": "146aae89d281fb8d026e859f42b74b013dac729e2d7102a89add750b2fdd2ce1",
+      "state": "controlled-patent-timeline",
+      "viewport": "1920x1080"
+    },
+    "research-patent-timeline-mobile-390.png": {
+      "capture": "dossier-section",
+      "sha256": "ae1abf2da5226eb1c85501bb947f153c7f2ceb8ccd4bf62c2179568c3f43130a",
+      "state": "controlled-patent-timeline",
+      "viewport": "390x844"
+    },
+    "research-patent-timeline-tablet-1024.png": {
+      "capture": "dossier-section",
+      "sha256": "d6202c5da482b9e3bcc5aa2c33d9c57c979eed39545a103da66379e822f6c669",
+      "state": "controlled-patent-timeline",
+      "viewport": "1024x768"
+    },
+    "research-trial-outcomes-desktop-1440.png": {
+      "capture": "dossier-section",
+      "sha256": "65da4758d44b9c9b3118f016ec6f7bc5351ad05796f93ed5f80e52e0043625a4",
+      "state": "controlled-trial-outcomes",
+      "viewport": "1440x900"
+    },
+    "research-trial-outcomes-desktop-1920.png": {
+      "capture": "dossier-section",
+      "sha256": "84ba0f87b6753a4e13c764ba8f6abc10befcc2a3c3d193b2aa1bf6097cf1ca11",
+      "state": "controlled-trial-outcomes",
+      "viewport": "1920x1080"
+    },
+    "research-trial-outcomes-mobile-390.png": {
+      "capture": "dossier-section",
+      "sha256": "cabc011238ef266b3ad7eb6db19ee55c5032012687bc6b31f7d4ad04595d020b",
+      "state": "controlled-trial-outcomes",
+      "viewport": "390x844"
+    },
+    "research-trial-outcomes-tablet-1024.png": {
+      "capture": "dossier-section",
+      "sha256": "5cb3cca6a6e195626762b17509bf70e603a380d104e85011b93cb3bee218197a",
+      "state": "controlled-trial-outcomes",
+      "viewport": "1024x768"
+    },
+    "research-workbench-desktop-1440.png": {
+      "capture": "full-page",
+      "sha256": "5a5464fcb73da9a29ca904f0dec3a8111fcf5e138c9888170a55cd6518a5c357",
+      "state": "controlled-no-result",
+      "viewport": "1440x900"
+    },
+    "research-workbench-desktop-1920.png": {
+      "capture": "full-page",
+      "sha256": "568fb4ff7b284592505d1423bf7b7bf07091f8834d5b51e637879d8ae7a60476",
+      "state": "controlled-no-result",
+      "viewport": "1920x1080"
+    },
+    "research-workbench-mobile-390.png": {
+      "capture": "full-page",
+      "sha256": "0289f7f801aa8f9e06040edeb7457d70b23c61a59493b6f62e4a8f4b91f8919f",
+      "state": "controlled-no-result",
+      "viewport": "390x844"
+    },
+    "research-workbench-tablet-1024.png": {
+      "capture": "full-page",
+      "sha256": "88943d1e31e0f93ad4530e4045917d44ff343a08b1ec171974481e7e2e4cdc42",
+      "state": "controlled-no-result",
+      "viewport": "1024x768"
+    }
+  },
+  "generated_at": "2026-08-03",
+  "generator": "scripts/run-browser-acceptance.sh --update-snapshots",
+  "license": "repository-owned-test-artifact",
+  "schema": "pharma.workbench-visual-baselines.v3",
+  "schema_version": 3,
+  "source": "real local authenticated runtime with controlled no-result, dense-result and professional dossier queries"
+}

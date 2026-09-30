@@ -1,0 +1,338 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - name: Install pinned uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.28"
+          enable-cache: true
+      - name: Install locked dependencies
+        run: uv sync --locked --dev
+      - name: Lint and format gate
+        run: |
+          uv run ruff format --check src tests migrations scripts/mcp_inspector_probe.py
+          uv run ruff check src tests migrations scripts/mcp_inspector_probe.py
+      - name: Strict typing gate
+        run: uv run mypy src tests scripts/mcp_inspector_probe.py
+      - name: OpenAPI 3.1.2 drift gate
+        run: uv run pharma-openapi --check
+      - name: Unit and service tests
+        run: uv run pytest -m "not integration" --cov=pharma_intel --cov-report=term-missing --cov-report=xml --cov-fail-under=80
+      - name: Real encrypted SMB connector acceptance
+        run: make smb-source-acceptance
+      - name: Locked Python dependency audit
+        run: |
+          uv export --locked --no-dev --no-emit-project --format requirements-txt --output-file /tmp/audit-requirements.txt
+          uv run pip-audit --no-deps --disable-pip -r /tmp/audit-requirements.txt
+
+  postgres-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      opensearch:
+        image: public.ecr.aws/opensearchproject/opensearch:3.7.0@sha256:44ba7ea58a319adf61c33ab16873f9ef5dbb30b291a832d375172f0b2d24e3c9
+        env:
+          discovery.type: single-node
+          DISABLE_INSTALL_DEMO_CONFIG: "true"
+          DISABLE_SECURITY_PLUGIN: "true"
+          OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd "curl -fsS http://127.0.0.1:9200/_cluster/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/pharma_migration
+      POSTGRES_RUNTIME_USER: pharma_runtime
+      POSTGRES_RUNTIME_PASSWORD: ci-runtime-password
+      JWT_SECRET: ci-human-session-secret
+      INTERNAL_SERVICE_JWT_SECRET: ci-internal-service-secret
+      TENANT_CONTEXT_SIGNING_SECRET: ci-tenant-context-secret
+      API_KEY_HASH_SALT: ci-api-key-salt
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Build source-verified PostgreSQL 18 / RDKit image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: deploy/postgres-rdkit.Dockerfile
+          load: true
+          tags: pharma-postgres-rdkit:18.4-2026.03.3
+          cache-from: type=gha,scope=postgres-rdkit
+          cache-to: type=gha,mode=max,scope=postgres-rdkit
+      - name: Start PostgreSQL 18 / RDKit contract database
+        run: |
+          docker run -d --name pharma-postgres-contract \
+            -e POSTGRES_DB=pharma_migration \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -p 5432:5432 \
+            pharma-postgres-rdkit:18.4-2026.03.3
+          for attempt in $(seq 1 60); do
+            if docker exec pharma-postgres-contract pg_isready -U postgres -d pharma_migration; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs pharma-postgres-contract
+          exit 1
+      - name: Install pinned uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.28"
+          enable-cache: true
+      - name: Install locked dependencies
+        run: uv sync --locked --dev
+      - name: Apply and verify migrations
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
+          uv run pharma-db-provision
+      - name: Verify runtime row-level security
+        env:
+          DATABASE_URL: postgresql+psycopg://pharma_runtime:ci-runtime-password@127.0.0.1:5432/pharma_migration
+        run: |
+          uv run pharma-bootstrap --tenant-slug ci --tenant-name "CI Tenant" --skip-api-key
+          uv run pharma-verify-rls
+      - name: OpenBao dynamic PostgreSQL group-role contract
+        run: |
+          uv run python -c "import psycopg; c=psycopg.connect('postgresql://postgres:postgres@127.0.0.1:5432/postgres', autocommit=True); c.execute('CREATE DATABASE provision_test'); c.close()"
+          DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:5432/provision_test uv run alembic upgrade head
+          TEST_DB_PROVISION_DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:5432/provision_test \
+            uv run pytest tests/test_db_provision_postgres.py
+      - name: RDKit materialization, GiST and tenant isolation
+        run: |
+          uv run python -c "import psycopg; c=psycopg.connect('postgresql://postgres:postgres@127.0.0.1:5432/postgres', autocommit=True); c.execute('CREATE DATABASE chemistry_test'); c.close()"
+          DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:5432/chemistry_test uv run alembic upgrade head
+          DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:5432/chemistry_test uv run pharma-db-provision
+          TEST_CHEMISTRY_ADMIN_DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:5432/chemistry_test \
+          TEST_CHEMISTRY_RUNTIME_DATABASE_URL=postgresql+psycopg://pharma_runtime:ci-runtime-password@127.0.0.1:5432/chemistry_test \
+            uv run pytest tests/test_rdkit_postgres.py tests/test_chemistry_commercial_postgres.py tests/test_governance_structure_postgres.py
+      - name: PostgreSQL repository integration
+        run: |
+          uv run python -c "import psycopg; c=psycopg.connect('postgresql://postgres:postgres@127.0.0.1:5432/postgres', autocommit=True); c.execute('CREATE DATABASE repository_test'); c.close()"
+          TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:5432/repository_test uv run pytest tests/test_postgres_repository.py
+      - name: OpenSearch projection, tenant isolation and alias rebuild
+        env:
+          TEST_OPENSEARCH_URL: http://127.0.0.1:9200
+        run: uv run pytest tests/test_opensearch_integration.py
+      - name: Commercial ledger concurrency, RLS and immutability
+        env:
+          DATABASE_URL: postgresql+psycopg://pharma_runtime:ci-runtime-password@127.0.0.1:5432/pharma_migration
+          TEST_COMMERCIAL_DATABASE_URL: postgresql+psycopg://pharma_runtime:ci-runtime-password@127.0.0.1:5432/pharma_migration
+        run: uv run pytest tests/test_commercial_postgres.py
+
+  frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.14.0
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm api:check
+      - run: pnpm check
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm audit --audit-level high
+
+  deployment-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - name: Install pinned uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.28"
+          enable-cache: true
+      - name: Install locked validation dependencies
+        run: uv sync --locked --dev
+      - name: Render Kubernetes production base
+        run: kubectl kustomize deploy/kubernetes/base > /tmp/pharma-manifests.yaml
+      - name: Validate production CRDs against a real API server
+        run: ./scripts/validate-kubernetes.sh --uv-path uv --output /tmp/kubernetes-api-validation.json
+      - name: Archive Kubernetes API validation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: kubernetes-api-validation
+          path: /tmp/kubernetes-api-validation.json
+          if-no-files-found: warn
+      - name: Validate local integration compose
+        run: |
+          python3 scripts/configure-development.py
+          docker compose config --quiet
+          docker compose -f compose.yaml -f compose.dev.yaml -f compose.telemetry.yaml config --quiet
+
+  two-entry-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      E2E_EMAIL: analyst@example.test
+      E2E_PASSWORD: ci-workspace-password
+      E2E_BASE_URL: http://127.0.0.1:18380
+      TEST_MCP_URL: http://127.0.0.1:18390/mcp
+      COMPOSE_PROJECT_NAME: x-pharma-ci
+      COMPOSE_FILE: compose.yaml:compose.dev.yaml:compose.telemetry.yaml
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - name: Install pinned uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.28"
+          enable-cache: true
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.14.0
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - name: Install test clients
+        run: |
+          uv sync --locked --dev
+          pnpm --dir apps/web install --frozen-lockfile
+          pnpm --dir apps/web exec playwright install --with-deps chrome
+      - name: Start integration stack
+        env:
+          KNOWLEDGE_SOURCE_ROOT: /tmp/pharma-source
+        run: |
+          mkdir -p /tmp/pharma-source
+          python3 scripts/configure-development.py
+          docker compose up -d --build --wait --wait-timeout 600 api worker parser otel-collector
+          docker compose ps
+      - name: Bootstrap ephemeral tenant
+        run: |
+          output=$(docker compose run --rm api pharma-bootstrap --tenant-slug e2e --tenant-name "E2E Tenant" --admin-email "$E2E_EMAIL" --admin-password "$E2E_PASSWORD")
+          token=$(printf '%s\n' "$output" | grep '^phk_' | head -n 1)
+          key_id=$(printf '%s\n' "$output" | sed -n 's/^API key identity for commercial client binding: //p' | head -n 1)
+          test -n "$token"
+          test -n "$key_id"
+          echo "::add-mask::$token"
+          echo "TEST_MCP_ACCESS_TOKEN=$token" >> "$GITHUB_ENV"
+          docker compose run --rm -v "$PWD/deploy/commercial:/commercial:ro" api \
+            pharma-commercial --tenant-slug e2e --actor CI-E2E publish-rate-card \
+            --file /commercial/rate-card.schema-example.json
+          docker compose run --rm -v "$PWD/deploy/commercial:/commercial:ro" api \
+            pharma-commercial --tenant-slug e2e --actor CI-E2E provision-client \
+            --client-key e2e-agent --oauth-client-id "$key_id" --display-name "E2E Agent" \
+            --actor-type api_key --subject-id "$key_id" --account-key e2e-main \
+            --account-name "E2E Account" --subscription-key e2e-2026 \
+            --rate-card-key schema-example --rate-card-revision 1 \
+            --export-field-policy /commercial/export-field-policy.schema-example.json
+          docker compose run --rm api \
+            pharma-commercial --tenant-slug e2e --actor CI-E2E grant-credit \
+            --subscription-key e2e-2026 --units 1000 --external-reference CI-E2E-CREDIT \
+            --reason "Ephemeral integration allocation"
+      - name: Browser workbench smoke
+        run: ./scripts/run-browser-acceptance.sh --output /tmp/browser-acceptance-report.json
+      - name: Real MCP streamable HTTP smoke
+        run: uv run pytest tests/test_mcp_integration.py
+      - name: Independent MCP dual-client interoperability
+        run: ./scripts/verify-mcp-interoperability.sh --mcp-url "$TEST_MCP_URL" --output /tmp/mcp-interoperability-report.json
+      - name: Web and MCP canonical fact consistency
+        run: ./scripts/verify-entry-consistency.sh --web-url "$E2E_BASE_URL" --mcp-url "$TEST_MCP_URL" --output /tmp/entry-consistency-report.json
+      - name: Billed MCP concurrency baseline
+        run: >-
+          uv run pharma-mcp-load --url "$TEST_MCP_URL" --requests 20 --concurrency 4
+          --max-p95-ms 10000 --output /tmp/mcp-load-report.json
+      - name: Archive MCP protocol and concurrency evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: two-entry-protocol-and-load-evidence
+          path: |
+            /tmp/browser-acceptance-report.json
+            /tmp/mcp-interoperability-report.json
+            /tmp/entry-consistency-report.json
+            /tmp/mcp-load-report.json
+          if-no-files-found: error
+      - name: Capture service logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail=300
+      - name: Stop integration stack
+        if: always()
+        run: docker compose down -v --remove-orphans
+
+  security-supply-chain:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Install pinned uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.28"
+          enable-cache: true
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.14.0
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - name: Install locked audit dependencies
+        run: |
+          uv sync --locked --dev
+          pnpm --dir apps/web install --frozen-lockfile
+      - name: Build application release image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: deploy/api.Dockerfile
+          load: true
+          tags: pharma-intelligence-api:latest
+          cache-from: type=gha,scope=pharma-api-security
+          cache-to: type=gha,mode=max,scope=pharma-api-security
+      - name: Build PostgreSQL 18 / RDKit release image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: deploy/postgres-rdkit.Dockerfile
+          load: true
+          tags: pharma-postgres-rdkit:18.4-2026.03.3
+          cache-from: type=gha,scope=postgres-rdkit
+          cache-to: type=gha,mode=max,scope=postgres-rdkit
+      - name: Run source, dependency, SBOM and image security gates
+        run: ./scripts/run-security-gates.sh
+      - name: Archive security evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: security-supply-chain-evidence
+          path: manifests/runtime/security/
+          if-no-files-found: warn

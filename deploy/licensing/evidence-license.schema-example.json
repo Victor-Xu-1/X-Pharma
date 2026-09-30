@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "license_id": "replace-with-source-license-id",
+  "policy_version": "contract-v1",
+  "permitted_channels": ["mcp", "web"],
+  "allowed_fields": [
+    "content",
+    "content_sha256",
+    "document_name",
+    "evidence_claim_id",
+    "locator",
+    "review_status",
+    "source_uri",
+    "source_version_id",
+    "subject_entity_id"
+  ],
+  "max_content_chars": 5000,
+  "attribution": "Replace with the contracted source attribution",
+  "metadata": {
+    "owner": "replace-with-data-owner",
+    "contract_reference": "replace-with-approved-contract-reference"
+  }
+}

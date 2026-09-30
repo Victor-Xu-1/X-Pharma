@@ -1,0 +1,29 @@
+services:
+  otel-collector:
+    image: pharma-intelligence-otel:dev
+    build:
+      context: .
+      dockerfile: deploy/otel/Dockerfile
+    command: ["--config=/etc/otelcol-contrib/collector.dev.yaml"]
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:uid=10001,gid=10001,mode=1770
+    security_opt:
+      - no-new-privileges:true
+
+  api:
+    environment: &otel-environment
+      OTEL_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
+      OTEL_METRIC_EXPORT_INTERVAL_MS: "5000"
+    depends_on:
+      otel-collector:
+        condition: service_started
+
+  worker:
+    environment: *otel-environment
+    depends_on:
+      otel-collector:
+        condition: service_started

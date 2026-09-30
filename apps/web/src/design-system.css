@@ -1,0 +1,1394 @@
+:root {
+  --ds-font-sans: "Inter", "SF Pro Text", "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+  --ds-font-mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+  --ds-text-xs: 12px;
+  --ds-text-sm: 13px;
+  --ds-text-md: 14px;
+  --ds-leading-compact: 1.4;
+  --ds-leading-body: 1.5;
+  --ds-radius-control: 6px;
+  --ds-radius-panel: 8px;
+  --ds-control-height: 40px;
+  --ds-button-height: 36px;
+  --ds-icon-control-size: 34px;
+  --ds-canvas: #f4f8fa;
+  --ds-surface: #ffffff;
+  --ds-surface-muted: #edf4f7;
+  --ds-surface-soft: #e7f1f5;
+  --ds-ink: #263842;
+  --ds-ink-strong: #172731;
+  --ds-ink-muted: #5d6d75;
+  --ds-ink-faint: #60737c;
+  --ds-border: #d7e2e7;
+  --ds-border-strong: #b7cbd4;
+  --ds-border-subtle: #dfe9ed;
+  --ds-accent: #a6c9d6;
+  --ds-accent-strong: #356b80;
+  --ds-accent-soft: #dcecf2;
+  --ds-accent-border: #afd0dc;
+  --ds-focus: #6eabc0;
+  --ds-row-hover: #f2f8fa;
+  --ds-nav: #22343d;
+  --ds-nav-hover: #304a56;
+  --ds-nav-muted: #a6bbc4;
+  --ds-nav-text: #eef7fa;
+  --ds-success: #267354;
+  --ds-success-soft: #e4f1e9;
+  --ds-success-indicator: #68a887;
+  --ds-info: #356b80;
+  --ds-info-soft: #e1eff4;
+  --ds-info-border: #b6d6e0;
+  --ds-warning: #526b78;
+  --ds-warning-soft: #e9f1f4;
+  --ds-danger: #a43f37;
+  --ds-danger-soft: #fae9e7;
+  --ds-danger-border: #d49a98;
+  --ds-identity-border: #c7dce4;
+  --ds-shadow-sm: 0 1px 2px rgb(34 52 61 / 7%);
+  --ds-shadow-md: 0 12px 32px rgb(34 52 61 / 14%);
+  color: var(--ds-ink);
+  background: var(--ds-canvas);
+  font-family: var(--ds-font-sans);
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  background: var(--ds-canvas);
+}
+
+body {
+  color: var(--ds-ink);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-md);
+  line-height: var(--ds-leading-body);
+}
+
+:root code,
+:root pre,
+.mono-value {
+  font-family: var(--ds-font-mono);
+}
+
+h1,
+h2,
+h3 {
+  color: var(--ds-ink-strong);
+  font-family: var(--ds-font-sans);
+  font-weight: 700;
+}
+
+a,
+.text-button,
+.table-link-button,
+.table-result-action,
+.deal-role-list button {
+  color: var(--ds-accent-strong);
+}
+
+a:hover,
+.text-button:hover,
+.table-link-button:hover,
+.deal-role-list button:hover {
+  color: var(--ds-ink-strong);
+}
+
+:root input,
+:root select,
+:root textarea {
+  min-height: var(--ds-control-height);
+  border-color: var(--ds-border-strong);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface);
+  color: var(--ds-ink);
+}
+
+:root input[type="checkbox"],
+:root input[type="radio"],
+:root input[type="range"],
+:root progress {
+  accent-color: var(--ds-accent-strong);
+}
+
+:root input::placeholder,
+:root textarea::placeholder {
+  color: var(--ds-ink-faint);
+}
+
+:root input:focus,
+:root select:focus,
+:root textarea:focus,
+.query-input:focus-within,
+.select-control:focus-within,
+.inline-search:focus-within,
+.domain-query-field .input-with-icon:focus-within,
+.entity-filter-combobox:focus-within {
+  border-color: var(--ds-accent);
+  box-shadow: 0 0 0 3px rgb(110 171 192 / 24%);
+  outline: 0;
+}
+
+:root button:focus-visible,
+:root a:focus-visible,
+:root summary:focus-visible {
+  outline: 2px solid var(--ds-focus);
+  outline-offset: 2px;
+}
+
+.primary-button,
+.login-button {
+  border-color: var(--ds-accent);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-accent);
+  color: var(--ds-ink-strong);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.primary-button {
+  min-height: var(--ds-button-height);
+}
+
+.login-button {
+  min-height: var(--ds-control-height);
+}
+
+.primary-button:hover:not(:disabled),
+.login-button:hover:not(:disabled) {
+  background: var(--ds-accent-strong);
+  color: var(--ds-surface);
+}
+
+.secondary-button,
+.table-result-action,
+.table-view-reset {
+  border-radius: var(--ds-radius-control);
+  border-color: var(--ds-border-strong);
+  background: var(--ds-surface);
+  color: var(--ds-ink);
+}
+
+.secondary-button {
+  min-height: var(--ds-button-height);
+}
+
+.secondary-button:hover:not(:disabled),
+.table-result-action:hover:not(:disabled),
+.table-view-reset:hover:not(:disabled),
+.state-message .text-button:hover:not(:disabled) {
+  border-color: var(--ds-accent);
+  background: var(--ds-surface-soft);
+  color: var(--ds-accent-strong);
+}
+
+.danger-button {
+  min-height: var(--ds-button-height);
+  border-radius: var(--ds-radius-control);
+  border-color: var(--ds-danger-border);
+  background: var(--ds-surface);
+  color: var(--ds-danger);
+}
+
+.icon-button {
+  width: var(--ds-icon-control-size);
+  min-width: var(--ds-icon-control-size);
+  height: var(--ds-icon-control-size);
+  min-height: var(--ds-icon-control-size);
+  border-radius: var(--ds-radius-control);
+  color: var(--ds-ink-muted);
+}
+
+.icon-button:hover {
+  border-color: var(--ds-border);
+  background: var(--ds-surface-soft);
+  color: var(--ds-accent-strong);
+}
+
+.workspace-sidebar {
+  background: var(--ds-nav);
+  color: var(--ds-nav-text);
+}
+
+.login-brand {
+  background: var(--ds-accent-soft);
+}
+
+.sidebar-head {
+  border-bottom-color: rgb(238 247 250 / 16%);
+}
+
+.workspace-sidebar .sidebar-account-nav {
+  border-top-color: rgb(238 247 250 / 16%);
+}
+
+.brand-symbol {
+  background: var(--ds-accent);
+  color: var(--ds-ink-strong);
+}
+
+.brand-lockup small,
+.login-version {
+  color: var(--ds-ink);
+  font-size: var(--ds-text-xs);
+  line-height: var(--ds-leading-compact);
+}
+
+.workspace-sidebar small,
+.nav-section-label,
+.collapse-button {
+  color: var(--ds-nav-muted);
+}
+
+.nav-button,
+.nav-group-toggle {
+  color: var(--ds-nav-muted);
+}
+
+.nav-button:hover,
+.nav-group-toggle:hover,
+.nav-group.expanded > .nav-group-toggle {
+  background: var(--ds-nav-hover);
+  color: var(--ds-surface);
+}
+
+.nav-button.active {
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-strong);
+  box-shadow: inset 3px 0 var(--ds-accent);
+}
+
+.sidebar-agent-status {
+  border-top-color: rgb(238 247 250 / 16%);
+  border-bottom-color: rgb(238 247 250 / 16%);
+}
+
+.sidebar-agent-status i {
+  background: var(--ds-success-indicator);
+}
+
+.brand-lockup strong,
+.nav-group-toggle > span,
+.sidebar-account-copy strong,
+.sidebar-agent-status strong {
+  font-size: var(--ds-text-sm);
+  line-height: var(--ds-leading-compact);
+}
+
+.topbar {
+  border-bottom-color: var(--ds-border);
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 1px 0 rgb(34 52 61 / 3%);
+  backdrop-filter: blur(10px);
+}
+
+.nav-button,
+.nav-group-toggle,
+.collapse-button,
+.workspace-identity {
+  min-height: var(--ds-control-height);
+  border-radius: var(--ds-radius-control);
+}
+
+.workspace-identity {
+  border-color: var(--ds-identity-border);
+  background: var(--ds-surface-soft);
+  color: var(--ds-accent-strong);
+  font-size: var(--ds-text-xs);
+  line-height: var(--ds-leading-compact);
+}
+
+.user-copy small,
+.section-header p,
+.eyebrow,
+.result-summary,
+.cell-subtitle,
+.table-secondary {
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-xs);
+  line-height: var(--ds-leading-compact);
+}
+
+.workspace-identity svg,
+.login-title .eyebrow,
+.login-form > svg {
+  color: var(--ds-accent-strong);
+}
+
+.muted-text,
+.date-range-fieldset label span {
+  color: var(--ds-ink-muted);
+  font-size: 12px;
+}
+
+.entity-governance-line {
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-xs);
+  line-height: var(--ds-leading-compact);
+}
+
+.segmented-control button,
+.advanced-filter-panel > summary {
+  font-size: var(--ds-text-xs);
+  line-height: var(--ds-leading-compact);
+}
+
+.workspace-content,
+.login-form-area {
+  background: var(--ds-canvas);
+}
+
+.table-frame,
+.virtual-table-viewport,
+.workspace-modal,
+.modal-panel,
+.detail-drawer,
+.entity-detail-drawer,
+.drawer-content,
+.facet-multi-select-options,
+.domain-export-menu > form,
+.table-sort-menu > fieldset,
+.commercial-metrics,
+.operations-form,
+.landscape-grid article,
+.knowledge-layout,
+:root .internal-workbench .governance-layout,
+.collections-layout,
+.trial-professional-page,
+.patent-professional-page,
+.deal-professional-page,
+.professional-query-builder,
+.intelligence-query-panel,
+.advanced-filter-panel,
+.domain-filter-bar,
+.pipeline-filter-bar,
+.trial-filter-bar,
+.patent-filter-bar,
+.deal-filter-bar,
+.regulatory-filter-bar,
+.epidemiology-filter-bar,
+.news-display-control,
+.pipeline-landscape,
+.trial-landscape,
+.epidemiology-trend-panel,
+.user-center-identity-card,
+.user-center-panel,
+.user-center-account-actions {
+  border-color: var(--ds-border);
+  border-radius: var(--ds-radius-panel);
+  background: var(--ds-surface);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.virtual-table-toolbar,
+.comparison-selection-toolbar {
+  border-color: var(--ds-border);
+  background: var(--ds-surface-muted);
+}
+
+th,
+.virtual-table-heading,
+.entity-comparison-table thead th,
+.virtual-table-heading:first-child,
+.has-row-selection .virtual-table-heading:nth-child(2),
+.professional-facet-placeholder {
+  border-color: var(--ds-border);
+  background: var(--ds-surface-muted);
+  color: var(--ds-ink-muted);
+}
+
+td,
+.virtual-table-cell {
+  border-color: var(--ds-border-subtle);
+}
+
+tbody tr:hover,
+.virtual-table-data-row:hover,
+.virtual-table-data-row:hover .virtual-table-cell:first-child,
+.has-row-selection .virtual-table-data-row:hover .virtual-table-cell:nth-child(2) {
+  background: var(--ds-row-hover);
+}
+
+.comparison-member-selected td,
+.virtual-table-data-row.is-selected,
+.virtual-table-data-row.is-selected .virtual-table-cell:first-child,
+.has-row-selection .virtual-table-data-row.is-selected .virtual-table-cell:nth-child(2) {
+  background: var(--ds-accent-soft);
+}
+
+.brand-lockup,
+.login-title h1,
+.virtual-table-cell > strong,
+.collection-entity-link,
+.comparison-entity-link,
+.table-frame td strong {
+  color: var(--ds-ink-strong);
+}
+
+.workspace-sidebar .brand-lockup {
+  color: var(--ds-surface);
+}
+
+.view-tabs,
+.trial-professional-tabs,
+.chemistry-query {
+  border-bottom-color: var(--ds-border);
+}
+
+.view-tabs button,
+.trial-professional-tabs button {
+  color: var(--ds-ink-muted);
+}
+
+.view-tabs button.active,
+.trial-professional-tabs button.active {
+  border-bottom-color: var(--ds-accent);
+  color: var(--ds-accent-strong);
+}
+
+.facet-strip button,
+.suggestion-row button,
+.segmented-control button {
+  border-color: var(--ds-border);
+  background: var(--ds-surface);
+  color: var(--ds-ink-muted);
+}
+
+.facet-strip button:hover,
+.suggestion-row button:hover,
+.segmented-control button:hover {
+  border-color: var(--ds-border-strong);
+  background: var(--ds-surface-soft);
+}
+
+.facet-strip button.selected,
+.segmented-control button[aria-pressed="true"],
+.facet-multi-select details[open] summary,
+.dataset-selector button.selected,
+.evidence-record.active,
+.publication-batch-list button.active {
+  border-color: var(--ds-accent-border);
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-strong);
+}
+
+.advanced-filter-panel,
+.intelligence-query-panel,
+.domain-filter-bar {
+  border-color: var(--ds-border);
+  background: var(--ds-surface);
+}
+
+:root .advanced-filter-panel[open] > summary {
+  border-bottom-color: var(--ds-border);
+  background: var(--ds-surface-soft);
+  color: var(--ds-accent-strong);
+}
+
+.badge-success {
+  background: var(--ds-success-soft);
+  color: var(--ds-success);
+}
+
+.badge-danger,
+.commercial-metrics > div.danger {
+  background: var(--ds-danger-soft);
+  color: var(--ds-danger);
+}
+
+.badge-warning {
+  background: var(--ds-warning-soft);
+  color: var(--ds-warning);
+}
+
+.badge-neutral {
+  background: var(--ds-surface-muted);
+  color: var(--ds-ink-muted);
+}
+
+.factory-warning,
+.review-detail blockquote {
+  border-left-color: var(--ds-warning);
+  background: var(--ds-warning-soft);
+  color: var(--ds-ink);
+}
+
+.factory-warning svg,
+.pipeline-pending,
+.pipeline-stages > div.pending .pipeline-icon {
+  color: var(--ds-warning);
+}
+
+.company-event-marker.deal_announced {
+  box-shadow: 0 0 0 1px var(--ds-warning);
+  background: var(--ds-warning);
+}
+
+.factory-warning strong {
+  color: var(--ds-ink-strong);
+}
+
+.pipeline-stages > div.pending .pipeline-icon {
+  background: var(--ds-warning-soft);
+}
+
+.pipeline-stages > div > svg {
+  color: var(--ds-success);
+}
+
+.quarantine-safety-note,
+.regulatory-risk-actions {
+  border-left-color: var(--ds-danger);
+  background: var(--ds-danger-soft);
+  color: var(--ds-danger);
+}
+
+.quarantine-safety-note svg {
+  color: var(--ds-danger);
+}
+
+.ingestion-stage-graph li.succeeded .stage-node,
+.stage-indicator.succeeded {
+  border-color: var(--ds-success);
+  background: var(--ds-success);
+}
+
+.ingestion-stage-graph li.failed .stage-node,
+.stage-indicator.failed {
+  border-color: var(--ds-danger);
+  background: var(--ds-danger);
+}
+
+.ingestion-stage-graph li.canceled .stage-node,
+.stage-indicator.canceled {
+  border-color: var(--ds-warning);
+  background: var(--ds-warning);
+}
+
+.stage-indicator.skipped {
+  border-color: var(--ds-border-strong);
+  background: var(--ds-surface-muted);
+}
+
+.inline-alert {
+  border-left-color: var(--ds-info);
+  background: var(--ds-info-soft);
+  color: var(--ds-info);
+}
+
+.coverage-grid article.truncated {
+  border-left-color: var(--ds-accent);
+}
+
+.state-message {
+  color: var(--ds-ink-muted);
+}
+
+.state-message > span:not(.spinner) {
+  max-width: 520px;
+  line-height: var(--ds-leading-body);
+}
+
+.state-message:not(.error-state) strong {
+  color: var(--ds-ink-strong);
+}
+
+.state-message .text-button {
+  min-height: var(--ds-button-height);
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface);
+  color: var(--ds-accent-strong);
+  padding: 7px 13px;
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.state-message .text-button + .text-button {
+  min-height: auto;
+  border-color: transparent;
+  background: transparent;
+  padding: 4px 6px;
+  box-shadow: none;
+}
+
+.state-message .text-button + .text-button:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--ds-surface-soft);
+}
+
+.spinner {
+  border-color: var(--ds-border-strong);
+  border-top-color: var(--ds-accent);
+}
+
+.modal-backdrop,
+.drawer-backdrop,
+.drawer-scrim,
+.modal-scrim {
+  background: rgb(25 48 58 / 50%);
+}
+
+.workspace-modal,
+.modal-panel,
+.detail-drawer,
+.entity-detail-drawer {
+  box-shadow: var(--ds-shadow-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .spinner,
+  .table-preference-sync,
+  .molecule-loading {
+    animation: none;
+  }
+
+  .workspace-sidebar {
+    transition: none;
+  }
+}
+
+:root
+  .workspace-shell
+  :where(
+    .brand-lockup small,
+    .nav-section-label,
+    .sidebar-agent-status small,
+    .sort-priority,
+    .badge,
+    .date-range-fieldset label span,
+    .entity-search-candidate-heading small,
+    .entity-search-match,
+    .entity-search-aliases,
+    .entity-search-attributes,
+    .deal-role-list button small,
+    .epidemiology-trend-panel > header span,
+    .trend-table-wrap th,
+    .trend-table-wrap footer,
+    .table-stacked-copy small,
+    .applied-filter-chip small,
+    .company-profile-recent-events time,
+    .company-profile-recent-events span,
+    .company-intelligence-section > header span,
+    .company-event-timeline li > div > span,
+    .enterprise-lifecycle-summary dt,
+    .platform-queue-metrics dt,
+    .platform-runtime-grid dt,
+    .record-kicker,
+    .evidence-record dl div,
+    .knowledge-count,
+    .knowledge-page-list small,
+    .document-metadata dt,
+    .knowledge-version-list small,
+    .knowledge-version-list em,
+    .factory-status-strip small,
+    .pipeline-stages small,
+    .pipeline-pending,
+    .quarantine-file small,
+    .quarantine-case-summary dt,
+    .quarantine-history-version,
+    .quarantine-history small,
+    .ingestion-run-progress > span,
+    .ingestion-stage-graph li small,
+    .factory-run-empty small,
+    .counter-row span,
+    .source-form-section > header small,
+    .field-help,
+    .source-version-list dt,
+    .finding-record small,
+    .publication-control > summary > small,
+    .publication-selection > header p,
+    .publication-fact-list small,
+    .publication-batch-list small,
+    .publication-preview dt,
+    .publication-preview > code,
+    .publication-preview-items article strong,
+    .publication-preview-items article p,
+    .projection-maintenance > header > div > button:not(.icon-button),
+    .projection-maintenance-result > span small,
+    .projection-maintenance-result dt,
+    .projection-maintenance-result > p,
+    .quality-operations header p,
+    .quality-metric-grid article strong,
+    .quality-metric-grid article small,
+    .quality-trend > header > small,
+    .quality-table-scroll table,
+    .quality-issues > header > label,
+    .quality-issue-list > button small,
+    .quality-issue-detail > header p,
+    .quality-issue-actions label,
+    .quality-event-history article strong,
+    .quality-event-history article small,
+    .quality-event-history article p,
+    .review-list small,
+    .normalization-version,
+    .review-source dt,
+    .canonical-choice small,
+    .identity-impact > header p,
+    .identity-impact-metrics dt,
+    .identity-decision-history li small,
+    .identity-decision-history li p,
+    .chemistry-result-head dl div,
+    .chemistry-hit-core > header code,
+    .similarity-score small,
+    .chemistry-properties dt,
+    .structure-identifiers span,
+    .structure-identifiers code,
+    .regulatory-comparison-table thead th > small,
+    .dossier-metrics dt,
+    :is(
+        .trial-professional-identity,
+        .patent-professional-header > div,
+        .deal-professional-header > div,
+        .deal-detail-header > div
+      )
+      > span,
+    .trial-detail-status,
+    .trial-detail-grid dt,
+    .trial-role-groups > div > span,
+    .cell-stack small,
+    .trial-disclosure-list article > header > span,
+    .trial-disclosure-list article > :is(small, span),
+    .trial-outcome-list > section > header span,
+    .trial-analysis-list p,
+    .trial-status-timeline :is(span, p),
+    .trial-location-list span,
+    .trial-source-summary span,
+    .trial-detail-footer,
+    .deal-detail-list :is(span, small),
+    .deal-rights-table :is(th, td),
+    .regulatory-source-reference
+  ),
+:root
+  .workspace-shell
+  :where(.virtual-table-toolbar, .domain-export-menu, .table-column-menu, .table-sort-menu)
+  :where(
+    button,
+    summary,
+    label,
+    legend,
+    small,
+    span,
+    strong,
+    .table-sort-editor-heading,
+    .table-selection-status,
+    .table-preference-error
+  ),
+:root .workspace-shell :is(.professional-query-builder, .domain-filter-bar) *,
+.internal-workbench main :is(button, input, label, p, select, small, span, dl *, th, td, nav),
+.factory-warning strong {
+  font-size: var(--ds-text-xs);
+  line-height: var(--ds-leading-compact);
+}
+
+:root
+  .workspace-shell
+  :where(
+    .trial-detail-grid dd,
+    .trial-disclosure-list article > :is(strong, p),
+    :is(.trial-detail-note, .trial-eligibility-criteria, .trial-outcome-list > section > p),
+    .trial-arm-list p,
+    .deal-detail-list strong
+  ) {
+  font-size: var(--ds-text-sm);
+  line-height: var(--ds-leading-body);
+}
+
+/* Keep high-density operator surfaces on the same quiet biomedical system. */
+:root button,
+:root input,
+:root select,
+:root textarea {
+  font-family: var(--ds-font-sans);
+  letter-spacing: 0;
+}
+
+.login-title > p:last-child,
+.login-brand,
+.enterprise-workbench,
+.factory-main,
+.governance-layout,
+.quality-operations,
+.commercial-workbench,
+.chemistry-workbench {
+  color: var(--ds-ink);
+}
+
+.enterprise-toolbar,
+.enterprise-tenant-details dt,
+.enterprise-metrics small,
+.enterprise-table .cell-subtitle,
+.enterprise-access header p,
+.enterprise-lifecycle-summary dt,
+.factory-status-strip span,
+.factory-status-strip small,
+.pipeline-panel > header p,
+.factory-run-pagination,
+.ingestion-run-progress > span,
+.ingestion-stage-graph p,
+.ingestion-stage-graph li small,
+.factory-run-empty small,
+.governance-run-toolbar,
+.governance-run-pagination,
+.quality-operations header p,
+.quality-trend > header > small,
+.quality-issues > header > label,
+.quality-issue-list > button small,
+.quality-issue-detail > header p,
+:root .quality-issue-actions label,
+.quality-event-history article small,
+.quality-event-history article p,
+.review-list small,
+.review-source dt,
+.chemistry-query label > span,
+:root .chemistry-options > details.chemistry-more-options > summary,
+.structure-editor-actions > span {
+  color: var(--ds-ink-muted);
+}
+
+.enterprise-metrics,
+.enterprise-tenant-details,
+.enterprise-access > section,
+.factory-status-strip,
+.pipeline-panel,
+.ingestion-stage-graph,
+.governance-layout,
+.governance-tabs,
+.publication-control,
+.quality-operations > section,
+.quality-issue-layout,
+.quality-issue-actions,
+.quality-event-history article,
+.structure-editor,
+.structure-editor-loading,
+.structure-editor-fallback,
+.structure-editor-gate {
+  border-color: var(--ds-border);
+}
+
+.commercial-toolbar,
+:root .risk-queue-toolbar label,
+.risk-queue-count,
+.form-footnote {
+  color: var(--ds-ink-muted);
+}
+
+.commercial-metrics > div {
+  border-color: var(--ds-border);
+  color: var(--ds-success);
+}
+
+.commercial-metrics strong {
+  color: var(--ds-ink-strong);
+}
+
+.commercial-metrics small,
+.commercial-modal-subject span {
+  color: var(--ds-ink-muted);
+}
+
+.commercial-modal-subject {
+  border-left-color: var(--ds-accent);
+  background: var(--ds-surface-soft);
+  color: var(--ds-ink);
+}
+
+.enterprise-metrics,
+.factory-status-strip,
+.pipeline-panel,
+.publication-control,
+.quality-operations > section,
+.structure-editor,
+.structure-editor-loading,
+.structure-editor-fallback,
+.structure-editor-gate {
+  border-radius: var(--ds-radius-panel);
+  background: var(--ds-surface);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.enterprise-metrics > div,
+.enterprise-tenant-details > div,
+.factory-status-strip > div {
+  border-color: var(--ds-border);
+}
+
+.enterprise-metrics strong,
+.enterprise-tenant-details dd,
+.factory-status-strip strong,
+.enterprise-access h2,
+.enterprise-lifecycle-summary dd,
+.review-detail > header h2 {
+  color: var(--ds-ink-strong);
+}
+
+.enterprise-modal-subject,
+.enterprise-lifecycle-summary dl > div,
+.factory-empty-state,
+.factory-run-empty,
+.quality-issue-list,
+.review-list,
+.json-preview {
+  border-color: var(--ds-border);
+  background: var(--ds-surface-muted);
+}
+
+.enterprise-modal-subject,
+.factory-empty-state,
+.factory-run-empty {
+  border-left-color: var(--ds-accent);
+  color: var(--ds-ink);
+}
+
+.enterprise-modal-subject span,
+.enterprise-member-list .check-control small {
+  color: var(--ds-ink-muted);
+}
+
+.enterprise-member-list,
+.quality-issue-list,
+.quality-issue-detail,
+.review-list,
+.review-detail {
+  border-color: var(--ds-border);
+  background: var(--ds-surface);
+}
+
+.enterprise-member-list .check-control,
+.quality-table-scroll th,
+.quality-table-scroll td,
+.review-list-head,
+.review-list > button {
+  border-color: var(--ds-border);
+}
+
+.quality-metric-grid article,
+.quality-table-scroll th {
+  border-color: var(--ds-border);
+  background: var(--ds-surface-muted);
+}
+
+.quality-metric-grid article b,
+.confidence-score,
+.review-list-head {
+  color: var(--ds-accent-strong);
+}
+
+.quality-issue-list > button {
+  background: transparent;
+  color: var(--ds-ink);
+}
+
+.quality-issue-list > button.active,
+.review-list > button:hover,
+.review-list > button.active {
+  background: var(--ds-accent-soft);
+}
+
+.governance-tabs button,
+.governance-run-toolbar code,
+.governance-fingerprints dt,
+.governance-fingerprints code,
+.review-detail section h3,
+.payload-comparison h4 {
+  color: var(--ds-ink-muted);
+}
+
+.governance-tabs button[aria-selected="true"],
+.governance-run-toolbar,
+.normalization-version {
+  color: var(--ds-accent-strong);
+}
+
+.governance-tabs button[aria-selected="true"] {
+  border-bottom-color: var(--ds-accent);
+}
+
+.json-preview {
+  color: var(--ds-ink);
+}
+
+.mode-control > div,
+.structure-input-tabs {
+  border-color: var(--ds-border-strong);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface);
+}
+
+.mode-control button,
+.structure-input-tabs button {
+  border-right-color: var(--ds-border);
+  color: var(--ds-ink-muted);
+}
+
+.structure-editor-canvas {
+  background: var(--ds-surface);
+}
+
+.structure-editor-actions {
+  border-top-color: var(--ds-border);
+  background: var(--ds-surface-muted);
+}
+
+.threshold-control output {
+  color: var(--ds-accent-strong);
+}
+
+.stage-indicator.running {
+  border-color: var(--ds-info);
+  background: var(--ds-info);
+}
+
+.landscape-chart-loading,
+.pipeline-landscape-ranking,
+.trend-line-chart,
+.trend-table-wrap th,
+.trend-table-wrap td,
+.trend-table-wrap footer {
+  border-color: var(--ds-border);
+}
+
+.landscape-chart-loading,
+.pipeline-landscape-ranking,
+.trend-table-wrap footer,
+.narrative-section p,
+.landscape-grid article > span small,
+.landscape-grid article p {
+  color: var(--ds-ink-muted);
+}
+
+.trend-line-chart,
+.trend-table-wrap th {
+  background: var(--ds-surface-muted);
+}
+
+.landscape-grid article > svg {
+  color: var(--ds-accent-strong);
+}
+
+.markdown-document {
+  color: var(--ds-ink);
+  font-family: var(--ds-font-sans);
+}
+
+.section-toolbar,
+.query-input,
+.select-control,
+.inline-search {
+  color: var(--ds-ink-muted);
+}
+
+.query-input,
+.select-control,
+.inline-search {
+  min-height: var(--ds-control-height);
+  border-color: var(--ds-border-strong);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface);
+}
+
+.query-input input,
+.select-control select,
+.inline-search input {
+  min-height: calc(var(--ds-control-height) - 2px);
+}
+
+.pipeline-filter-bar,
+.trial-filter-bar,
+.patent-filter-bar,
+.deal-filter-bar,
+.regulatory-filter-bar,
+.epidemiology-filter-bar,
+.news-display-control,
+.pipeline-landscape,
+.trial-landscape,
+.epidemiology-trend-panel {
+  border-color: var(--ds-border);
+  background: var(--ds-surface);
+}
+
+.pipeline-primary-filters,
+.pipeline-landscape-kpis {
+  border-color: var(--ds-border);
+  background: var(--ds-surface-muted);
+}
+
+.pipeline-entity-filters {
+  border-color: var(--ds-border);
+  background: var(--ds-surface);
+}
+
+.pipeline-result-toolbar,
+.trial-landscape-summary,
+.trial-landscape-section,
+.epidemiology-trend-panel > header {
+  border-color: var(--ds-border);
+}
+
+.segmented-control {
+  border-color: var(--ds-border-strong);
+  border-radius: var(--ds-radius-panel);
+  background: var(--ds-surface);
+}
+
+.segmented-control button {
+  border-radius: var(--ds-radius-control);
+  color: var(--ds-ink-muted);
+}
+
+.knowledge-index,
+.collections-list {
+  border-color: var(--ds-border);
+  background: var(--ds-surface-muted);
+}
+
+.knowledge-count,
+.knowledge-page-list > button,
+.collections-list {
+  border-color: var(--ds-border);
+}
+
+.knowledge-page-list > button {
+  color: var(--ds-ink-muted);
+}
+
+.dataset-selector button,
+.evidence-selection,
+.evidence-stale-selection,
+.source-list article,
+.source-version-list article,
+.source-text-preview,
+.publication-control,
+:root .publication-fact-list label,
+.publication-batch-list button,
+.publication-preview-items article {
+  border-color: var(--ds-border);
+  border-radius: var(--ds-radius-panel);
+  background: var(--ds-surface);
+}
+
+.dataset-selector button {
+  color: var(--ds-ink-muted);
+}
+
+.inline-error,
+.form-error,
+.evidence-stale-selection {
+  border-color: var(--ds-danger-border);
+  background: var(--ds-danger-soft);
+  color: var(--ds-danger);
+}
+
+.evidence-record,
+.drawer-section,
+.provenance-record,
+.publication-control-body > section,
+:root .publication-control[open] > summary {
+  border-color: var(--ds-border);
+}
+
+.avatar,
+.mode-control button.active,
+.structure-input-tabs button.active,
+.segmented-control button:hover,
+.segmented-control button[aria-pressed="true"],
+.knowledge-page-list > button:hover,
+.knowledge-page-list > button.active,
+.citation-index,
+.source-icon,
+.workspace-shell .structure-editor-canvas [class*="ActionButton-module_selected"] {
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-strong);
+}
+
+.source-core > p,
+.source-core dt,
+.source-version-list dt,
+.publication-selection > header p,
+.publication-fact-list small,
+.publication-batch-list small,
+.publication-preview dt {
+  color: var(--ds-ink-muted);
+}
+
+.source-core dd,
+.source-version-list dd,
+.publication-batch-list button {
+  color: var(--ds-ink);
+}
+
+.source-text-preview,
+.publication-preview > code {
+  background: var(--ds-surface-muted);
+  color: var(--ds-ink);
+  font-family: var(--ds-font-mono);
+}
+
+.publication-fact-list,
+.publication-batch-list,
+.publication-preview-items {
+  background: var(--ds-border);
+}
+
+/* Keep legacy high-density modules on the same biomedical blue rail. */
+.collection-picker > button:hover,
+.collection-picker > button.active {
+  background: var(--ds-accent-soft);
+}
+
+.collection-picker > button.active {
+  box-shadow: inset 3px 0 var(--ds-accent-strong);
+}
+
+.collection-entity-link:hover strong,
+.comparison-entity-link:hover strong,
+.explorer-intro span,
+.entity-detail-drawer header span,
+.entity-search-match {
+  color: var(--ds-accent-strong);
+}
+
+.evidence-selection,
+.entity-filter-selection {
+  border-color: var(--ds-border-strong);
+  background: var(--ds-info-soft);
+  color: var(--ds-info);
+}
+
+.entity-match-detail {
+  border-color: var(--ds-border);
+  background: var(--ds-info-soft);
+  color: var(--ds-info);
+}
+
+.company-phase-distribution li i {
+  background: var(--ds-accent-strong);
+}
+
+.enterprise-lifecycle-summary dl > div,
+.platform-runtime-grid dl,
+.platform-migration {
+  border-left-color: var(--ds-accent);
+  background: var(--ds-surface-muted);
+}
+
+.mono-cell,
+.external-id-cell span,
+.result-summary small,
+.entity-detail-drawer dd,
+.mono-value,
+.knowledge-change-list strong,
+.quarantine-history-version,
+.source-text-preview {
+  font-family: var(--ds-font-mono);
+}
+
+.structure-editor.structure-editor .structure-editor-canvas .css-8amd6p > span {
+  color: var(--ds-success);
+}
+
+.workspace-shell details:not([open]) > :not(summary) {
+  display: none;
+}
+
+.professional-facet-placeholder > span {
+  color: var(--ds-ink-strong);
+  font-size: 12px;
+}
+
+.professional-facet-placeholder small {
+  font-size: 12px;
+}
+
+/* Keep long dossier tab rails compact while preserving a clear scroll affordance. */
+.tab-bar {
+  border-bottom-color: var(--ds-border);
+  scrollbar-color: var(--ds-border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.tab-bar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tab-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tab-bar::-webkit-scrollbar-thumb {
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-border-strong);
+}
+
+.tab-bar button {
+  color: var(--ds-ink-muted);
+}
+
+.tab-bar button.active {
+  border-bottom-color: var(--ds-accent-strong);
+  color: var(--ds-ink-strong);
+}
+
+.tab-bar button:focus-visible {
+  outline-color: var(--ds-info);
+}
+
+.table-frame,
+.virtual-table-viewport,
+.entity-comparison-region {
+  scrollbar-color: var(--ds-border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.table-frame::-webkit-scrollbar,
+.virtual-table-viewport::-webkit-scrollbar,
+.entity-comparison-region::-webkit-scrollbar {
+  width: 8px;
+  height: 6px;
+}
+
+.table-frame::-webkit-scrollbar-track,
+.virtual-table-viewport::-webkit-scrollbar-track,
+.entity-comparison-region::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-frame::-webkit-scrollbar-thumb,
+.virtual-table-viewport::-webkit-scrollbar-thumb,
+.entity-comparison-region::-webkit-scrollbar-thumb {
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-border-strong);
+}
+
+/* Keep the embedded structure editor visually inside the biomedical control system. */
+.structure-editor-canvas [class*="App-module_top"] {
+  border-bottom: 1px solid var(--ds-border);
+  background: var(--ds-surface-muted);
+  box-shadow: none;
+}
+
+.structure-editor-canvas [class*="App-module_top"] button[aria-label] {
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-control);
+  color: var(--ds-ink-muted);
+}
+
+.structure-editor-canvas [class*="App-module_top"] button[aria-label]:is(:hover, :focus-visible) {
+  border-color: var(--ds-border-strong);
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-strong);
+}
+
+.structure-editor-canvas [class*="ActionButton-module_button"] {
+  border: 1px solid var(--ds-border);
+  background: var(--ds-surface);
+  color: var(--ds-ink-muted);
+}
+
+.structure-editor-canvas [class*="ActionButton-module_button"]:is(:hover, :focus-visible) {
+  border-color: var(--ds-border-strong);
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-strong);
+}

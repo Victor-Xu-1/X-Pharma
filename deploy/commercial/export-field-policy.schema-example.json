@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "policy_version": "customer-contract-v1",
+  "attribution": "Replace with the contracted data-source attribution",
+  "datasets": {
+    "entities": {
+      "fields": ["id", "entity_type", "name", "description", "external_ids", "review_status", "updated_at"],
+      "filter_fields": ["id", "entity_type", "review_status", "updated_at"]
+    },
+    "structures": {
+      "fields": ["id", "entity_id", "canonical_smiles", "standard_inchi_key", "molecular_formula", "molecular_weight", "updated_at"],
+      "filter_fields": ["id", "entity_id", "standard_inchi_key", "molecular_formula", "updated_at"]
+    },
+    "bioactivities": {
+      "fields": ["id", "source_system", "compound_entity_id", "target_entity_id", "standard_type", "standard_relation", "standard_value", "standard_units", "pchembl_value", "updated_at"],
+      "filter_fields": ["id", "source_system", "compound_entity_id", "target_entity_id", "standard_type", "standard_value", "pchembl_value", "updated_at"]
+    },
+    "competitive_programs": {
+      "fields": ["id", "drug_entity_id", "target_entity_id", "disease_entity_id", "organization_entity_id", "modality", "mechanism_of_action", "phase", "status_date", "geography", "updated_at"],
+      "filter_fields": ["id", "drug_entity_id", "target_entity_id", "disease_entity_id", "organization_entity_id", "modality", "phase", "status_date", "geography", "updated_at"]
+    },
+    "clinical_trials": {
+      "fields": ["id", "entity_id", "registry_name", "registry_id", "official_title", "overall_status", "phases", "study_type", "enrollment", "start_date", "completion_date", "last_update_posted", "updated_at"],
+      "filter_fields": ["id", "entity_id", "registry_name", "registry_id", "overall_status", "study_type", "enrollment", "start_date", "completion_date", "last_update_posted", "updated_at"]
+    },
+    "patents": {
+      "fields": ["id", "entity_id", "family_identifier", "title", "priority_date", "applicants", "publications", "legal_status", "expiration_date", "updated_at"],
+      "filter_fields": ["id", "entity_id", "family_identifier", "priority_date", "legal_status", "expiration_date", "updated_at"]
+    },
+    "deals": {
+      "fields": ["id", "entity_id", "deal_type", "announced_at", "parties", "asset_entity_ids", "territory", "upfront_amount", "total_potential_amount", "currency", "updated_at"],
+      "filter_fields": ["id", "entity_id", "deal_type", "announced_at", "currency", "updated_at"]
+    }
+  }
+}

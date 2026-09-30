@@ -1,0 +1,1 @@
+"""Automatic source-folder ingestion."""

@@ -1,0 +1,138 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "x-pharma"
+version = "0.1.0"
+description = "Enterprise pharmaceutical intelligence database with human and agent interfaces"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "licenses/*"]
+authors = [{ name = "Victor Xu" }]
+
+dependencies = [
+  "alembic==1.16.4",
+  "anyio==4.14.2",
+  "fastapi==0.139.0",
+  "beautifulsoup4==4.15.0",
+  "boto3==1.43.48",
+  "cryptography==50.0.0",
+  "gemmi==0.7.5",
+  "httpx==0.28.1",
+  "lxml==6.1.1",
+  "mcp==1.28.1",
+  "numpy==2.4.6",
+  "pywin32==312; sys_platform == 'win32'",
+  "argon2-cffi==25.1.0",
+  "psycopg[binary,pool]==3.2.9",
+  "pydantic-settings==2.10.1",
+  "PyJWT[crypto]==2.14.0",
+  "python-multipart==0.0.32",
+  "python-docx==1.2.0",
+  "python-pptx==1.0.2",
+  "openpyxl==3.1.5",
+  "opensearch-py==3.2.0",
+  "opentelemetry-api==1.43.0",
+  "opentelemetry-exporter-otlp-proto-grpc==1.43.0",
+  "opentelemetry-instrumentation-fastapi==0.64b0",
+  "opentelemetry-instrumentation-httpx==0.64b0",
+  "opentelemetry-instrumentation-logging==0.64b0",
+  "opentelemetry-instrumentation-sqlalchemy==0.64b0",
+  "opentelemetry-sdk==1.43.0",
+  "pypdf==6.16.1",
+  "rdkit==2026.3.3",
+  "sqlalchemy==2.0.42",
+  "starlette==1.3.1",
+  "structlog==25.4.0",
+  "temporalio==1.30.0",
+  "uvicorn[standard]==0.35.0",
+  "paramiko==5.0.0",
+  "redis==8.0.1",
+  "smbprotocol==1.17.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Victor-Xu-1/x-pharma"
+Repository = "https://github.com/Victor-Xu-1/x-pharma"
+Issues = "https://github.com/Victor-Xu-1/x-pharma/issues"
+
+[dependency-groups]
+dev = [
+  "mypy==1.17.1",
+  "pip-audit==2.10.1",
+  "pytest==9.0.3",
+  "pytest-asyncio==1.4.0",
+  "pytest-cov==6.2.1",
+  "pyyaml==6.0.3",
+  "reportlab==5.0.0",
+  "respx==0.22.0",
+  "ruff==0.12.7",
+  "types-openpyxl==3.1.5.20260518",
+  "types-pyyaml==6.0.12.20260518",
+  "types-reportlab==4.5.1.20260712",
+]
+
+[project.scripts]
+pharma-gateway = "pharma_intel.gateway:run"
+pharma-gateway-health = "pharma_intel.gateway_health:run"
+pharma-mcp-health = "pharma_intel.mcp_health:run"
+pharma-jobs = "pharma_intel.jobs:run"
+pharma-jobs-health = "pharma_intel.jobs_health:run"
+pharma-api = "pharma_intel.api:run"
+pharma-ingest = "pharma_intel.ingest.cli:run"
+pharma-worker = "pharma_intel.ingest.temporal_worker:run"
+pharma-mcp = "pharma_intel.mcp_server:run"
+pharma-bootstrap = "pharma_intel.bootstrap:run"
+pharma-db-provision = "pharma_intel.db_provision:run"
+pharma-verify-rls = "pharma_intel.verify_rls:run"
+pharma-commercial = "pharma_intel.commercial_cli:run"
+pharma-api-key = "pharma_intel.api_key_cli:run"
+pharma-search = "pharma_intel.search.cli:run"
+pharma-search-projector = "pharma_intel.search.worker:run"
+pharma-search-maintenance = "pharma_intel.search.maintenance_worker:run"
+pharma-openapi = "pharma_intel.openapi_contract:run"
+pharma-mcp-load = "pharma_intel.mcp_load_baseline:run"
+pharma-performance-load = "pharma_intel.performance_baseline:run"
+pharma-runtime-hygiene = "pharma_intel.runtime_hygiene:run"
+pharma-runtime-cleanup = "pharma_intel.runtime_cleanup:run"
+pharma-runtime-layout = "pharma_intel.runtime_layout:run"
+pharma-operations-verify = "pharma_intel.operations_contract:run"
+pharma-malware-probe = "pharma_intel.ingest.malware_probe:run"
+pharma-parser-service = "pharma_intel.ingest.parser_service:run"
+pharma-parser-probe = "pharma_intel.ingest.parser_probe:run"
+pharma-parser-mtls-probe = "pharma_intel.ingest.parser_mtls_probe:run"
+pharma-billing-provider = "pharma_intel.commercial.billing_worker:run"
+pharma-monitoring-worker = "pharma_intel.monitoring.worker:run"
+pharma-monitoring = "pharma_intel.monitoring.cli:run"
+pharma-ragflow-migration-export = "pharma_intel.migration.ragflow_export:run"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pharma_intel"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --strict-config"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = ["integration: requires a real external service"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+extend-exclude = ["migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "ASYNC"]
+ignore = ["S101"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+packages = ["pharma_intel"]
+
+[tool.uv]
+required-version = "==0.11.28"
+package = true
+constraint-dependencies = ["soupsieve==2.9.0"]

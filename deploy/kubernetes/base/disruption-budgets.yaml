@@ -1,0 +1,49 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pharma-api
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-api
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pharma-jobs
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-jobs
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pharma-parser
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-parser
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pharma-clamav
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-clamav
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pharma-ocr
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pharma-ocr

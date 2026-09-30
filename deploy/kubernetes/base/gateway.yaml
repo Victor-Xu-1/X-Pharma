@@ -1,0 +1,132 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: pharma-public
+  labels:
+    app.kubernetes.io/name: pharma-public-gateway
+    app.kubernetes.io/part-of: pharma-intelligence
+spec:
+  gatewayClassName: pharma-envoy
+  listeners:
+    - name: workspace-https
+      hostname: workspace.example.com
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: pharma-workspace-tls
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: mcp-https
+      hostname: mcp.example.com
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: pharma-mcp-tls
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: pharma-workspace
+  labels:
+    app.kubernetes.io/component: workspace-entry
+    app.kubernetes.io/part-of: pharma-intelligence
+spec:
+  parentRefs:
+    - name: pharma-public
+      sectionName: workspace-https
+  hostnames:
+    - workspace.example.com
+  rules:
+    - filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            set:
+              - name: Strict-Transport-Security
+                value: max-age=31536000; includeSubDomains
+              - name: X-Content-Type-Options
+                value: nosniff
+              - name: Referrer-Policy
+                value: strict-origin-when-cross-origin
+      backendRefs:
+        - name: pharma-api
+          port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: pharma-mcp
+  labels:
+    app.kubernetes.io/component: agent-entry
+    app.kubernetes.io/part-of: pharma-intelligence
+spec:
+  parentRefs:
+    - name: pharma-public
+      sectionName: mcp-https
+  hostnames:
+    - mcp.example.com
+  rules:
+    - filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            set:
+              - name: Strict-Transport-Security
+                value: max-age=31536000; includeSubDomains
+              - name: X-Content-Type-Options
+                value: nosniff
+      backendRefs:
+        - name: pharma-api
+          port: 8080
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: pharma-workspace-edge-controls
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: pharma-workspace
+  rateLimit:
+    local:
+      rules:
+        - limit:
+            requests: 200
+            unit: Second
+    global:
+      rules:
+        - limit:
+            requests: 300
+            unit: Second
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: pharma-mcp-edge-controls
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: pharma-mcp
+  rateLimit:
+    local:
+      rules:
+        - limit:
+            requests: 60
+            unit: Second
+    global:
+      rules:
+        - limit:
+            requests: 100
+            unit: Second

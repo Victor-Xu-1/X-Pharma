@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/pharma/reference-visual-pair.v1.schema.json",
+  "title": "External reference and repository-owned visual baseline pair",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "pair_id",
+    "generated_at",
+    "status",
+    "workflow",
+    "viewport",
+    "reference",
+    "platform",
+    "comparison",
+    "security"
+  ],
+  "properties": {
+    "schema": {"const": "pharma.reference-visual-pair.v1"},
+    "schema_version": {"const": 1},
+    "pair_id": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "status": {"const": "registered"},
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "title": {"$ref": "#/$defs/displayText"}
+      }
+    },
+    "viewport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height"],
+      "properties": {
+        "width": {"type": "integer", "minimum": 10, "maximum": 16384},
+        "height": {"type": "integer", "minimum": 10, "maximum": 16384}
+      }
+    },
+    "reference": {
+      "allOf": [
+        {"$ref": "#/$defs/imageObservation"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "product",
+            "version",
+            "source_url",
+            "artifact_id",
+            "captured_at",
+            "authorization",
+            "authorization_ticket",
+            "binary_storage",
+            "repository_embedded",
+            "sha256",
+            "size_bytes",
+            "mime_type",
+            "width",
+            "height"
+          ],
+          "properties": {
+            "product": {"$ref": "#/$defs/displayText"},
+            "version": {"$ref": "#/$defs/identifier"},
+            "source_url": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://[^?#]+$",
+              "maxLength": 2048
+            },
+            "artifact_id": {"$ref": "#/$defs/identifier"},
+            "captured_at": {"type": "string", "format": "date-time"},
+            "authorization": {"const": "user-authorized-observation"},
+            "authorization_ticket": {"$ref": "#/$defs/identifier"},
+            "binary_storage": {"const": "external-evidence-store"},
+            "repository_embedded": {"const": false},
+            "sha256": {"$ref": "#/$defs/sha256"},
+            "size_bytes": {"$ref": "#/$defs/imageSize"},
+            "mime_type": {"const": "image/png"},
+            "width": {"$ref": "#/$defs/dimension"},
+            "height": {"$ref": "#/$defs/dimension"}
+          }
+        }
+      ]
+    },
+    "platform": {
+      "allOf": [
+        {"$ref": "#/$defs/imageObservation"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "artifact_id",
+            "baseline_manifest",
+            "baseline_manifest_sha256",
+            "browser",
+            "license",
+            "repository_embedded",
+            "sha256",
+            "size_bytes",
+            "mime_type",
+            "width",
+            "height"
+          ],
+          "properties": {
+            "artifact_id": {
+              "type": "string",
+              "pattern": "^apps/web/e2e/visual-baselines/[A-Za-z0-9._-]+\\.png$"
+            },
+            "baseline_manifest": {"const": "apps/web/e2e/visual-baselines/manifest.json"},
+            "baseline_manifest_sha256": {"$ref": "#/$defs/sha256"},
+            "browser": {"$ref": "#/$defs/displayText"},
+            "license": {"const": "repository-owned-test-artifact"},
+            "repository_embedded": {"const": true},
+            "sha256": {"$ref": "#/$defs/sha256"},
+            "size_bytes": {"$ref": "#/$defs/imageSize"},
+            "mime_type": {"const": "image/png"},
+            "width": {"$ref": "#/$defs/dimension"},
+            "height": {"$ref": "#/$defs/dimension"}
+          }
+        }
+      ]
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "same_viewport",
+        "automated_equivalence_claim",
+        "parity_claim",
+        "review_status",
+        "approval_artifact"
+      ],
+      "properties": {
+        "same_viewport": {"const": true},
+        "automated_equivalence_claim": {"const": false},
+        "parity_claim": {"const": false},
+        "review_status": {"const": "pending"},
+        "approval_artifact": {"type": "null"}
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "credentials_recorded",
+        "cookies_recorded",
+        "query_parameters_recorded",
+        "production_data_recorded",
+        "third_party_binary_recorded_in_repository"
+      ],
+      "properties": {
+        "credentials_recorded": {"const": false},
+        "cookies_recorded": {"const": false},
+        "query_parameters_recorded": {"const": false},
+        "production_data_recorded": {"const": false},
+        "third_party_binary_recorded_in_repository": {"const": false}
+      }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$"
+    },
+    "displayText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+    },
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "dimension": {"type": "integer", "minimum": 64, "maximum": 16384},
+    "imageSize": {"type": "integer", "minimum": 1, "maximum": 67108864},
+    "imageObservation": {
+      "type": "object",
+      "required": ["sha256", "size_bytes", "mime_type", "width", "height"]
+    }
+  }
+}

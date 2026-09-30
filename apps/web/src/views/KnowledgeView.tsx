@@ -1,0 +1,434 @@
+import { useQuery } from "@tanstack/react-query";
+import { BookOpenText, ChevronRight, FileText, History, Search, ShieldCheck } from "lucide-react";
+import { type FormEvent, useEffect, useState } from "react";
+
+import { EmptyState, ErrorState, formatDate, Spinner } from "../components/common";
+import { ScrollableTableRegion } from "../components/ScrollableTableRegion";
+import {
+  getKnowledgePage,
+  getKnowledgePageCoverage,
+  getKnowledgePageVersionDiff,
+  type KnowledgeVersionDiff,
+  knowledgeKeys,
+  listKnowledgePages,
+  listKnowledgePageVersions,
+} from "../lib/contracts/knowledge";
+import type { KnowledgePanel } from "../lib/workspaceRouting";
+
+type KnowledgeLocation = {
+  query: string;
+  pageId: string | null;
+  panel: KnowledgePanel;
+  versionNumber: number | null;
+};
+
+function formatFactValue(value: unknown): string {
+  if (value === null || value === undefined) return "-";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return "无法显示的结构化值";
+  }
+}
+
+function publicKnowledgeMarkdown(markdown: string): string {
+  const lines = markdown.replace(/\r\n?/g, "\n").split("\n");
+  if (lines[0]?.trim() !== "---") return markdown;
+  const closingDelimiter = lines.findIndex((line, index) => index > 0 && line.trim() === "---");
+  if (closingDelimiter < 2) return markdown;
+  const frontMatter = lines.slice(1, closingDelimiter);
+  if (!frontMatter.some((line) => /^[A-Za-z_][\w-]*\s*:/.test(line))) return markdown;
+  return lines
+    .slice(closingDelimiter + 1)
+    .join("\n")
+    .trimStart();
+}
+
+function ChangeList({ diff, kind }: { diff: KnowledgeVersionDiff; kind: "added" | "removed" }) {
+  const facts = kind === "added" ? diff.added_facts : diff.removed_facts;
+  const sources = kind === "added" ? diff.added_sources : diff.removed_sources;
+  const title = kind === "added" ? "新增" : "移除";
+  if (!facts.length && !sources.length) return null;
+  return (
+    <section className={`knowledge-change-group ${kind}`}>
+      <h4>{title}</h4>
+      {facts.length ? (
+        <div className="knowledge-change-list">
+          {facts.map((fact) => (
+            <article key={fact.change_key}>
+              <div>
+                <strong>{fact.predicate}</strong>
+                <span>{fact.object_entity_name || formatFactValue(fact.value)}</span>
+              </div>
+              <small>
+                {fact.source_title || "无来源标题"}
+                {fact.source_locator ? ` · ${fact.source_locator}` : ""}
+              </small>
+            </article>
+          ))}
+        </div>
+      ) : null}
+      {sources.length ? (
+        <div className="knowledge-source-changes">
+          {sources.map((source) => (
+            <p key={`${source.title}:${source.locator ?? ""}`}>
+              <FileText size={14} />
+              <span>{source.title}</span>
+              {source.locator ? <small>{source.locator}</small> : null}
+            </p>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+export function KnowledgeView({
+  initialQuery = "",
+  initialPageId = null,
+  initialPanel = "document",
+  initialVersionNumber = null,
+  invalidPageId = false,
+  onLocationChange,
+}: {
+  initialQuery?: string;
+  initialPageId?: string | null;
+  initialPanel?: KnowledgePanel;
+  initialVersionNumber?: number | null;
+  invalidPageId?: boolean;
+  onLocationChange?: (location: KnowledgeLocation) => void;
+}) {
+  const controlled = Boolean(onLocationChange);
+  const [query, setQuery] = useState(initialQuery);
+  const [localLocation, setLocalLocation] = useState<KnowledgeLocation>({
+    query: initialQuery,
+    pageId: initialPageId,
+    panel: initialPanel,
+    versionNumber: initialVersionNumber,
+  });
+  const location = controlled
+    ? {
+        query: initialQuery,
+        pageId: initialPageId,
+        panel: initialPanel,
+        versionNumber: initialVersionNumber,
+      }
+    : localLocation;
+  const submittedQuery = location.query;
+  const selectedPageId = location.pageId ?? "";
+  const panel = location.panel;
+  const selectedVersionNumber = location.versionNumber;
+
+  useEffect(() => setQuery(initialQuery), [initialQuery]);
+
+  function updateLocation(next: KnowledgeLocation) {
+    if (onLocationChange) onLocationChange(next);
+    else setLocalLocation(next);
+  }
+  const pagesQuery = useQuery({
+    queryKey: knowledgeKeys.pages(submittedQuery),
+    queryFn: ({ signal }) => listKnowledgePages(submittedQuery, signal),
+  });
+  const detailQuery = useQuery({
+    queryKey: knowledgeKeys.detail(selectedPageId),
+    queryFn: ({ signal }) => getKnowledgePage(selectedPageId, signal),
+    enabled: Boolean(selectedPageId),
+  });
+  const coverageQuery = useQuery({
+    queryKey: knowledgeKeys.coverage(selectedPageId),
+    queryFn: ({ signal }) => getKnowledgePageCoverage(selectedPageId, signal),
+    enabled: Boolean(selectedPageId) && panel === "coverage",
+  });
+  const versionsQuery = useQuery({
+    queryKey: knowledgeKeys.versions(selectedPageId),
+    queryFn: ({ signal }) => listKnowledgePageVersions(selectedPageId, signal),
+    enabled: Boolean(selectedPageId) && panel === "coverage",
+  });
+  const activeVersionNumber = selectedVersionNumber ?? detailQuery.data?.version_number ?? 0;
+  const diffQuery = useQuery({
+    queryKey: knowledgeKeys.diff(selectedPageId, activeVersionNumber),
+    queryFn: ({ signal }) => getKnowledgePageVersionDiff(selectedPageId, activeVersionNumber, signal),
+    enabled: Boolean(selectedPageId) && panel === "coverage" && activeVersionNumber > 0,
+  });
+
+  function search(event: FormEvent) {
+    event.preventDefault();
+    const normalizedQuery = query.trim();
+    if (normalizedQuery === submittedQuery) void pagesQuery.refetch();
+    else updateLocation({ query: normalizedQuery, pageId: null, panel: "document", versionNumber: null });
+  }
+
+  function selectPage(pageId: string) {
+    updateLocation({ query: submittedQuery, pageId, panel: "document", versionNumber: null });
+  }
+
+  if (!pagesQuery.data && !pagesQuery.error) return <Spinner label="正在加载知识专题" />;
+  if (pagesQuery.error && !pagesQuery.data) {
+    const message = pagesQuery.error instanceof Error ? pagesQuery.error.message : "知识专题加载失败";
+    return <ErrorState message={message} retry={() => void pagesQuery.refetch()} />;
+  }
+  const pages = pagesQuery.data ?? [];
+  const detail = detailQuery.data;
+  const detailError = detailQuery.error instanceof Error ? detailQuery.error.message : "";
+  return (
+    <section className="knowledge-layout">
+      <aside className="knowledge-index">
+        <form className="inline-search" onSubmit={search}>
+          <Search size={16} />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="检索专题"
+            aria-label="检索知识专题"
+          />
+        </form>
+        <div className="knowledge-count">{pages.length} 个专题</div>
+        <div className="knowledge-page-list">
+          {pages.length ? (
+            pages.map((page) => (
+              <button
+                key={page.id}
+                type="button"
+                className={selectedPageId === page.id ? "active" : ""}
+                onClick={() => selectPage(page.id)}
+              >
+                <BookOpenText size={17} />
+                <span>
+                  <strong>{page.title}</strong>
+                  <small>
+                    {page.page_type} · {formatDate(page.updated_at)}
+                  </small>
+                </span>
+                <ChevronRight size={16} />
+              </button>
+            ))
+          ) : (
+            <EmptyState title="暂无知识专题" />
+          )}
+        </div>
+      </aside>
+      <article className="knowledge-document">
+        {invalidPageId ? (
+          <ErrorState message="知识专题链接无效" />
+        ) : detailQuery.isFetching ? (
+          <Spinner label="正在读取专题版本" />
+        ) : detailError ? (
+          <ErrorState message={detailError} retry={() => void detailQuery.refetch()} />
+        ) : detail ? (
+          <>
+            <header>
+              <div>
+                <p className="eyebrow">{detail.page_type.toUpperCase()}</p>
+                <h2>{detail.title}</h2>
+              </div>
+            </header>
+            <dl className="document-metadata">
+              <div>
+                <dt>版本</dt>
+                <dd>v{detail.version_number}</dd>
+              </div>
+              <div>
+                <dt>证据快照</dt>
+                <dd>{formatDate(detail.source_snapshot_at, true)}</dd>
+              </div>
+            </dl>
+            <div className="view-tabs knowledge-tabs" role="tablist" aria-label="知识专题视图">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={panel === "document"}
+                className={panel === "document" ? "active" : ""}
+                onClick={() =>
+                  updateLocation({
+                    query: submittedQuery,
+                    pageId: selectedPageId,
+                    panel: "document",
+                    versionNumber: null,
+                  })
+                }
+              >
+                <BookOpenText size={16} />
+                专题正文
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={panel === "coverage"}
+                className={panel === "coverage" ? "active" : ""}
+                onClick={() =>
+                  updateLocation({
+                    query: submittedQuery,
+                    pageId: selectedPageId,
+                    panel: "coverage",
+                    versionNumber: null,
+                  })
+                }
+              >
+                <History size={16} />
+                覆盖与版本
+              </button>
+            </div>
+            {panel === "document" ? (
+              <div className="markdown-document">{publicKnowledgeMarkdown(detail.rendered_markdown)}</div>
+            ) : (
+              <div className="knowledge-governance">
+                {coverageQuery.isPending ? (
+                  <Spinner label="正在计算专题覆盖" />
+                ) : coverageQuery.error ? (
+                  <ErrorState
+                    message={coverageQuery.error instanceof Error ? coverageQuery.error.message : "专题覆盖加载失败"}
+                    retry={() => void coverageQuery.refetch()}
+                  />
+                ) : coverageQuery.data ? (
+                  <>
+                    <section className="knowledge-coverage-metrics" aria-label="专题覆盖摘要">
+                      <div>
+                        <strong>{coverageQuery.data.fact_count}</strong>
+                        <span>专题要点</span>
+                      </div>
+                      <div>
+                        <strong>{coverageQuery.data.source_count}</strong>
+                        <span>独立来源</span>
+                      </div>
+                      <div>
+                        <strong>{coverageQuery.data.linked_entity_count}</strong>
+                        <span>关联实体</span>
+                      </div>
+                      <div>
+                        <strong>{coverageQuery.data.uncited_fact_count}</strong>
+                        <span>缺少引用</span>
+                      </div>
+                    </section>
+                    <section className="knowledge-predicate-coverage">
+                      <header>
+                        <div>
+                          <ShieldCheck size={17} />
+                          <h3>覆盖范围</h3>
+                        </div>
+                        <span>v{coverageQuery.data.version_number}</span>
+                      </header>
+                      {coverageQuery.data.predicates.length ? (
+                        <ScrollableTableRegion ariaLabel="知识事实覆盖范围">
+                          <table aria-label="知识事实覆盖范围">
+                            <thead>
+                              <tr>
+                                <th>关系类型</th>
+                                <th>事实数</th>
+                                <th>已引用</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {coverageQuery.data.predicates.map((item) => (
+                                <tr key={item.predicate}>
+                                  <td className="mono-cell">{item.predicate}</td>
+                                  <td>{item.fact_count}</td>
+                                  <td>{item.cited_fact_count}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </ScrollableTableRegion>
+                      ) : (
+                        <EmptyState title="当前版本尚无专题要点" />
+                      )}
+                    </section>
+                  </>
+                ) : null}
+                <section className="knowledge-history-section">
+                  <header>
+                    <History size={17} />
+                    <h3>版本历史</h3>
+                  </header>
+                  {versionsQuery.isPending ? (
+                    <Spinner label="正在读取版本历史" />
+                  ) : versionsQuery.error ? (
+                    <ErrorState
+                      message={versionsQuery.error instanceof Error ? versionsQuery.error.message : "版本历史加载失败"}
+                      retry={() => void versionsQuery.refetch()}
+                    />
+                  ) : versionsQuery.data?.length ? (
+                    <div className="knowledge-history-grid">
+                      <ul className="knowledge-version-list" aria-label="专题版本">
+                        {versionsQuery.data.map((version) => (
+                          <li key={version.version_number}>
+                            <button
+                              type="button"
+                              className={activeVersionNumber === version.version_number ? "active" : ""}
+                              aria-current={activeVersionNumber === version.version_number ? "true" : undefined}
+                              onClick={() =>
+                                updateLocation({
+                                  query: submittedQuery,
+                                  pageId: selectedPageId,
+                                  panel: "coverage",
+                                  versionNumber: version.version_number,
+                                })
+                              }
+                            >
+                              <span>
+                                <strong>v{version.version_number}</strong>
+                                {version.is_current ? <small className="knowledge-current-label">当前</small> : null}
+                              </span>
+                              <small>{formatDate(version.source_snapshot_at, true)}</small>
+                              <em>
+                                +{version.added_fact_count} / -{version.removed_fact_count} 事实
+                              </em>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="knowledge-version-diff" aria-live="polite">
+                        {diffQuery.isPending ? (
+                          <Spinner label="正在比对版本" />
+                        ) : diffQuery.error ? (
+                          <ErrorState
+                            message={diffQuery.error instanceof Error ? diffQuery.error.message : "版本差异加载失败"}
+                            retry={() => void diffQuery.refetch()}
+                          />
+                        ) : diffQuery.data ? (
+                          <>
+                            <header>
+                              <div>
+                                <p className="eyebrow">版本差异</p>
+                                <h4>
+                                  {diffQuery.data.from_version_number
+                                    ? `v${diffQuery.data.from_version_number} → v${diffQuery.data.to_version_number}`
+                                    : `初始版本 v${diffQuery.data.to_version_number}`}
+                                </h4>
+                              </div>
+                              <span>
+                                +{diffQuery.data.added_fact_count} / -{diffQuery.data.removed_fact_count} 事实
+                              </span>
+                            </header>
+                            {!diffQuery.data.added_fact_count &&
+                            !diffQuery.data.removed_fact_count &&
+                            !diffQuery.data.added_source_count &&
+                            !diffQuery.data.removed_source_count ? (
+                              <EmptyState title="与上一版本无内容差异" />
+                            ) : (
+                              <>
+                                <ChangeList diff={diffQuery.data} kind="added" />
+                                <ChangeList diff={diffQuery.data} kind="removed" />
+                                {diffQuery.data.truncated ? (
+                                  <p className="inline-warning">差异过多，当前仅展示每类前 100 条。</p>
+                                ) : null}
+                              </>
+                            )}
+                          </>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : (
+                    <EmptyState title="尚无版本历史" />
+                  )}
+                </section>
+              </div>
+            )}
+          </>
+        ) : (
+          <EmptyState title="选择一个知识专题" detail="右侧将展示可追溯的当前版本" />
+        )}
+      </article>
+    </section>
+  );
+}

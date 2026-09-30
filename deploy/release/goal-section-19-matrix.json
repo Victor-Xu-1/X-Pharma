@@ -1,0 +1,273 @@
+{
+  "schema": "pharma.goal-completion-matrix.v1",
+  "schema_version": 1,
+  "goal_document_id": "PIP-GOAL-001",
+  "goal_version": "1.9.9",
+  "section": 19,
+  "requirements": [
+    {
+      "id": "product_data.capability_uat",
+      "ordinal": 1,
+      "group": "product_data",
+      "title": "外部工作台十二业务域和八项体验门禁全面对齐与真实用户 UAT",
+      "baseline_categories": ["browser"],
+      "production_categories": ["product_uat"],
+      "requires_release_security": false,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "product_data.internal_operations",
+      "ordinal": 2,
+      "group": "product_data",
+      "title": "内部工作台十类数据与平台运营能力闭环",
+      "baseline_categories": ["browser", "ingestion_readiness", "operations_contract"],
+      "production_categories": ["product_uat", "ingestion", "operations_approval"],
+      "requires_release_security": false,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "product_data.licensed_coverage",
+      "ordinal": 3,
+      "group": "product_data",
+      "title": "合法数据授权、字段许可、时效与覆盖",
+      "baseline_categories": ["ingestion_readiness"],
+      "production_categories": ["data_licensing"],
+      "requires_release_security": false,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "product_data.automatic_source_lifecycle",
+      "ordinal": 4,
+      "group": "product_data",
+      "title": "无人逐文件操作的自动来源生命周期",
+      "baseline_categories": ["ingestion_readiness", "ocr", "ingestion_pilot"],
+      "production_categories": ["ingestion", "data_licensing"],
+      "requires_release_security": false,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "product_data.cross_entry_traceability",
+      "ordinal": 5,
+      "group": "product_data",
+      "title": "Web、MCP 与标准导出的权威事实追溯",
+      "baseline_categories": ["entry_consistency", "record_consistency"],
+      "production_categories": ["data_licensing", "ingestion", "product_uat"],
+      "requires_release_security": false,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "human_agent.browser_workflows",
+      "ordinal": 6,
+      "group": "human_agent",
+      "title": "人员工作台真实浏览器关键任务",
+      "baseline_categories": ["browser"],
+      "production_categories": ["product_uat"],
+      "requires_release_security": false,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "human_agent.workbench_isolation",
+      "ordinal": 7,
+      "group": "human_agent",
+      "title": "外部用户与内部管理工作台独立入口、路由和权限边界",
+      "baseline_categories": ["browser", "entry_consistency"],
+      "production_categories": ["product_uat", "penetration_test"],
+      "requires_release_security": true,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "human_agent.remote_mcp_gateway",
+      "ordinal": 8,
+      "group": "human_agent",
+      "title": "真实 TLS 域名上的远程高可用 MCP 网关",
+      "baseline_categories": ["mcp_protocol", "kubernetes"],
+      "production_categories": ["external_services", "infrastructure_ha_pitr", "mcp_sender_constraint"],
+      "requires_release_security": true,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "human_agent.mcp_interoperability",
+      "ordinal": 9,
+      "group": "human_agent",
+      "title": "五类 Agent 客户端、双供应商与非开发网络 MCP 互操作",
+      "baseline_categories": ["mcp_protocol", "mcp_async_tasks"],
+      "production_categories": ["mcp_sender_constraint", "external_services"],
+      "requires_release_security": true,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "human_agent.financial_traceability",
+      "ordinal": 10,
+      "group": "human_agent",
+      "title": "MCP 用量、权益、价格和账单财务追溯",
+      "baseline_categories": ["mcp_commercial", "performance_baseline"],
+      "production_categories": ["billing_provider", "performance"],
+      "requires_release_security": false,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "human_agent.anti_extraction",
+      "ordinal": 11,
+      "group": "human_agent",
+      "title": "正常研究连续性与反批量搬运控制",
+      "baseline_categories": ["anti_extraction_baseline"],
+      "production_categories": ["anti_extraction"],
+      "requires_release_security": true,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "human_agent.real_target_cross_domain",
+      "ordinal": 12,
+      "group": "human_agent",
+      "title": "真实靶点跨域数据、证据、覆盖与缺口",
+      "baseline_categories": ["mcp_protocol", "record_consistency"],
+      "production_categories": ["data_licensing", "product_uat"],
+      "requires_release_security": false,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "human_agent.web_mcp_consistency",
+      "ordinal": 13,
+      "group": "human_agent",
+      "title": "Web 与 MCP 同条件领域事实一致性",
+      "baseline_categories": ["entry_consistency", "record_consistency"],
+      "production_categories": ["product_uat", "data_licensing"],
+      "requires_release_security": false,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "security.external_services",
+      "ordinal": 14,
+      "group": "security_reliability_operations",
+      "title": "企业身份、托管数据、远程多供应商 LLM API 与可观测性联调",
+      "baseline_categories": ["kubernetes", "runtime"],
+      "production_categories": ["external_services", "infrastructure_ha_pitr"],
+      "requires_release_security": true,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "security.approved_capacity",
+      "ordinal": 15,
+      "group": "security_reliability_operations",
+      "title": "批准设计包络下的性能、长稳和故障注入",
+      "baseline_categories": ["performance_baseline"],
+      "production_categories": ["performance"],
+      "requires_release_security": false,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "security.penetration_supply_chain",
+      "ordinal": 16,
+      "group": "security_reliability_operations",
+      "title": "独立渗透、越权与供应链安全关闭",
+      "baseline_categories": ["quality", "anti_extraction_baseline"],
+      "production_categories": ["penetration_test", "change_approval"],
+      "requires_release_security": true,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "security.risk_billing_drills",
+      "ordinal": 17,
+      "group": "security_reliability_operations",
+      "title": "限流、数据覆盖、计量和账单风险演练",
+      "baseline_categories": ["anti_extraction_baseline", "mcp_commercial"],
+      "production_categories": ["anti_extraction", "billing_provider", "performance"],
+      "requires_release_security": true,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "security.recovery_rpo_rto",
+      "ordinal": 18,
+      "group": "security_reliability_operations",
+      "title": "非开发人员执行的恢复与 RPO/RTO 演练",
+      "baseline_categories": ["backup_restore", "database"],
+      "production_categories": ["disaster_recovery", "infrastructure_ha_pitr"],
+      "requires_release_security": false,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "security.operating_model",
+      "ordinal": 19,
+      "group": "security_reliability_operations",
+      "title": "值班、支持、事故、SLA、预算和变更责任",
+      "baseline_categories": ["operations_contract"],
+      "production_categories": ["operations_approval", "change_approval"],
+      "requires_release_security": false,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "engineering.production_topology",
+      "ordinal": 20,
+      "group": "engineering_delivery",
+      "title": "第 11 节生产拓扑、版本矩阵与迁移退出路径",
+      "baseline_categories": ["kubernetes", "database"],
+      "production_categories": ["production_topology"],
+      "requires_release_security": true,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "engineering.clean_clone_lifecycle",
+      "ordinal": 21,
+      "group": "engineering_delivery",
+      "title": "干净克隆全生命周期复现",
+      "baseline_categories": ["source_reproducibility", "backup_restore"],
+      "production_categories": ["change_approval", "disaster_recovery"],
+      "requires_release_security": false,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "engineering.contract_consistency",
+      "ordinal": 22,
+      "group": "engineering_delivery",
+      "title": "代码、schema、IaC、测试、文档和 runbook 一致性",
+      "baseline_categories": ["quality", "parser_sandbox", "ocr", "ingestion_readiness"],
+      "production_categories": ["change_approval"],
+      "requires_release_security": false,
+      "requires_signed_git_tag": false,
+      "requires_bundle_signature": false
+    },
+    {
+      "id": "engineering.release_evidence_bundle",
+      "ordinal": 23,
+      "group": "engineering_delivery",
+      "title": "完整、签名且绑定发布主体的商业证据包",
+      "baseline_categories": ["quality", "source_reproducibility", "database", "browser", "entry_consistency", "record_consistency", "anti_extraction_baseline", "mcp_protocol", "mcp_async_tasks", "mcp_commercial", "performance_baseline", "operations_contract", "parser_sandbox", "ocr", "ingestion_readiness", "backup_restore", "runtime", "ingestion_pilot", "kubernetes"],
+      "production_categories": ["quality", "source_reproducibility", "database", "browser", "entry_consistency", "record_consistency", "anti_extraction_baseline", "mcp_protocol", "mcp_async_tasks", "mcp_commercial", "performance_baseline", "operations_contract", "parser_sandbox", "ocr", "ingestion_readiness", "backup_restore", "runtime", "ingestion_pilot", "ingestion", "kubernetes", "product_uat", "data_licensing", "external_services", "infrastructure_ha_pitr", "billing_provider", "mcp_sender_constraint", "anti_extraction", "performance", "penetration_test", "disaster_recovery", "operations_approval", "change_approval", "production_topology"],
+      "requires_release_security": true,
+      "requires_signed_git_tag": true,
+      "requires_bundle_signature": true
+    },
+    {
+      "id": "engineering.repository_hygiene",
+      "ordinal": 24,
+      "group": "engineering_delivery",
+      "title": "可审查、可推送且无敏感或施工残留的仓库",
+      "baseline_categories": ["quality", "source_reproducibility"],
+      "production_categories": ["change_approval"],
+      "requires_release_security": true,
+      "requires_signed_git_tag": true,
+      "requires_bundle_signature": false
+    }
+  ]
+}

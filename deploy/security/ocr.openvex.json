@@ -1,0 +1,139 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://pharma-intelligence.example/vex/ocr-runtime-boundary/1",
+  "author": "Pharma Intelligence Platform Security",
+  "timestamp": "2026-07-31T02:15:00Z",
+  "version": 2,
+  "statements": [
+    {
+      "vulnerability": {"name": "CVE-2026-15308"},
+      "products": [{"@id": "pkg:generic/python@3.13.14"}],
+      "status": "fixed",
+      "status_notes": "The image replaces Lib/html/parser.py with official CPython backport commit 7933f4bf7131aa4140750f9404f5de0aa2969ced after SHA-256 verification and executes the upstream regression probe during the build."
+    },
+    {
+      "vulnerability": {"name": "CVE-2026-11940"},
+      "products": [{"@id": "pkg:generic/python@3.13.14"}],
+      "status": "fixed",
+      "status_notes": "The image replaces Lib/tarfile.py with official CPython 3.13 backport commit 771d12dda5140313db0ac550292987975651bbde after SHA-256 verification and asserts the hardened hardlink fallback during the build."
+    },
+    {
+      "vulnerability": {"name": "CVE-2026-11972"},
+      "products": [{"@id": "pkg:generic/python@3.13.14"}],
+      "status": "fixed",
+      "status_notes": "The image replaces Lib/tarfile.py with official CPython 3.13 backport commit 771d12dda5140313db0ac550292987975651bbde after SHA-256 verification and asserts streaming seek terminates at EOF during the build."
+    },
+    {
+      "vulnerability": {"name": "CVE-2023-49502"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "The FFmpeg libraries are transitive OpenCV wheel components. The OCR boundary only accepts strictly preflighted PNG, JPEG, TIFF and PDF documents; video and audio containers, streams and codecs are rejected before inference."
+    },
+    {
+      "vulnerability": {"name": "CVE-2024-7272"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Only validated still-image and PDF OCR paths are reachable; FFmpeg video and audio decoding paths are not exposed."
+    },
+    {
+      "vulnerability": {"name": "CVE-2024-7055"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Only validated still-image and PDF OCR paths are reachable; FFmpeg video and audio decoding paths are not exposed."
+    },
+    {
+      "vulnerability": {"name": "CVE-2026-8461"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Only validated still-image and PDF OCR paths are reachable; FFmpeg video and audio decoding paths are not exposed."
+    },
+    {
+      "vulnerability": {"name": "CVE-2025-1594"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Only validated still-image and PDF OCR paths are reachable; FFmpeg video and audio decoding paths are not exposed."
+    },
+    {
+      "vulnerability": {"name": "CVE-2023-50010"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Only validated still-image and PDF OCR paths are reachable; FFmpeg video and audio decoding paths are not exposed."
+    },
+    {
+      "vulnerability": {"name": "CVE-2023-50008"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Only validated still-image and PDF OCR paths are reachable; FFmpeg video and audio decoding paths are not exposed."
+    },
+    {
+      "vulnerability": {"name": "CVE-2025-9951"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Only validated still-image and PDF OCR paths are reachable; FFmpeg video and audio decoding paths are not exposed."
+    },
+    {
+      "vulnerability": {"name": "CVE-2024-31582"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Only validated still-image and PDF OCR paths are reachable; FFmpeg video and audio decoding paths are not exposed."
+    },
+    {
+      "vulnerability": {"name": "CVE-2023-51793"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Only validated still-image and PDF OCR paths are reachable; FFmpeg video and audio decoding paths are not exposed."
+    },
+    {
+      "vulnerability": {"name": "CVE-2023-51798"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Only validated still-image and PDF OCR paths are reachable; FFmpeg video and audio decoding paths are not exposed."
+    },
+    {
+      "vulnerability": {"name": "CVE-2023-51795"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Only validated still-image and PDF OCR paths are reachable; FFmpeg video and audio decoding paths are not exposed."
+    },
+    {
+      "vulnerability": {"name": "CVE-2023-51791"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Only validated still-image and PDF OCR paths are reachable; FFmpeg video and audio decoding paths are not exposed."
+    },
+    {
+      "vulnerability": {"name": "CVE-2023-6605"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Only validated still-image and PDF OCR paths are reachable; FFmpeg video and audio decoding paths are not exposed."
+    },
+    {
+      "vulnerability": {"name": "CVE-2023-51794"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Only validated still-image and PDF OCR paths are reachable; FFmpeg video and audio decoding paths are not exposed."
+    },
+    {
+      "vulnerability": {"name": "CVE-2026-40962"},
+      "products": [{"@id": "pkg:generic/ffmpeg@5.1.4"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Only validated still-image and PDF OCR paths are reachable; FFmpeg video and audio decoding paths are not exposed."
+    }
+  ]
+}

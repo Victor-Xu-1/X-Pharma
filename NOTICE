@@ -1,0 +1,10 @@
+X-Pharma
+Copyright 2026 Victor Xu and X-Pharma contributors.
+
+This product includes software developed for X-Pharma.
+First-party source code and documentation are licensed under Apache-2.0.
+
+Third-party libraries, CPython security backports, scientific software,
+container images, models and data retain their original licenses.
+See THIRD_PARTY_NOTICES.md and licenses/ for attribution and redistribution
+boundaries. Source and dataset permissions are configured independently.

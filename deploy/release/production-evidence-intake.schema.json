@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pharma-intelligence.invalid/schemas/production-evidence-intake.v1.json",
+  "title": "Production evidence intake request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "category",
+    "environment_kind",
+    "environment_id",
+    "tested_at",
+    "checks",
+    "executor",
+    "artifacts",
+    "approvals"
+  ],
+  "properties": {
+    "schema": {"const": "pharma.production-evidence-intake.v1"},
+    "schema_version": {"const": 1},
+    "category": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$"},
+    "environment_kind": {"enum": ["preproduction", "production"]},
+    "environment_id": {"type": "string", "minLength": 3, "maxLength": 120},
+    "tested_at": {"type": "string", "format": "date-time"},
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$"}
+    },
+    "executor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["organization", "team", "independent"],
+      "properties": {
+        "organization": {"type": "string", "minLength": 3, "maxLength": 200},
+        "team": {"type": "string", "minLength": 3, "maxLength": 200},
+        "independent": {"type": "boolean"}
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "source_path", "destination", "reference"],
+        "properties": {
+          "name": {"type": "string", "minLength": 3, "maxLength": 200},
+          "source_path": {"type": "string", "minLength": 1, "maxLength": 4096},
+          "destination": {"type": "string", "minLength": 1, "maxLength": 240},
+          "reference": {"type": "string", "minLength": 3, "maxLength": 200}
+        }
+      }
+    },
+    "approvals": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "source_path",
+          "destination",
+          "reference",
+          "organization",
+          "approved_at"
+        ],
+        "properties": {
+          "role": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$"},
+          "source_path": {"type": "string", "minLength": 1, "maxLength": 4096},
+          "destination": {"type": "string", "pattern": "^approvals/.+"},
+          "reference": {"type": "string", "minLength": 3, "maxLength": 200},
+          "organization": {"type": "string", "minLength": 3, "maxLength": 200},
+          "approved_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Approval must not predate tested_at beyond the five-minute clock-skew allowance."
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"category": {"const": "mcp_sender_constraint"}},
+        "required": ["category"]
+      },
+      "then": {
+        "properties": {
+          "artifacts": {
+            "items": {
+              "properties": {
+                "destination": {
+                  "pattern": "^(artifacts/.+|mcp-sender-constraint-report\\.json)$"
+                }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "if": {
+          "properties": {"category": {"const": "production_topology"}},
+          "required": ["category"]
+        },
+        "then": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "destination": {
+                    "pattern": "^(artifacts/.+|production-topology-report\\.json|production-topology-live-probe\\.json)$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "else": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "destination": {"pattern": "^artifacts/.+"}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

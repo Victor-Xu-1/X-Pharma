@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pharma-intelligence.invalid/schemas/production-evidence-report.v2.json",
+  "title": "Production gate evidence report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "category",
+    "status",
+    "environment_kind",
+    "environment_id",
+    "tested_at",
+    "subject",
+    "checks",
+    "executor",
+    "artifacts",
+    "approvals"
+  ],
+  "properties": {
+    "schema": {"const": "pharma.production-gate-evidence.v2"},
+    "schema_version": {"const": 2},
+    "category": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,79}$"},
+    "status": {"const": "passed"},
+    "environment_kind": {"enum": ["preproduction", "production"]},
+    "environment_id": {"type": "string", "minLength": 3, "maxLength": 120},
+    "tested_at": {"type": "string", "format": "date-time"},
+    "subject": {"type": "object", "minProperties": 4},
+    "checks": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"const": true}
+    },
+    "executor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["organization", "team", "independent"],
+      "properties": {
+        "organization": {"type": "string", "minLength": 3, "maxLength": 200},
+        "team": {"type": "string", "minLength": 3, "maxLength": 200},
+        "independent": {"type": "boolean"}
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "path", "size", "sha256", "reference"],
+        "properties": {
+          "name": {"type": "string", "minLength": 3, "maxLength": 200},
+          "path": {"type": "string", "minLength": 1, "maxLength": 500},
+          "size": {"type": "integer", "minimum": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "reference": {"type": "string", "minLength": 3, "maxLength": 200}
+        }
+      }
+    },
+    "approvals": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "reference",
+          "organization",
+          "approved_at",
+          "artifact_path",
+          "artifact_size",
+          "artifact_sha256"
+        ],
+        "properties": {
+          "role": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,79}$"},
+          "reference": {"type": "string", "minLength": 3, "maxLength": 200},
+          "organization": {"type": "string", "minLength": 3, "maxLength": 200},
+          "approved_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Approval must not predate tested_at beyond the five-minute clock-skew allowance."
+          },
+          "artifact_path": {"type": "string", "minLength": 1, "maxLength": 500},
+          "artifact_size": {"type": "integer", "minimum": 1},
+          "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    }
+  }
+}

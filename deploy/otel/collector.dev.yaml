@@ -1,0 +1,46 @@
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+    spike_limit_mib: 64
+  batch:
+    timeout: 1s
+  filter/operational_metrics:
+    error_mode: propagate
+    metrics:
+      metric:
+        - 'not IsMatch(name, "^pharma\\.")'
+
+exporters:
+  debug/traces:
+    verbosity: basic
+    use_internal_logger: false
+    output_paths: [stdout]
+  debug/operational_metrics:
+    verbosity: detailed
+    use_internal_logger: false
+    output_paths: [stdout]
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug/traces]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, filter/operational_metrics, batch]
+      exporters: [debug/operational_metrics]

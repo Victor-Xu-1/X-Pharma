@@ -1,0 +1,101 @@
+/* Login */
+.login-screen {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(390px, 44%) 1fr;
+  background: #fff;
+}
+.login-brand {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 46px clamp(38px, 5vw, 76px);
+  background: #15262f;
+  color: #fff;
+}
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: #fff;
+}
+.brand-symbol {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: var(--ds-accent);
+  color: #fff;
+  border-radius: 4px;
+}
+.brand-lockup span:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.brand-lockup strong {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.brand-lockup small {
+  margin-top: 2px;
+  color: #9eb0b9;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+.brand-lockup-large .brand-symbol {
+  width: 42px;
+  height: 42px;
+}
+.brand-lockup-large strong {
+  font-size: 15px;
+}
+.login-title {
+  margin: auto 0;
+}
+.login-title .eyebrow {
+  color: var(--ds-accent);
+}
+.login-title h1 {
+  max-width: 500px;
+  color: #fff;
+  font-size: 38px;
+}
+.login-title > p:last-child {
+  margin: 14px 0 0;
+  color: #b7c5cb;
+  font-size: 15px;
+}
+.login-version {
+  margin: 0;
+  color: #81959f;
+  font-size: 10px;
+}
+.login-form-area {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 36px;
+}
+.login-form {
+  width: min(380px, 100%);
+  display: grid;
+  gap: 20px;
+}
+.login-form > svg {
+  color: #356b80;
+}
+.login-form h2 {
+  font-size: 24px;
+}
+.login-form label {
+  display: block;
+}
+.login-button {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 2px;
+}

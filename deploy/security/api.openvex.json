@@ -1,0 +1,45 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://pharma-intelligence.example/vex/cpython-3.13.14-security-backports/2",
+  "author": "Pharma Intelligence Platform Security",
+  "timestamp": "2026-07-16T08:00:00Z",
+  "version": 2,
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2026-15308"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/python@3.13.14"
+        }
+      ],
+      "status": "fixed",
+      "status_notes": "The image replaces Lib/html/parser.py with the official CPython 3.13 backport commit 7933f4bf7131aa4140750f9404f5de0aa2969ced after SHA-256 verification. The ingestion path additionally selects lxml for untrusted HTML."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-11940"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/python@3.13.14"
+        }
+      ],
+      "status": "fixed",
+      "status_notes": "The image replaces Lib/tarfile.py with official CPython 3.13 backport commit 771d12dda5140313db0ac550292987975651bbde after SHA-256 verification."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-11972"
+      },
+      "products": [
+        {
+          "@id": "pkg:generic/python@3.13.14"
+        }
+      ],
+      "status": "fixed",
+      "status_notes": "The image replaces Lib/tarfile.py with official CPython 3.13 backport commit 771d12dda5140313db0ac550292987975651bbde after SHA-256 verification."
+    }
+  ]
+}

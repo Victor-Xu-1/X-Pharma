@@ -1,0 +1,887 @@
+/* Cross-domain entity dossier */
+.entity-dossier-page {
+  min-width: 0;
+}
+.entity-dossier-title {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+}
+.entity-dossier-symbol {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: #e4edf4;
+  color: #205f88;
+}
+.entity-dossier-title span {
+  color: #5d737e;
+  font-size: 10px;
+  font-weight: 700;
+}
+.entity-dossier-title h2 {
+  margin: 2px 0 0;
+  font-size: 23px;
+}
+.entity-dossier-title p {
+  max-width: 900px;
+  margin: 4px 0 0;
+  color: #5a6b74;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.drug-profile-page {
+  min-width: 0;
+}
+.drug-profile-header {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+}
+.drug-profile-symbol {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-strong);
+}
+.drug-profile-identity span,
+.drug-profile-section > header span {
+  color: #5d737e;
+  font-size: 10px;
+  font-weight: 700;
+}
+.drug-profile-identity h2 {
+  margin: 2px 0 0;
+  font-size: 23px;
+}
+.drug-profile-identity p {
+  max-width: 900px;
+  margin: 4px 0 0;
+  color: #5a6b74;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.drug-profile-metrics {
+  grid-template-columns: repeat(6, minmax(110px, 1fr));
+}
+.drug-profile-overview {
+  display: grid;
+  gap: 24px;
+}
+.drug-development-view {
+  display: grid;
+  gap: 28px;
+}
+.drug-deal-view {
+  display: grid;
+  gap: 28px;
+}
+.drug-deal-table-region table {
+  min-width: 1500px;
+}
+.drug-deal-rights-region table {
+  min-width: 1120px;
+}
+.drug-deal-entity-list,
+.drug-deal-entity-list > span {
+  display: grid;
+  gap: 4px;
+}
+.drug-deal-entity-list {
+  min-width: 210px;
+}
+.drug-deal-entity-list > span + span {
+  border-top: 1px solid #dbe3e6;
+  padding-top: 5px;
+}
+.drug-deal-entity-list small {
+  color: #5b707a;
+  line-height: 1.45;
+}
+.drug-deal-entity-list .table-link-button {
+  width: fit-content;
+  max-width: 100%;
+  text-align: left;
+}
+.dossier-deal-links {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  max-width: 620px;
+}
+.dossier-deal-links > div {
+  display: grid;
+  gap: 4px;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: baseline;
+}
+.dossier-deal-links > div > span {
+  color: #5b707a;
+  font-size: 0.82rem;
+}
+.dossier-deal-links > div > small,
+.dossier-deal-links :where(.inline-link-button) {
+  grid-column: 2;
+}
+:where(.dossier-deal-links) .inline-link-button {
+  justify-self: start;
+}
+.drug-program-progress-region table {
+  min-width: 1180px;
+}
+.drug-program-rights-region table {
+  min-width: 1260px;
+}
+.drug-program-entity-list,
+.drug-program-entity-list > span,
+.drug-program-targets {
+  display: grid;
+  gap: 4px;
+}
+.drug-program-entity-list {
+  min-width: 190px;
+}
+.drug-program-entity-list > span + span {
+  border-top: 1px solid #dbe3e6;
+  padding-top: 5px;
+}
+.drug-program-entity-list small {
+  color: #5b707a;
+  line-height: 1.45;
+}
+.drug-program-entity-list .table-link-button,
+.drug-program-targets .table-link-button {
+  width: fit-content;
+  max-width: 100%;
+  text-align: left;
+}
+.drug-program-targets {
+  min-width: 130px;
+}
+.drug-program-rights-region .program-history {
+  min-width: 220px;
+}
+.drug-program-rights-region .program-history li small {
+  display: block;
+  margin-top: 2px;
+  color: #5b707a;
+}
+.drug-regulatory-view {
+  display: grid;
+  gap: 28px;
+}
+.drug-clinical-view {
+  display: grid;
+  gap: 28px;
+}
+.drug-clinical-results-region table {
+  min-width: 1580px;
+}
+.drug-clinical-trials-region table {
+  min-width: 1180px;
+}
+.drug-clinical-outcomes,
+.drug-clinical-outcomes > span,
+.drug-clinical-role-links {
+  display: grid;
+  gap: 4px;
+}
+.drug-clinical-outcomes {
+  min-width: 240px;
+}
+.drug-clinical-outcomes > span + span {
+  border-top: 1px solid #dbe3e6;
+  padding-top: 5px;
+}
+.drug-clinical-outcomes strong {
+  color: #233d49;
+  font-size: 12px;
+}
+.drug-clinical-outcomes small,
+.drug-clinical-role-links small {
+  color: #5b707a;
+  line-height: 1.45;
+}
+.drug-clinical-role-links {
+  min-width: 150px;
+}
+.drug-clinical-role-links button {
+  display: grid;
+  gap: 1px;
+  width: fit-content;
+  max-width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #356b80;
+  text-align: left;
+}
+.drug-clinical-role-links button:hover {
+  text-decoration: underline;
+}
+.drug-regulatory-table-region table {
+  min-width: 1120px;
+}
+.drug-regulatory-population {
+  min-width: 280px;
+}
+.drug-regulatory-population strong,
+.drug-regulatory-population small {
+  display: block;
+}
+.drug-regulatory-population strong {
+  line-height: 1.5;
+}
+.drug-regulatory-population small {
+  margin-top: 4px;
+  color: #526872;
+  line-height: 1.5;
+}
+.drug-profile-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.8fr);
+  gap: 28px;
+}
+.drug-profile-section {
+  min-width: 0;
+  border-top: 1px solid #cbd6da;
+  padding-top: 14px;
+}
+.drug-profile-section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 13px;
+}
+.drug-profile-section > header h3 {
+  margin: 2px 0 0;
+  color: #263b45;
+  font-size: 14px;
+}
+.drug-profile-section > header > button {
+  border: 0;
+  background: transparent;
+  color: #356b80;
+  padding: 5px 0;
+  font-weight: 700;
+}
+.drug-profile-section > header > button:disabled {
+  color: #94a2a9;
+}
+.drug-profile-attribute-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid #d5dfe3;
+  border-left: 1px solid #d5dfe3;
+}
+.drug-profile-attribute-strip > div {
+  min-width: 0;
+  min-height: 72px;
+  border-right: 1px solid #d5dfe3;
+  border-bottom: 1px solid #d5dfe3;
+  padding: 11px 13px;
+}
+.drug-profile-attribute-strip dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #5a6b74;
+  font-size: 10px;
+}
+.drug-profile-attribute-strip dd {
+  margin: 7px 0 0;
+  color: #263b45;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.55;
+}
+.inline-link-button {
+  border: 0;
+  background: transparent;
+  color: #356b80;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.drug-profile-structure-content {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.9fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+}
+.drug-profile-structure-content dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+.drug-profile-structure-content dt {
+  color: #5a6b74;
+  font-size: 10px;
+}
+.drug-profile-structure-content dd {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+  color: #263b45;
+  font-size: 12px;
+  font-weight: 650;
+}
+.drug-profile-milestones ol {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.drug-profile-milestones li {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 13px;
+  border-bottom: 1px solid #e0e7e9;
+  padding: 10px 0;
+}
+.drug-profile-milestones time {
+  color: #53646d;
+  font-size: 10px;
+}
+.drug-profile-milestones strong,
+.drug-profile-milestones li span {
+  display: block;
+}
+.drug-profile-milestones strong {
+  color: #263b45;
+  font-size: 12px;
+}
+.drug-profile-milestones li span {
+  margin-top: 3px;
+  color: #5a6b74;
+  font-size: 10px;
+}
+.drug-profile-coverage > header > span {
+  text-align: right;
+}
+.company-profile-page {
+  min-width: 0;
+}
+.company-profile-header {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+}
+.company-profile-symbol {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: #e3ecf4;
+  color: #205f88;
+}
+.company-profile-identity span,
+.company-profile-section > header span {
+  color: #5d737e;
+  font-size: 10px;
+  font-weight: 700;
+}
+.company-profile-identity h2 {
+  margin: 2px 0 0;
+  font-size: 23px;
+}
+.company-profile-identity p {
+  max-width: 900px;
+  margin: 4px 0 0;
+  color: #5a6b74;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.company-profile-metrics {
+  grid-template-columns: repeat(6, minmax(110px, 1fr));
+}
+.company-profile-overview {
+  display: grid;
+  gap: 24px;
+}
+.company-profile-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
+  gap: 28px;
+}
+.company-profile-section {
+  min-width: 0;
+  border-top: 1px solid #cbd6da;
+  padding-top: 14px;
+}
+.company-profile-section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 13px;
+}
+.company-profile-section > header h3 {
+  margin: 2px 0 0;
+  color: #263b45;
+  font-size: 14px;
+}
+.company-profile-section > header > button {
+  border: 0;
+  background: transparent;
+  color: #356b80;
+  padding: 5px 0;
+  font-weight: 700;
+}
+.company-profile-section > header > button:disabled {
+  color: #94a2a9;
+}
+.company-phase-distribution,
+.company-asset-list,
+.company-profile-recent-events {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.company-phase-distribution {
+  display: grid;
+  gap: 9px;
+}
+.company-phase-distribution li {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.5fr) minmax(120px, 1fr) 30px;
+  align-items: center;
+  gap: 11px;
+  color: #405761;
+  font-size: 11px;
+}
+.company-phase-distribution li > div {
+  height: 8px;
+  overflow: hidden;
+  background: var(--ds-surface-muted);
+}
+.company-phase-distribution li i {
+  height: 100%;
+  display: block;
+  background: var(--ds-accent-strong);
+}
+.company-phase-distribution strong {
+  text-align: right;
+}
+.company-modality-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 14px 0 0;
+  border-top: 1px solid #e0e7e9;
+  padding-top: 11px;
+  color: #53646d;
+  font-size: 10px;
+}
+.company-asset-list {
+  border-top: 1px solid #d5dfe3;
+}
+.company-asset-list li {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(110px, 0.7fr) auto;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #e0e7e9;
+  padding: 9px 0;
+}
+.company-asset-list button {
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: #356b80;
+  padding: 0;
+  text-align: left;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.company-asset-list > li > span:not(.status-badge) {
+  overflow: hidden;
+  color: #53646d;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.company-profile-recent-events {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 1px solid #d5dfe3;
+  border-left: 1px solid #d5dfe3;
+}
+.company-profile-recent-events li {
+  min-width: 0;
+  min-height: 96px;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  border-right: 1px solid #d5dfe3;
+  border-bottom: 1px solid #d5dfe3;
+  padding: 11px;
+}
+.company-profile-recent-events time,
+.company-profile-recent-events span {
+  color: #5a6b74;
+  font-size: 9px;
+}
+.company-profile-recent-events strong {
+  overflow-wrap: anywhere;
+  color: #263b45;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.company-profile-coverage > header > span {
+  text-align: right;
+}
+.entity-dossier-overview {
+  display: grid;
+  gap: 24px;
+}
+.entity-summary-section h3,
+.coverage-section h3 {
+  margin: 0 0 12px;
+  color: #263b45;
+  font-size: 14px;
+}
+.entity-attribute-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid #d5dfe3;
+  border-left: 1px solid #d5dfe3;
+}
+.entity-attribute-grid > div {
+  min-width: 0;
+  min-height: 68px;
+  border-right: 1px solid #d5dfe3;
+  border-bottom: 1px solid #d5dfe3;
+  padding: 11px 13px;
+}
+.entity-attribute-grid dt {
+  color: #5a6b74;
+  font-size: 10px;
+}
+.entity-attribute-grid dd {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+  color: #263b45;
+  font-size: 12px;
+  font-weight: 650;
+}
+.coverage-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid #d5dfe3;
+  border-left: 1px solid #d5dfe3;
+}
+.coverage-grid article {
+  min-width: 0;
+  min-height: 92px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: start;
+  gap: 7px 12px;
+  border-right: 1px solid #d5dfe3;
+  border-bottom: 1px solid #d5dfe3;
+  background: #fff;
+  padding: 13px 15px;
+}
+.coverage-grid article.truncated {
+  border-left: 3px solid #8fbaca;
+}
+.coverage-grid article.not_observed {
+  background: #f7f9fa;
+}
+.coverage-grid span {
+  color: #334b56;
+  font-size: 12px;
+  font-weight: 700;
+}
+.coverage-grid strong {
+  color: #356b80;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.coverage-grid small {
+  grid-column: 1 / -1;
+  color: #5a6b74;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.coverage-open-button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 26px;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  color: #176f9c;
+  padding: 2px 0;
+  font-size: 11px;
+  font-weight: 650;
+}
+.coverage-open-button:hover:not(:disabled) {
+  border-bottom-color: currentColor;
+}
+.coverage-open-button:disabled {
+  color: #9aa7ad;
+  cursor: not-allowed;
+}
+.entity-record-list {
+  display: grid;
+  border-top: 1px solid #d5dfe3;
+}
+.entity-record-list article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #d5dfe3;
+  padding: 14px 4px;
+}
+.entity-record-list article > svg {
+  color: #356b80;
+}
+.entity-record-list h3 {
+  margin: 3px 0;
+  color: #263b45;
+  font-size: 13px;
+}
+.entity-record-list span,
+.entity-record-list p {
+  margin: 0;
+  color: #5a6b74;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.company-intelligence-view {
+  display: grid;
+  gap: 28px;
+}
+.company-intelligence-metrics {
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  margin-top: 0;
+}
+.company-intelligence-section > header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 12px;
+}
+.company-intelligence-section > header span {
+  color: #356b80;
+  font-size: 9px;
+  font-weight: 800;
+}
+.company-intelligence-section > header h3 {
+  margin: 3px 0 0;
+  color: #263b45;
+  font-size: 14px;
+}
+.company-intelligence-section > header small {
+  max-width: 420px;
+  color: #5a6b74;
+  font-size: 10px;
+  text-align: right;
+}
+.company-event-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid #d5dfe3;
+}
+.company-event-timeline li {
+  display: grid;
+  grid-template-columns: 92px 12px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  border-bottom: 1px solid #d5dfe3;
+  padding: 15px 4px;
+}
+.company-event-timeline time {
+  color: #5f737d;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.company-event-marker {
+  width: 9px;
+  height: 9px;
+  margin-top: 2px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #4b819a;
+  background: #4b819a;
+}
+.company-event-marker.deal_announced {
+  box-shadow: 0 0 0 1px var(--ds-warning);
+  background: var(--ds-warning);
+}
+.company-event-timeline li > div > span {
+  color: #5a6b74;
+  font-size: 9px;
+  font-weight: 700;
+}
+.company-event-timeline h4 {
+  margin: 3px 0 5px;
+  color: #263b45;
+  font-size: 13px;
+}
+.company-event-timeline p {
+  margin: 0;
+  color: #647983;
+  font-size: 10px;
+  line-height: 1.55;
+}
+.company-event-timeline p button {
+  border: 0;
+  background: transparent;
+  color: #156b92;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 980px) {
+  .drug-profile-metrics {
+    grid-template-columns: repeat(3, minmax(110px, 1fr));
+  }
+  .drug-profile-overview-grid {
+    grid-template-columns: 1fr;
+  }
+  .company-profile-metrics {
+    grid-template-columns: repeat(3, minmax(110px, 1fr));
+  }
+  .company-profile-overview-grid {
+    grid-template-columns: 1fr;
+  }
+  .company-profile-recent-events {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .drug-profile-attribute-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .entity-attribute-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .coverage-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .company-intelligence-metrics {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .drug-profile-header {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+  .drug-profile-header > .status-badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .drug-profile-symbol {
+    width: 40px;
+    height: 40px;
+  }
+  .drug-profile-metrics,
+  .drug-profile-attribute-strip,
+  .drug-profile-structure-content {
+    grid-template-columns: 1fr;
+  }
+  .drug-profile-section > header {
+    align-items: flex-start;
+  }
+  .drug-profile-coverage > header {
+    flex-direction: column;
+  }
+  .drug-profile-coverage > header > span {
+    text-align: left;
+  }
+  .company-profile-header {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+  .company-profile-header > .status-badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .company-profile-symbol {
+    width: 40px;
+    height: 40px;
+  }
+  .company-profile-metrics,
+  .company-profile-recent-events {
+    grid-template-columns: 1fr;
+  }
+  .company-profile-section > header {
+    align-items: flex-start;
+  }
+  .company-profile-coverage > header {
+    flex-direction: column;
+  }
+  .company-profile-coverage > header > span {
+    text-align: left;
+  }
+  .company-asset-list li {
+    grid-template-columns: minmax(120px, 1fr) auto;
+  }
+  .company-asset-list > li > span:not(.status-badge) {
+    grid-column: 1;
+  }
+  .entity-dossier-title {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+  .entity-dossier-title > .status-badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .entity-dossier-symbol {
+    width: 40px;
+    height: 40px;
+  }
+  .entity-dossier-metrics,
+  .entity-attribute-grid,
+  .coverage-grid {
+    grid-template-columns: 1fr;
+  }
+  .entity-record-list article {
+    grid-template-columns: 26px minmax(0, 1fr) auto;
+  }
+  .entity-record-list article > button:last-child {
+    grid-column: 2 / -1;
+    justify-self: start;
+  }
+  .company-intelligence-metrics {
+    grid-template-columns: 1fr;
+  }
+  .company-intelligence-section > header {
+    align-items: start;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .company-intelligence-section > header small {
+    text-align: left;
+  }
+  .company-event-timeline li {
+    grid-template-columns: 72px 10px minmax(0, 1fr);
+  }
+  .company-event-timeline li > button:last-child {
+    grid-column: 3;
+    justify-self: start;
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/pharma/production-topology-evidence.v1.schema.json",
+  "title": "Pharma production topology evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "schema_version", "status", "environment_kind", "environment_id", "tested_at", "subject", "profile", "entrypoints", "components", "event_projection", "authority", "resilience", "migration", "references"],
+  "properties": {
+    "schema": {"const": "pharma.production-topology-evidence.v1"},
+    "schema_version": {"const": 1},
+    "status": {"const": "passed"},
+    "environment_kind": {"enum": ["preproduction", "production"]},
+    "environment_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{2,127}$"},
+    "tested_at": {"type": "string", "format": "date-time"},
+    "subject": {"type": "object"},
+    "profile": {"enum": ["core_commercial", "scale_production"]},
+    "entrypoints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["public_entry_count", "web_url", "mcp_url"],
+      "properties": {
+        "public_entry_count": {"const": 2},
+        "web_url": {"type": "string", "format": "uri"},
+        "mcp_url": {"type": "string", "format": "uri"}
+      }
+    },
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["python", "postgresql", "rdkit", "opensearch", "object_storage", "temporal", "valkey", "identity", "secrets", "gateway", "kubernetes", "observability"],
+      "properties": {
+        "python": {"$ref": "#/$defs/component"},
+        "postgresql": {"$ref": "#/$defs/component"},
+        "rdkit": {"$ref": "#/$defs/component"},
+        "opensearch": {"$ref": "#/$defs/component"},
+        "object_storage": {"$ref": "#/$defs/component"},
+        "temporal": {"$ref": "#/$defs/component"},
+        "valkey": {"$ref": "#/$defs/component"},
+        "identity": {"$ref": "#/$defs/component"},
+        "secrets": {"$ref": "#/$defs/component"},
+        "gateway": {"$ref": "#/$defs/component"},
+        "kubernetes": {"$ref": "#/$defs/component"},
+        "observability": {"$ref": "#/$defs/component"}
+      }
+    },
+    "event_projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "kafka_version", "debezium_version", "clickhouse_enabled", "iceberg_enabled"],
+      "properties": {
+        "mode": {"enum": ["transactional_outbox", "kafka_cdc"]},
+        "kafka_version": {"type": ["string", "null"]},
+        "debezium_version": {"type": ["string", "null"]},
+        "clickhouse_enabled": {"type": "boolean"},
+        "iceberg_enabled": {"type": "boolean"}
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canonical_store", "chemical_authority", "search_role", "object_role", "metering_authority", "web_direct_database_access", "mcp_direct_database_access"],
+      "properties": {
+        "canonical_store": {"const": "postgresql"},
+        "chemical_authority": {"const": "postgresql_rdkit"},
+        "search_role": {"const": "derived_projection"},
+        "object_role": {"const": "immutable_evidence"},
+        "metering_authority": {"const": "postgresql_append_only_ledger"},
+        "web_direct_database_access": {"const": false},
+        "mcp_direct_database_access": {"const": false}
+      }
+    },
+    "resilience": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["multi_az", "postgres_pitr", "object_versioning", "object_lock", "opensearch_replicas", "temporal_ha", "valkey_ha", "kubernetes_pdb_hpa", "gitops_rollback", "central_observability"],
+      "properties": {
+        "multi_az": {"const": true},
+        "postgres_pitr": {"const": true},
+        "object_versioning": {"const": true},
+        "object_lock": {"const": true},
+        "opensearch_replicas": {"const": true},
+        "temporal_ha": {"const": true},
+        "valkey_ha": {"const": true},
+        "kubernetes_pdb_hpa": {"const": true},
+        "gitops_rollback": {"const": true},
+        "central_observability": {"const": true}
+      }
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["postgresql16_critical_path", "postgresql17_adr_reference", "ragflow_critical_path", "ragflow_exit_plan_reference", "ragflow_adapter_removal_criteria", "legacy_profile_isolated"],
+      "properties": {
+        "postgresql16_critical_path": {"const": false},
+        "postgresql17_adr_reference": {"type": ["string", "null"]},
+        "ragflow_critical_path": {"const": false},
+        "ragflow_exit_plan_reference": {"type": "string", "minLength": 3, "maxLength": 200},
+        "ragflow_adapter_removal_criteria": {"type": "string", "minLength": 3, "maxLength": 500},
+        "legacy_profile_isolated": {"const": true}
+      }
+    },
+    "references": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["architecture_approval", "deployment_inventory", "version_matrix", "ragflow_exit_plan"],
+      "properties": {
+        "architecture_approval": {"type": "string", "minLength": 3, "maxLength": 200},
+        "deployment_inventory": {"type": "string", "minLength": 3, "maxLength": 200},
+        "version_matrix": {"type": "string", "minLength": 3, "maxLength": 200},
+        "ragflow_exit_plan": {"type": "string", "minLength": 3, "maxLength": 200}
+      }
+    }
+  },
+  "$defs": {
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "deployment_reference", "replicas", "managed_or_ha"],
+      "properties": {
+        "version": {"type": "string", "minLength": 1, "maxLength": 80},
+        "deployment_reference": {"type": "string", "minLength": 3, "maxLength": 300},
+        "replicas": {"type": "integer", "minimum": 1, "maximum": 10000},
+        "managed_or_ha": {"const": true}
+      }
+    }
+  }
+}

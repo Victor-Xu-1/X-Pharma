@@ -1,0 +1,21 @@
+# Audited false positives. Fingerprints are stable because the security gate mounts
+# its clean source staging directory at /repo.
+/repo/docs/adr/0004-open-source-technology-baseline.md:generic-api-key:41
+/repo/tests/test_chemistry_commercial_postgres.py:generic-api-key:112
+/repo/tests/test_chemistry_commercial_postgres.py:generic-api-key:137
+/repo/tests/test_commercial_accounting.py:generic-api-key:193
+/repo/tests/test_mcp_auth_oidc.py:generic-api-key:42
+/repo/tests/test_commercial_api.py:generic-api-key:497
+/repo/deploy/kubernetes/platform/versions.env:generic-api-key:14
+/repo/manifests/acceptance/wsl-security-gates-20260717.json:generic-api-key:98
+/repo/manifests/acceptance/wsl-security-gates-20260717.json:generic-api-key:99
+/repo/manifests/acceptance/wsl-security-gates-20260717.json:generic-api-key:100
+# Audited immutable Git/image identifiers in delivery evidence, not credentials.
+/repo/GOAL.md:generic-api-key:87
+/repo/GOAL.md:generic-api-key:91
+/repo/docs/project-handoff.md:generic-api-key:139
+/repo/docs/design-qa.md:generic-api-key:9
+# Synthetic 16-character fingerprints in mocked EnterpriseView provider fixtures.
+# These are displayed hash identifiers, not API credentials.
+/repo/apps/web/src/test/EnterpriseView.test.tsx:generic-api-key:279
+/repo/apps/web/src/test/EnterpriseView.test.tsx:generic-api-key:301

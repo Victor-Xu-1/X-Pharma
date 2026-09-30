@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "runtime": {
+    "paddleocr": "3.5.0",
+    "paddlepaddle": "3.3.1"
+  },
+  "models": [
+    {
+      "name": "PP-OCRv5_server_det",
+      "purpose": "multilingual text detection",
+      "directory_sha256": "ec4f33f2eaedab78202156d61c79e2b81c020d2007a0336aa3777bb44a5a5ad0",
+      "source": "https://www.paddleocr.ai/main/en/version3.x/module_usage/text_detection.html",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "PP-OCRv5_server_rec",
+      "purpose": "Chinese and English text recognition",
+      "directory_sha256": "02369df6f07caf77a9892b0d598b4fa71a831e31b087aa8d727d34ef5cee3a8f",
+      "source": "https://www.paddleocr.ai/main/en/version3.x/module_usage/text_recognition.html",
+      "license": "Apache-2.0"
+    }
+  ]
+}

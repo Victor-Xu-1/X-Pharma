@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/pharma/internal-workbench-capability-matrix.v1.schema.json",
+  "title": "Internal operations workbench capability matrix",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "schema_version", "goal_document_id", "goal_version", "reviewed_at", "completion_rule", "domains"],
+  "properties": {
+    "schema": {"const": "pharma.internal-workbench-capability-matrix.v1"},
+    "schema_version": {"const": 1},
+    "goal_document_id": {"const": "PIP-GOAL-001"},
+    "goal_version": {"const": "1.9.9"},
+    "reviewed_at": {"type": "string", "format": "date"},
+    "completion_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required_domain_count", "required_priorities", "required_status", "requires_real_sources", "requires_operator_uat", "requires_no_cli_standard_operations"],
+      "properties": {
+        "required_domain_count": {"const": 10},
+        "required_priorities": {"const": ["P0", "P1"]},
+        "required_status": {"const": "implemented"},
+        "requires_real_sources": {"const": true},
+        "requires_operator_uat": {"const": true},
+        "requires_no_cli_standard_operations": {"const": true}
+      }
+    },
+    "domains": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "status", "capabilities", "remaining_gaps"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]{2,63}$"},
+          "title": {"type": "string", "minLength": 2, "maxLength": 80},
+          "status": {"enum": ["implemented", "partial", "not_started"]},
+          "remaining_gaps": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 3, "maxLength": 240}
+          },
+          "capabilities": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "priority", "status", "evidence"],
+              "properties": {
+                "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]{2,95}$"},
+                "priority": {"enum": ["P0", "P1"]},
+                "status": {"enum": ["implemented", "partial", "not_started"]},
+                "evidence": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {"type": "string", "minLength": 3, "maxLength": 240}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

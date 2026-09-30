@@ -1,0 +1,83 @@
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: pharma
+  labels:
+    app.kubernetes.io/name: pharma-otel-collector
+    app.kubernetes.io/part-of: pharma-intelligence
+spec:
+  mode: deployment
+  replicas: 3
+  image: otel/opentelemetry-collector-contrib:0.156.0@sha256:125bdbeb7590cc1952c5b3430ecf14063568980c2c93d5b38676cc0446ed8108
+  serviceAccount: pharma-platform
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
+    fsGroup: 10001
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: ["ALL"]
+  podDisruptionBudget:
+    minAvailable: 2
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  env:
+    - name: CENTRAL_OTLP_ENDPOINT
+      value: https://telemetry.example.com:4317
+    - name: OTEL_EXPORTER_AUTH_HEADER
+      valueFrom:
+        secretKeyRef:
+          name: pharma-observability-secrets
+          key: OTEL_EXPORTER_AUTH_HEADER
+  config:
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+    processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 15
+      batch:
+        send_batch_size: 8192
+        timeout: 5s
+    exporters:
+      otlp/central:
+        endpoint: ${env:CENTRAL_OTLP_ENDPOINT}
+        headers:
+          authorization: ${env:OTEL_EXPORTER_AUTH_HEADER}
+        tls:
+          insecure: false
+    service:
+      extensions:
+        - health_check
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlp/central]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlp/central]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlp/central]
