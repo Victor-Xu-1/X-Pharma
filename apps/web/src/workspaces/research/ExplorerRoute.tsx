@@ -30,6 +30,7 @@ export function ExplorerRoute({ context }: { context: ResearchRouteContext }) {
       onSearchChange={(query, entityTypes, reviewStatus, sortBy, sortDirection, offset, sort) =>
         navigate(
           {
+            ...location,
             workbench: "research",
             view: "explorer",
             query,

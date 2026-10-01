@@ -721,7 +721,7 @@
   padding: 9px;
   font-size: 10px;
 }
-.entity-filter-options > span.error {
+.entity-filter-options .error {
   color: var(--ds-danger);
 }
 .entity-filter-options button {

@@ -195,3 +195,39 @@ it("uses public-facing language for the multiselect and empty result", async () 
   expect(await screen.findByText("未找到可添加项")).toBeInTheDocument();
   expect(group).not.toHaveTextContent("规范实体");
 });
+
+it.each(["Bio", "V"])("never adds a previous-query candidate while typing %s", async (nextQuery) => {
+  const onChange = vi.fn();
+  renderWithQueryClient(
+    <EntityMultiFilterSelect label="药物" entityType="drug" values={[]} onChange={onChange} placeholder="输入药物" />,
+  );
+  const input = screen.getByRole("combobox", { name: "药物筛选" });
+  fireEvent.change(input, { target: { value: "VX" } });
+  await screen.findByRole("option", { name: /VX-101/ });
+  fireEvent.change(input, { target: { value: nextQuery } });
+  expect(screen.queryByRole("option", { name: /VX-101/ })).not.toBeInTheDocument();
+  fireEvent.keyDown(input, { key: "ArrowDown" });
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(onChange).not.toHaveBeenCalled();
+});
+
+it("retries a failed lookup without losing selected canonical ids", async () => {
+  vi.mocked(lookupEntities).mockRejectedValueOnce(new Error("lookup unavailable"));
+  const onChange = vi.fn();
+  renderWithQueryClient(
+    <EntityMultiFilterSelect
+      label="药物"
+      entityType="drug"
+      values={[originator.id]}
+      onChange={onChange}
+      placeholder="输入药物"
+    />,
+  );
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "Bio" } });
+  const retry = await screen.findByRole("button", { name: "重试药物候选检索" });
+  expect(await screen.findByText(originator.name)).toBeInTheDocument();
+  expect(screen.queryByRole("option")).not.toBeInTheDocument();
+  fireEvent.click(retry);
+  await screen.findByRole("option", { name: /VX-101 Bio/ });
+  expect(onChange).not.toHaveBeenCalled();
+});
