@@ -23,6 +23,8 @@ def test_architecture_overview_is_self_contained_and_preserves_honest_readiness_
     inspector = SourceInspector()
     inspector.feed(document)
     assert inspector.domains == 22 and not inspector.external_sources
+    assert "X-Pharma v0.1.0" in document
+    assert "GOAL.md 契约版本" in document
     assert "OrganizationMembership" in document and "仅源码 ZIP" in document
     assert "不共享原数据" in document and "不提交 GitHub" in document
     assert "不等于" in document and "UAT" in document

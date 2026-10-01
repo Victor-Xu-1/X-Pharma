@@ -5,6 +5,7 @@ from sqlalchemy import text
 
 from pharma_intel.http import runtime
 from pharma_intel.http.dependencies import SessionDep
+from pharma_intel.product import PRODUCT_NAME, PRODUCT_VERSION
 from pharma_intel.search.client import SearchProjectionError, get_opensearch_gateway
 
 router = APIRouter()
@@ -12,7 +13,7 @@ router = APIRouter()
 
 @router.get("/health/live", tags=["health"])
 def live() -> dict[str, str]:
-    return {"status": "ok"}
+    return {"status": "ok", "product": PRODUCT_NAME, "version": PRODUCT_VERSION}
 
 
 @router.get("/health/ready", tags=["health"])

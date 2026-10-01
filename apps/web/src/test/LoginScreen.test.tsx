@@ -40,6 +40,7 @@ describe("LoginScreen", () => {
     expect(mark).toHaveAttribute("aria-hidden", "true");
     expect(mark?.querySelector("svg")).toBeNull();
     expect(screen.getByText("X-Pharma")).toBeInTheDocument();
+    expect(screen.getByText("v0.1.0")).toBeInTheDocument();
   });
 
   it("keeps the public login shell free of internal workspace language", () => {

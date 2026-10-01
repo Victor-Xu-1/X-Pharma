@@ -238,6 +238,9 @@ jobs:
           uv sync --locked --dev
           pnpm --dir apps/web install --frozen-lockfile
           pnpm --dir apps/web exec playwright install --with-deps chrome
+          source scripts/lib/browser_fonts.sh
+          sudo apt-get install --yes --no-install-recommends "$BROWSER_FONT_PACKAGE=$BROWSER_FONT_VERSION"
+          verify_browser_fonts
       - name: Start integration stack
         env:
           KNOWLEDGE_SOURCE_ROOT: /tmp/pharma-source

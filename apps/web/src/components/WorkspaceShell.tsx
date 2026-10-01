@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
-import { OPERATIONS_NAME, PRODUCT_NAME } from "../lib/product";
+import { OPERATIONS_NAME, PRODUCT_NAME, PRODUCT_RELEASE } from "../lib/product";
 import type { User } from "../lib/types";
 import { useModalFocus } from "../lib/useModalFocus";
 import { canAccessView, type ViewKey, type WorkbenchKey } from "../lib/workspaceRouting";
@@ -170,7 +170,9 @@ export function WorkspaceShell({
             <BrandMark />
             <span className="brand-copy">
               <strong>{PRODUCT_NAME}</strong>
-              <small>{researchWorkbench ? "医药研发情报" : "内部管理工作台"}</small>
+              <small>
+                <span>{researchWorkbench ? "医药研发情报" : "内部管理工作台"}</span> · <span>{PRODUCT_RELEASE}</span>
+              </small>
             </span>
           </div>
           <button

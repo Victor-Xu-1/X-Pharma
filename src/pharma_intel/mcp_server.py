@@ -28,7 +28,7 @@ from pharma_intel.dossier import DOSSIER_RECORD_COLLECTIONS, dossier_result_capa
 from pharma_intel.mcp_auth import build_token_verifier
 from pharma_intel.mcp_dpop import DpopProofVerifier, DpopSenderConstraintMiddleware, ValkeyDpopReplayStore
 from pharma_intel.operational_metrics import McpOutcome, operational_metrics
-from pharma_intel.product import PRODUCT_NAME
+from pharma_intel.product import PRODUCT_NAME, PRODUCT_VERSION
 from pharma_intel.request_correlation import (
     NETWORK_FINGERPRINT_HEADER,
     CorrelationSignalError,
@@ -206,6 +206,10 @@ mcp = FastMCP(
     auth=auth,
     token_verifier=token_verifier,
 )
+# Pinned FastMCP does not forward a product-version constructor argument. Bind
+# its existing low-level server once; the real initialize regression protects
+# this SDK boundary without replacing handlers or creating another runtime.
+mcp._mcp_server.version = PRODUCT_VERSION
 
 
 async def api_request(ctx: McpContext, method: str, path: str, **kwargs: Any) -> Any:

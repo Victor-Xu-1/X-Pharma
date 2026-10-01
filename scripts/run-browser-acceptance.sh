@@ -95,6 +95,9 @@ if [[ -z "${COMPOSE_FILE:-}" ]]; then
   fi
 fi
 export SEARCH_ALLOW_NON_AUTHORITATIVE_PROJECTION=true
+source "$root/scripts/lib/browser_fonts.sh"
+source "$root/scripts/lib/browser_runtime_health.sh"
+verify_browser_fonts
 
 api_container_id=$(docker compose ps -q api)
 if [[ -z "$api_container_id" ]]; then
@@ -110,8 +113,7 @@ if [[ "$api_runtime_state" != true\ * ]]; then
   exit 1
 fi
 if [[ "$api_runtime_state" != "true healthy" && "$recover_interrupted_run" != true ]]; then
-  echo "The local API container is not healthy in the selected Docker daemon: $api_runtime_state" >&2
-  exit 1
+  wait_for_browser_container_healthy "$api_container_id" api 30 || exit 1
 fi
 
 package_manager=$(node -p "require('./apps/web/package.json').packageManager")
@@ -843,18 +845,8 @@ resume_worker_after_cleanup() {
 }
 wait_for_worker_healthy() {
   local worker_container_id
-  local worker_state
-  local attempt
   worker_container_id=$(docker compose ps -q worker)
-  for ((attempt = 1; attempt <= 60; attempt++)); do
-    worker_state=$(docker inspect --format '{{.State.Running}} {{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$worker_container_id" 2>/dev/null || true)
-    if [[ "$worker_state" == "true healthy" ]]; then
-      return 0
-    fi
-    sleep 1
-  done
-  echo "The browser acceptance worker did not become healthy: $worker_state" >&2
-  return 1
+  wait_for_browser_container_healthy "$worker_container_id" worker 60
 }
 restore_runtime_projection() {
   # The acceptance build moves the shared aliases to browser-scoped indices. Rebuild
@@ -862,6 +854,8 @@ restore_runtime_projection() {
   # guard never observes the temporary aliases and enters a crash loop.
   docker compose run --rm --no-deps worker pharma-search rebuild --build-id "runtime-$run_id" >/dev/null
   SEARCH_ALLOW_NON_AUTHORITATIVE_PROJECTION=false docker compose up -d --no-deps --force-recreate worker >/dev/null
+  wait_for_worker_healthy
+  wait_for_browser_container_healthy "$api_container_id" api 30
   cleanup_worker_was_running=false
   cleanup_worker_stopped=false
 }

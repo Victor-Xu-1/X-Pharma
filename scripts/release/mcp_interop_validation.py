@@ -4,6 +4,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
+from pharma_intel.product import PRODUCT_NAME, PRODUCT_VERSION
 from scripts.release.contracts.core import SHA256_PATTERN, UUID_PATTERN
 from scripts.release.contracts.mcp import (
     MCP_INTEROPERABILITY_FIELDS,
@@ -159,8 +160,8 @@ def _validate_mcp_interoperability_evidence(
     if (
         inspector.get("pageable_cursor_tools") != 16
         or sdk.get("client_version") != "1.28.1"
-        or sdk.get("server_name") != "Pharma Intelligence"
-        or sdk.get("server_version") != "1.28.1"
+        or sdk.get("server_name") != PRODUCT_NAME
+        or sdk.get("server_version") != PRODUCT_VERSION
         or sdk.get("protocol_version") != "2025-11-25"
         or report.get("usage_settlements") != max(inspector["usage_settlements"], sdk["usage_settlements"])
     ):

@@ -4,6 +4,8 @@
 
 [Apache-2.0](LICENSE) · [架构](docs/architecture.md) · [可离线打开的项目总览 HTML](docs/project-overview.html) · [账号与组织](docs/accounts-and-organizations.md) · [源码导航](docs/codebase-guide.md) · [设计系统](docs/design-system.md) · [贡献指南](CONTRIBUTING.md) · [安全](SECURITY.md)
 
+软件版本：**v0.1.0**。`pyproject.toml` 是唯一产品语义版本来源；安装包、API、MCP 握手、Web 清单与页面、项目总览均消费或校验同一 `0.1.0`，展示使用 `v` 前缀。API/协议、治理 schema、能力矩阵和数据库迁移有独立版本，不代表软件发行号。`/health/live` 返回产品名和软件版本，部署身份仍须同时核对源码 commit 与镜像摘要。
+
 X-Pharma is an open-source pharmaceutical intelligence platform for people and
 agents. It combines a research workbench, governed evidence, structured drug and
 target data, durable ingestion workflows, and a standard MCP interface.

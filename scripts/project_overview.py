@@ -5,6 +5,7 @@ import base64
 import hashlib
 import html
 import json
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -189,6 +190,7 @@ def render_domains(matrix: dict[str, Any]) -> str:
 
 
 def build_document(root: Path = ROOT) -> str:
+    product_version = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
     matrix_root = root / "deploy/release"
     research, internal = [load_matrix(matrix_root / name) for name in MATRICES]
     logo = base64.b64encode((root / "apps/web/src/assets/brand/X-Pharma-logo-128.png").read_bytes()).decode("ascii")
@@ -199,7 +201,7 @@ def build_document(root: Path = ROOT) -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>X-Pharma · 项目目标与完整架构</title>
+<title>X-Pharma v{escape(product_version)} · 项目目标与完整架构</title>
 <style>{STYLE}</style>
 </head>
 <body>
@@ -208,6 +210,7 @@ def build_document(root: Path = ROOT) -> str:
 <div class="brand">
 <img src="data:image/png;base64,{logo}" alt="">
 <strong>X-Pharma</strong>
+<span class="pill">v{escape(product_version)}</span>
 <span class="pill">Apache-2.0</span>
 </div>
 <h1>让研发情报可查询、可追溯、可治理。
@@ -353,7 +356,8 @@ home_tenant_id 只是默认归属，不授予角色。
 最终验证、commit、CI 与镜像身份以本轮交付说明为准。
 </p>
 </section>
-<footer>生成依据：deploy/release 两份能力矩阵 · GOAL.md {escape(research["goal_version"])}
+<footer>软件版本：X-Pharma v{escape(product_version)} · 生成依据：deploy/release 两份能力矩阵
+<br>GOAL.md 契约版本：{escape(research["goal_version"])}（独立于软件版本）
 <br>能力矩阵 SHA-256：<code>{fingerprint}</code>
 <br>源码责任与调用方向见 docs/codebase-guide.md；
 多组织迁移与回退见 docs/accounts-and-organizations.md。

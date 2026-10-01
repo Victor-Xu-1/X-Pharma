@@ -4,7 +4,7 @@ import { type FormEvent, useRef, useState } from "react";
 
 import { ApiError } from "../lib/api";
 import { login } from "../lib/contracts/session";
-import { PRODUCT_NAME } from "../lib/product";
+import { PRODUCT_NAME, PRODUCT_RELEASE } from "../lib/product";
 import type { User } from "../lib/types";
 import type { WorkbenchKey } from "../lib/workspaceRouting";
 import { BrandMark } from "./BrandMark";
@@ -115,7 +115,9 @@ export function LoginScreen({
           <h1>{internal ? "内部管理工作台" : "医药情报工作台"}</h1>
           <p>{internal ? "数据接入、AI 治理、商业运营与企业审计" : "药物、靶点、临床、专利与交易数据"}</p>
         </div>
-        <p className="login-version">{internal ? "仅限授权内部人员" : "专业数据检索与关联分析"}</p>
+        <p className="login-version">
+          <span>{internal ? "仅限授权内部人员" : "专业数据检索与关联分析"}</span> · <span>{PRODUCT_RELEASE}</span>
+        </p>
       </section>
       <section className="login-form-area">
         {entry === "register" ? (

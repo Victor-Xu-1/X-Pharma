@@ -14,6 +14,7 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.types import CallToolResult, Implementation, InitializeResult, ListToolsResult
 
+from pharma_intel.product import PRODUCT_NAME, PRODUCT_VERSION
 from scripts.mcp_contract_fingerprint import tool_contract_sha256
 
 
@@ -119,6 +120,8 @@ async def verify_session(
     server_info = initialized.serverInfo
     if not server_info.name or not initialized.protocolVersion:
         raise RuntimeError("Python SDK initialize response omitted server or protocol metadata")
+    if server_info.name != PRODUCT_NAME or server_info.version != PRODUCT_VERSION:
+        raise RuntimeError("Python SDK initialized an unexpected X-Pharma product identity")
     if initialized.protocolVersion != expected_protocol_version:
         raise RuntimeError(
             "Python SDK negotiated an unexpected protocol version: "

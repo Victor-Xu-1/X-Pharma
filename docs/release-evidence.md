@@ -598,7 +598,7 @@ make release-audit \
   RELEASE_LEVEL=production \
   SECURITY_EVIDENCE=/secure/release-security/20260719T115640Z \
   RELEASE_STATEMENT_DIRS="/secure/local-candidate /secure/release-evidence/external-production" \
-  RELEASE_TAG=v1.0.0
+  RELEASE_TAG=v0.1.0
 ```
 
 Pilot 组包需要策略列出的全部 Pilot statement。路径可以重复传入 `--statement`：
@@ -617,7 +617,7 @@ Production 还必须传入指向当前提交且能被 `git verify-tag` 验证的
 ```bash
 uv run python scripts/release_evidence.py assemble \
   --level production \
-  --release-tag v1.0.0 \
+  --release-tag v0.1.0 \
   --security-dir "$SECURITY_DIR" \
   --signing-key /secure/release-ed25519.pem \
   --signing-key-id production-release-2026-v1 \
