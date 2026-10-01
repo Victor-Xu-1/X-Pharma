@@ -1,4 +1,4 @@
-import type { PlaywrightTestArgs, PlaywrightWorkerArgs, TestInfo } from "@playwright/test";
+import type { PlaywrightTestArgs, PlaywrightWorkerArgs, Route, TestInfo } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
 
@@ -34,6 +34,43 @@ export async function verifyPipelineDrugEntityFilter(
   const drugCombobox = filters.getByRole("combobox", { name: "药品筛选" });
   await drugCombobox.fill(drugName);
   const candidateOptions = page.getByRole("listbox").getByRole("option");
+  await expect(candidateOptions.filter({ hasText: drugName })).toHaveCount(1);
+  await drugCombobox.fill("z");
+  await expect(candidateOptions).toHaveCount(0);
+  await filters.evaluate((form) => {
+    form.setAttribute("data-acceptance-submit-count", "0");
+    form.addEventListener("submit", () => {
+      form.setAttribute(
+        "data-acceptance-submit-count",
+        String(Number(form.getAttribute("data-acceptance-submit-count")) + 1),
+      );
+    });
+  });
+  await drugCombobox.press("Enter");
+  await expect(filters).toHaveAttribute("data-acceptance-submit-count", "0");
+
+  const failureQuery = drugName.slice(0, -1);
+  const lookupFailure = async (route: Route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get("q") === failureQuery && url.searchParams.get("entity_type") === "drug") {
+      await route.fulfill({ status: 503, json: { detail: "Controlled lookup outage" } });
+    } else await route.continue();
+  };
+  await page.route("**/api/v1/entities?**", lookupFailure);
+  try {
+    await drugCombobox.fill(failureQuery);
+    await expect(filters.getByRole("alert")).toContainText("实体检索暂不可用，请重试");
+    await expect(candidateOptions).toHaveCount(0);
+    await drugCombobox.press("Enter");
+    await expect(filters).toHaveAttribute("data-acceptance-submit-count", "0");
+    await page.unroute("**/api/v1/entities?**", lookupFailure);
+    await filters.getByRole("button", { name: "重试药品候选检索" }).click();
+    await expect(candidateOptions.filter({ hasText: drugName })).toHaveCount(1);
+    await expect(drugCombobox).toBeFocused();
+  } finally {
+    await page.unroute("**/api/v1/entities?**", lookupFailure);
+  }
+  await drugCombobox.fill(drugName);
   await expect(candidateOptions.filter({ hasText: drugName })).toHaveCount(1);
   const optionLabels = await candidateOptions.allTextContents();
   const candidateIndex = optionLabels.findIndex((label) => label.includes(drugName));

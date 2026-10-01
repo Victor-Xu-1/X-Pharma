@@ -100,6 +100,15 @@ export async function verifyTablePreferencesAndQuickDetail(
   await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
   await expect(page.getByLabel("情报检索词")).toHaveValue(fixtureKey);
   await expect(page.getByRole("dialog", { name: fixtureName })).toBeVisible();
+  const previewUrl = page.url();
+  const sourceUrl = new URL(previewUrl);
+  await page.getByRole("button", { name: "打开靶点全景" }).click();
+  await expect(page.getByRole("heading", { name: fixtureName, exact: true })).toBeVisible();
+  expect(new URL(page.url()).searchParams.get("from")).toBe(`${sourceUrl.pathname}${sourceUrl.search}`);
+  await page.reload();
+  await page.getByRole("button", { name: "返回情报检索", exact: true }).click();
+  await expect(page).toHaveURL(previewUrl);
+  await expect(page.getByRole("dialog", { name: fixtureName })).toBeVisible();
   await page.getByRole("button", { name: "关闭实体详情" }).click();
   await expect(page.getByRole("dialog", { name: fixtureName })).toHaveCount(0);
   await expect(page).not.toHaveURL(/entity=/);

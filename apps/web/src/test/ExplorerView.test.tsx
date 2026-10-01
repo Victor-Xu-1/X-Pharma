@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { useLayoutEffect, useState } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import { addComparisonSetMembers, getComparisonSet, listComparisonSets } from "../lib/contracts/collections";
@@ -957,6 +958,66 @@ it("saves the statistics presentation state with the entity query", async () => 
     displayMode: "landscape",
     analysisView: "table",
   });
+});
+
+it("never commits another query's rows while restoring applied conditions", async () => {
+  const previousResult = await searchEntities("EGFR", ["target"], "verified");
+  let releaseNext: ((value: EntitySearchResult) => void) | undefined;
+  const nextResult = new Promise<EntitySearchResult>((resolve) => {
+    releaseNext = resolve;
+  });
+  vi.mocked(searchEntities).mockImplementation((query) =>
+    query === "ALK" ? nextResult : Promise.resolve(previousResult),
+  );
+  const restoredSnapshots: string[] = [];
+  function Harness() {
+    const [applied, setApplied] = useState("EGFR");
+    useLayoutEffect(() => {
+      if (applied === "ALK")
+        restoredSnapshots.push(screen.queryByRole("table", { name: "实体检索结果" })?.textContent ?? "");
+    }, [applied]);
+    return (
+      <>
+        <button type="button" onClick={() => setApplied("ALK")}>
+          恢复其他检索
+        </button>
+        <ExplorerView
+          initialQuery={applied}
+          initialEntityType="target"
+          initialReviewStatus="verified"
+          onSearchChange={vi.fn()}
+          onOpenEntity={vi.fn()}
+          onOpenSpecializedSearch={vi.fn()}
+        />
+      </>
+    );
+  }
+  renderWithQueryClient(<Harness />);
+  await screen.findByRole("table", { name: "实体检索结果" });
+  fireEvent.click(screen.getByRole("button", { name: "恢复其他检索" }));
+  releaseNext?.({ ...previousResult, items: [], total: 0, applied_filters: [] });
+  expect(restoredSnapshots).toEqual([""]);
+  await screen.findByText("未找到匹配实体");
+});
+
+it("saves the displayed applied query instead of an unsubmitted edit", async () => {
+  renderWithQueryClient(
+    <ExplorerView
+      initialQuery="EGFR"
+      initialEntityType="target"
+      initialReviewStatus="verified"
+      onSearchChange={vi.fn()}
+      onOpenEntity={vi.fn()}
+      onOpenSpecializedSearch={vi.fn()}
+    />,
+  );
+  await screen.findByRole("table", { name: "实体检索结果" });
+  fireEvent.change(screen.getByLabelText("情报检索词"), { target: { value: "ALK" } });
+  fireEvent.click(screen.getByRole("button", { name: "保存检索" }));
+  fireEvent.change(screen.getByLabelText("名称"), { target: { value: "Displayed result" } });
+  fireEvent.click(screen.getByRole("button", { name: "确认保存" }));
+  await waitFor(() => expect(saveEntitySearch).toHaveBeenCalledOnce());
+  expect(vi.mocked(saveEntitySearch).mock.calls[0]?.[0]).toMatchObject({ query: "EGFR", entityTypes: ["target"] });
 });
 
 it("loads bounded entity suggestions and submits only published data", async () => {

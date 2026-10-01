@@ -2,7 +2,7 @@ import { lazy } from "react";
 import type { SortCriterion } from "../../lib/contracts/sorting";
 import type { SortDirection as TrialSortDirection, TrialSortField } from "../../lib/contracts/trials";
 import { workspaceUrl } from "../../lib/workspaceRouting";
-import { trialReturnLabel, trialRoleGroupIds } from "./locationModel";
+import { researchReturnLabel, trialRoleGroupIds } from "./locationModel";
 import type { ResearchRouteContext } from "./routeContext";
 
 const TrialsView = lazy(() => import("../../views/TrialsView").then((module) => ({ default: module.TrialsView })));
@@ -10,7 +10,7 @@ const TrialsView = lazy(() => import("../../views/TrialsView").then((module) => 
 export function TrialsRoute({ context }: { context: ResearchRouteContext }) {
   const {
     location,
-    activeTrialReturnLocation,
+    activeReturnLocation,
     navigate,
     openDrugById,
     openEntityById,
@@ -140,8 +140,8 @@ export function TrialsRoute({ context }: { context: ResearchRouteContext }) {
           trialId === null,
         )
       }
-      returnLabel={trialReturnLabel(activeTrialReturnLocation)}
-      onReturn={activeTrialReturnLocation ? () => navigate(activeTrialReturnLocation, true, true) : undefined}
+      returnLabel={researchReturnLabel(activeReturnLocation)}
+      onReturn={activeReturnLocation ? () => navigate(activeReturnLocation, true, true) : undefined}
       onSectionChange={(trialSection, replace = false) => navigate({ ...location, trialSection }, replace)}
       onOpenEntity={openEntityById}
       onOpenDrug={(entityId) => openDrugById(entityId, location.trialId ? workspaceUrl(location) : undefined)}

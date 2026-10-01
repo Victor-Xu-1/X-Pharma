@@ -14,15 +14,7 @@ import {
   Stethoscope,
   X,
 } from "lucide-react";
-import {
-  type FocusEvent,
-  type FormEvent,
-  type MouseEvent,
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { AddToComparisonControl } from "../components/AddToComparisonControl";
 import { AppliedFiltersBar } from "../components/AppliedFiltersBar";
 import {
@@ -35,6 +27,7 @@ import {
 } from "../components/common";
 import { DomainExportControl } from "../components/DomainExportControl";
 import { type DomainAnalysisView, DomainLandscape, type DomainLandscapeSection } from "../components/DomainLandscape";
+import { EntitySearchInput } from "../components/EntitySearchInput";
 import { ProfessionalQueryBuilder } from "../components/ProfessionalQueryBuilder";
 import { ResultPagination } from "../components/ResultPagination";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
@@ -46,7 +39,6 @@ import {
   intelligenceKeys,
   saveEntitySearch,
   searchEntities,
-  suggestEntities,
 } from "../lib/contracts/intelligence";
 import {
   effectiveSort,
@@ -122,15 +114,6 @@ function facetBuckets(
     count,
     share: total > 0 ? count / total : 0,
   }));
-}
-
-function useDebouncedValue(value: string, delay: number): string {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setDebounced(value), delay);
-    return () => window.clearTimeout(timeout);
-  }, [delay, value]);
-  return debounced;
 }
 
 function readableAttribute(value: unknown): string {
@@ -252,14 +235,13 @@ export function ExplorerView({
   );
   const [query, setQuery] = useState(initialQuery);
   const [selectedEntityTypes, setSelectedEntityTypes] = useState(requestedInitialEntityTypes);
-  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const searchInputRef = useRef<{ close: () => void }>(null);
   const [localSelectedEntity, setLocalSelectedEntity] = useState<IntelligenceEntity | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [shared, setShared] = useState(false);
   const [monitor, setMonitor] = useState(true);
   const [saveMessage, setSaveMessage] = useState("");
-  const debouncedQuery = useDebouncedValue(query.trim(), 250);
 
   const searchQueryKey = intelligenceKeys.search(
     initialQuery,
@@ -288,12 +270,6 @@ export function ExplorerView({
     onSelectionChange: setSelectedEntityIds,
     clearSelection: clearSelectedEntities,
   } = usePagedEntitySelection(search.data?.items ?? [], intelligenceEntityId, intelligenceEntityId);
-  const suggestions = useQuery({
-    queryKey: intelligenceKeys.suggestions(debouncedQuery, selectedEntityTypes),
-    queryFn: ({ signal }) => suggestEntities(debouncedQuery, selectedEntityTypes, signal),
-    enabled: debouncedQuery.length >= 2,
-    staleTime: 30_000,
-  });
   const save = useMutation({
     mutationFn: saveEntitySearch,
     onSuccess: ({ message }) => {
@@ -339,7 +315,7 @@ export function ExplorerView({
   function runSearch(nextQuery = query, nextTypes = selectedEntityTypes) {
     const normalizedQuery = nextQuery.trim();
     const normalizedTypes = normalizeEntityTypes(nextTypes);
-    setSuggestionsOpen(false);
+    searchInputRef.current?.close();
     if (
       normalizedQuery === initialQuery &&
       normalizedTypes.join(",") === requestedInitialEntityTypes.join(",") &&
@@ -376,27 +352,13 @@ export function ExplorerView({
     runSearch(query, nextTypes);
   }
 
-  function chooseSuggestion(suggestion: string) {
-    setQuery(suggestion);
-    runSearch(suggestion, selectedEntityTypes);
-  }
-
-  function keepSuggestionsOpen(event: MouseEvent) {
-    event.preventDefault();
-  }
-
-  function closeSuggestionsOnBlur(event: FocusEvent<HTMLInputElement>) {
-    if (event.relatedTarget instanceof HTMLButtonElement && event.relatedTarget.type === "submit") return;
-    setSuggestionsOpen(false);
-  }
-
   function saveSearch(event: FormEvent) {
     event.preventDefault();
     setSaveMessage("");
     save.mutate({
       name: saveName,
-      query,
-      entityTypes: selectedEntityTypes,
+      query: initialQuery,
+      entityTypes: requestedInitialEntityTypes,
       reviewStatus: PUBLIC_REVIEW_STATUS,
       sortBy: initialSortBy as EntitySearchSortField,
       sortDirection: initialSortDirection,
@@ -502,7 +464,10 @@ export function ExplorerView({
 
   // A large real page must not monopolize the main thread while the user is
   // still interacting with the query surface or table controls.
-  const result = useDeferredValue(search.data);
+  // React Query owns the applied result snapshot. Route updates already use a
+  // transition; deferring this snapshot again can leave an empty or obsolete
+  // result surface after the authoritative request has completed.
+  const result = search.data;
   const directTarget = useMemo(() => {
     if (
       !result ||
@@ -624,57 +589,14 @@ export function ExplorerView({
       <form className="intelligence-query-panel" onSubmit={submit}>
         <div className="query-row">
           <label htmlFor="intelligence-query">查询对象</label>
-          <div className="query-combobox">
-            <Search size={18} />
-            <input
-              id="intelligence-query"
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-                setSuggestionsOpen(true);
-              }}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter") return;
-                event.preventDefault();
-                runSearch();
-              }}
-              onFocus={() => setSuggestionsOpen(true)}
-              onBlur={closeSuggestionsOnBlur}
-              placeholder={`输入${activeDomain === "全部情报" ? "药物、靶点、机构或外部标识" : `${activeDomain}名称、别名或外部标识`}`}
-              aria-label="情报检索词"
-              role="combobox"
-              aria-autocomplete="list"
-              aria-expanded={suggestionsOpen && Boolean(suggestions.data?.length)}
-              aria-controls="entity-suggestions"
-            />
-            {suggestionsOpen && debouncedQuery.length >= 2 ? (
-              <div
-                className="query-suggestions"
-                id="entity-suggestions"
-                role="listbox"
-                onMouseDown={keepSuggestionsOpen}
-              >
-                {suggestions.isFetching ? <span className="suggestion-status">正在查找相关结果</span> : null}
-                {suggestions.error ? <span className="suggestion-status error">联想暂不可用，可直接检索</span> : null}
-                {suggestions.data?.map((suggestion) => (
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected="false"
-                    key={suggestion}
-                    onClick={() => chooseSuggestion(suggestion)}
-                  >
-                    <Search size={14} />
-                    <span>{suggestion}</span>
-                    <small>{activeDomain}</small>
-                  </button>
-                ))}
-                {!suggestions.isFetching && suggestions.data?.length === 0 ? (
-                  <span className="suggestion-status">未找到相关名称</span>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
+          <EntitySearchInput
+            query={query}
+            entityTypes={selectedEntityTypes}
+            domainLabel={activeDomain}
+            onQueryChange={setQuery}
+            onSearch={runSearch}
+            controlRef={searchInputRef}
+          />
           <button className="primary-button" type="submit" disabled={search.isFetching || !canSubmit}>
             <Search size={16} />
             检索
@@ -682,9 +604,10 @@ export function ExplorerView({
           <button
             className="secondary-button"
             type="button"
-            disabled={!canSubmit}
+            disabled={!initialQuery.trim() && !requestedInitialEntityTypes.length}
+            title="保存当前已执行的查询条件"
             onClick={() => {
-              setSaveName(query.trim() || `${activeDomain}监控`);
+              setSaveName(initialQuery.trim() || "已执行检索监控");
               setSaveOpen(true);
               setSaveMessage("");
             }}

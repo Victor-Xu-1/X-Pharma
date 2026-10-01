@@ -1594,7 +1594,8 @@
   text-align: left;
 }
 .query-suggestions button:hover,
-.query-suggestions button:focus-visible {
+.query-suggestions button:focus-visible,
+.query-suggestions button[aria-selected="true"] {
   background: var(--ds-surface-muted);
 }
 .query-suggestions button small {

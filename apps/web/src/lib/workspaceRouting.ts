@@ -447,64 +447,64 @@ const restrictedViews: Partial<Record<ViewKey, ReadonlySet<UserRole>>> = {
 const entityIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const maximumReturnPathLength = 4_096;
 
-function boundedDrugReturnPath(value: string | null): string | undefined {
-  if (
-    !value ||
-    value.length > maximumReturnPathLength ||
-    !value.startsWith("/workspace/research?") ||
-    value.includes("#")
-  ) {
-    return undefined;
-  }
-  const url = new URL(value, "https://pharma.local");
-  if (url.origin !== "https://pharma.local" || url.pathname !== "/workspace/research") return undefined;
-  const parsed = parseWorkbenchLocation("research", url.search);
-  const isPipelineSearch = parsed.view === "pipeline";
-  const isTargetPipeline = parsed.view === "target" && parsed.targetSection === "pipeline" && Boolean(parsed.entityId);
-  const isComparisonList = parsed.view === "collections" && Boolean(parsed.collectionId) && !parsed.invalidCollectionId;
-  const isTrialDossier = parsed.view === "trials" && Boolean(parsed.trialId) && !parsed.invalidTrialId;
-  if (!isPipelineSearch && !isTargetPipeline && !isComparisonList && !isTrialDossier) return undefined;
-  return workspaceUrl(parsed);
+const entityDossierViews: ReadonlySet<ViewKey> = new Set(["drug", "target", "company", "disease", "entity"]);
+
+/** Parse only bounded, same-workbench context; never follow a referrer or browser history blindly. */
+export function researchReturnLocation(value: string | null | undefined): WorkspaceLocation | null {
+  return parseResearchReturnLocation(value, 3);
 }
 
-function boundedTargetReturnPath(value: string | null): string | undefined {
+function parseResearchReturnLocation(
+  value: string | null | undefined,
+  remainingDepth: number,
+): WorkspaceLocation | null {
   if (
     !value ||
     value.length > maximumReturnPathLength ||
     !value.startsWith("/workspace/research?") ||
-    value.includes("#")
+    /[\\#]/.test(value) ||
+    Array.from(value).some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)
   ) {
-    return undefined;
+    return null;
   }
   const url = new URL(value, "https://pharma.local");
-  if (url.origin !== "https://pharma.local" || url.pathname !== "/workspace/research") return undefined;
+  if (url.origin !== "https://pharma.local" || url.pathname !== "/workspace/research") return null;
+  const requestedView = url.searchParams.get("view") as ViewKey;
+  if (
+    url.searchParams.getAll("view").length !== 1 ||
+    !views.has(requestedView) ||
+    workbenchForView(requestedView) !== "research" ||
+    url.searchParams.getAll("from").length > 1
+  ) {
+    return null;
+  }
+  const nestedPath = url.searchParams.get("from");
+  // Strip before the ordinary parser so nested untrusted input cannot create unbounded recursion.
+  url.searchParams.delete("from");
   const parsed = parseWorkbenchLocation("research", url.search);
-  const isDrugDossier = parsed.view === "drug" && Boolean(parsed.entityId) && !parsed.invalidEntityId;
-  const isTrialDossier = parsed.view === "trials" && Boolean(parsed.trialId) && !parsed.invalidTrialId;
-  if (!isDrugDossier && !isTrialDossier) return undefined;
-  return workspaceUrl(parsed);
+  if (
+    parsed.invalidEntityId ||
+    parsed.invalidTrialId ||
+    parsed.invalidPatentId ||
+    parsed.invalidDealId ||
+    parsed.invalidRegulatoryEventId ||
+    parsed.invalidNewsEventId ||
+    parsed.invalidCollectionId ||
+    parsed.invalidChemistrySavedSearchId ||
+    parsed.invalidKnowledgePageId ||
+    (entityDossierViews.has(parsed.view) && !parsed.entityId) ||
+    (parsed.view === "collections" && !parsed.collectionId)
+  ) {
+    return null;
+  }
+  const nested = remainingDepth > 1 ? parseResearchReturnLocation(nestedPath, remainingDepth - 1) : null;
+  if (nested) parsed.returnTo = workspaceUrl(nested);
+  return workspaceUrl(parsed).length <= maximumReturnPathLength ? parsed : null;
 }
 
-function boundedTrialReturnPath(value: string | null): string | undefined {
-  if (
-    !value ||
-    value.length > maximumReturnPathLength ||
-    !value.startsWith("/workspace/research?") ||
-    value.includes("#")
-  ) {
-    return undefined;
-  }
-  const url = new URL(value, "https://pharma.local");
-  if (url.origin !== "https://pharma.local" || url.pathname !== "/workspace/research") return undefined;
-  const parsed = parseWorkbenchLocation("research", url.search);
-  if (
-    !["target", "drug", "company", "disease", "entity"].includes(parsed.view) ||
-    !parsed.entityId ||
-    parsed.invalidEntityId
-  ) {
-    return undefined;
-  }
-  return workspaceUrl(parsed);
+function boundedResearchReturnPath(value: string | null | undefined): string | undefined {
+  const parsed = researchReturnLocation(value);
+  return parsed ? workspaceUrl(parsed) : undefined;
 }
 function boundedEvidenceDocumentId(value: string | null): string | null {
   const normalized = value?.trim() ?? "";
@@ -986,14 +986,7 @@ export function parseWorkbenchLocation(workbench: WorkbenchKey, search = ""): Wo
                     : "overview",
                 }
               : {};
-  const returnTo =
-    view === "drug"
-      ? boundedDrugReturnPath(params.get("from"))
-      : view === "target"
-        ? boundedTargetReturnPath(params.get("from"))
-        : view === "trials" && entityIdPattern.test(params.get("trial") ?? "")
-          ? boundedTrialReturnPath(params.get("from"))
-          : undefined;
+  const returnTo = workbench === "research" ? boundedResearchReturnPath(params.get("from")) : undefined;
   const pipelineFilters =
     view === "pipeline" || (view === "target" && requestedSection === "pipeline")
       ? {
@@ -1799,16 +1792,8 @@ export function workspaceUrl(
   ) {
     params.set("entity", location.entityId);
   }
-  if (location.view === "drug") {
-    const returnTo = boundedDrugReturnPath(location.returnTo ?? null);
-    if (returnTo) params.set("from", returnTo);
-  }
-  if (location.view === "target") {
-    const returnTo = boundedTargetReturnPath(location.returnTo ?? null);
-    if (returnTo) params.set("from", returnTo);
-  }
-  if (location.view === "trials" && location.trialId && entityIdPattern.test(location.trialId)) {
-    const returnTo = boundedTrialReturnPath(location.returnTo ?? null);
+  if (location.workbench === "research") {
+    const returnTo = boundedResearchReturnPath(location.returnTo);
     if (returnTo) params.set("from", returnTo);
   }
   if (

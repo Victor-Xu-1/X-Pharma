@@ -19,6 +19,7 @@ import { OverviewRoute } from "./OverviewRoute";
 import { PatentsRoute } from "./PatentsRoute";
 import { PipelineRoute } from "./PipelineRoute";
 import { RegulatoryRoute } from "./RegulatoryRoute";
+import { ResearchReturnControl } from "./ResearchReturnControl";
 import type { WorkspaceSessionProps } from "./routeContext";
 import { TargetRoute } from "./TargetRoute";
 import { TrialsRoute } from "./TrialsRoute";
@@ -40,6 +41,7 @@ export function ResearchWorkspace(props: WorkspaceSessionProps) {
       logoutError={logoutError}
       onView={navigateToView}
     >
+      <ResearchReturnControl context={context} />
       <Suspense fallback={<Spinner label="正在加载研究工作区" />}>
         {location.view === "explorer" ? <ResearchContinuity onOpenEntity={openEntityById} /> : null}
         {location.view === "overview" ? <OverviewRoute context={context} /> : null}

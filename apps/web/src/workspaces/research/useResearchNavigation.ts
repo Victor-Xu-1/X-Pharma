@@ -7,17 +7,13 @@ import { startResearchRum } from "../../lib/rum";
 import type { Entity } from "../../lib/types";
 import {
   parseWorkbenchLocation,
+  researchReturnLocation,
   type ViewKey,
   type WorkspaceLocation,
   workbenchForView,
   workspaceUrl,
 } from "../../lib/workspaceRouting";
-import {
-  drugReturnLocation,
-  specializedSectionByEntitySection,
-  targetReturnLocation,
-  trialReturnLocation,
-} from "./locationModel";
+import { specializedSectionByEntitySection } from "./locationModel";
 import { savedSearchLocation } from "./savedSearchLocation";
 
 export function useResearchNavigation() {
@@ -31,11 +27,7 @@ export function useResearchNavigation() {
 
   const [pendingNavigationView, setPendingNavigationView] = useState<ViewKey | null>(null);
 
-  const activeDrugReturnLocation = drugReturnLocation(location.returnTo);
-
-  const activeTargetReturnLocation = targetReturnLocation(location.returnTo);
-
-  const activeTrialReturnLocation = trialReturnLocation(location.returnTo);
+  const activeReturnLocation = researchReturnLocation(location.returnTo);
 
   const routeEntity = useQuery({
     queryKey: sessionKeys.entity(location.entityId ?? ""),
@@ -84,10 +76,16 @@ export function useResearchNavigation() {
 
   const navigate = useCallback(
     (next: WorkspaceLocation, replace = false, urgent = false) => {
+      // Applying filters/display within a view keeps its source. Sidebar resets
+      // and explicit returnTo overrides are deliberate context changes.
+      const destination =
+        !urgent && next.view === location.view && !Object.hasOwn(next, "returnTo") && location.returnTo
+          ? { ...next, returnTo: location.returnTo }
+          : next;
       const method = replace ? "replaceState" : "pushState";
-      window.history[method](null, "", workspaceUrl(next));
+      window.history[method](null, "", workspaceUrl(destination));
       const commitLocation = () => {
-        setLocation(next);
+        setLocation(destination);
         setPendingNavigationView((current) => (current === next.view ? null : current));
         if (
           (next.view !== "explorer" &&
@@ -112,7 +110,7 @@ export function useResearchNavigation() {
       setPendingNavigationView(next.view === location.view ? null : next.view);
       startNavigationTransition(commitLocation);
     },
-    [location.view],
+    [location.returnTo, location.view],
   );
 
   useEffect(() => {
@@ -192,6 +190,7 @@ export function useResearchNavigation() {
       reviewStatus: "",
       entityId: entity.id,
       invalidEntityId: false,
+      returnTo: workspaceUrl(location),
       ...(view === "target"
         ? { targetSection: "overview" as const }
         : view === "drug"
@@ -215,7 +214,7 @@ export function useResearchNavigation() {
       entityId,
       invalidEntityId: false,
       drugSection: "overview",
-      ...(returnTo ? { returnTo } : {}),
+      returnTo: returnTo ?? workspaceUrl(location),
     });
   }
 
@@ -230,6 +229,7 @@ export function useResearchNavigation() {
       entityId,
       invalidEntityId: false,
       entitySection: "overview",
+      returnTo: workspaceUrl(location),
     });
   }
 
@@ -244,7 +244,7 @@ export function useResearchNavigation() {
       entityId,
       invalidEntityId: false,
       targetSection: "overview",
-      ...(returnTo ? { returnTo } : {}),
+      returnTo: returnTo ?? workspaceUrl(location),
     });
   }
 
@@ -259,6 +259,7 @@ export function useResearchNavigation() {
       entityId,
       invalidEntityId: false,
       targetSection: "pipeline",
+      returnTo: workspaceUrl(location),
     });
   }
 
@@ -273,6 +274,7 @@ export function useResearchNavigation() {
       entityId,
       invalidEntityId: false,
       diseaseSection: "overview",
+      returnTo: workspaceUrl(location),
     });
   }
 
@@ -287,6 +289,7 @@ export function useResearchNavigation() {
       entityId,
       invalidEntityId: false,
       companySection: "overview",
+      returnTo: workspaceUrl(location),
     });
   }
 
@@ -317,7 +320,7 @@ export function useResearchNavigation() {
       invalidTrialId: false,
       trialSection: "overview",
       offset: 0,
-      ...(returnTo ? { returnTo } : {}),
+      returnTo: returnTo ?? workspaceUrl(location),
     });
   }
 
@@ -334,6 +337,7 @@ export function useResearchNavigation() {
       invalidDealId: false,
       dealSection: "overview",
       offset: 0,
+      returnTo: workspaceUrl(location),
     });
   }
 
@@ -349,6 +353,7 @@ export function useResearchNavigation() {
       patentId,
       invalidPatentId: false,
       offset: 0,
+      returnTo: workspaceUrl(location),
     });
   }
 
@@ -365,6 +370,7 @@ export function useResearchNavigation() {
       invalidRegulatoryEventId: false,
       regulatoryCompareIds: [],
       offset: 0,
+      returnTo: workspaceUrl(location),
     });
   }
 
@@ -380,6 +386,7 @@ export function useResearchNavigation() {
       newsEventId,
       invalidNewsEventId: false,
       offset: 0,
+      returnTo: workspaceUrl(location),
     });
   }
 
@@ -388,9 +395,7 @@ export function useResearchNavigation() {
     selectedEntity,
     setSelectedEntity,
     pendingNavigationView,
-    activeDrugReturnLocation,
-    activeTargetReturnLocation,
-    activeTrialReturnLocation,
+    activeReturnLocation,
     routeEntity,
     routeChemistrySavedSearch,
     navigate,

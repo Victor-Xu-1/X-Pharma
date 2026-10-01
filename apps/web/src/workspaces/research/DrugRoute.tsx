@@ -1,6 +1,7 @@
 import { lazy } from "react";
 import { ErrorState, Spinner } from "../../components/common";
 import { workspaceUrl } from "../../lib/workspaceRouting";
+import { researchReturnLabel } from "./locationModel";
 import type { ResearchRouteContext } from "./routeContext";
 
 const DrugView = lazy(() => import("../../views/DrugView").then((module) => ({ default: module.DrugView })));
@@ -9,7 +10,7 @@ export function DrugRoute({ context }: { context: ResearchRouteContext }) {
   const {
     location,
     selectedEntity,
-    activeDrugReturnLocation,
+    activeReturnLocation,
     routeEntity,
     navigate,
     openDrugById,
@@ -54,27 +55,21 @@ export function DrugRoute({ context }: { context: ResearchRouteContext }) {
       onOpenRegulatoryEvent={openRegulatoryEventById}
       onOpenNewsEvent={openNewsEventById}
       returnTargetId={
-        activeDrugReturnLocation?.view === "target" ? (activeDrugReturnLocation.entityId ?? undefined) : undefined
-      }
-      onReturnToTarget={
-        activeDrugReturnLocation?.view === "target" ? () => navigate(activeDrugReturnLocation, true, true) : undefined
-      }
-      returnLabel={
-        activeDrugReturnLocation?.view === "pipeline"
-          ? "返回管线查询"
-          : activeDrugReturnLocation?.view === "collections"
-            ? "返回对比列表"
-            : activeDrugReturnLocation?.view === "trials"
-              ? "返回临床试验"
-              : undefined
-      }
-      onReturn={
-        activeDrugReturnLocation?.view === "pipeline" ||
-        activeDrugReturnLocation?.view === "collections" ||
-        activeDrugReturnLocation?.view === "trials"
-          ? () => navigate(activeDrugReturnLocation, true, true)
+        activeReturnLocation?.view === "target" && activeReturnLocation.targetSection === "pipeline"
+          ? (activeReturnLocation.entityId ?? undefined)
           : undefined
       }
+      onReturnToTarget={
+        activeReturnLocation?.view === "target" && activeReturnLocation.targetSection === "pipeline"
+          ? () => navigate(activeReturnLocation, true, true)
+          : undefined
+      }
+      returnLabel={
+        activeReturnLocation?.view === "target" && activeReturnLocation.targetSection === "pipeline"
+          ? undefined
+          : researchReturnLabel(activeReturnLocation)
+      }
+      onReturn={activeReturnLocation ? () => navigate(activeReturnLocation, true, true) : undefined}
     />
   );
 }

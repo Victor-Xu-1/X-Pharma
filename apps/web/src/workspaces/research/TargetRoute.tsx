@@ -1,7 +1,7 @@
 import { lazy } from "react";
 import { ErrorState, Spinner } from "../../components/common";
 import { workspaceUrl } from "../../lib/workspaceRouting";
-import { locationWithPipelineFilters, pipelineFiltersFromLocation } from "./locationModel";
+import { locationWithPipelineFilters, pipelineFiltersFromLocation, researchReturnLabel } from "./locationModel";
 import type { ResearchRouteContext } from "./routeContext";
 
 const TargetView = lazy(() => import("../../views/TargetView").then((module) => ({ default: module.TargetView })));
@@ -10,7 +10,7 @@ export function TargetRoute({ context }: { context: ResearchRouteContext }) {
   const {
     location,
     selectedEntity,
-    activeTargetReturnLocation,
+    activeReturnLocation,
     routeEntity,
     navigate,
     openDrugById,
@@ -88,14 +88,8 @@ export function TargetRoute({ context }: { context: ResearchRouteContext }) {
       onOpenDeal={openDealById}
       onOpenRegulatoryEvent={openRegulatoryEventById}
       onOpenNewsEvent={openNewsEventById}
-      returnLabel={
-        activeTargetReturnLocation?.view === "trials"
-          ? "返回临床试验"
-          : activeTargetReturnLocation
-            ? "返回药物档案"
-            : undefined
-      }
-      onReturn={activeTargetReturnLocation ? () => navigate(activeTargetReturnLocation, true, true) : undefined}
+      returnLabel={researchReturnLabel(activeReturnLocation)}
+      onReturn={activeReturnLocation ? () => navigate(activeReturnLocation, true, true) : undefined}
       onOpenEvidence={(query) =>
         navigate({
           workbench: "research",

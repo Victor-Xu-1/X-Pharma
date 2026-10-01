@@ -1,12 +1,12 @@
 import { emptyPipelineSearchFilters, type PipelineSearchFilters } from "../../lib/contracts/pipeline";
-import {
-  type CompanyDossierSection,
-  type DiseaseDossierSection,
-  type DrugDossierSection,
-  type EntityDossierSection,
-  parseWorkbenchLocation,
-  type TargetDossierSection,
-  type WorkspaceLocation,
+import type {
+  CompanyDossierSection,
+  DiseaseDossierSection,
+  DrugDossierSection,
+  EntityDossierSection,
+  TargetDossierSection,
+  ViewKey,
+  WorkspaceLocation,
 } from "../../lib/workspaceRouting";
 
 export const specializedSectionByEntitySection: Record<
@@ -89,41 +89,31 @@ export function pipelineFiltersFromLocation(location: WorkspaceLocation, fallbac
   };
 }
 
-export function drugReturnLocation(returnTo: string | undefined): WorkspaceLocation | null {
-  if (!returnTo) return null;
-  const parsed = parseWorkbenchLocation("research", new URL(returnTo, window.location.origin).search);
-  if (parsed.view === "pipeline") return parsed;
-  if (parsed.view === "target" && parsed.targetSection === "pipeline" && parsed.entityId) return parsed;
-  if (parsed.view === "collections" && parsed.collectionId && !parsed.invalidCollectionId) return parsed;
-  if (parsed.view === "trials" && parsed.trialId && !parsed.invalidTrialId) return parsed;
-  return null;
-}
+const researchReturnLabels: Partial<Record<ViewKey, string>> = {
+  overview: "返回用户中心",
+  explorer: "返回情报检索",
+  chemistry: "返回结构检索",
+  pipeline: "返回管线查询",
+  trials: "返回临床试验",
+  patents: "返回专利检索",
+  deals: "返回交易检索",
+  regulatory: "返回监管检索",
+  epidemiology: "返回流行病学检索",
+  news: "返回新闻检索",
+  target: "返回靶点档案",
+  drug: "返回药物档案",
+  company: "返回公司档案",
+  disease: "返回疾病档案",
+  entity: "返回实体档案",
+  evidence: "返回原始证据",
+  knowledge: "返回知识专题",
+  monitoring: "返回监控与提醒",
+  collections: "返回对比列表",
+};
 
-export function targetReturnLocation(returnTo: string | undefined): WorkspaceLocation | null {
-  if (!returnTo) return null;
-  const parsed = parseWorkbenchLocation("research", new URL(returnTo, window.location.origin).search);
-  if (parsed.view === "drug" && parsed.entityId && !parsed.invalidEntityId) return parsed;
-  if (parsed.view === "trials" && parsed.trialId && !parsed.invalidTrialId) return parsed;
-  return null;
-}
-
-export function trialReturnLocation(returnTo: string | undefined): WorkspaceLocation | null {
-  if (!returnTo) return null;
-  const parsed = parseWorkbenchLocation("research", new URL(returnTo, window.location.origin).search);
-  return ["target", "drug", "company", "disease", "entity"].includes(parsed.view) &&
-    parsed.entityId &&
-    !parsed.invalidEntityId
-    ? parsed
-    : null;
-}
-
-export function trialReturnLabel(location: WorkspaceLocation | null): string | undefined {
+export function researchReturnLabel(location: WorkspaceLocation | null): string | undefined {
   if (!location) return undefined;
-  if (location.view === "target") return "返回靶点档案";
-  if (location.view === "drug") return "返回药物档案";
-  if (location.view === "company") return "返回公司档案";
-  if (location.view === "disease") return "返回疾病档案";
-  return "返回实体档案";
+  return researchReturnLabels[location.view];
 }
 
 export function locationWithPipelineFilters(
