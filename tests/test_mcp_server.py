@@ -1186,6 +1186,29 @@ async def test_commercial_http_forbidden_becomes_safe_entitlement_error(
     assert "Insufficient scope" not in str(error.value)
 
 
+@pytest.mark.parametrize(
+    ("body", "expected_code"),
+    [
+        (b'{"code":"INVALID_CURSOR","detail":"secret internal URL"}', "INVALID_CURSOR"),
+        (b'{"code":"unexpected","detail":"secret internal URL"}', "ENTITLEMENT_REQUIRED"),
+        (b"not-json", "ENTITLEMENT_REQUIRED"),
+        (b"[" * 2000 + b"]" * 2000, "ENTITLEMENT_REQUIRED"),
+        (b'{"code":"INVALID_CURSOR","extra":"' + b"x" * 5000 + b'"}', "ENTITLEMENT_REQUIRED"),
+    ],
+)
+def test_commercial_cursor_error_is_explicit_and_bounded_without_upstream_detail(
+    body: bytes, expected_code: str
+) -> None:
+    request = httpx.Request("POST", "http://api.internal/internal/v1/commercial/reservations")
+    response = httpx.Response(403, request=request, content=body)
+    upstream_error = httpx.HTTPStatusError("secret URL must not escape", request=request, response=response)
+
+    error = mcp_server._safe_commercial_http_error(upstream_error)
+
+    assert error.code == expected_code
+    assert "secret" not in str(error) and "api.internal" not in str(error)
+
+
 @pytest.mark.anyio
 async def test_cancellation_during_reservation_creation_waits_for_and_releases_reservation(
     monkeypatch: pytest.MonkeyPatch,

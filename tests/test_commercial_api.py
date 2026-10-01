@@ -418,6 +418,7 @@ def test_agent_entity_domain_uses_reserved_opaque_cursor_without_offset_enumerat
             )
             assert changed_query.status_code == 403
             assert "invalid or expired" in changed_query.json()["detail"]
+            assert changed_query.json()["code"] == "INVALID_CURSOR"
             assert session.scalar(select(func.count()).select_from(CommercialCoverageRecord)) == 2
     finally:
         app.dependency_overrides.clear()

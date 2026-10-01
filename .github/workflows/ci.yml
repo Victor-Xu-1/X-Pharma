@@ -275,13 +275,24 @@ jobs:
           corepack pnpm@11.7.0 --dir apps/web build
           uv run python scripts/run_account_browser_acceptance.py --output /tmp/account-browser-acceptance-report.json
       - name: Browser workbench smoke
+        id: workbench_smoke
         env:
           REFRESH_VISUAL_BASELINES: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
+          PHARMA_BROWSER_KEEP_OUTPUT: "true"
         run: |
           if [[ "$REFRESH_VISUAL_BASELINES" == "true" ]]; then
             ./scripts/run-browser-acceptance.sh --update-snapshots
           fi
           ./scripts/run-browser-acceptance.sh --output /tmp/browser-acceptance-report.json
+      - name: Archive failed visual comparisons
+        if: ${{ failure() && steps.workbench_smoke.outcome == 'failure' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: X-Pharma-failed-visual-comparisons
+          path: |
+            /tmp/pharma-browser-acceptance-*/**/*-actual.png
+            /tmp/pharma-browser-acceptance-*/**/*-diff.png
+          if-no-files-found: warn
       - name: Archive visual baseline candidates for review
         if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

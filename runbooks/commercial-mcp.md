@@ -203,6 +203,7 @@ The repository provides the provider-neutral HTTPS protocol, durable worker and 
 ## Incident behavior
 
 - Missing client, subject, subscription, entitlement, or balance: fail before any domain data is read.
+- Invalid, expired or query-mismatched pagination cursor: HTTP keeps its denied 403 status and adds `code: INVALID_CURSOR`; MCP exposes the same allowlisted code with a safe restart-query message. Do not treat this as a missing subscription or retry the invalid cursor. Arbitrary upstream details, oversized bodies and unknown codes are never forwarded.
 - Domain execution failure: release the reservation and do not settle usage.
 - Client cancellation can race with durable settlement. A completed settlement remains billable and is returned by replaying the same idempotency key; a cancellation observed before settlement must release its reservation. In either case, verify zero active reservations and reconcile charged, consumed and available units before closing the incident.
 - Client transport timeout: retry with the same idempotency key until the bounded recovery window reaches `settled` or `released`; a settlement returns the original durable result without another charge, while a released key remains closed and a new logical attempt requires a new idempotency key.

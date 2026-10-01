@@ -60,6 +60,11 @@ class CommercialAccessDenied(CommercialError):
     pass
 
 
+class CommercialCursorError(CommercialAccessDenied):
+    def __init__(self) -> None:
+        super().__init__("Pagination cursor is invalid or expired")
+
+
 class CommercialNotConfigured(CommercialError):
     pass
 
@@ -1217,7 +1222,7 @@ class CommercialUsageService:
         if cursor is None:
             return str(uuid.uuid4()), 0, 1
         if not isinstance(cursor, str) or not cursor:
-            raise CommercialAccessDenied("Pagination cursor is invalid or expired")
+            raise CommercialCursorError()
         if self.cursor_codec is None:
             raise CommercialInvariantViolation("MCP cursor verification is unavailable")
         try:
@@ -1229,7 +1234,7 @@ class CommercialUsageService:
                 page_size=command.requested_result_limit,
             )
         except CursorError as exc:
-            raise CommercialAccessDenied("Pagination cursor is invalid or expired") from exc
+            raise CommercialCursorError() from exc
         return claims.chain_id, claims.offset, claims.depth
 
     def _coverage_count(self, subscription_id: str, entitlement_key: str, period_start: datetime) -> int:

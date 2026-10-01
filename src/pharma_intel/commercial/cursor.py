@@ -13,6 +13,7 @@ from typing import Any
 from pharma_intel.security import Principal
 
 CURSOR_VERSION = 1
+INVALID_CURSOR_CODE = "INVALID_CURSOR"
 CURSOR_TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$")
 SHA256_PATTERN = re.compile(r"^[a-f0-9]{64}$")
 

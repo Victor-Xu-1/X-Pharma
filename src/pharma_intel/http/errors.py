@@ -10,11 +10,13 @@ from fastapi.responses import JSONResponse, Response
 
 from pharma_intel.chemistry import ChemistryBackendUnavailable, ChemistryValidationError
 from pharma_intel.commercial.accounting import CommercialAccountingConflict, CommercialBalanceViolation
+from pharma_intel.commercial.cursor import INVALID_CURSOR_CODE
 from pharma_intel.commercial.disputes import BillingDisputeConflict, BillingDisputeNotFound
 from pharma_intel.commercial.exports import ExportStateConflict, ExportValidationError
 from pharma_intel.commercial.operations import CommercialOperationsConflict, CommercialOperationsNotFound
 from pharma_intel.commercial.service import (
     CommercialAccessDenied,
+    CommercialCursorError,
     CommercialError,
     CommercialInvariantViolation,
     CommercialNotConfigured,
@@ -40,6 +42,11 @@ async def request_validation_errors(request: Request, error: RequestValidationEr
 
 
 async def commercial_error_handler(_: Request, exc: CommercialError) -> JSONResponse:
+    if isinstance(exc, CommercialCursorError):
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"detail": str(exc), "code": INVALID_CURSOR_CODE},
+        )
     if isinstance(exc, CommercialNotConfigured | InsufficientCredits):
         status_code = status.HTTP_402_PAYMENT_REQUIRED
         detail = str(exc)

@@ -294,17 +294,19 @@ for required in GITLEAKS_IMAGE SEMGREP_IMAGE SYFT_IMAGE GRYPE_IMAGE; do
     checked "Pull $required" docker pull "$image" >/dev/null
   fi
 done
-staging_root=$(mktemp -d -t pharma-security.XXXXXX)
+source "$root/scripts/lib/security_staging.sh"
+staging_parent=$(realpath -e -- "${TMPDIR:-/tmp}")
+staging_root=$(mktemp -d "$staging_parent/pharma-security.XXXXXX")
 cleanup() {
-  case "$staging_root" in
-    /tmp/pharma-security.*)
-      chmod -R u+w "$staging_root" >/dev/null 2>&1 || true
-      rm -rf -- "$staging_root"
-      ;;
-    *) echo "refusing to remove unexpected security staging path: $staging_root" >&2 ;;
-  esac
+  local status=$?
+  if ! security_staging_remove "$staging_parent" "$staging_root"; then
+    [[ $status -ne 0 ]] || status=1
+  fi
+  return "$status"
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 repo_prefix="$root/"
 source_file_count=0
