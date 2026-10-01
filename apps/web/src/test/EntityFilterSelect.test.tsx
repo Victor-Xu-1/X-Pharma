@@ -42,6 +42,27 @@ beforeEach(() => {
   vi.mocked(getEntity).mockResolvedValue(target);
 });
 
+it.each(["", "x", "unresolved"])(
+  "never submits an unresolved candidate input, including closed or short query %j",
+  (query) => {
+    const onChange = vi.fn();
+    renderWithQueryClient(
+      <EntityFilterSelect
+        label="关联实体"
+        entityType="target"
+        value=""
+        onChange={onChange}
+        placeholder="输入关联实体"
+      />,
+    );
+    const input = screen.getByRole("combobox");
+    fireEvent.change(input, { target: { value: query } });
+    if (query.length >= 2) fireEvent.keyDown(input, { key: "Escape" });
+    expect(fireEvent.keyDown(input, { key: "Enter" })).toBe(false);
+    expect(onChange).not.toHaveBeenCalled();
+  },
+);
+
 it("searches and restores one stable entity across multiple governed types", async () => {
   const onChange = vi.fn();
   renderWithQueryClient(

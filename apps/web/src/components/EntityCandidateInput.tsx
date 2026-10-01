@@ -113,6 +113,13 @@ export function EntityCandidateInput({
       closeOptions();
       return;
     }
+    if (event.key === "Enter") {
+      // This input selects a canonical ID; blank, short or dismissed terms must
+      // never trigger the surrounding query form's implicit submit.
+      event.preventDefault();
+      if (expanded && activeIndex >= 0) selectCandidate(activeIndex);
+      return;
+    }
     if (normalizedQuery.length < 2) return;
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
@@ -130,10 +137,6 @@ export function EntityCandidateInput({
     } else if (expanded && candidates.length && (event.key === "Home" || event.key === "End")) {
       event.preventDefault();
       setActiveIndex(event.key === "Home" ? 0 : candidates.length - 1);
-    } else if (expanded && event.key === "Enter") {
-      // An unresolved entity term must not accidentally submit the surrounding query form.
-      event.preventDefault();
-      if (activeIndex >= 0) selectCandidate(activeIndex);
     }
   }
 
