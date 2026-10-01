@@ -95,8 +95,8 @@ if [[ -z "${COMPOSE_FILE:-}" ]]; then
   fi
 fi
 export SEARCH_ALLOW_NON_AUTHORITATIVE_PROJECTION=true
-source "$root/scripts/lib/browser_fonts.sh"
-source "$root/scripts/lib/browser_runtime_health.sh"
+source "$ROOT_DIR/scripts/lib/browser_fonts.sh"
+source "$ROOT_DIR/scripts/lib/browser_runtime_health.sh"
 verify_browser_fonts
 
 api_container_id=$(docker compose ps -q api)

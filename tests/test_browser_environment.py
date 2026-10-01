@@ -84,3 +84,31 @@ wait_for_browser_container_healthy task-owned-api api "$budget"
     else:
         assert result.returncode == 1
         assert "did not become healthy" in result.stderr
+
+
+def test_real_browser_entry_loads_helpers_before_crossing_the_docker_boundary(tmp_path: Path) -> None:
+    root = Path(__file__).parents[1]
+    binaries = tmp_path / "bin"
+    binaries.mkdir()
+    scripts = {
+        "fc-match": '#!/usr/bin/env bash\nprintf "%s" "$2"\n',
+        "docker": '#!/usr/bin/env bash\nprintf "owned docker boundary reached\\n" >&2\nexit 73\n',
+    }
+    for name, body in scripts.items():
+        executable = binaries / name
+        executable.write_text(body)
+        executable.chmod(0o700)
+    bash = shutil.which("bash")
+    assert bash is not None
+    result = subprocess.run(  # noqa: S603 - fixed production entry; only Docker/font boundaries are fixtures.
+        [bash, str(root / "scripts/run-browser-acceptance.sh")],
+        cwd=tmp_path,
+        env={**os.environ, "PATH": f"{binaries}{os.pathsep}{os.environ['PATH']}", "COMPOSE_FILE": "owned-fixture"},
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    assert result.returncode == 73, result.stderr
+    assert "owned docker boundary reached" in result.stderr
+    assert "unbound variable" not in result.stderr
