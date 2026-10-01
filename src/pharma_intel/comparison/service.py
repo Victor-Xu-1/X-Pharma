@@ -3,9 +3,10 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import delete, func, or_, select, true
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.elements import ColumnElement
 
 from pharma_intel.models import (
     AuditEvent,
@@ -13,6 +14,7 @@ from pharma_intel.models import (
     ComparisonSetMember,
     ComparisonSetVersion,
     Entity,
+    ReviewStatus,
     SavedSearchVisibility,
 )
 from pharma_intel.schemas import ComparisonSetCreate, ComparisonSetUpdate, EntityRead
@@ -45,15 +47,20 @@ class ComparisonSetView:
 
 
 class ComparisonSetService:
-    def __init__(self, session: Session, tenant_id: str, user_id: str) -> None:
+    def __init__(self, session: Session, tenant_id: str, user_id: str, *, include_unpublished: bool = False) -> None:
         self.session = session
         self.tenant_id = tenant_id
         self.user_id = user_id
+        self.include_unpublished = include_unpublished
+
+    def _publication_filter(self) -> ColumnElement[bool]:
+        return true() if self.include_unpublished else Entity.review_status == ReviewStatus.VERIFIED
 
     def list_sets(self) -> list[ComparisonSetView]:
         rows = self.session.execute(
-            select(ComparisonSet, func.count(ComparisonSetMember.id))
+            select(ComparisonSet, func.count(Entity.id))
             .outerjoin(ComparisonSetMember, ComparisonSetMember.comparison_set_id == ComparisonSet.id)
+            .outerjoin(Entity, (Entity.id == ComparisonSetMember.entity_id) & self._publication_filter())
             .where(
                 ComparisonSet.tenant_id == self.tenant_id,
                 or_(
@@ -130,7 +137,9 @@ class ComparisonSetService:
     def add_member(self, item_id: str, entity_id: str, *, expected_version: int) -> ComparisonSetView:
         item = self._owned_set(item_id, lock=True)
         self._require_version(item, expected_version)
-        entity = self.session.scalar(select(Entity).where(Entity.id == entity_id, Entity.tenant_id == self.tenant_id))
+        entity = self.session.scalar(
+            select(Entity).where(Entity.id == entity_id, Entity.tenant_id == self.tenant_id, self._publication_filter())
+        )
         if entity is None:
             raise ComparisonSetNotFound("Entity not found")
         existing = self.session.scalar(
@@ -193,7 +202,11 @@ class ComparisonSetService:
         if existing_ids:
             raise ComparisonSetConflict("One or more entities are already in this comparison set")
         available_ids = set(
-            self.session.scalars(select(Entity.id).where(Entity.tenant_id == self.tenant_id, Entity.id.in_(entity_ids)))
+            self.session.scalars(
+                select(Entity.id).where(
+                    Entity.tenant_id == self.tenant_id, Entity.id.in_(entity_ids), self._publication_filter()
+                )
+            )
         )
         if available_ids != set(entity_ids):
             raise ComparisonSetNotFound("One or more entities were not found")
@@ -285,6 +298,7 @@ class ComparisonSetService:
                 ComparisonSetMember.tenant_id == self.tenant_id,
                 ComparisonSetMember.comparison_set_id == item_id,
                 Entity.tenant_id == self.tenant_id,
+                self._publication_filter(),
             )
             .order_by(ComparisonSetMember.position, ComparisonSetMember.id)
         )

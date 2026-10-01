@@ -211,10 +211,6 @@ test("[reflow-keyboard] preserves the primary research path at 320 CSS pixels wi
   await expect(openNavigation).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.locator(".workspace-sidebar")).toHaveClass(/mobile-open/);
-  const specialistGroup = page.getByRole("button", { name: "专业数据库", exact: true });
-  await specialistGroup.focus();
-  await page.keyboard.press("Enter");
-  await expect(specialistGroup).toHaveAttribute("aria-expanded", "true");
   const pipelineButton = page.getByRole("button", { name: "药物与管线", exact: true });
   await pipelineButton.focus();
   await expect(pipelineButton).toBeFocused();

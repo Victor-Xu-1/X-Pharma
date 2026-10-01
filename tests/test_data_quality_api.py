@@ -7,10 +7,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.api import app
 from pharma_intel.config import Settings
 from pharma_intel.db import get_session
-from pharma_intel.models import DataQualityIssue, Tenant, User, UserRole
+from pharma_intel.models import DataQualityIssue, Tenant, UserRole
 from pharma_intel.quality.service import DataQualityService
 from pharma_intel.security import Principal, require_principal
 from tests.test_data_quality import _quality_fixture
@@ -22,7 +23,7 @@ def test_quality_api_exposes_trends_owners_and_optimistic_issue_actions(
     tmp_path: Path,
 ) -> None:
     fixture = _quality_fixture(session, tenant, tmp_path)
-    administrator = User(
+    administrator = create_account(
         tenant_id=tenant.id,
         email="quality-admin@example.test",
         normalized_email="quality-admin@example.test",
@@ -109,7 +110,7 @@ def test_quality_api_enforces_owner_roles_and_administrator_waivers(
     tmp_path: Path,
 ) -> None:
     fixture = _quality_fixture(session, tenant, tmp_path)
-    administrator = User(
+    administrator = create_account(
         tenant_id=tenant.id,
         email="quality-policy-admin@example.test",
         normalized_email="quality-policy-admin@example.test",
@@ -117,7 +118,7 @@ def test_quality_api_enforces_owner_roles_and_administrator_waivers(
         password_hash="not-used",  # noqa: S106
         role=UserRole.ADMIN,
     )
-    viewer = User(
+    viewer = create_account(
         tenant_id=tenant.id,
         email="quality-policy-viewer@example.test",
         normalized_email="quality-policy-viewer@example.test",

@@ -27,6 +27,7 @@ import type { User } from "../lib/types";
 import { useModalFocus } from "../lib/useModalFocus";
 import { canAccessView, type ViewKey, type WorkbenchKey } from "../lib/workspaceRouting";
 import { BrandMark } from "./BrandMark";
+import { OrganizationPanel } from "./OrganizationPanel";
 
 type NavigationItem = { key: ViewKey; label: string; icon: typeof Search };
 
@@ -99,7 +100,10 @@ export function WorkspaceShell({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const mobileNavigationRef = useModalFocus<HTMLElement>(mobileOpen, () => setMobileOpen(false));
+  const [navigationClosing, setNavigationClosing] = useState(false);
+  const mobileNavigationRef = useModalFocus<HTMLElement>(mobileOpen, () => setMobileOpen(false), {
+    restoreFocus: !navigationClosing,
+  });
   const pageHeadingRef = useRef<HTMLHeadingElement>(null);
   const previousView = useRef(activeView);
   const heading = titles[activeView];
@@ -112,6 +116,7 @@ export function WorkspaceShell({
   }, [activeView]);
 
   function navigate(view: ViewKey) {
+    setNavigationClosing(true);
     onView(view);
     setMobileOpen(false);
   }
@@ -236,6 +241,7 @@ export function WorkspaceShell({
               </button>
               {collapseControl}
             </div>
+            <OrganizationPanel />
             {logoutControl}
           </nav>
         ) : (
@@ -249,6 +255,7 @@ export function WorkspaceShell({
               </span>
               <i role="status" aria-label="在线" />
             </div>
+            <OrganizationPanel />
             {logoutControl}
           </>
         )}
@@ -261,7 +268,10 @@ export function WorkspaceShell({
           <button
             className="icon-button mobile-only"
             type="button"
-            onClick={() => setMobileOpen(true)}
+            onClick={() => {
+              setNavigationClosing(false);
+              setMobileOpen(true);
+            }}
             title="打开导航"
             aria-label="打开导航"
           >

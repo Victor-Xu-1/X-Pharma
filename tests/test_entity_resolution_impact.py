@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.api import app
 from pharma_intel.db import get_session
 from pharma_intel.identity import EntityIdentityService, IdentityError
@@ -20,7 +21,6 @@ from pharma_intel.models import (
     ReviewStatus,
     TargetProfile,
     Tenant,
-    User,
     UserRole,
 )
 from pharma_intel.security import Principal, require_principal
@@ -63,7 +63,7 @@ def test_entity_resolution_impact_and_reverse_canonical_rollback_are_audited(
         reasons=[{"code": "curated_synonym", "weight": 0.92}],
         proposed_by="test",
     )
-    reviewer = User(
+    reviewer = create_account(
         tenant_id=tenant.id,
         email="impact-reviewer@example.test",
         normalized_email="impact-reviewer@example.test",
@@ -186,7 +186,7 @@ def test_identity_service_rejects_status_drift_before_mutating_link(
         reasons=[],
         proposed_by="test",
     )
-    reviewer = User(
+    reviewer = create_account(
         tenant_id=tenant.id,
         email="status-reviewer@example.test",
         normalized_email="status-reviewer@example.test",

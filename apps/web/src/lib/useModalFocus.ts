@@ -28,13 +28,15 @@ function removeFromStack(container: HTMLElement) {
 export function useModalFocus<T extends HTMLElement>(
   active: boolean,
   onClose: () => void,
-  { closeOnEscape = true }: { closeOnEscape?: boolean } = {},
+  { closeOnEscape = true, restoreFocus = true }: { closeOnEscape?: boolean; restoreFocus?: boolean } = {},
 ) {
   const containerRef = useRef<T>(null);
   const onCloseRef = useRef(onClose);
   const closeOnEscapeRef = useRef(closeOnEscape);
+  const restoreFocusRef = useRef(restoreFocus);
   onCloseRef.current = onClose;
   closeOnEscapeRef.current = closeOnEscape;
+  restoreFocusRef.current = restoreFocus;
 
   useEffect(() => {
     if (!active) return;
@@ -44,6 +46,11 @@ export function useModalFocus<T extends HTMLElement>(
     modalStack.push(container);
 
     const focusFrame = window.requestAnimationFrame(() => {
+      // A user can choose a destination before this deferred frame runs. Do not
+      // replace that focus or take it away from a newer, nested modal.
+      if (!container.isConnected || modalStack.at(-1) !== container || container.contains(document.activeElement)) {
+        return;
+      }
       const requested = container.querySelector<HTMLElement>("[data-modal-autofocus='true']");
       const initialFocus =
         requested && focusableElements(container).includes(requested)
@@ -85,6 +92,7 @@ export function useModalFocus<T extends HTMLElement>(
       window.cancelAnimationFrame(focusFrame);
       document.removeEventListener("keydown", handleKeyDown, true);
       removeFromStack(container);
+      if (!restoreFocusRef.current) return;
       window.requestAnimationFrame(() => {
         if (previousFocus?.isConnected && !(previousFocus as HTMLButtonElement).disabled) previousFocus.focus();
       });

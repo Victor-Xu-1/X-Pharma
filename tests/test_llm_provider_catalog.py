@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.api import app
 from pharma_intel.config import Settings
 from pharma_intel.db import get_session
@@ -21,7 +22,7 @@ from pharma_intel.enterprise.llm_providers import (
     effective_ai_settings,
 )
 from pharma_intel.governance.model_gateway import ModelGatewayError, OpenAICompatibleExtractionGateway
-from pharma_intel.models import AuditEvent, LLMProviderConfig, Tenant, User, UserRole
+from pharma_intel.models import AuditEvent, LLMProviderConfig, Tenant, UserRole
 from pharma_intel.security import Principal, hash_password, require_principal
 
 ENCRYPTION_KEY = base64.urlsafe_b64encode(b"k" * 32).decode("ascii")
@@ -145,7 +146,7 @@ def test_enterprise_llm_provider_api_never_returns_credentials(
     tenant: Tenant,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    actor = User(
+    actor = create_account(
         tenant_id=tenant.id,
         email="llm-admin@example.test",
         normalized_email="llm-admin@example.test",
@@ -167,7 +168,7 @@ def test_enterprise_llm_provider_api_never_returns_credentials(
         "user",
         frozenset({"*"}),
     )
-    monkeypatch.setattr("pharma_intel.api.get_settings", _settings)
+    monkeypatch.setattr("pharma_intel.http.runtime.get_settings", _settings)
     try:
         with TestClient(app) as client:
             created = client.post(

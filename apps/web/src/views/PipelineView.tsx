@@ -39,6 +39,14 @@ import { programModalityLabel, programTagLabel, publicProgramTags } from "../lib
 import { publicCoverageNotice } from "../lib/publicWarnings";
 import { usePagedEntitySelection } from "../lib/usePagedEntitySelection";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
+import {
+  IndicationLinks,
+  OrganizationLinks,
+  organizationRoleLabels,
+  pipelineMechanisms,
+  pipelineModalities,
+  TargetLinks,
+} from "./pipeline/ProgramCells";
 
 const pipelineRowId = (program: CompetitiveProgramRead) => program.id;
 const pipelineEntityId = (program: CompetitiveProgramRead) => program.drug_entity_id;
@@ -101,91 +109,6 @@ const programStatusLabels: Record<string, string> = {
   inactive: "已停止",
   unknown: "状态未披露",
 };
-const organizationRoleLabels: Record<string, string> = {
-  originator: "原研方",
-  collaborator: "合作方",
-  licensee: "被许可方",
-  licensor: "许可方",
-  manufacturer: "生产方",
-  other: "其他",
-};
-
-function EntityLink({
-  entityId,
-  name,
-  onOpen,
-}: {
-  entityId: string | null;
-  name: string | null;
-  onOpen: (entityId: string) => void;
-}) {
-  if (!entityId || !name) return <span className="muted-text">未披露</span>;
-  return (
-    <button className="table-link-button" type="button" onClick={() => onOpen(entityId)}>
-      {name}
-    </button>
-  );
-}
-
-function TargetLinks({ program, onOpen }: { program: CompetitiveProgramRead; onOpen: (entityId: string) => void }) {
-  const targets = program.targets?.length
-    ? program.targets
-    : program.target_entity_id && program.target_name
-      ? [{ entity_id: program.target_entity_id, name: program.target_name, role: "primary" as const, position: 0 }]
-      : [];
-  if (!targets.length) return <span className="muted-text">未披露</span>;
-  return (
-    <span className="target-link-list">
-      {targets.map((target, index) => (
-        <span key={target.entity_id}>
-          {index ? <span aria-hidden="true"> + </span> : null}
-          <button className="table-link-button" type="button" onClick={() => onOpen(target.entity_id)}>
-            {target.name}
-          </button>
-        </span>
-      ))}
-    </span>
-  );
-}
-
-function OrganizationLinks({
-  program,
-  onOpen,
-}: {
-  program: CompetitiveProgramRead;
-  onOpen: (entityId: string) => void;
-}) {
-  const organizations = program.organizations?.length
-    ? program.organizations
-    : program.organization_entity_id && program.organization_name
-      ? [
-          {
-            entity_id: program.organization_entity_id,
-            name: program.organization_name,
-            role: "originator" as const,
-            country_region: null,
-            organization_type: null,
-            position: 0,
-          },
-        ]
-      : [];
-  if (!organizations.length) return <span className="muted-text">未披露</span>;
-  return (
-    <span className="domain-primary-cell">
-      {organizations.map((organization) => (
-        <span className="target-link-list" key={`${organization.entity_id}-${organization.role}`}>
-          <button className="table-link-button" type="button" onClick={() => onOpen(organization.entity_id)}>
-            {organization.name}
-          </button>
-          <small className="cell-subtitle">
-            {organizationRoleLabels[organization.role] ?? organization.role}
-            {organization.country_region ? ` · ${organization.country_region}` : ""}
-          </small>
-        </span>
-      ))}
-    </span>
-  );
-}
 
 export function PipelineView({
   displayMode,
@@ -373,9 +296,7 @@ export function PipelineView({
         accessorKey: "disease_name",
         header: "适应症",
         size: 180,
-        cell: ({ row }) => (
-          <EntityLink entityId={row.original.disease_entity_id} name={row.original.disease_name} onOpen={openDisease} />
-        ),
+        cell: ({ row }) => <IndicationLinks program={row.original} onOpen={openDisease} />,
       },
       {
         accessorKey: "organization_name",
@@ -387,16 +308,13 @@ export function PipelineView({
         accessorKey: "modality",
         header: "药物类型",
         size: 125,
-        cell: ({ getValue }) => {
-          const value = String(getValue() ?? "");
-          return value ? programModalityLabel(value) : "--";
-        },
+        cell: ({ row }) => pipelineModalities(row.original),
       },
       {
         accessorKey: "mechanism_of_action",
         header: "作用机制",
         size: 180,
-        cell: ({ getValue }) => String(getValue() ?? "未披露"),
+        cell: ({ row }) => pipelineMechanisms(row.original),
       },
       {
         accessorKey: "phase",

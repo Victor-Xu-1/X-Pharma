@@ -9,6 +9,7 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.config import Settings
 from pharma_intel.governance.lifecycle import DataLifecycleService
 from pharma_intel.governance.service import SCHEMA_NAME, SCHEMA_VERSION, governance_policy_sha256
@@ -42,7 +43,6 @@ from pharma_intel.models import (
     StageStatus,
     Tenant,
     TenantDataset,
-    User,
     UserRole,
 )
 from pharma_intel.object_store import FileSystemObjectStore
@@ -575,7 +575,7 @@ def test_scan_does_not_silently_resurrect_a_deleted_source_asset(
     assert finding is not None
     assert "explicit operator reauthorization" in finding.message
 
-    user = User(
+    user = create_account(
         tenant_id=tenant.id,
         email="reauthorization@example.test",
         normalized_email="reauthorization@example.test",

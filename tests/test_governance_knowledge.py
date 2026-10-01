@@ -8,6 +8,7 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.config import Settings
 from pharma_intel.governance.model_gateway import (
     ExtractionResponse,
@@ -95,7 +96,6 @@ from pharma_intel.models import (
     Tenant,
     TrialEntityRole,
     TrialResultDisclosureType,
-    User,
     UserRole,
 )
 from pharma_intel.object_store import FileSystemObjectStore
@@ -683,7 +683,7 @@ def test_ai_facts_are_quote_gated_reviewed_published_and_compiled(
     assert session.scalar(select(func.count()).select_from(FactProvenanceLink)) == 3
     assert session.scalar(select(func.count()).select_from(ReviewTask)) == 10
 
-    reviewer = User(
+    reviewer = create_account(
         tenant_id=tenant.id,
         email="reviewer@example.test",
         normalized_email="reviewer@example.test",

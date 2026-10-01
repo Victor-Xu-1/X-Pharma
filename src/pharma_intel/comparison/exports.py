@@ -577,10 +577,11 @@ class WorkspaceExportArtifact:
 
 
 class WorkspaceComparisonExportService:
-    def __init__(self, session: Session, tenant_id: str, user_id: str) -> None:
+    def __init__(self, session: Session, tenant_id: str, user_id: str, *, include_unpublished: bool = False) -> None:
         self.session = session
         self.tenant_id = tenant_id
         self.user_id = user_id
+        self.include_unpublished = include_unpublished
 
     def get_policy(self) -> WorkspaceExportPolicy:
         policy = self.session.scalar(
@@ -657,7 +658,9 @@ class WorkspaceComparisonExportService:
             raise WorkspaceExportDenied("Requested export fields are not allowed by policy")
         if command.export_format not in WORKSPACE_EXPORT_FORMATS or command.export_format not in policy.allowed_formats:
             raise WorkspaceExportDenied("Requested export format is not allowed by policy")
-        comparison = ComparisonSetService(self.session, self.tenant_id, self.user_id).get_set(item_id)
+        comparison = ComparisonSetService(
+            self.session, self.tenant_id, self.user_id, include_unpublished=self.include_unpublished
+        ).get_set(item_id)
         if comparison.item.version != command.expected_version:
             raise ComparisonSetConflict(f"Comparison set version changed; current version is {comparison.item.version}")
         if comparison.member_count < 1:
@@ -666,6 +669,7 @@ class WorkspaceComparisonExportService:
             raise WorkspaceExportDenied("Comparison set exceeds the workspace export record limit")
         request_document = {
             "comparison_set_id": comparison.item.id,
+            "publication_scope": "review" if self.include_unpublished else "published",
             "comparison_set_version": comparison.item.version,
             "export_format": command.export_format,
             "fields": fields,
@@ -764,6 +768,7 @@ class WorkspaceComparisonExportService:
         request_document = {
             "dataset": command.dataset,
             "query": command.query,
+            "publication_scope": "review" if self.include_unpublished else "published",
             "export_format": command.export_format,
             "fields": fields,
             "max_records": command.max_records,
@@ -844,15 +849,17 @@ class WorkspaceComparisonExportService:
         return self._domain_artifact(event, content, replayed=False)
 
     def _domain_records(self, command: WorkspaceDomainExportCreate) -> tuple[list[dict[str, Any]], str]:
-        intelligence = IntelligenceService(self.session, self.tenant_id)
+        intelligence = IntelligenceService(self.session, self.tenant_id, include_unpublished=self.include_unpublished)
         if command.dataset == "entities":
             entity_query = _EntityExportQuery.model_validate(command.query)
+            if not self.include_unpublished and entity_query.review_status not in {None, ReviewStatus.VERIFIED}:
+                raise WorkspaceExportDenied("Unpublished records require governance access")
             entity_result = EntitySearchService(self.session, self.tenant_id, get_settings()).search(
                 entity_query.q,
                 entity_query.entity_type,
                 command.max_records,
                 0,
-                entity_query.review_status,
+                entity_query.review_status if self.include_unpublished else ReviewStatus.VERIFIED,
                 entity_query.sort_by,
                 entity_query.sort_direction,
                 entity_query.entity_types,

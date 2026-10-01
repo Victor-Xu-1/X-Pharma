@@ -385,6 +385,64 @@ it("uses the aggregate project count instead of repeating an empty tag placehold
   expect(screen.queryByText("暂无项目标签")).not.toBeInTheDocument();
 });
 
+it("renders aggregated drug modalities, mechanisms and distinct indication links from the wire contract", async () => {
+  const onOpenDisease = vi.fn();
+  const indication = {
+    program_id: "program-1",
+    disease_entity_id: "disease-1",
+    disease_name: "NSCLC",
+    phase: "phase_2",
+    global_phase: "phase_2",
+    china_phase: null,
+    global_phase_started_at: null,
+    china_phase_started_at: null,
+    program_status: "active" as const,
+    status_date: null,
+    geography: "Global",
+  };
+  vi.mocked(searchPipelines).mockResolvedValue({
+    ...pipelineResult,
+    result_grain: "drug",
+    items: [
+      {
+        ...pipelineResult.items[0],
+        modality: null,
+        mechanism_of_action: null,
+        disease_entity_id: null,
+        disease_name: null,
+        modalities: ["small molecule", "antibody"],
+        mechanisms_of_action: ["covalent inhibitor", "ligand blocking"],
+        indications: [
+          indication,
+          { ...indication, program_id: "program-2" },
+          { ...indication, program_id: "program-3", disease_entity_id: "disease-2", disease_name: "Melanoma" },
+        ],
+      },
+    ],
+  });
+  renderWithQueryClient(
+    <PipelineView
+      {...defaultAnalysisProps}
+      resultGrain="drug"
+      displayMode="list"
+      initialFilters={initialFilters}
+      onSearchChange={vi.fn()}
+      onDisplayModeChange={vi.fn()}
+      onOpenDrug={vi.fn()}
+      onOpenEntity={vi.fn()}
+      onOpenDisease={onOpenDisease}
+    />,
+  );
+  const results = await screen.findByRole("table", { name: "药物与研发管线结果" });
+  expect(results).toHaveTextContent("covalent inhibitor");
+  expect(results).toHaveTextContent("ligand blocking");
+  expect(results).toHaveTextContent("小分子");
+  expect(results).toHaveTextContent("抗体");
+  expect(within(results).getAllByRole("button", { name: "NSCLC" })).toHaveLength(1);
+  fireEvent.click(within(results).getByRole("button", { name: "Melanoma" }));
+  expect(onOpenDisease).toHaveBeenCalledWith("disease-2");
+});
+
 it("uses clear Chinese copy when linked disease or organization data is not disclosed", async () => {
   vi.mocked(searchPipelines).mockResolvedValue({
     ...pipelineResult,

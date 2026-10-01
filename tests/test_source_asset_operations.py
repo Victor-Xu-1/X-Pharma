@@ -117,13 +117,13 @@ def test_source_asset_inventory_detail_and_safe_text_preview(
         )
 
     temporal_client = AsyncMock()
-    monkeypatch.setattr("pharma_intel.api.Client.connect", AsyncMock(return_value=temporal_client))
+    monkeypatch.setattr("pharma_intel.ingest.commands.versions.Client.connect", AsyncMock(return_value=temporal_client))
     monkeypatch.setattr(
-        "pharma_intel.api.get_settings",
+        "pharma_intel.http.runtime.get_settings",
         lambda: Settings(source_roots_config=str(tmp_path), temporal_enabled=True),
     )
     monkeypatch.setattr(
-        "pharma_intel.api.object_store_module.build_object_store",
+        "pharma_intel.http.source_versions.object_store_module.build_object_store",
         lambda _settings: PreviewObjectStore(),
     )
     app.dependency_overrides[get_session] = session_override
@@ -304,9 +304,9 @@ def test_source_version_replay_accepts_the_failed_stage_and_binds_it_to_temporal
         return Principal(tenant.id, "operator-1", "user", frozenset({"ingestion:read", "ingestion:manage"}))
 
     temporal_client = AsyncMock()
-    monkeypatch.setattr("pharma_intel.api.Client.connect", AsyncMock(return_value=temporal_client))
+    monkeypatch.setattr("pharma_intel.ingest.commands.versions.Client.connect", AsyncMock(return_value=temporal_client))
     monkeypatch.setattr(
-        "pharma_intel.api.get_settings",
+        "pharma_intel.http.runtime.get_settings",
         lambda: Settings(
             source_roots_config=str(tmp_path),
             temporal_enabled=True,

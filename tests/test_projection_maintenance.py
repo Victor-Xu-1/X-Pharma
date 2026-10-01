@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy.orm import Session, sessionmaker
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.config import Settings
 from pharma_intel.models import ProjectionMaintenanceJob, Tenant, User, UserRole
 from pharma_intel.object_store import FileSystemObjectStore
@@ -45,7 +46,7 @@ class MaintenanceGateway:
 
 
 def _reviewer(session: Session, tenant: Tenant) -> User:
-    reviewer = User(
+    reviewer = create_account(
         tenant_id=tenant.id,
         email="projection-operator@example.test",
         normalized_email="projection-operator@example.test",

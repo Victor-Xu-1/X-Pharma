@@ -20,11 +20,11 @@ from pharma_intel.models import (
     IngestionRun,
     OutboxEvent,
     ProjectionDelivery,
-    ProjectionDeliveryState,
     RunState,
     StagedFact,
 )
-from pharma_intel.operations_contract import OperationsContract, load_operations_contract
+from pharma_intel.operations_contract import load_operations_contract
+from pharma_intel.platform.service_health import service_statuses
 
 MAX_EVIDENCE_BYTES = 16 * 1024 * 1024
 STALE_INGESTION_SECONDS = 300
@@ -160,56 +160,6 @@ def _migration_state(session: Session) -> dict[str, Any]:
     }
 
 
-def _service_statuses(
-    contract: OperationsContract,
-    *,
-    stale_ingestion_runs: int,
-    delivery_counts: dict[str, dict[str, int]],
-    settings: Settings,
-) -> list[dict[str, Any]]:
-    dead_by_consumer = {
-        consumer: states.get(ProjectionDeliveryState.DEAD.value, 0) for consumer, states in delivery_counts.items()
-    }
-    status_map: dict[str, tuple[str, str]] = {
-        "workspace": ("ready", "Current authenticated Web request completed"),
-        "api": ("ready", "Current authenticated API request completed"),
-        "data-factory": (
-            "degraded" if stale_ingestion_runs else "ready" if settings.temporal_enabled else "blocked",
-            (
-                f"{stale_ingestion_runs} stale ingestion runs"
-                if stale_ingestion_runs
-                else "Temporal workflow configuration is enabled"
-            ),
-        ),
-        "search-projector": (
-            "degraded" if dead_by_consumer.get("opensearch", 0) else "ready",
-            f"{dead_by_consumer.get('opensearch', 0)} dead deliveries",
-        ),
-        "monitoring-worker": (
-            "degraded" if dead_by_consumer.get("monitoring", 0) else "ready",
-            f"{dead_by_consumer.get('monitoring', 0)} dead deliveries",
-        ),
-        "billing-provider": (
-            "degraded" if dead_by_consumer.get("billing_provider", 0) else "ready",
-            f"{dead_by_consumer.get('billing_provider', 0)} dead deliveries",
-        ),
-        "search-maintenance": ("external", "Liveness is evaluated by the deployment health probe"),
-        "mcp": ("external", "MCP liveness and OAuth are evaluated at the dedicated Agent entry"),
-        "parser": ("external", "Parser liveness is evaluated inside the isolated parser network"),
-        "clamav": ("external", "Scanner liveness is evaluated by the ingestion safety gate"),
-    }
-    return [
-        {
-            "service_id": item.id,
-            "owner": item.owner,
-            "escalation_policy": item.escalation_policy,
-            "status": status_map.get(item.id, ("external", "External telemetry evidence required"))[0],
-            "detail": status_map.get(item.id, ("external", "External telemetry evidence required"))[1],
-        }
-        for item in contract.services
-    ]
-
-
 class PlatformOperationsService:
     def __init__(self, session: Session, *, tenant_id: str, settings: Settings) -> None:
         self.session = session
@@ -266,7 +216,7 @@ class PlatformOperationsService:
             .order_by(AuditEvent.occurred_at.desc(), AuditEvent.id.desc())
             .limit(20)
         ).all()
-        services = _service_statuses(
+        services = service_statuses(
             contract,
             stale_ingestion_runs=stale_ingestion,
             delivery_counts=delivery_counts,

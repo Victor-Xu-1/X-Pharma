@@ -29,9 +29,6 @@ import {
   X,
 } from "lucide-react";
 import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-
-import type { SessionSnapshot } from "../lib/contracts/session";
-import { sessionKeys } from "../lib/contracts/session";
 import {
   defaultWorkspaceTablePreference,
   loadWorkspaceTablePreference,
@@ -41,6 +38,7 @@ import {
   type WorkspaceTablePreferences,
   workspacePreferenceKeys,
 } from "../lib/contracts/workspacePreferences";
+import { useSessionIdentity } from "./SessionIdentityContext";
 
 type TablePreferences = WorkspaceTablePreferences;
 
@@ -134,9 +132,11 @@ export function VirtualDataTable<T>({
   rowSelection?: TableRowSelection<T>;
 }) {
   const queryClient = useQueryClient();
-  const userId = queryClient.getQueryData<SessionSnapshot>(sessionKeys.current)?.user?.id ?? null;
-  const preferenceQueryKey = workspacePreferenceKeys.table(userId ?? "anonymous", preferenceKey);
-  const preferenceIdentity = userId ? `${userId}:${preferenceKey}` : null;
+  const user = useSessionIdentity();
+  const userId = user?.id ?? null;
+  const ownerScope = user ? `${user.tenant_id}:${user.id}` : "anonymous";
+  const preferenceQueryKey = workspacePreferenceKeys.table(ownerScope, preferenceKey);
+  const preferenceIdentity = user ? `${ownerScope}:${preferenceKey}` : null;
   const preferenceQuery = useQuery({
     queryKey: preferenceQueryKey,
     queryFn: ({ signal }) => loadWorkspaceTablePreference(preferenceKey, signal),

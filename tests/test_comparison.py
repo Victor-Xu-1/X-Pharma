@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.api import app
 from pharma_intel.comparison.exports import (
     WorkspaceComparisonExportService,
@@ -50,7 +51,7 @@ from pharma_intel.sorting import SortClause
 
 
 def _user(session: Session, tenant: Tenant, suffix: str, role: UserRole = UserRole.ANALYST) -> User:
-    user = User(
+    user = create_account(
         tenant_id=tenant.id,
         email=f"comparison-{suffix}@example.test",
         normalized_email=f"comparison-{suffix}@example.test",
@@ -97,15 +98,16 @@ def test_comparison_set_visibility_versioning_and_bounded_members(session: Sessi
         )
         for index in range(21)
     ]
-    service = ComparisonSetService(session, tenant.id, owner.id)
+    service = ComparisonSetService(session, tenant.id, owner.id, include_unpublished=True)
     private = service.create_set(ComparisonSetCreate(name="Private set"))
-    assert ComparisonSetService(session, tenant.id, colleague.id).list_sets() == []
+    assert ComparisonSetService(session, tenant.id, colleague.id, include_unpublished=True).list_sets() == []
     shared = service.create_set(ComparisonSetCreate(name="Shared set", visibility=SavedSearchVisibility.TENANT))
-    assert [item.item.id for item in ComparisonSetService(session, tenant.id, colleague.id).list_sets()] == [
-        shared.item.id
-    ]
+    assert [
+        item.item.id
+        for item in ComparisonSetService(session, tenant.id, colleague.id, include_unpublished=True).list_sets()
+    ] == [shared.item.id]
     with pytest.raises(ComparisonSetNotFound):
-        ComparisonSetService(session, other_tenant.id, outsider.id).get_set(shared.item.id)
+        ComparisonSetService(session, other_tenant.id, outsider.id, include_unpublished=True).get_set(shared.item.id)
 
     current = private
     for entity in entities[:20]:
@@ -137,7 +139,7 @@ def test_comparison_set_batch_add_is_atomic_and_creates_one_version(session: Ses
         )
         for index in range(3)
     ]
-    service = ComparisonSetService(session, tenant.id, owner.id)
+    service = ComparisonSetService(session, tenant.id, owner.id, include_unpublished=True)
     comparison = service.create_set(ComparisonSetCreate(name="Batch set"))
 
     updated = service.add_members(
@@ -183,10 +185,10 @@ def test_workspace_exports_are_policy_bound_reproducible_and_formula_safe(sessio
             external_ids={"registry": "ORG-1"},
         )
     )
-    comparison_service = ComparisonSetService(session, tenant.id, user.id)
+    comparison_service = ComparisonSetService(session, tenant.id, user.id, include_unpublished=True)
     comparison = comparison_service.create_set(ComparisonSetCreate(name="Export set"))
     comparison = comparison_service.add_member(comparison.item.id, entity.id, expected_version=comparison.item.version)
-    export_service = WorkspaceComparisonExportService(session, tenant.id, user.id)
+    export_service = WorkspaceComparisonExportService(session, tenant.id, user.id, include_unpublished=True)
     with pytest.raises(WorkspaceExportNotConfigured):
         export_service.export_comparison_set(
             comparison.item.id,
@@ -261,7 +263,7 @@ def test_workspace_domain_exports_reuse_governed_query_and_field_policy(
     organization = EntityRepository(session, tenant.id).create(
         EntityCreate(entity_type=EntityType.ORGANIZATION, name="Domain export organization")
     )
-    export_service = WorkspaceComparisonExportService(session, tenant.id, user.id)
+    export_service = WorkspaceComparisonExportService(session, tenant.id, user.id, include_unpublished=True)
     export_service.upsert_policy(_policy())
     command = WorkspaceDomainExportCreate(
         dataset="entities",
@@ -278,7 +280,7 @@ def test_workspace_domain_exports_reuse_governed_query_and_field_policy(
     )
 
     artifact = export_service.export_domain_query(command)
-    replay_service = WorkspaceComparisonExportService(session, tenant.id, user.id)
+    replay_service = WorkspaceComparisonExportService(session, tenant.id, user.id, include_unpublished=True)
     monkeypatch.setattr(
         replay_service,
         "_domain_records",
@@ -338,7 +340,7 @@ def test_workspace_trial_export_passes_normalized_entity_or_query_to_engine(
     session: Session, tenant: Tenant, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     user = _user(session, tenant, "trial-domain-exporter")
-    export_service = WorkspaceComparisonExportService(session, tenant.id, user.id)
+    export_service = WorkspaceComparisonExportService(session, tenant.id, user.id, include_unpublished=True)
     export_service.upsert_policy(
         _policy().model_copy(
             update={
@@ -436,7 +438,7 @@ def test_workspace_pipeline_export_preserves_governed_organization_relationship_
     session: Session, tenant: Tenant, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     user = _user(session, tenant, "pipeline-domain-exporter")
-    export_service = WorkspaceComparisonExportService(session, tenant.id, user.id)
+    export_service = WorkspaceComparisonExportService(session, tenant.id, user.id, include_unpublished=True)
     export_service.upsert_policy(
         _policy().model_copy(
             update={
@@ -491,7 +493,7 @@ def test_workspace_deal_export_passes_asset_and_entity_filters_to_engine(
     """
 
     user = _user(session, tenant, "deal-domain-exporter")
-    export_service = WorkspaceComparisonExportService(session, tenant.id, user.id)
+    export_service = WorkspaceComparisonExportService(session, tenant.id, user.id, include_unpublished=True)
     export_service.upsert_policy(
         _policy().model_copy(
             update={
@@ -545,7 +547,7 @@ def test_workspace_epidemiology_export_passes_disease_filter_to_engine(
     """The epidemiology export must honor the canonical disease condition the list used."""
 
     user = _user(session, tenant, "epi-domain-exporter")
-    export_service = WorkspaceComparisonExportService(session, tenant.id, user.id)
+    export_service = WorkspaceComparisonExportService(session, tenant.id, user.id, include_unpublished=True)
     export_service.upsert_policy(
         _policy().model_copy(
             update={

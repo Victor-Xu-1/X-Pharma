@@ -90,7 +90,7 @@ def inspect_runtime_hygiene(
             temporary_accounts.extend(
                 session.scalars(
                     select(User.id).where(
-                        User.tenant_id == tenant_id,
+                        User.home_tenant_id == tenant_id,
                         User.normalized_email.like("%@example.test"),
                     )
                 )

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -47,22 +48,23 @@ def test_registration_migration_preserves_existing_accounts_and_refuses_invitati
             tenant = Tenant(slug="migration-account-test", name="Migration account test")
             session.add(tenant)
             session.flush()
-            user = User(
-                tenant_id=tenant.id,
-                email="migration@example.test",
-                normalized_email="migration@example.test",
-                display_name="Existing administrator",
-                role=UserRole.ADMIN,
-                password_hash=unusable_hash,
+            user_id = str(uuid.uuid4())
+            session.execute(
+                text("""
+                INSERT INTO users (id, tenant_id, email, normalized_email, display_name,
+                    role, password_hash, active, token_version, created_at, updated_at)
+                VALUES (:id, :tenant, 'migration@example.test', 'migration@example.test',
+                    'Existing administrator', 'ADMIN', :hash, true, 1, :now, :now)
+            """),
+                {"id": user_id, "tenant": tenant.id, "hash": unusable_hash, "now": datetime.now(UTC)},
             )
-            session.add(user)
             session.commit()
-            tenant_id, user_id = tenant.id, user.id
+            tenant_id = tenant.id
         command.upgrade(config, "head")
         with Session(engine, expire_on_commit=False) as session:
             existing = session.get(User, user_id)
             assert existing is not None and existing.password_hash == unusable_hash
-            assert existing.tenant_id == tenant_id and existing.role == UserRole.ADMIN
+            assert existing.home_tenant_id == tenant_id and existing.memberships[0].role == UserRole.ADMIN
             issued = AccountRegistrationService(session, "migration-invitation-test").issue_invitation(
                 Principal(tenant_id, user_id, "user", frozenset()), InvitationCreate(email="invited@example.test")
             )
@@ -71,7 +73,7 @@ def test_registration_migration_preserves_existing_accounts_and_refuses_invitati
             command.downgrade(config, "b6e4c9a2d781")
         with Session(engine) as session:
             assert session.get(AccountInvitation, invitation_id) is not None
-            assert session.get(User, user_id) is not None
+            assert session.scalar(text("SELECT id FROM users WHERE id=:id"), {"id": user_id}) == user_id
     finally:
         engine.dispose()
         get_settings.cache_clear()
@@ -156,11 +158,13 @@ def test_full_migration_chain_round_trips_and_matches_models(
             "ck_data_quality_issue_version",
         } <= issue_checks
         user_uniques = inspect(engine).get_unique_constraints("users")
-        assert any(
-            constraint.get("name") == "uq_users_tenant_id_id"
-            and set(constraint.get("column_names") or []) == {"tenant_id", "id"}
-            for constraint in user_uniques
-        )
+        assert not any(constraint.get("name") == "uq_users_tenant_id_id" for constraint in user_uniques)
+        user_columns = {column["name"] for column in inspect(engine).get_columns("users")}
+        assert "home_tenant_id" in user_columns and "role" not in user_columns and "tenant_id" not in user_columns
+        assert set(inspect(engine).get_pk_constraint("organization_memberships")["constrained_columns"]) == {
+            "tenant_id",
+            "user_id",
+        }
         membership_foreign_keys = inspect(engine).get_foreign_keys("user_group_memberships")
         assert {tuple(constraint.get("constrained_columns") or []) for constraint in membership_foreign_keys} >= {
             ("tenant_id", "group_id"),

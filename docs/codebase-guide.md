@@ -5,22 +5,38 @@
 | 边界 | 权威模块 | 职责 |
 | --- | --- | --- |
 | 应用进程 | `gateway.py`、`jobs.py`、`job_roles.py` | 单网关和受监督后台角色 |
-| Web/API | `api.py`、`security.py`、`human_oidc.py` | 人员/Agent 身份、租户、scope 与会话 |
-| 账号注册 | `accounts/` | 独立 viewer 租户、签名邀请码、事务领取、管理员权限与注册预算 |
-| 领域查询 | `intelligence.py`、`repository.py`、`dossier.py` | Web 与 MCP 共用的事实查询 |
-| 数据库 | `models.py`、`schemas.py`、`db.py`、`migrations/` | 数据模型、事务和签名 RLS |
-| 数据工厂 | `ingest/` | 来源、快照、安全解析、Temporal 和恢复 |
+| Web/API | `api.py`、`http/`、`security.py`、`human_oidc.py` | 应用组装、分域传输、人员/Agent 身份与 scope |
+| 账号与组织 | `accounts/` | 全局身份、组织成员权限、独立 viewer 空间、邀请确认、事务领取、管理员权限与请求预算 |
+| 领域查询 | `intelligence/`、`repository.py`、`dossier.py` | Web 与 MCP 共用的事实查询 |
+| 数据库 | `models/`、`schemas/`、`db.py`、`migrations/` | 按领域归属的数据模型和传输契约、事务和签名 RLS |
+| 数据工厂 | `ingest/commands/`、`ingest/` | 应用写入、来源、快照、安全解析、Temporal 和恢复 |
 | AI 治理 | `governance/`、`enterprise/llm_providers.py` | 模型访问、暂存、验证、审核与发布 |
 | 检索与知识 | `search/`、`knowledge/` | outbox delivery、搜索投影和版本知识 |
 | 商业与协作 | `commercial/`、`comparison/`、`monitoring/` | 账本、权益、导出和团队工作流 |
-| 前端 | `apps/web/src/lib/contracts`、`components`、`views` | 状态、传输、共享组件和专业工作域 |
-| 部署与工具 | `deploy/`、`services/`、`scripts/`、`runbooks/` | 安装、隔离组件、门禁、恢复与运维 |
+| 前端 | `apps/web/src/workspaces/research/`、`lib/contracts`、`components`、`views` | 导航状态、分域路由、传输和独立功能面板 |
+| 部署与工具 | `deploy/`、`services/`、`scripts/release/`、`scripts/`、`runbooks/` | 安装、隔离组件、发布证据、门禁、恢复与运维 |
 
 入口、领域、持久化和适配器各自负责一层。新增规则进入对应领域模块，不能在 UI、路由和 MCP 重复实现。数据流见 [architecture.md](architecture.md)。
 
-`RegistrationForm`、`AccountInvitationPanel` 和 `SessionBoundary` 分别拥有注册交互、管理员邀请管理和共享会话生命周期；两套工作台只消费同一会话状态和退出动作。注册与邀请通过生成的 OpenAPI client 调用 `accounts/` 服务，不在 `api.py` 或大型企业视图堆叠业务规则。
+`RegistrationForm`、`AccountInvitationPanel`、`OrganizationPanel` 和 `SessionBoundary` 分别拥有注册交互、管理员邀请管理、邀请确认/组织切换和共享会话生命周期；两套工作台消费同一身份上下文和退出动作。每个账号/组织/角色使用独立的工作台 query client，旧上下文的延迟回调不能污染新缓存。表格偏好从 `SessionIdentityContext` 读取身份，不能依赖领域缓存猜测账号。注册与邀请通过生成的 OpenAPI client 调用 `accounts/` 服务。
+
+ORM 的公共入口是 `models/__init__.py`，只聚合显式导出；领域表分别属于账号、组织配置、实体主数据、药物管线、临床、化学、入库、治理、检索投影及商业领域。`models/base.py` 单独拥有 SQLAlchemy registry、时间戳和 UUID；`models/enums.py` 拥有共享枚举。领域模块不导入聚合入口，避免反向依赖与重复映射。多组织迁移单独增加 `OrganizationMembership` 权限权威并保留全局身份与原业务归属，不能继续从 `User` 读取组织角色。
+
+企业管理的查询键按概况、用户、用户组、访问治理、模型、平台与审计划分，按活动功能加载。`views/enterprise/` 拥有各功能面板及操作表单，`FeatureQuery` 负责加载和失败反馈；权限复查失败不继续显示旧管理数据，也不把失败伪装成空列表。平台状态的配置、队列问题和存活证据分别呈现，只有本次 API 请求确实完成才标注观察到存活；其他容器依赖部署探针，不以队列零故障证明健康。
 
 ## 本次整理
+
+`schemas/__init__.py` 是唯一公共契约入口；输入校验和响应模型按账号、企业、实体、管线、临床、专利、交易、治理、来源和商业领域定义。领域契约只从具体依赖模块导入，不反向依赖聚合入口。公共查询元数据和排序类型独立，跨领域档案聚合只向具体领域契约依赖；OpenAPI 漂移门禁验证重构不意外改动客户端协议。
+
+`http/` 拥有分域 transport；账号、组织、注册、企业人员/组、API 密钥与模型配置各自拥有路由，公共查询校验在 `query_contracts.py`，HTTP 配置绑定在 `runtime.py`。模块不得反向导入 `api.py`；应用入口只负责组合它们。持久化、领域契约和 HTTP 模块的依赖环及反向引用由 `test_architecture_boundaries.py` 约束。账号与组织的保留式迁移、会话及回退边界见 [accounts-and-organizations.md](accounts-and-organizations.md)。
+
+`intelligence/context.py` 拥有请求级 Session、组织、发布可见性与有界身份缓存；各领域 SQL、身份谓词、facet、信号和格局聚合通过显式函数依赖组合。`intelligence/service.py` 只保留 48 个公共方法的类型签名与委派，不拥有第二套 SQL、动态转发或 mixin。跨领域档案只调用具体查询模块，领域不得反向依赖门面。
+
+接入控制写入由 `ingest/commands/` 负责事务、状态冲突、幂等、审计和精确 Temporal execution；它不导入 FastAPI、HTTP 或应用入口。传输层保留原 HTTP 状态和响应契约，将命令错误统一映射，不能另写一套取消、重放或隔离转换。
+
+研究入口只组装 `SessionBoundary` 与工作台。`useResearchNavigation` 管理稳定 URL、返回路径、实体解析、浏览器历史和非紧急导航；`savedSearchLocation` 是可单测的保存检索恢复模型；19 个领域 Route 拥有具体视图的 props 和懒加载。商业界面的状态/操作与表格、生命周期、风险、账单及确认表单在 `views/commercial/` 按职责分开。
+
+`scripts/release/` 是发布证据的唯一实现，合同、记录、文件安全、策略、领域校验、采集、签名、打包、验证与交接各自归属具体模块。`release_evidence.py` 仅保留已验证的直接 CLI 与其他命令入口依赖的公共委派。该库纳入 Ruff/Mypy、依赖 DAG 和真实文件/子进程/签名回归，不保留旧 7,000 多行实现。
 
 公共名称集中在后端 `product.py` 与前端 `lib/product.ts`；API、MCP、来源请求、登录和导航复用该定义。API 版本读取发行包元数据。内部数据库、协议和 CLI 标识保持稳定，已有业务数据不因品牌变动而迁移。
 
@@ -32,11 +48,15 @@
 
 ## 已识别的维护风险
 
-`api.py`、`intelligence.py`、`schemas.py` 和部分专业视图仍承载较多职责。后续拆分需受现有查询、授权、RLS 与浏览器回归约束，不能按长度机械拆业务规则。本次公开整理没有宣称已完成这些模块的全面重构。
+大 SQL 查询的复杂度来自同一授权命中集的过滤、身份归并与统计。查询模块继续按谓词、读取、信号和聚合职责演进，不能用动态转发、复制 SQL 或改变命中语义换取更短文件。纯公共方法签名较长不意味着应复制业务实现；边界测试禁止职责回流。
 
 历史 CI 的双入口任务引用了已退出统一拓扑的 `mcp` 和 `search-projector` 服务。验证应使用当前 API/jobs/parser 拓扑、独立配置和真实夹具，同时保留既有门禁。
 
 恢复镜像与新源码是不同候选。每个候选的源码摘要、测试、镜像和实际验收须绑定同一身份；恢复时的成功结果不计为新代码部署证据。
+
+商业概况的客户端、待执行导出、账单死信和处理中争议计数在服务器统计完整组织范围，不从最多100/200条的独立面板列表推断。客户端、账单、争议、导出、风险和生命周期按当前面板加载、独立失败/重试；概况失败不会撤掉其他面板的导航。账单面板的账户与投递是同一功能的两个明确请求，不再用跨六个功能的聚合阻断整个工作台。
+
+浏览器验收保留固定28条工作台注册、原场景标签和四视口矩阵。`e2e/workspace/` 按场景拥有实现，最长的全程验收拆成17个显式、有类型的连续步骤；步骤上下文由前一步的返回类型派生。`workspace.spec.ts` 只注册同一组测试，公共 helper 不注册第二套场景；没有改变像素、性能或完整覆盖门禁。
 
 公开 CI 冷启动暴露的索引创建竞争已在唯一 `OpenSearchGateway` 中处理：只有明确的 `resource_already_exists_exception` 会触发一次别名重读，保留最新的活动索引；映射、权限、其他错误与消失的竞争结果仍失败关闭。并发测试使用独立真实 OpenSearch 服务，不接触原恢复集群。
 

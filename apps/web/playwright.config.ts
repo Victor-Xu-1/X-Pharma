@@ -12,6 +12,8 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   reporter: "line",
   use: {
+    actionTimeout: 15_000,
+    navigationTimeout: 30_000,
     baseURL: process.env.E2E_BASE_URL ?? "http://127.0.0.1:8080",
     channel: browserExecutable ? undefined : (process.env.E2E_BROWSER_CHANNEL ?? "chrome"),
     launchOptions: browserExecutable ? { executablePath: browserExecutable } : undefined,

@@ -32,30 +32,26 @@ export type CommercialRiskFilter = "all" | CommercialRiskEventRead["case_status"
 
 export const commercialKeys = {
   root: ["commercial"] as const,
-  workspace: (deliveryFilter: BillingDeliveryFilter, disputeFilter: BillingDisputeFilter) =>
-    ["commercial", "workspace", { deliveryFilter, disputeFilter }] as const,
+  overview: ["commercial", "overview"] as const,
+  clients: ["commercial", "clients"] as const,
+  billing: (deliveryFilter: BillingDeliveryFilter) => ["commercial", "billing", { deliveryFilter }] as const,
+  disputes: (disputeFilter: BillingDisputeFilter) => ["commercial", "disputes", { disputeFilter }] as const,
+  exports: ["commercial", "exports"] as const,
   risks: (caseStatus: CommercialRiskFilter, cursor: string | null) =>
     ["commercial", "risks", { caseStatus, cursor }] as const,
   lifecycle: ["commercial", "lifecycle"] as const,
 };
 
-export type CommercialWorkspace = {
-  overview: CommercialOverviewRead;
-  clients: CommercialClientRead[];
-  billingAccounts: BillingAccountRead[];
-  billingDeliveries: BillingDeliveryRead[];
-  billingDisputes: BillingDisputeRead[];
-  exports: DataExportRead[];
-};
+export function loadCommercialOverview(signal?: AbortSignal): Promise<CommercialOverviewRead> {
+  return contractRequest(CommercialService.readCommercialOverviewApiV1CommercialOverviewGet(), signal);
+}
 
-export async function loadCommercialWorkspace(
-  deliveryFilter: BillingDeliveryFilter,
-  disputeFilter: BillingDisputeFilter,
-  signal?: AbortSignal,
-): Promise<CommercialWorkspace> {
-  const [overview, clients, billingAccounts, billingDeliveries, billingDisputes, exports] = await Promise.all([
-    contractRequest(CommercialService.readCommercialOverviewApiV1CommercialOverviewGet(), signal),
-    contractRequest(CommercialService.listCommercialClientsApiV1CommercialClientsGet({ limit: 200 }), signal),
+export function loadCommercialClients(signal?: AbortSignal): Promise<CommercialClientRead[]> {
+  return contractRequest(CommercialService.listCommercialClientsApiV1CommercialClientsGet({ limit: 200 }), signal);
+}
+
+export async function loadCommercialBilling(deliveryFilter: BillingDeliveryFilter, signal?: AbortSignal) {
+  const [accounts, deliveries] = await Promise.all([
     contractRequest(CommercialService.listBillingAccountsApiV1CommercialBillingAccountsGet({ limit: 200 }), signal),
     contractRequest(
       CommercialService.listBillingDeliveriesApiV1CommercialBillingDeliveriesGet({
@@ -64,16 +60,25 @@ export async function loadCommercialWorkspace(
       }),
       signal,
     ),
-    contractRequest(
-      CommercialService.listBillingDisputesApiV1CommercialBillingDisputesGet({
-        disputeStatus: disputeFilter,
-        limit: 200,
-      }),
-      signal,
-    ),
-    contractRequest(CommercialService.listDataExportsApiV1CommercialExportsGet({ limit: 100 }), signal),
   ]);
-  return { overview, clients, billingAccounts, billingDeliveries, billingDisputes, exports };
+  return { accounts, deliveries };
+}
+
+export function loadCommercialDisputes(
+  disputeFilter: BillingDisputeFilter,
+  signal?: AbortSignal,
+): Promise<BillingDisputeRead[]> {
+  return contractRequest(
+    CommercialService.listBillingDisputesApiV1CommercialBillingDisputesGet({
+      disputeStatus: disputeFilter,
+      limit: 200,
+    }),
+    signal,
+  );
+}
+
+export function loadCommercialExports(signal?: AbortSignal): Promise<DataExportRead[]> {
+  return contractRequest(CommercialService.listDataExportsApiV1CommercialExportsGet({ limit: 100 }), signal);
 }
 
 export async function loadCommercialRiskPage(

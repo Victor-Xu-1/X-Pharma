@@ -226,6 +226,10 @@ ALTER TABLE saved_search_versions ENABLE TRIGGER immutable_saved_search_versions
 DELETE FROM user_sessions
 WHERE tenant_id = :'tenant_id'
   AND user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
+DELETE FROM account_invitations WHERE created_by_user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern')
+  OR claimed_user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
+DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
+DELETE FROM organization_memberships WHERE user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
 DELETE FROM users WHERE normalized_email LIKE :'email_pattern';
 COMMIT;
 SQL
@@ -290,6 +294,10 @@ ALTER TABLE saved_search_versions ENABLE TRIGGER immutable_saved_search_versions
 DELETE FROM user_sessions
 WHERE tenant_id = :'tenant_id'
   AND user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
+DELETE FROM account_invitations WHERE created_by_user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern')
+  OR claimed_user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
+DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
+DELETE FROM organization_memberships WHERE user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
 DELETE FROM users WHERE normalized_email LIKE :'email_pattern';
 COMMIT;
 SQL
@@ -359,6 +367,10 @@ ALTER TABLE saved_search_versions ENABLE TRIGGER immutable_saved_search_versions
 DELETE FROM user_sessions
 WHERE tenant_id = '$tenant_id'
   AND user_id IN (SELECT id FROM users WHERE normalized_email LIKE '$email_pattern');
+DELETE FROM account_invitations WHERE created_by_user_id IN (SELECT id FROM users WHERE normalized_email LIKE '$email_pattern')
+  OR claimed_user_id IN (SELECT id FROM users WHERE normalized_email LIKE '$email_pattern');
+DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE normalized_email LIKE '$email_pattern');
+DELETE FROM organization_memberships WHERE user_id IN (SELECT id FROM users WHERE normalized_email LIKE '$email_pattern');
 DELETE FROM users WHERE normalized_email LIKE '$email_pattern';
 COMMIT;
 SQL
@@ -950,6 +962,7 @@ fi
 
 browser_user_id=""
 declare -A project_user_ids
+declare -A search_target_ids search_company_ids
 for project in "${browser_projects[@]}"; do
   project_email="$email_prefix-$project@example.test"
   docker compose run --rm --no-deps migrate pharma-bootstrap \
@@ -971,6 +984,15 @@ for project in "${browser_projects[@]}"; do
     browser_user_id="$project_user_id"
   fi
   project_user_ids[$project]=$project_user_id
+  search_target_ids[$project]=$(python3 -c 'import uuid; print(uuid.uuid4())')
+  search_company_ids[$project]=$(python3 -c 'import uuid; print(uuid.uuid4())')
+  project_fixture_key="$fixture_key-$project"
+  docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -v ON_ERROR_STOP=1 \
+    -v tenant_id="$tenant_id" -v target_id="${search_target_ids[$project]}" \
+    -v company_id="${search_company_ids[$project]}" -v fixture_key="$project_fixture_key" \
+    -v target_name="Browser acceptance target $project_fixture_key" \
+    -v company_name="Browser acceptance company $project_fixture_key" \
+    < scripts/browser_fixtures/research_entities.sql >/dev/null
 done
 [[ "$browser_user_id" =~ ^[0-9a-f-]{36}$ ]] || {
   echo "Browser acceptance policy owner was not created" >&2
@@ -993,12 +1015,14 @@ docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -v ON_ERROR_ST
   -v permission_email="$permission_email" -v permission_password_hash="$permission_password_hash" \
   >/dev/null <<'SQL'
 INSERT INTO users (
-  id, tenant_id, email, normalized_email, display_name, password_hash,
-  role, active, token_version, created_at, updated_at
+  id, home_tenant_id, email, normalized_email, display_name, password_hash,
+  active, token_version, created_at, updated_at
 ) VALUES (
   :'permission_user_id', :'tenant_id', :'permission_email', lower(:'permission_email'),
-  'Browser Permission Viewer', :'permission_password_hash', 'VIEWER', true, 1, now(), now()
+  'Browser Permission Viewer', :'permission_password_hash', true, 1, now(), now()
 );
+INSERT INTO organization_memberships (tenant_id, user_id, role, active, token_version, created_at, updated_at)
+VALUES (:'tenant_id', :'permission_user_id', 'VIEWER', true, 1, now(), now());
 SQL
 policy_snapshot=$(
   docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -At -v ON_ERROR_STOP=1 \
@@ -2186,6 +2210,11 @@ sync_updated_snapshots() {
   [[ "$update_snapshots" == true && -n "${E2E_PLAYWRIGHT_COMMAND:-}" ]] || return 0
   local source_dir="${E2E_PLAYWRIGHT_WORKDIR:-apps/web}/e2e/visual-baselines"
   local target_dir="$ROOT_DIR/apps/web/e2e/visual-baselines"
+  # An alternate launcher can still execute this exact checkout. In that case
+  # Playwright already wrote the owned baseline and copying it onto itself fails.
+  if [[ "$(realpath -- "$source_dir")" == "$(realpath -- "$target_dir")" ]]; then
+    return 0
+  fi
   local source_path="$source_dir"
   local target_path="$target_dir"
   if [[ -n "${MSYSTEM:-}" && -x "$(command -v cygpath || true)" ]]; then
@@ -2243,6 +2272,14 @@ CI=1 \
   E2E_PERMISSION_EMAIL="$permission_email" \
   E2E_PERMISSION_PASSWORD="$permission_password" \
   E2E_FIXTURE_KEY="$fixture_key" \
+  E2E_SEARCH_TARGET_ID_DESKTOP_1440="${search_target_ids[desktop-1440]}" \
+  E2E_SEARCH_TARGET_ID_DESKTOP_1920="${search_target_ids[desktop-1920]}" \
+  E2E_SEARCH_TARGET_ID_TABLET_1024="${search_target_ids[tablet-1024]}" \
+  E2E_SEARCH_TARGET_ID_MOBILE_390="${search_target_ids[mobile-390]}" \
+  E2E_SEARCH_COMPANY_ID_DESKTOP_1440="${search_company_ids[desktop-1440]}" \
+  E2E_SEARCH_COMPANY_ID_DESKTOP_1920="${search_company_ids[desktop-1920]}" \
+  E2E_SEARCH_COMPANY_ID_TABLET_1024="${search_company_ids[tablet-1024]}" \
+  E2E_SEARCH_COMPANY_ID_MOBILE_390="${search_company_ids[mobile-390]}" \
   E2E_PIPELINE_TARGET_ID="$pipeline_target_id" \
   E2E_PIPELINE_COMBINATION_TARGET_ID="$pipeline_combination_target_id" \
   E2E_PIPELINE_DRUG_B_ID="$pipeline_drug_b_id" \

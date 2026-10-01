@@ -1,80 +1,129 @@
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+import pytest
 
-CORE_RUNTIME_FILES = (
-    "src/pharma_intel/api.py",
-    "src/pharma_intel/bootstrap.py",
-    "src/pharma_intel/config.py",
-    "src/pharma_intel/dataset_repository.py",
-    "src/pharma_intel/ingest/activities.py",
-    "src/pharma_intel/ingest/cli.py",
-    "src/pharma_intel/ingest/data_factory.py",
-    "src/pharma_intel/ingest/temporal_worker.py",
-    "src/pharma_intel/ingest/workflows.py",
-)
-
-DEPLOYMENT_FILES = (
-    ".env.example",
-    "compose.yaml",
-    "compose.dev.yaml",
-    "deploy/kubernetes/base/config-map.yaml",
-)
+ROOT = Path(__file__).resolve().parents[1] / "src/pharma_intel"
 
 
-def test_ragflow_is_absent_from_core_runtime_and_deployment_contracts() -> None:
-    for relative_path in (*CORE_RUNTIME_FILES, *DEPLOYMENT_FILES):
-        content = (ROOT / relative_path).read_text(encoding="utf-8").casefold()
-        assert "ragflow" not in content, f"RAGFlow leaked into core runtime contract: {relative_path}"
-        assert "evidence_search_backend" not in content, f"Legacy evidence backend switch remains: {relative_path}"
+@pytest.mark.parametrize("package", ["models", "schemas", "http", "intelligence"])
+def test_domain_packages_have_explicit_acyclic_dependencies_and_thin_public_namespaces(package: str) -> None:
+    directory = ROOT / package
+    modules = {path.stem: ast.parse(path.read_text(encoding="utf-8")) for path in directory.glob("*.py")}
+    public = modules.pop("__init__")
+    assert not any(isinstance(node, ast.ClassDef | ast.FunctionDef) for node in public.body)
+    edges: dict[str, set[str]] = {name: set() for name in modules}
+    for name, tree in modules.items():
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ImportFrom):
+                continue
+            if node.module == f"pharma_intel.{package}" and package == "http":
+                # Importing a named submodule is explicit; __init__ exports no contracts.
+                for alias in node.names:
+                    assert alias.name in modules, f"Unknown HTTP dependency {name} -> {alias.name}"
+                    edges[name].add(alias.name)
+                continue
+            assert node.module != f"pharma_intel.{package}", f"{package}/{name} imports its aggregate namespace"
+            if package == "http":
+                assert node.module != "pharma_intel.api", "HTTP features must not import the application bootstrap"
+            if package == "schemas":
+                assert node.module != "pharma_intel.models", "Transport contracts must not load the ORM aggregate"
+            if node.level == 1 and node.module:
+                dependency = node.module.split(".")[0]
+                assert dependency != "__init__"
+                assert dependency in modules, f"Unknown domain dependency {name} -> {dependency}"
+                edges[name].add(dependency)
+            if node.module and node.module.startswith(f"pharma_intel.{package}."):
+                dependency = node.module.split(".")[2]
+                assert dependency in modules, f"Unknown domain dependency {name} -> {dependency}"
+                edges[name].add(dependency)
+    visited: set[str] = set()
+    active: set[str] = set()
+
+    def visit(name: str, path: tuple[str, ...]) -> None:
+        assert name not in active, f"Domain cycle: {' -> '.join((*path, name))}"
+        if name in visited:
+            return
+        active.add(name)
+        for dependency in edges[name]:
+            visit(dependency, (*path, name))
+        active.remove(name)
+        visited.add(name)
+
+    for name in modules:
+        visit(name, ())
 
 
-def test_ragflow_access_is_read_only_and_isolated_to_offline_migration_package() -> None:
-    migration = (ROOT / "src/pharma_intel/migration/ragflow_export.py").read_text(encoding="utf-8")
-    assert "class ReadOnlyRagflowMigrationClient" in migration
-    assert "upload_document" not in migration
-    assert "parse_document" not in migration
-    assert 'pharma-ragflow-migration-export = "pharma_intel.migration.ragflow_export:run"' in (
-        ROOT / "pyproject.toml"
-    ).read_text(encoding="utf-8")
+def test_persistence_has_exactly_one_registry_owner() -> None:
+    registries: list[str] = []
+    for path in (ROOT / "models").glob("*.py"):
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.ClassDef) and any(
+                isinstance(base, ast.Name) and base.id == "DeclarativeBase" for base in node.bases
+            ):
+                registries.append(f"{path.name}:{node.name}")
+    assert registries == ["base.py:Base"]
 
 
-def test_human_workbenches_have_independent_entrypoints_and_feature_graphs() -> None:
-    web = ROOT / "apps/web"
-    research = (web / "src/ResearchApp.tsx").read_text(encoding="utf-8")
-    internal = (web / "src/InternalApp.tsx").read_text(encoding="utf-8")
-    research_views = (
-        "ChemistryView",
-        "CollectionsView",
-        "EvidenceView",
-        "ExplorerView",
-        "KnowledgeView",
-        "MonitoringView",
-        "OverviewView",
-        "TargetView",
+def test_organization_permissions_have_one_persistence_authority() -> None:
+    from pharma_intel.models import OrganizationMembership, User
+
+    assert "role" not in User.__table__.c and "tenant_id" not in User.__table__.c
+    assert {"role", "active", "token_version", "tenant_id", "user_id"} <= set(OrganizationMembership.__table__.c.keys())
+    assert {column.name for column in OrganizationMembership.__table__.primary_key} == {"tenant_id", "user_id"}
+
+
+def test_application_bootstrap_does_not_own_queries_or_business_routes() -> None:
+    tree = ast.parse((ROOT / "api.py").read_text(encoding="utf-8"))
+    assert {node.name for node in tree.body if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef)} == {
+        "create_app",
+        "lifespan",
+        "run",
+    }
+    assert not any(
+        isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("sqlalchemy")
+        for node in ast.walk(tree)
     )
-    internal_views = ("CommercialView", "DataFactoryView", "EnterpriseView", "GovernanceView")
 
-    assert 'src="/src/research-main.tsx"' in (web / "research.html").read_text(encoding="utf-8")
-    assert 'src="/src/internal-main.tsx"' in (web / "internal.html").read_text(encoding="utf-8")
-    assert 'data-workbench="research"' in (web / "research.html").read_text(encoding="utf-8")
-    assert 'data-workbench="internal"' in (web / "internal.html").read_text(encoding="utf-8")
-    assert not (web / "src/App.tsx").exists()
-    assert not (web / "src/main.tsx").exists()
-    package = (web / "package.json").read_text(encoding="utf-8")
-    verifier = (web / "scripts/verify-workbench-build.mjs").read_text(encoding="utf-8")
-    assert "node scripts/verify-workbench-build.mjs" in package
-    assert "pharma.workbench-build-boundary.v1" in verifier
-    assert "web-vitals@6.0.1/node_modules/web-vitals/dist/web-vitals.js" in verifier
-    assert "approvedDeferredEntryModules" in verifier
-    assert "verifyDeferredAsset" in verifier
-    assert "research and internal workbenches share an application entry chunk" in verifier
 
-    for view_name in research_views:
-        assert f'import("./views/{view_name}")' in research
-        assert view_name not in internal
-    for view_name in internal_views:
-        assert f'import("./views/{view_name}")' in internal
-        assert view_name not in research
+def test_ingestion_commands_do_not_depend_on_transport_or_application_bootstrap() -> None:
+    for path in (ROOT / "ingest/commands").glob("*.py"):
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                assert not node.module.startswith(("fastapi", "pharma_intel.http", "pharma_intel.api")), path
+
+
+def test_release_evidence_modules_have_an_explicit_acyclic_authority_graph() -> None:
+    directory = ROOT.parents[1] / "scripts/release"
+    modules = {
+        ".".join(path.relative_to(directory).with_suffix("").parts): ast.parse(path.read_text(encoding="utf-8"))
+        for path in directory.rglob("*.py")
+    }
+    for name in ("__init__", "contracts.__init__"):
+        assert not any(isinstance(node, ast.FunctionDef | ast.ClassDef) for node in modules.pop(name).body)
+    edges: dict[str, set[str]] = {name: set() for name in modules}
+    for name, tree in modules.items():
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                assert node.module not in {"scripts.release", "scripts.release_evidence"}, name
+                if node.module.startswith("scripts.release."):
+                    dependency = node.module.removeprefix("scripts.release.")
+                    assert dependency in modules, (name, dependency)
+                    edges[name].add(dependency)
+    visited: set[str] = set()
+    active: set[str] = set()
+
+    def visit(name: str) -> None:
+        assert name not in active, f"Release evidence dependency cycle at {name}"
+        if name in visited:
+            return
+        active.add(name)
+        for dependency in edges[name]:
+            visit(dependency)
+        active.remove(name)
+        visited.add(name)
+
+    for name in modules:
+        visit(name)

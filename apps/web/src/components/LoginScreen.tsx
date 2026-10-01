@@ -8,10 +8,12 @@ import { PRODUCT_NAME } from "../lib/product";
 import type { User } from "../lib/types";
 import type { WorkbenchKey } from "../lib/workspaceRouting";
 import { BrandMark } from "./BrandMark";
+import { InvitationLoginForm } from "./InvitationLoginForm";
 import { RegistrationForm } from "./RegistrationForm";
 
 function loginErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.status === 401) return "邮箱或密码不正确，请检查后重试";
+  if (error instanceof ApiError && error.status === 403) return "没有可用的组织成员资格，请使用管理员邀请码加入组织";
   if (error instanceof ApiError && error.status === 429) return "尝试次数过多，请稍后重试";
   if (error instanceof ApiError && error.status >= 500) return "登录服务暂时不可用，请稍后重试";
   return error ? "登录失败，请稍后重试" : "";
@@ -28,7 +30,7 @@ export function LoginScreen({
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [entry, setEntry] = useState<"login" | "register">("login");
+  const [entry, setEntry] = useState<"login" | "register" | "join">("login");
   const [registeredNotice, setRegisteredNotice] = useState(false);
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const authentication = useMutation({
@@ -83,6 +85,18 @@ export function LoginScreen({
       >
         注册
       </button>
+      <button
+        type="button"
+        aria-current={entry === "join" ? "page" : undefined}
+        className={entry === "join" ? "active" : ""}
+        onClick={() => {
+          setEntry("join");
+          setPassword("");
+          authentication.reset();
+        }}
+      >
+        加入组织
+      </button>
     </nav>
   );
 
@@ -114,6 +128,8 @@ export function LoginScreen({
               setRegisteredNotice(true);
             }}
           />
+        ) : entry === "join" ? (
+          <InvitationLoginForm mode={mode} entryControls={entryControls} onLogin={onLogin} />
         ) : (
           <form className="login-form" onSubmit={submit}>
             {entryControls}

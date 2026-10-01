@@ -2,7 +2,7 @@
 
 <img src="apps/web/src/assets/brand/X-Pharma-logo-128.png" width="96" height="96" alt="X-Pharma logo" />
 
-[Apache-2.0](LICENSE) · [架构](docs/architecture.md) · [源码导航](docs/codebase-guide.md) · [设计系统](docs/design-system.md) · [贡献指南](CONTRIBUTING.md) · [安全](SECURITY.md)
+[Apache-2.0](LICENSE) · [架构](docs/architecture.md) · [可离线打开的项目总览 HTML](docs/project-overview.html) · [账号与组织](docs/accounts-and-organizations.md) · [源码导航](docs/codebase-guide.md) · [设计系统](docs/design-system.md) · [贡献指南](CONTRIBUTING.md) · [安全](SECURITY.md)
 
 X-Pharma is an open-source pharmaceutical intelligence platform for people and
 agents. It combines a research workbench, governed evidence, structured drug and
@@ -17,7 +17,7 @@ X-Pharma 是面向人员与 Agent 的医药情报平台：人员通过研究工�
 | 模块 | 能力 | 源码 |
 | --- | --- | --- |
 | 研究工作台 | 多领域查询、实体档案、结构检索、对比、收藏和受控导出 | `apps/web/src` |
-| 数据与证据 | 规范实体、版本、来源定位、审计、租户隔离 | `src/pharma_intel/models.py`、`repository.py` |
+| 数据与证据 | 规范实体、版本、来源定位、审计、组织隔离 | `src/pharma_intel/models/`、`intelligence/`、`repository.py` |
 | 数据工厂 | 文件夹、HTTP、S3、SFTP、SMB 与公共来源连接器，快照、扫描、解析和 Temporal 工作流 | `src/pharma_intel/ingest` |
 | AI 治理 | 批准的 HTTPS 模型接口、严格结构化输出、引用、预算、审核与发布 | `src/pharma_intel/governance` |
 | 检索与知识 | OpenSearch 投影、事务 outbox、版本知识页、Markdown 导出 | `search`、`knowledge` |
@@ -98,18 +98,19 @@ docker compose -f compose.yaml -f compose.dev.yaml run --rm api pharma-bootstrap
 
 ### 注册、登录和退出
 
-两套工作台的登录页都有“登录 / 注册”入口，登录后的侧栏都有“退出账号”。退出成功会撤销服务端会话、清除当前工作台缓存并返回本工作台登录页；失败时保留会话并提示重试。
+两套工作台的登录页都有“登录 / 注册 / 加入组织”入口，登录后的侧栏都有“组织与账号”和“退出账号”。一个账号可以加入多个组织，每个会话只选择一个组织；角色、事实、私人研究与偏好按组织隔离。退出成功会撤销服务端会话、清除当前工作台缓存并返回本工作台登录页；失败时保留会话并提示重试。
 
 - 外部研究工作台：本地密码模式下，`HUMAN_SELF_REGISTRATION_ENABLED=true` 开放独立账号注册。每个新账号创建自己的空租户，只有 `viewer` 权限，不自动获得其他企业数据或内部管理权限。设置默认关闭；开发配置示例明确开启。
 - 内部管理工作台：管理员在“企业管理 → 注册邀请”生成绑定邮箱的一次性邀请码。有效期默认 24 小时，可设置 1–168 小时，并可在使用前撤销。受邀新账号以内部分析员身份加入发码管理员所在企业，不自动获得管理员权限；需要额外权限时由管理员在现有用户管理中明确授权。
-- 邮箱全局唯一，已有账号直接登录；邀请码不会跨企业迁移、升级或自动关联已有账号。注册密码至少 12 个字符，注册后回到登录页自行登录。
+- 邮箱全局唯一，已有账号不重复注册。管理员可以邀请已有账号，由本人验证身份并明确确认后加入新组织；不会移动原组织、分享原数据或自动授予管理员。注册密码至少 12 个字符，注册后回到登录页自行登录。
+- 切换组织撤销当前设备旧会话并重新确认服务端身份；组织级停用或降权不影响其他组织。改密会使其他组织的旧会话失效。既有账号、凭据、业务归属和偏好保留；迁移和安全回退约束见[账号与组织](docs/accounts-and-organizations.md)。
 - 企业 OIDC 模式继续使用组织身份系统，不开放本地密码注册或邀请码发放。这里的本地邮箱只作为登录标识，未发送验证邮件，不应当作已验证的组织身份。
 
 匿名注册请求体最多 16 KiB，在解析 JSON 前同时检查声明长度和实际流量；每个直接连接来源每 10 分钟最多 10 次有效格式的注册尝试。失败尝试也计入数据库预算，不能通过多进程绕过；部署到代理后仍需配置入口级限流和身份策略，不把本地开发注册当作已验收的生产身份方案。
 
 升级已有环境前先备份，再以迁移身份执行 `uv run alembic upgrade head`，随后执行 `uv run pharma-db-provision` 和正常 RLS 验证，确认完成后更新应用。迁移 `b8d22d9a1ef3` 新增注册预算和强制租户隔离的邀请表，不改已有用户、密码或业务数据。已有邀请记录时禁止直接降级删除；生产应用回滚不自动降级数据库。
 
-安装本机 Google Chrome 后，`make account-browser-acceptance` 会启动仅绑定回环地址的临时网关与独立 SQLite 数据库，以随机测试账号运行四视口的真实注册、登录、刷新、权限拒绝和退出流程，然后关闭进程并清理该临时环境。它不读取业务数据库，不依赖私有开发账号，不记录邀请码截图或浏览器 trace。自定义 Chrome 可执行文件可通过 `E2E_BROWSER_EXECUTABLE` 指定；PostgreSQL 的迁移、强制 RLS 和并发领取另由数据库门禁验证。
+安装本机 Google Chrome 后，`make account-browser-acceptance` 为每个视口启动仅绑定回环地址的临时网关与独立 SQLite 数据库，以随机测试账号验证注册、登录、刷新、权限拒绝、邀请确认、组织切换、多标签会话一致性、私人研究隔离和退出，然后关闭进程并清理自己的临时环境。它不读取业务数据库，不依赖私有开发账号，不记录邀请码截图或浏览器 trace，也不关闭注册滥用预算。自定义 Chrome 可执行文件可通过 `E2E_BROWSER_EXECUTABLE` 指定；PostgreSQL 的迁移、强制 RLS 和并发领取另由数据库门禁验证。
 
 ## 数据接入与 AI
 

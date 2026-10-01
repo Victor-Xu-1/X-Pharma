@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { type ReactNode, useState } from "react";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 
 import { useModalFocus } from "../lib/useModalFocus";
 
@@ -41,6 +41,37 @@ function NestedDialogHarness() {
     </>
   );
 }
+
+it("preserves an intentional focus move before the modal autofocus frame runs", () => {
+  const frames = new Map<number, FrameRequestCallback>();
+  let nextFrame = 0;
+  const requestFrame = vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+    const id = ++nextFrame;
+    frames.set(id, callback);
+    return id;
+  });
+  const cancelFrame = vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+    frames.delete(id);
+  });
+  try {
+    render(
+      <FocusScope label="导航" onClose={vi.fn()}>
+        <button type="button">关闭导航</button>
+        <button type="button">目标工作域</button>
+      </FocusScope>,
+    );
+    const destination = screen.getByRole("button", { name: "目标工作域" });
+    destination.focus();
+    act(() => {
+      for (const callback of frames.values()) callback(0);
+      frames.clear();
+    });
+    expect(destination).toHaveFocus();
+  } finally {
+    requestFrame.mockRestore();
+    cancelFrame.mockRestore();
+  }
+});
 
 it("keeps Escape and focus restoration scoped to the topmost nested modal", async () => {
   render(<NestedDialogHarness />);

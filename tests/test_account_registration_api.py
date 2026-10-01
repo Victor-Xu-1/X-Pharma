@@ -8,7 +8,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from pharma_intel.accounts.request_limits import REGISTRATION_BODY_LIMIT
+from pharma_intel.accounts.identity import create_account
+from pharma_intel.accounts.request_limits import ACCOUNT_BODY_LIMIT
 from pharma_intel.api import app
 from pharma_intel.config import get_settings
 from pharma_intel.db import get_engine, get_session_factory
@@ -49,7 +50,7 @@ def _bootstrap_admin() -> None:
         session.add(tenant)
         session.flush()
         session.add(
-            User(
+            create_account(
                 tenant_id=tenant.id,
                 email="admin@example.test",
                 normalized_email="admin@example.test",
@@ -161,7 +162,7 @@ def test_registration_blocks_cross_origin_and_repeated_anonymous_attempts(regist
 def test_registration_bounds_anonymous_bodies_before_parsing_or_persistence(
     registration_client: TestClient, chunked: bool
 ) -> None:
-    content = json.dumps(_registration() | {"display_name": "x" * REGISTRATION_BODY_LIMIT}).encode()
+    content = json.dumps(_registration() | {"display_name": "x" * ACCOUNT_BODY_LIMIT}).encode()
     response = registration_client.post(
         "/api/v1/auth/register",
         content=iter([content[:100], content[100:]]) if chunked else content,

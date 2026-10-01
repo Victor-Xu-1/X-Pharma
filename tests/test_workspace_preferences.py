@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.api import app
 from pharma_intel.db import get_session
 from pharma_intel.models import Tenant, User, UserRole
@@ -18,7 +19,7 @@ from pharma_intel.workspace_preferences import (
 
 
 def _user(session: Session, tenant: Tenant, suffix: str) -> User:
-    item = User(
+    item = create_account(
         tenant_id=tenant.id,
         email=f"preferences-{suffix}@example.test",
         normalized_email=f"preferences-{suffix}@example.test",

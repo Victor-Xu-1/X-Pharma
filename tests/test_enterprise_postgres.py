@@ -11,6 +11,7 @@ from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.requests import Request
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.db import set_tenant_context
 from pharma_intel.enterprise.admin import (
     AuditCursorCodec,
@@ -67,7 +68,7 @@ def test_enterprise_concurrency_and_signed_tenant_rls() -> None:
         tenant = Tenant(id=tenant_id, slug=f"enterprise-{tenant_id}", name="Enterprise PostgreSQL")
         session.add(tenant)
         session.flush()
-        actor = User(
+        actor = create_account(
             tenant_id=tenant_id,
             email=f"admin-{tenant_id}@example.test",
             normalized_email=f"admin-{tenant_id}@example.test",
@@ -75,7 +76,7 @@ def test_enterprise_concurrency_and_signed_tenant_rls() -> None:
             password_hash="not-used",  # noqa: S106
             role=UserRole.ADMIN,
         )
-        target = User(
+        target = create_account(
             tenant_id=tenant_id,
             email=f"user-{tenant_id}@example.test",
             normalized_email=f"user-{tenant_id}@example.test",
@@ -117,7 +118,7 @@ def test_enterprise_concurrency_and_signed_tenant_rls() -> None:
         )
         session.add(target_session)
         session.flush()
-        target_token, _, _ = issue_human_session(target, target_session.id)
+        target_token, _, _ = issue_human_session(target.memberships[0], target_session.id)
         regulatory = RegulatoryEvent(
             tenant_id=tenant_id,
             subject_entity_id=drug.id,
@@ -177,8 +178,9 @@ def test_enterprise_concurrency_and_signed_tenant_rls() -> None:
         set_tenant_context(session, tenant_id)
         stored_target = session.get(User, target_id)
         assert stored_target is not None
-        assert stored_target.token_version == 2
-        assert stored_target.role in {UserRole.ANALYST, UserRole.ADMIN}
+        assert stored_target.token_version == 1
+        assert stored_target.memberships[0].token_version == 2
+        assert stored_target.memberships[0].role in {UserRole.ANALYST, UserRole.ADMIN}
         stored_session = session.get(UserSession, target_session_id)
         assert stored_session is not None and stored_session.revoked_at is not None
         dataset = _service(session, tenant_id, actor_id, "dataset-status").update_dataset_status(

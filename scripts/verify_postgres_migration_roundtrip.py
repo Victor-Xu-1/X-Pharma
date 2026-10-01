@@ -17,6 +17,7 @@ from psycopg import sql
 from sqlalchemy import URL, create_engine, text
 
 from pharma_intel.config import get_settings
+from pharma_intel.models.enums import DataSourceType
 
 DATABASE_PREFIX = "pharma_migration_contract_"
 PRE_HTTP_MANIFEST_REVISION = "7f3b9d2a6c81"
@@ -199,6 +200,14 @@ def enum_labels(url: str) -> list[str]:
             )
     finally:
         engine.dispose()
+
+
+def expected_source_labels() -> list[str]:
+    # PostgreSQL retains the original enum order and migrations append connectors.
+    # The Python declaration groups public connectors differently; comparing that
+    # declaration order would reject a correct schema without testing its contract.
+    original = ["FOLDER", "HTTP_MANIFEST", "S3_SNAPSHOT", "SFTP_SNAPSHOT", "SMB_SNAPSHOT"]
+    return original + [source_type.name for source_type in DataSourceType if source_type.name not in original]
 
 
 def current_revision(url: str) -> str:
@@ -496,7 +505,7 @@ def run() -> dict[str, Any]:
         upgraded_trial_columns = table_columns(url, "clinical_trial_profiles")
         if upgraded_revision != head_revision:
             raise RuntimeError(f"Unexpected upgraded revision: {upgraded_revision}")
-        if upgraded_labels != ["FOLDER", "HTTP_MANIFEST", "S3_SNAPSHOT", "SFTP_SNAPSHOT", "SMB_SNAPSHOT"]:
+        if upgraded_labels != expected_source_labels():
             raise RuntimeError(f"Unexpected upgraded data-source enum: {upgraded_labels}")
         if not MALWARE_SCAN_COLUMNS.issubset(upgraded_columns):
             raise RuntimeError("Malware scan columns are missing after upgrade")
@@ -585,13 +594,7 @@ def run() -> dict[str, Any]:
         final_columns = table_columns(url, "source_versions")
         final_source_columns = table_columns(url, "data_sources")
         final_trial_columns = table_columns(url, "clinical_trial_profiles")
-        if final_revision != head_revision or final_labels != [
-            "FOLDER",
-            "HTTP_MANIFEST",
-            "S3_SNAPSHOT",
-            "SFTP_SNAPSHOT",
-            "SMB_SNAPSHOT",
-        ]:
+        if final_revision != head_revision or final_labels != expected_source_labels():
             raise RuntimeError("Final migration state does not match the source connector schema contract")
         if not MALWARE_SCAN_COLUMNS.issubset(final_columns):
             raise RuntimeError("Malware scan columns are missing after final upgrade")

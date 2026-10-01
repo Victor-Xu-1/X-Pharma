@@ -59,7 +59,7 @@ it("exports only licensed fields with the canonical current domain query", async
   await waitFor(() => expect(exportDomainQuery).toHaveBeenCalledOnce());
   expect(exportDomainQuery).toHaveBeenCalledWith({
     dataset: "entities",
-    query: { q: "EGFR", entity_type: "target", sort_by: "name" },
+    query: { q: "EGFR", entity_type: "target", sort_by: "name", review_status: "verified" },
     export_format: "json",
     fields: ["id", "name"],
     max_records: 5,

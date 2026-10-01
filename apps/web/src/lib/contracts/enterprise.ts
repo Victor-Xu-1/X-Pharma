@@ -45,22 +45,22 @@ export type EnterpriseLLMProvider = EnterpriseLLMProviderRead;
 
 export const enterpriseKeys = {
   root: ["enterprise"] as const,
-  workspace: ["enterprise", "workspace"] as const,
+  overview: ["enterprise", "overview"] as const,
+  users: ["enterprise", "users"] as const,
+  groups: ["enterprise", "groups"] as const,
+  access: ["enterprise", "access"] as const,
+  platform: ["enterprise", "platform"] as const,
+  models: ["enterprise", "models"] as const,
   audit: (filters: EnterpriseAuditFilters) => ["enterprise", "audit", filters] as const,
 };
 
-export type EnterpriseWorkspace = {
-  overview: EnterpriseOverview;
-  users: EnterpriseUser[];
-  groups: EnterpriseGroup[];
+export type EnterpriseAccessWorkspace = {
   datasets: EnterpriseDatasetRead[];
   sessions: EnterpriseSessionRead[];
   apiKeyCatalog: EnterpriseApiKeyCatalogRead;
   clients: CommercialClientRead[];
   retentionPolicies: DataRetentionPolicyRead[];
   legalHolds: LegalHoldRead[];
-  platform: PlatformOperationsRead;
-  llmProviders: EnterpriseLLMProviderRead[];
 };
 
 export type EnterpriseAuditFilters = {
@@ -70,23 +70,28 @@ export type EnterpriseAuditFilters = {
   actorType?: "agent" | "api_key" | "user";
 };
 
-export async function loadEnterpriseWorkspace(signal?: AbortSignal): Promise<EnterpriseWorkspace> {
-  const [
-    overview,
-    users,
-    groups,
-    datasets,
-    sessions,
-    apiKeyCatalog,
-    clients,
-    retentionPolicies,
-    legalHolds,
-    platform,
-    llmProviders,
-  ] = await Promise.all([
-    contractRequest(EnterpriseService.enterpriseOverviewApiV1EnterpriseOverviewGet(), signal),
-    contractRequest(EnterpriseService.listEnterpriseUsersApiV1EnterpriseUsersGet(), signal),
-    contractRequest(EnterpriseService.listEnterpriseGroupsApiV1EnterpriseGroupsGet(), signal),
+export function loadEnterpriseOverview(signal?: AbortSignal): Promise<EnterpriseOverview> {
+  return contractRequest(EnterpriseService.enterpriseOverviewApiV1EnterpriseOverviewGet(), signal);
+}
+
+export function loadEnterpriseUsers(signal?: AbortSignal): Promise<EnterpriseUser[]> {
+  return contractRequest(EnterpriseService.listEnterpriseUsersApiV1EnterpriseUsersGet(), signal);
+}
+
+export function loadEnterpriseGroups(signal?: AbortSignal): Promise<EnterpriseGroup[]> {
+  return contractRequest(EnterpriseService.listEnterpriseGroupsApiV1EnterpriseGroupsGet(), signal);
+}
+
+export function loadEnterprisePlatform(signal?: AbortSignal): Promise<PlatformOperationsRead> {
+  return contractRequest(EnterpriseService.enterprisePlatformOperationsApiV1EnterprisePlatformGet(), signal);
+}
+
+export function loadEnterpriseModels(signal?: AbortSignal): Promise<EnterpriseLLMProvider[]> {
+  return contractRequest(EnterpriseService.listEnterpriseLlmProvidersApiV1EnterpriseLlmProvidersGet(), signal);
+}
+
+export async function loadEnterpriseAccess(signal?: AbortSignal): Promise<EnterpriseAccessWorkspace> {
+  const [datasets, sessions, apiKeyCatalog, clients, retentionPolicies, legalHolds] = await Promise.all([
     contractRequest(EnterpriseService.listEnterpriseDatasetsApiV1EnterpriseDatasetsGet(), signal),
     contractRequest(EnterpriseService.listEnterpriseSessionsApiV1EnterpriseSessionsGet({ limit: 200 }), signal),
     contractRequest(EnterpriseService.listEnterpriseApiKeysApiV1EnterpriseApiKeysGet({ limit: 200 }), signal),
@@ -99,21 +104,14 @@ export async function loadEnterpriseWorkspace(signal?: AbortSignal): Promise<Ent
       CommercialService.listLegalHoldsApiV1CommercialDataLifecycleLegalHoldsGet({ activeOnly: false }),
       signal,
     ),
-    contractRequest(EnterpriseService.enterprisePlatformOperationsApiV1EnterprisePlatformGet(), signal),
-    contractRequest(EnterpriseService.listEnterpriseLlmProvidersApiV1EnterpriseLlmProvidersGet(), signal),
   ]);
   return {
-    overview,
-    users,
-    groups,
     datasets,
     sessions,
     apiKeyCatalog,
     clients,
     retentionPolicies,
     legalHolds,
-    platform,
-    llmProviders,
   };
 }
 

@@ -416,7 +416,13 @@ cleanup_local_fixture() {
   exit "$status"
 }
 
-if [[ "$mcp_url" == "http://127.0.0.1:18390/mcp" ]]; then
+if [[ "$mcp_url" == "http://127.0.0.1:18390/mcp" || $seed_local_commercial_fixture -eq 1 ]]; then
+  # Explicit local seeding must work on an isolated project's published port,
+  # never silently skip the paid-query fixture or mutate a remote deployment.
+  if [[ ! "$mcp_url" =~ ^http://(127\.0\.0\.1|localhost|\[::1\]):[0-9]+/mcp$ ]]; then
+    echo "Local commercial fixtures require a loopback MCP endpoint" >&2
+    exit 2
+  fi
   for command in curl docker; do
     command -v "$command" >/dev/null 2>&1 || {
       echo "required local runtime command is unavailable: $command" >&2

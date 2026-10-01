@@ -15,6 +15,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.api import app
 from pharma_intel.config import Settings
 from pharma_intel.db import get_session
@@ -25,7 +26,7 @@ from pharma_intel.human_oidc import (
     create_oidc_authorization,
     read_oidc_transaction,
 )
-from pharma_intel.models import Tenant, User, UserRole
+from pharma_intel.models import Tenant, UserRole
 from pharma_intel.security import SESSION_COOKIE, hash_password
 
 
@@ -129,7 +130,7 @@ def test_oidc_authorization_code_callback_creates_application_session(
 ) -> None:
     settings = _settings()
     private_key, jwk = _signing_material()
-    user = User(
+    user = create_account(
         tenant_id=tenant.id,
         email="oidc.user@example.test",
         normalized_email="oidc.user@example.test",
@@ -145,7 +146,7 @@ def test_oidc_authorization_code_callback_creates_application_session(
     def session_override() -> Generator[Session]:
         yield session
 
-    monkeypatch.setattr("pharma_intel.api.get_settings", lambda: settings)
+    monkeypatch.setattr("pharma_intel.http.runtime.get_settings", lambda: settings)
     monkeypatch.setattr("pharma_intel.security.get_settings", lambda: settings)
     monkeypatch.setattr("pharma_intel.human_oidc._VERIFIER_CACHE", {})
     app.dependency_overrides[get_session] = session_override

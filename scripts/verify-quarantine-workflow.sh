@@ -195,6 +195,10 @@ SQL
 
   docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -v ON_ERROR_STOP=1 \
     -v user_id="$user_id" >/dev/null 2>&1 <<'SQL' || true
+DELETE FROM account_invitations WHERE created_by_user_id IN (SELECT id FROM users WHERE id = :'user_id')
+  OR claimed_user_id IN (SELECT id FROM users WHERE id = :'user_id');
+DELETE FROM user_sessions WHERE user_id = :'user_id';
+DELETE FROM organization_memberships WHERE user_id = :'user_id';
 DELETE FROM users WHERE id = :'user_id';
 SQL
   rm -f -- "$fixture_file"
@@ -207,12 +211,14 @@ docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -v ON_ERROR_ST
   -v user_id="$user_id" -v tenant_id="$tenant_id" -v email="$email" -v password_hash="$password_hash" \
   >/dev/null <<'SQL'
 INSERT INTO users (
-  id, tenant_id, email, normalized_email, display_name, password_hash,
-  role, active, token_version, created_at, updated_at
+  id, home_tenant_id, email, normalized_email, display_name, password_hash,
+  active, token_version, created_at, updated_at
 ) VALUES (
   :'user_id', :'tenant_id', :'email', :'email', 'Quarantine acceptance',
-  :'password_hash', 'ADMIN', true, 1, now(), now()
+  :'password_hash', true, 1, now(), now()
 );
+INSERT INTO organization_memberships (tenant_id, user_id, role, active, token_version, created_at, updated_at)
+VALUES (:'tenant_id', :'user_id', 'ADMIN', true, 1, now(), now());
 SQL
 
 login_status=$(curl -sS -o "$output_dir/login.json" -w '%{http_code}' \

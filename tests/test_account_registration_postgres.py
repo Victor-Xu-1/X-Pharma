@@ -1,49 +1,24 @@
 from __future__ import annotations
 
-import os
 import threading
-from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import create_engine, func, select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from pharma_intel.accounts.contracts import InvitationCreate, RegistrationRequest
-from pharma_intel.accounts.registration_budget import RegistrationRateExceeded, consume_registration_budget
+from pharma_intel.accounts.identity import create_account
+from pharma_intel.accounts.request_budget import AccountRateExceeded, consume_account_budget
 from pharma_intel.accounts.service import AccountAccessDenied, AccountConflict, AccountRegistrationService
-from pharma_intel.config import get_settings
 from pharma_intel.db import set_tenant_context
 from pharma_intel.models import AccountInvitation, AccountRegistrationBudget, Tenant, User, UserRole
 from pharma_intel.security import Principal
-from tests.support.postgres_safety import require_disposable_postgres_url
 
 pytestmark = pytest.mark.integration
-
-
-@pytest.fixture
-def account_engine(monkeypatch: pytest.MonkeyPatch) -> Generator[Engine]:
-    value = os.getenv("TEST_ACCOUNT_REGISTRATION_DATABASE_URL")
-    if not value:
-        pytest.skip("TEST_ACCOUNT_REGISTRATION_DATABASE_URL is not configured")
-    url = require_disposable_postgres_url(value, "TEST_ACCOUNT_REGISTRATION_DATABASE_URL")
-    monkeypatch.setenv("HUMAN_AUTH_MODE", "local")
-    monkeypatch.setenv("HUMAN_SELF_REGISTRATION_ENABLED", "true")
-    get_settings.cache_clear()
-    engine = create_engine(url, pool_size=12, max_overflow=12)
-    with engine.connect() as connection:
-        role = connection.execute(
-            text("SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user")
-        ).one()
-        assert not role.rolsuper and not role.rolbypassrls
-    try:
-        yield engine
-    finally:
-        engine.dispose()
-        get_settings.cache_clear()
 
 
 def _invitation(engine: Engine) -> tuple[str, str, str]:
@@ -55,7 +30,7 @@ def _invitation(engine: Engine) -> tuple[str, str, str]:
         session.add(tenant)
         session.flush()
         admin_email = f"admin-{uuid4()}@example.test"
-        admin = User(
+        admin = create_account(
             tenant_id=tenant_id,
             email=admin_email,
             normalized_email=admin_email,
@@ -136,9 +111,9 @@ def test_postgres_registration_budget_is_atomic_across_connections(account_engin
         with Session(account_engine) as session:
             start.wait(timeout=10)
             try:
-                consume_registration_budget(session, peer, now=now)
+                consume_account_budget(session, peer, now=now)
                 return True
-            except RegistrationRateExceeded:
+            except AccountRateExceeded:
                 return False
 
     with ThreadPoolExecutor(max_workers=12) as pool:
@@ -171,4 +146,5 @@ def test_postgres_self_registration_persists_a_separate_viewer_space(account_eng
     with Session(account_engine) as session:
         persisted = session.get(User, identity)
         assert persisted is not None and persisted.normalized_email == payload.email
-        assert persisted.role == UserRole.VIEWER
+        set_tenant_context(session, persisted.home_tenant_id)
+        assert persisted.memberships[0].role == UserRole.VIEWER

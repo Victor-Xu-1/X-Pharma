@@ -1,4 +1,5 @@
 import { ApiError } from "../../api";
+import { notifySessionContext, organizationHeaders, trackSessionWrite } from "../../organizationSession";
 import type { ApiRequestOptions } from "./ApiRequestOptions";
 import { CancelablePromise } from "./CancelablePromise";
 import type { OpenAPIConfig } from "./OpenAPI";
@@ -95,8 +96,10 @@ function errorMessage(body: unknown, status: number): string {
 export const request = <T>(config: OpenAPIConfig, options: ApiRequestOptions): CancelablePromise<T> =>
   new CancelablePromise<T>(async (resolve, reject, onCancel) => {
     const controller = new AbortController();
+    const release = trackSessionWrite(options.method);
     onCancel(() => controller.abort());
     try {
+      const expectedOrganization = organizationHeaders(options.url, options.method);
       const [configuredHeaders, token, username, password] = await Promise.all([
         resolveValue(options, config.HEADERS),
         resolveValue(options, config.TOKEN),
@@ -104,6 +107,7 @@ export const request = <T>(config: OpenAPIConfig, options: ApiRequestOptions): C
         resolveValue(options, config.PASSWORD),
       ]);
       const headers = new Headers({ Accept: "application/json", ...configuredHeaders, ...options.headers });
+      for (const [name, value] of Object.entries(expectedOrganization)) headers.set(name, value);
       if (token) headers.set("Authorization", `Bearer ${token}`);
       if (username && password) headers.set("Authorization", `Basic ${btoa(`${username}:${password}`)}`);
       if (isDefined(options.body) && options.mediaType) headers.set("Content-Type", options.mediaType);
@@ -122,9 +126,7 @@ export const request = <T>(config: OpenAPIConfig, options: ApiRequestOptions): C
         signal: controller.signal,
       });
       if (onCancel.isCancelled) return;
-      if (response.status === 401 && typeof window !== "undefined") {
-        window.dispatchEvent(new Event("pharma:unauthorized"));
-      }
+      notifySessionContext(response);
       const body = options.responseHeader
         ? (response.headers.get(options.responseHeader) ?? undefined)
         : await responseBody(response);
@@ -134,5 +136,7 @@ export const request = <T>(config: OpenAPIConfig, options: ApiRequestOptions): C
       resolve(body as T);
     } catch (error) {
       reject(error);
+    } finally {
+      release();
     }
   });

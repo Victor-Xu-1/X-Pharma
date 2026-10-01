@@ -7,11 +7,13 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.access import organization_administrator
 from pharma_intel.accounts.contracts import InvitationCreate, InvitationIssued, InvitationRead, RegistrationRequest
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.accounts.invitation_codes import issue_invitation_code, verify_invitation_code
 from pharma_intel.config import get_settings
 from pharma_intel.db import set_tenant_context
-from pharma_intel.models import AccountInvitation, AuditEvent, Tenant, User, UserRole, new_uuid
+from pharma_intel.models import AccountInvitation, AuditEvent, OrganizationMembership, Tenant, User, UserRole, new_uuid
 from pharma_intel.security import Principal, hash_password, normalize_email
 
 
@@ -36,7 +38,7 @@ class AccountRegistrationService:
         self.session = session
         self.request_id = request_id
 
-    def register(self, payload: RegistrationRequest) -> User:
+    def register(self, payload: RegistrationRequest) -> OrganizationMembership:
         try:
             return self._register(payload)
         except IntegrityError as exc:
@@ -46,7 +48,7 @@ class AccountRegistrationService:
             self.session.rollback()
             raise
 
-    def _register(self, payload: RegistrationRequest) -> User:
+    def _register(self, payload: RegistrationRequest) -> OrganizationMembership:
         settings = get_settings()
         if settings.human_auth_mode != "local":
             raise AccountAccessDenied("当前使用企业身份登录，请在组织身份系统申请账号")
@@ -55,42 +57,12 @@ class AccountRegistrationService:
         normalized = normalize_email(payload.email)
         if self.session.scalar(select(User.id).where(User.normalized_email == normalized)) is not None:
             raise AccountConflict("该邮箱无法用于新账号注册；已有账号请直接登录")
-        now = datetime.now(UTC)
         invitation: AccountInvitation | None = None
         if payload.workbench == "internal":
             if payload.invitation_code is None:
                 raise AccountAccessDenied("内部管理账号必须使用邀请码")
-            try:
-                verified = verify_invitation_code(payload.invitation_code.get_secret_value())
-            except ValueError as exc:
-                raise AccountAccessDenied("邀请码无效或已失效") from exc
-            # A MAC-verified tenant is required before touching an RLS-protected invitation.
-            set_tenant_context(self.session, verified.tenant_id)
-            invitation = self.session.scalar(
-                select(AccountInvitation)
-                .where(
-                    AccountInvitation.id == verified.invitation_id,
-                    AccountInvitation.tenant_id == verified.tenant_id,
-                    AccountInvitation.token_digest == verified.digest,
-                )
-                .with_for_update()
-            )
-            tenant = self.session.get(Tenant, verified.tenant_id)
-            sponsor = self.session.get(User, invitation.created_by_user_id) if invitation is not None else None
-            if (
-                invitation is None
-                or tenant is None
-                or not tenant.active
-                or invitation.normalized_email != normalized
-                or invitation.claimed_at is not None
-                or invitation.revoked_at is not None
-                or _utc(invitation.expires_at) <= now
-                or sponsor is None
-                or not sponsor.active
-                or sponsor.role != UserRole.ADMIN
-            ):
-                raise AccountAccessDenied("邀请码无效或已失效")
-            tenant_id = verified.tenant_id
+            invitation = self._valid_invitation(payload.invitation_code.get_secret_value(), normalized)
+            tenant_id = invitation.tenant_id
             role = UserRole.ANALYST
         else:
             tenant_id = new_uuid()
@@ -100,7 +72,7 @@ class AccountRegistrationService:
             self.session.flush()
             set_tenant_context(self.session, tenant_id)
             role = UserRole.VIEWER
-        user = User(
+        user = create_account(
             id=new_uuid(),
             tenant_id=tenant_id,
             email=payload.email,
@@ -137,15 +109,104 @@ class AccountRegistrationService:
             {"workbench": payload.workbench, "role": role.value},
         )
         self.session.commit()
-        return user
+        return user.memberships[0]
+
+    def accept_invitation(self, account: User, code: str) -> OrganizationMembership:
+        """Explicit acceptance joins an existing identity without moving its data."""
+        try:
+            if not account.active:
+                raise AccountAccessDenied("账号不可用")
+            invitation = self._valid_invitation(code, account.normalized_email)
+            if self.session.get(OrganizationMembership, (invitation.tenant_id, account.id)) is not None:
+                raise AccountConflict("你已是该组织成员；停用资格请联系组织管理员恢复")
+            member = OrganizationMembership(
+                tenant_id=invitation.tenant_id,
+                account=account,
+                role=UserRole.ANALYST,
+            )
+            self.session.add(member)
+            self.session.flush()
+            claimed_at = datetime.now(UTC)
+            claimed = self.session.scalar(
+                update(AccountInvitation)
+                .where(
+                    AccountInvitation.id == invitation.id,
+                    AccountInvitation.tenant_id == invitation.tenant_id,
+                    AccountInvitation.claimed_at.is_(None),
+                    AccountInvitation.revoked_at.is_(None),
+                    AccountInvitation.expires_at > claimed_at,
+                )
+                .values(claimed_at=claimed_at, claimed_user_id=account.id)
+                .returning(AccountInvitation.id)
+                .execution_options(synchronize_session=False)
+            )
+            if claimed is None:
+                raise AccountAccessDenied("邀请码无效或已失效")
+            self._audit(
+                member.tenant_id,
+                account.id,
+                "account.organization.joined",
+                "organization_membership",
+                account.id,
+                {"role": member.role.value},
+            )
+            self.session.commit()
+            return member
+        except IntegrityError as exc:
+            self.session.rollback()
+            raise AccountConflict("组织成员资格或邀请码已变更，请刷新后重试") from exc
+        except Exception:
+            self.session.rollback()
+            raise
+
+    def prepare_oidc_invitation(self, code: str) -> None:
+        self._valid_invitation(code, None)
+
+    def _valid_invitation(self, code: str, normalized_email: str | None) -> AccountInvitation:
+        try:
+            verified = verify_invitation_code(code)
+        except ValueError as exc:
+            raise AccountAccessDenied("邀请码无效或已失效") from exc
+        set_tenant_context(self.session, verified.tenant_id)
+        tenant = self.session.scalar(select(Tenant).where(Tenant.id == verified.tenant_id).with_for_update())
+        invitation = self.session.scalar(
+            select(AccountInvitation)
+            .where(
+                AccountInvitation.id == verified.invitation_id,
+                AccountInvitation.tenant_id == verified.tenant_id,
+                AccountInvitation.token_digest == verified.digest,
+            )
+            .with_for_update()
+        )
+        sponsor = (
+            organization_administrator(self.session, verified.tenant_id, invitation.created_by_user_id)
+            if invitation is not None
+            else None
+        )
+        if (
+            tenant is None
+            or not tenant.active
+            or invitation is None
+            or (normalized_email is not None and invitation.normalized_email != normalized_email)
+            or invitation.claimed_at is not None
+            or invitation.revoked_at is not None
+            or _utc(invitation.expires_at) <= datetime.now(UTC)
+            or sponsor is None
+            or not sponsor.active
+            or not sponsor.account.active
+            or sponsor.role != UserRole.ADMIN
+        ):
+            raise AccountAccessDenied("邀请码无效或已失效")
+        return invitation
 
     def issue_invitation(self, principal: Principal, payload: InvitationCreate) -> InvitationIssued:
         actor = self._administrator(principal)
-        if get_settings().human_auth_mode != "local":
-            raise AccountAccessDenied("企业身份模式的账号由组织身份系统管理")
         normalized = normalize_email(payload.email)
-        if self.session.scalar(select(User.id).where(User.normalized_email == normalized)) is not None:
-            raise AccountConflict("该邮箱已有账号；邀请码用于创建新的内部账号")
+        existing = self.session.scalar(select(User.id).where(User.normalized_email == normalized))
+        if existing is not None and self.session.get(OrganizationMembership, (actor.tenant_id, existing)) is not None:
+            raise AccountConflict("该邮箱已是本组织成员；停用资格请在成员管理中恢复")
+        if get_settings().human_auth_mode != "local" and existing is None:
+            raise AccountAccessDenied("新企业身份账号请在身份系统申请；已有账号可受邀加入本组织")
         now = datetime.now(UTC)
         pending = self.session.scalar(
             select(AccountInvitation.id).where(
@@ -218,21 +279,12 @@ class AccountRegistrationService:
             self._audit(actor.tenant_id, actor.id, "account.invitation.revoked", "account_invitation", item.id, {})
             self.session.commit()
 
-    def _administrator(self, principal: Principal) -> User:
+    def _administrator(self, principal: Principal) -> OrganizationMembership:
         if principal.user_id is None:
             raise AccountAccessDenied("仅限已登录的管理员")
         set_tenant_context(self.session, principal.tenant_id)
-        actor = self.session.scalar(
-            select(User)
-            .join(Tenant)
-            .where(
-                User.id == principal.user_id,
-                User.tenant_id == principal.tenant_id,
-                User.active.is_(True),
-                User.role == UserRole.ADMIN,
-                Tenant.active.is_(True),
-            )
-        )
+        self.session.scalar(select(Tenant).where(Tenant.id == principal.tenant_id).with_for_update())
+        actor = organization_administrator(self.session, principal.tenant_id, principal.user_id)
         if actor is None:
             raise AccountAccessDenied("仅限管理员管理注册邀请码")
         return actor

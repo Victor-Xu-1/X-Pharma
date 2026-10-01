@@ -4,5 +4,6 @@
 /* eslint-disable */
 export type LoginRequest = {
   email: string;
+  organization_id?: (string | null);
   password: string;
 };

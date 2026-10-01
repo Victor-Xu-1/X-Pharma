@@ -15,8 +15,9 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
 
-import scripts.release_evidence as release_evidence
-from scripts.release_evidence import (
+import scripts.release as release_evidence
+import scripts.release.capture as release_capture
+from scripts.release import (
     SECURITY_REQUIRED_FILES,
     ReleaseEvidenceError,
     _rename_noreplace,
@@ -337,7 +338,7 @@ def test_capture_enforces_log_limit_while_command_is_running(tmp_path: Path, mon
     policy = _policy(tmp_path)
     security = _security(tmp_path, repo)
     output = tmp_path / "bounded" / "quality.json"
-    monkeypatch.setattr(release_evidence, "MAX_CAPTURE_LOG_BYTES", 32)
+    monkeypatch.setattr(release_capture, "MAX_CAPTURE_LOG_BYTES", 32)
 
     with pytest.raises(ReleaseEvidenceError, match="32-byte safety limit"):
         capture_gate(

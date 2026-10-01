@@ -7,8 +7,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from pharma_intel.accounts.contracts import InvitationCreate, RegistrationRequest
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.accounts.invitation_codes import verify_invitation_code
-from pharma_intel.accounts.registration_budget import RegistrationRateExceeded, consume_registration_budget
+from pharma_intel.accounts.request_budget import AccountRateExceeded, consume_account_budget
 from pharma_intel.accounts.service import (
     AccountAccessDenied,
     AccountConflict,
@@ -42,7 +43,7 @@ def _payload(email: str, *, workbench: str = "research", code: str | None = None
 
 
 def _admin(session: Session, tenant: Tenant) -> Principal:
-    actor = User(
+    actor = create_account(
         tenant_id=tenant.id,
         email="admin@example.test",
         normalized_email="admin@example.test",
@@ -59,8 +60,8 @@ def test_independent_registration_is_isolated_and_never_grants_internal_admin(se
     user = AccountRegistrationService(session, "test-registration").register(_payload("new@example.test"))
     assert user.tenant_id != tenant.id
     assert user.role == UserRole.VIEWER
-    assert verify_password(PASSWORD, user.password_hash)
-    assert user.password_hash != PASSWORD
+    assert verify_password(PASSWORD, user.account.password_hash)
+    assert user.account.password_hash != PASSWORD
     assert session.scalar(select(func.count()).select_from(Tenant)) == 2
 
 
@@ -144,7 +145,7 @@ def test_invitation_management_enforces_the_actor_and_tenant(session: Session, t
     other_tenant = Tenant(slug="other", name="Other")
     session.add(other_tenant)
     session.commit()
-    outsider = User(
+    outsider = create_account(
         tenant_id=other_tenant.id,
         email="other-admin@example.test",
         normalized_email="other-admin@example.test",
@@ -163,12 +164,12 @@ def test_invitation_management_enforces_the_actor_and_tenant(session: Session, t
 def test_registration_attempt_budget_is_persistent_and_bounded(session: Session) -> None:
     now = datetime(2026, 10, 1, tzinfo=UTC)
     for _ in range(10):
-        consume_registration_budget(session, "test-peer", now=now)
-    with pytest.raises(RegistrationRateExceeded):
-        consume_registration_budget(session, "test-peer", now=now)
+        consume_account_budget(session, "test-peer", now=now)
+    with pytest.raises(AccountRateExceeded):
+        consume_account_budget(session, "test-peer", now=now)
     row = session.scalar(select(AccountRegistrationBudget))
     assert row is not None and row.attempts == 11 and "test-peer" not in row.peer_digest
-    consume_registration_budget(session, "test-peer", now=now + timedelta(minutes=10))
+    consume_account_budget(session, "test-peer", now=now + timedelta(minutes=10))
     session.refresh(row)
     assert row.attempts == 1
 

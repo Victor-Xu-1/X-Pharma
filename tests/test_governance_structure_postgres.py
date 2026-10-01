@@ -9,6 +9,7 @@ import pytest
 from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.config import Settings
 from pharma_intel.governance.model_gateway import ExtractionResponse, OpenAICompatibleExtractionGateway
 from pharma_intel.governance.schemas import Citation, EntityReference, ExtractionEnvelope, StructureFact
@@ -28,7 +29,6 @@ from pharma_intel.models import (
     StagedFact,
     StageStatus,
     Tenant,
-    User,
     UserRole,
 )
 from pharma_intel.object_store import FileSystemObjectStore
@@ -83,7 +83,7 @@ def test_governed_structure_publishes_rdkit_authority_and_rolls_back_entity_conf
             authorization_scopes=["contract:test-source"],
             dataset_key="chemistry",
         )
-        reviewer = User(
+        reviewer = create_account(
             tenant_id=tenant_id,
             email=f"reviewer-{tenant_id}@example.test",
             normalized_email=f"reviewer-{tenant_id}@example.test",

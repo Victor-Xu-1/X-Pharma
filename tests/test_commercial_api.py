@@ -13,7 +13,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from pharma_intel import api as api_module
+import pharma_intel.http.commercial_exports as export_routes
+import pharma_intel.http.public_read_policy as public_read_policy
 from pharma_intel.api import app
 from pharma_intel.commercial.accounting import BillingStatementCommand, CommercialAccountingService
 from pharma_intel.commercial.billing import BillingStatementSigner
@@ -170,7 +171,7 @@ def test_export_http_contract_separates_agent_data_and_human_approval_paths(
         SignedCursorCodec("api-export-cursor-secret-123456789012345"),  # noqa: S106
         read_page_size_max=25,
     )
-    monkeypatch.setattr(api_module, "build_export_service", lambda _session, _settings: export_service)
+    monkeypatch.setattr(export_routes, "build_export_service", lambda _session, _settings: export_service)
 
     def session_override() -> Generator[Session]:
         yield session
@@ -1034,7 +1035,7 @@ def test_agent_page_routes_bind_commercial_arguments_and_fetch_one_extra_row(
             )
             return []
 
-    monkeypatch.setattr(api_module, "IntelligenceService", FakeIntelligenceService)
+    monkeypatch.setattr(public_read_policy, "IntelligenceService", FakeIntelligenceService)
 
     def session_override() -> Generator[Session]:
         yield session

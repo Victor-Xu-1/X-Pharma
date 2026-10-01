@@ -51,7 +51,7 @@ def cleanup_runtime_hygiene(
         temporary_user_ids = list(
             session.scalars(
                 select(User.id).where(
-                    User.tenant_id == default_tenant.id,
+                    User.home_tenant_id == default_tenant.id,
                     User.normalized_email.like("e2e-%@example.test"),
                 )
             )

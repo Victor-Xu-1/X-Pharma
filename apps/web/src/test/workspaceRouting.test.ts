@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { canAccessView, canAccessWorkbench, parseWorkbenchLocation, workspaceUrl } from "../lib/workspaceRouting";
-import { pipelineFiltersFromLocation } from "../ResearchApp";
+import { pipelineFiltersFromLocation } from "../workspaces/research/locationModel";
 
 describe("workspace URL contract", () => {
   it("opens the research workbench at intelligence search while keeping the user center explicit", () => {

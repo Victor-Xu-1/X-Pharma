@@ -33,10 +33,10 @@ jobs:
         run: uv sync --locked --dev
       - name: Lint and format gate
         run: |
-          uv run ruff format --check src tests migrations scripts/mcp_inspector_probe.py
-          uv run ruff check src tests migrations scripts/mcp_inspector_probe.py
+          uv run ruff format --check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py
+          uv run ruff check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py
       - name: Strict typing gate
-        run: uv run mypy src tests scripts/mcp_inspector_probe.py
+        run: uv run mypy src tests scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py
       - name: OpenAPI 3.1.2 drift gate
         run: uv run pharma-openapi --check
       - name: Unit and service tests
@@ -121,10 +121,10 @@ jobs:
         run: |
           uv run pharma-bootstrap --tenant-slug ci --tenant-name "CI Tenant" --skip-api-key
           uv run pharma-verify-rls
-      - name: Verify account invitation RLS and concurrent registration
+      - name: Verify account and organization RLS and concurrent invitation acceptance
         env:
           TEST_ACCOUNT_REGISTRATION_DATABASE_URL: postgresql+psycopg://pharma_runtime:ci-runtime-password@127.0.0.1:5432/pharma_migration
-        run: uv run pytest -m integration tests/test_account_registration_postgres.py
+        run: uv run pytest -m integration tests/test_account_registration_postgres.py tests/test_organization_memberships_postgres.py
       - name: OpenBao dynamic PostgreSQL group-role contract
         run: |
           uv run python -c "import psycopg; c=psycopg.connect('postgresql://postgres:postgres@127.0.0.1:5432/postgres', autocommit=True); c.execute('CREATE DATABASE provision_test'); c.close()"

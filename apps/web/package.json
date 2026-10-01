@@ -14,7 +14,7 @@
     "check:write": "biome check --write .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "typecheck": "tsc -b --pretty false"
+    "typecheck": "tsc -b --pretty false && tsc -p tsconfig.e2e.json --pretty false"
   },
   "dependencies": {
     "@rdkit/rdkit": "2025.3.4-1.0.0",

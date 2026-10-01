@@ -5,6 +5,13 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
+from fastapi.testclient import TestClient
+
+from pharma_intel.api import create_app
+from pharma_intel.config import Settings
+from pharma_intel.http import runtime
+
 
 def _bash_executable() -> str | None:
     if os.name == "nt":
@@ -268,19 +275,22 @@ def test_microsoft_edge_acceptance_uses_signed_current_and_previous_distribution
     assert "datetime.now(timezone.utc)" in acceptance_text
 
 
-def test_api_serves_both_same_origin_workbench_routes_before_the_static_mount() -> None:
-    root = Path(__file__).parents[1]
-    api_text = (root / "src" / "pharma_intel" / "api.py").read_text(encoding="utf-8")
-
-    research_route = api_text.index('@app.api_route("/workspace/research", methods=["GET", "HEAD"]')
-    internal_route = api_text.index('@app.api_route("/workspace/internal", methods=["GET", "HEAD"]')
-    static_mount = api_text.index('app.mount("/", StaticFiles')
-    assert research_route < static_mount
-    assert internal_route < static_mount
-    assert 'return FileResponse(web_root / "research.html")' in api_text
-    assert 'return FileResponse(web_root / "internal.html")' in api_text
-    assert api_text.index('web_root / "research.html"') < internal_route
-    assert api_text.index('web_root / "internal.html"') > internal_route
+def test_api_serves_both_same_origin_workbench_routes_before_the_static_mount(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    (tmp_path / "research.html").write_text("<title>Research entry</title>", encoding="utf-8")
+    (tmp_path / "internal.html").write_text("<title>Internal entry</title>", encoding="utf-8")
+    (tmp_path / "index.html").write_text("<title>Static root</title>", encoding="utf-8")
+    monkeypatch.setattr(runtime, "get_settings", lambda: Settings(web_root=tmp_path))
+    with TestClient(create_app()) as client:
+        for path, expected in (("/workspace/research", "Research entry"), ("/workspace/internal", "Internal entry")):
+            response = client.get(path)
+            assert response.status_code == 200
+            assert expected in response.text and "Static root" not in response.text
+            assert response.headers["cache-control"] == "no-cache, must-revalidate"
+            assert client.head(path).status_code == 200
+        assert "Static root" in client.get("/").text
 
 
 def test_ci_installs_branded_chrome_instead_of_playwright_chromium() -> None:

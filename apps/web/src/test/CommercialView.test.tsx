@@ -7,27 +7,26 @@ import {
 } from "../lib/contracts/collections";
 import {
   executeCommercialOperation,
+  loadCommercialBilling,
+  loadCommercialClients,
+  loadCommercialDisputes,
+  loadCommercialExports,
+  loadCommercialOverview,
   loadCommercialRiskPage,
-  loadCommercialWorkspace,
   loadLifecycleWorkspace,
 } from "../lib/contracts/commercial";
 import { CommercialView } from "../views/CommercialView";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
-vi.mock("../lib/contracts/commercial", () => ({
-  commercialKeys: {
-    root: ["commercial"],
-    workspace: (deliveryFilter: string, disputeFilter: string) => [
-      "commercial",
-      "workspace",
-      { deliveryFilter, disputeFilter },
-    ],
-    risks: (caseStatus: string, cursor: string | null) => ["commercial", "risks", { caseStatus, cursor }],
-    lifecycle: ["commercial", "lifecycle"],
-  },
+vi.mock("../lib/contracts/commercial", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../lib/contracts/commercial")>()),
   executeCommercialOperation: vi.fn(),
   loadCommercialRiskPage: vi.fn(),
-  loadCommercialWorkspace: vi.fn(),
+  loadCommercialOverview: vi.fn(),
+  loadCommercialClients: vi.fn(),
+  loadCommercialBilling: vi.fn(),
+  loadCommercialDisputes: vi.fn(),
+  loadCommercialExports: vi.fn(),
   loadLifecycleWorkspace: vi.fn(),
 }));
 vi.mock("../lib/contracts/collections", () => ({
@@ -39,6 +38,10 @@ vi.mock("../lib/contracts/collections", () => ({
 const overview = {
   as_of: "2026-07-16T04:00:00Z",
   open_risk_count: 1,
+  active_client_count: 501,
+  pending_export_count: 1,
+  dead_billing_delivery_count: 1,
+  open_dispute_count: 1,
   period_start: "2026-07-16T00:00:00Z",
   subscriptions: [
     {
@@ -240,14 +243,11 @@ const workspaceExportPolicy: CollectionPolicy = {
 };
 
 beforeEach(() => {
-  vi.mocked(loadCommercialWorkspace).mockResolvedValue({
-    overview,
-    clients,
-    billingAccounts,
-    billingDeliveries,
-    billingDisputes,
-    exports,
-  });
+  vi.mocked(loadCommercialOverview).mockResolvedValue(overview);
+  vi.mocked(loadCommercialClients).mockResolvedValue(clients);
+  vi.mocked(loadCommercialBilling).mockResolvedValue({ accounts: billingAccounts, deliveries: billingDeliveries });
+  vi.mocked(loadCommercialDisputes).mockResolvedValue(billingDisputes);
+  vi.mocked(loadCommercialExports).mockResolvedValue(exports);
   vi.mocked(loadCommercialRiskPage).mockResolvedValue({ items: risks, total_items: 1, next_cursor: null });
   vi.mocked(loadLifecycleWorkspace).mockResolvedValue({
     retentionPolicies: [],
@@ -268,6 +268,11 @@ beforeEach(() => {
 it("loads commercial metrics and all eight operations tabs", async () => {
   renderWithQueryClient(<CommercialView />);
   expect((await screen.findAllByText("860")).length).toBe(2);
+  expect(screen.getByText("501")).toBeInTheDocument();
+  expect(loadCommercialClients).not.toHaveBeenCalled();
+  expect(loadCommercialBilling).not.toHaveBeenCalled();
+  expect(loadCommercialDisputes).not.toHaveBeenCalled();
+  expect(loadCommercialExports).not.toHaveBeenCalled();
   expect(screen.getByRole("tab", { name: "合同与额度" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Agent 客户端" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "账单投递" })).toBeInTheDocument();
@@ -299,27 +304,24 @@ it("manages the external workbench export policy only from internal commercial o
 });
 
 it("keeps the client table structure visible for an empty tenant", async () => {
-  vi.mocked(loadCommercialWorkspace).mockResolvedValue({
-    overview: { ...overview, subscriptions: [] },
-    clients: [],
-    billingAccounts: [],
-    billingDeliveries: [],
-    billingDisputes: [],
-    exports: [],
-  });
+  vi.mocked(loadCommercialOverview).mockResolvedValue({ ...overview, subscriptions: [] });
+  vi.mocked(loadCommercialClients).mockResolvedValue([]);
+  vi.mocked(loadCommercialBilling).mockResolvedValue({ accounts: [], deliveries: [] });
+  vi.mocked(loadCommercialDisputes).mockResolvedValue([]);
+  vi.mocked(loadCommercialExports).mockResolvedValue([]);
 
   renderWithQueryClient(<CommercialView />);
   fireEvent.click(await screen.findByRole("tab", { name: "Agent 客户端" }));
-  expect(screen.getByRole("columnheader", { name: "客户端" })).toBeInTheDocument();
+  expect(await screen.findByRole("columnheader", { name: "客户端" })).toBeInTheDocument();
   expect(screen.getByText("暂无 Agent 客户端")).toBeInTheDocument();
 });
 
 it("forwards operator filters through the generated commercial query contract", async () => {
   renderWithQueryClient(<CommercialView />);
   fireEvent.click(await screen.findByRole("tab", { name: "账单投递" }));
-  fireEvent.change(screen.getByLabelText("投递状态"), { target: { value: "dead" } });
+  fireEvent.change(await screen.findByLabelText("投递状态"), { target: { value: "dead" } });
 
-  await waitFor(() => expect(loadCommercialWorkspace).toHaveBeenLastCalledWith("dead", "all", expect.any(AbortSignal)));
+  await waitFor(() => expect(loadCommercialBilling).toHaveBeenLastCalledWith("dead", expect.any(AbortSignal)));
 });
 
 it("loads the risk queue lazily and navigates signed cursor pages", async () => {
@@ -349,18 +351,18 @@ it("loads the risk queue lazily and navigates signed cursor pages", async () => 
   fireEvent.click(screen.getByRole("button", { name: "风险事件下一页" }));
   expect(await screen.findByText("Safety Agent")).toBeInTheDocument();
   expect(loadCommercialRiskPage).toHaveBeenLastCalledWith("all", "signed-cursor-2", expect.any(AbortSignal));
-  expect(screen.getByRole("button", { name: "风险事件上一页" })).toBeEnabled();
+  expect(await screen.findByRole("button", { name: "风险事件上一页" })).toBeEnabled();
 
   fireEvent.change(screen.getByLabelText("风险处置状态"), { target: { value: "open" } });
   await waitFor(() => expect(loadCommercialRiskPage).toHaveBeenLastCalledWith("open", null, expect.any(AbortSignal)));
-  expect(screen.getByRole("button", { name: "风险事件上一页" })).toBeDisabled();
+  expect(await screen.findByRole("button", { name: "风险事件上一页" })).toBeDisabled();
 });
 
 it("aborts an orphaned commercial query when the workbench unmounts", async () => {
-  vi.mocked(loadCommercialWorkspace).mockImplementation(() => new Promise(() => undefined));
+  vi.mocked(loadCommercialOverview).mockImplementation(() => new Promise(() => undefined));
   const { unmount } = renderWithQueryClient(<CommercialView />);
-  await waitFor(() => expect(loadCommercialWorkspace).toHaveBeenCalledOnce());
-  const signal = vi.mocked(loadCommercialWorkspace).mock.calls[0]?.[2];
+  await waitFor(() => expect(loadCommercialOverview).toHaveBeenCalledOnce());
+  const signal = vi.mocked(loadCommercialOverview).mock.calls[0]?.[0];
   expect(signal).toBeInstanceOf(AbortSignal);
   expect(signal?.aborted).toBe(false);
 
@@ -370,30 +372,35 @@ it("aborts an orphaned commercial query when the workbench unmounts", async () =
 });
 
 it("surfaces query errors and allows an explicit operator retry", async () => {
-  vi.mocked(loadCommercialWorkspace)
+  vi.mocked(loadCommercialOverview)
     .mockRejectedValueOnce(new Error("commercial service unavailable"))
-    .mockResolvedValueOnce({
-      overview,
-      clients,
-      billingAccounts,
-      billingDeliveries,
-      billingDisputes,
-      exports,
-    });
+    .mockResolvedValueOnce(overview);
   renderWithQueryClient(<CommercialView />);
   expect(await screen.findByRole("alert")).toHaveTextContent("commercial service unavailable");
 
   fireEvent.click(screen.getByRole("button", { name: "重试" }));
 
   expect((await screen.findAllByText("860")).length).toBe(2);
-  expect(loadCommercialWorkspace).toHaveBeenCalledTimes(2);
+  expect(loadCommercialOverview).toHaveBeenCalledTimes(2);
+});
+
+it("keeps clients and policy controls usable when the independent billing pane fails", async () => {
+  vi.mocked(loadCommercialBilling).mockRejectedValue(new Error("billing pane unavailable"));
+  renderWithQueryClient(<CommercialView />);
+  fireEvent.click(await screen.findByRole("tab", { name: "账单投递" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("billing pane unavailable");
+  fireEvent.click(screen.getByRole("tab", { name: "Agent 客户端" }));
+  expect(await screen.findByText("Discovery Agent")).toBeInTheDocument();
+  expect(screen.queryByText("billing pane unavailable")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("tab", { name: "导出策略" }));
+  expect(await screen.findByText("当前版本 workspace-export-v1")).toBeInTheDocument();
 });
 
 it("does not retry rejected commercial mutations implicitly", async () => {
   vi.mocked(executeCommercialOperation).mockRejectedValue(new Error("provider rejected the export"));
   renderWithQueryClient(<CommercialView />);
   fireEvent.click(await screen.findByRole("tab", { name: "数据导出" }));
-  fireEvent.click(screen.getByRole("button", { name: "批准导出 export-id-1" }));
+  fireEvent.click(await screen.findByRole("button", { name: "批准导出 export-id-1" }));
 
   expect(await screen.findByRole("alert")).toHaveTextContent("provider rejected the export");
   expect(executeCommercialOperation).toHaveBeenCalledOnce();
@@ -402,7 +409,7 @@ it("does not retry rejected commercial mutations implicitly", async () => {
 it("creates and acknowledges a billing dispute from the human workbench", async () => {
   renderWithQueryClient(<CommercialView />);
   fireEvent.click(await screen.findByRole("tab", { name: "账单投递" }));
-  fireEvent.click(screen.getByRole("button", { name: "对账期单 statement-2026-07 发起计费争议" }));
+  fireEvent.click(await screen.findByRole("button", { name: "对账期单 statement-2026-07 发起计费争议" }));
   fireEvent.change(screen.getByLabelText("争议额度"), { target: { value: "2.5" } });
   fireEvent.change(screen.getByLabelText("争议主题"), { target: { value: "Unexpected usage charge" } });
   fireEvent.change(screen.getByLabelText("争议说明"), { target: { value: "Please validate the metered searches." } });
@@ -419,7 +426,7 @@ it("creates and acknowledges a billing dispute from the human workbench", async 
   );
 
   fireEvent.click(screen.getByRole("tab", { name: "计费争议" }));
-  fireEvent.click(screen.getByRole("button", { name: "处理计费争议 dispute.customer.0001" }));
+  fireEvent.click(await screen.findByRole("button", { name: "处理计费争议 dispute.customer.0001" }));
   fireEvent.change(screen.getByLabelText("争议处理记录"), {
     target: { value: "Finance accepted the case for investigation." },
   });
@@ -437,7 +444,7 @@ it("requires reasons to map a provider customer and replay a dead billing delive
   renderWithQueryClient(<CommercialView />);
   fireEvent.click(await screen.findByRole("tab", { name: "账单投递" }));
 
-  fireEvent.click(screen.getByRole("button", { name: "配置 Research 的 Provider 客户编号" }));
+  fireEvent.click(await screen.findByRole("button", { name: "配置 Research 的 Provider 客户编号" }));
   const saveMapping = screen.getByRole("button", { name: "保存映射" });
   expect(saveMapping).toBeDisabled();
   fireEvent.change(screen.getByLabelText("Provider 客户编号"), { target: { value: "ERP-CUSTOMER-1001" } });
@@ -471,7 +478,7 @@ it("requires reasons to map a provider customer and replay a dead billing delive
 it("requires an operator reason and revokes an agent client", async () => {
   renderWithQueryClient(<CommercialView />);
   fireEvent.click(await screen.findByRole("tab", { name: "Agent 客户端" }));
-  fireEvent.click(screen.getByRole("button", { name: "停用 Discovery Agent" }));
+  fireEvent.click(await screen.findByRole("button", { name: "停用 Discovery Agent" }));
   const submit = screen.getByRole("button", { name: "确认停用" });
   expect(submit).toBeDisabled();
   fireEvent.change(screen.getByLabelText("操作原因"), { target: { value: "credential compromise" } });
@@ -488,7 +495,7 @@ it("requires an operator reason and revokes an agent client", async () => {
 it("approves exports and persists a risk review", async () => {
   renderWithQueryClient(<CommercialView />);
   fireEvent.click(await screen.findByRole("tab", { name: "数据导出" }));
-  fireEvent.click(screen.getByRole("button", { name: "批准导出 export-id-1" }));
+  fireEvent.click(await screen.findByRole("button", { name: "批准导出 export-id-1" }));
   await waitFor(() =>
     expect(executeCommercialOperation).toHaveBeenCalledWith({
       kind: "act-on-export",

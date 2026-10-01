@@ -106,8 +106,10 @@ def test_quarantine_decisions_are_idempotent_versioned_audited_and_never_bypass_
         return Principal(tenant.id, "security-operator", "user", frozenset({"ingestion:read", "ingestion:manage"}))
 
     temporal_client = AsyncMock()
-    monkeypatch.setattr("pharma_intel.api.Client.connect", AsyncMock(return_value=temporal_client))
-    monkeypatch.setattr("pharma_intel.api.get_settings", lambda: settings)
+    monkeypatch.setattr(
+        "pharma_intel.ingest.commands.quarantine.Client.connect", AsyncMock(return_value=temporal_client)
+    )
+    monkeypatch.setattr("pharma_intel.http.runtime.get_settings", lambda: settings)
     app.dependency_overrides[get_session] = session_override
     app.dependency_overrides[require_principal] = principal_override
     try:
@@ -173,7 +175,7 @@ def test_quarantine_decisions_are_idempotent_versioned_audited_and_never_bypass_
                 },
             )
             monkeypatch.setattr(
-                "pharma_intel.api.Client.connect",
+                "pharma_intel.ingest.commands.quarantine.Client.connect",
                 AsyncMock(side_effect=RuntimeError("temporal unavailable")),
             )
             failed_rescan = client.post(

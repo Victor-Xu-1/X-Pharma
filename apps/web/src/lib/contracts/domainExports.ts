@@ -376,6 +376,9 @@ export function currentDomainExportQuery(dataset: DomainExportDataset): Record<s
     }),
   );
   if (dataset === "entities") {
+    // The research workspace always searches published entities, even when an
+    // obsolete URL contains a draft status. Carry that same boundary to export.
+    query.review_status = "verified";
     const selectedTypes = Array.from(
       new Set(
         (params.get("types") ?? "")

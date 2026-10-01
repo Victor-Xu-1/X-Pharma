@@ -14,6 +14,8 @@ PYTHON_TOOL_SCRIPTS += scripts/configure-development.py
 PYTHON_TOOL_SCRIPTS += scripts/verify_cpython_tarfile.py
 PYTHON_TOOL_SCRIPTS += scripts/generate_brand_assets.py
 PYTHON_TOOL_SCRIPTS += scripts/run_account_browser_acceptance.py
+PYTHON_TOOL_SCRIPTS += scripts/release
+PYTHON_TOOL_SCRIPTS += scripts/project_overview.py
 
 install:
 	uv sync --locked --dev
