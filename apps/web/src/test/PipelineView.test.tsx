@@ -172,6 +172,25 @@ const defaultAnalysisProps = {
   onOpenDealsForDrug: vi.fn(),
 };
 
+it("preserves an unsubmitted filter draft when a parent recreates the same applied filter object", async () => {
+  const props = {
+    ...defaultAnalysisProps,
+    displayMode: "list" as const,
+    initialFilters,
+    onSearchChange: vi.fn(),
+    onDisplayModeChange: vi.fn(),
+    onOpenDrug: vi.fn(),
+    onOpenEntity: vi.fn(),
+  };
+  const { rerender } = renderWithQueryClient(<PipelineView {...props} />);
+  await screen.findByRole("table", { name: "药物与研发管线结果" });
+  const keyword = screen.getByLabelText("关键词");
+  fireEvent.change(keyword, { target: { value: "unsubmitted draft" } });
+  rerender(<PipelineView {...props} initialFilters={{ ...initialFilters }} />);
+  expect(keyword).toHaveValue("unsubmitted draft");
+  expect(searchPipelines).toHaveBeenCalledTimes(1);
+});
+
 it("submits regional phase, rights and date filters and opens linked entities", async () => {
   const onSearchChange = vi.fn();
   const onOpenDrug = vi.fn();

@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { BookmarkPlus, CalendarDays, ExternalLink, FileText, List, Search, X } from "lucide-react";
-import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-
+import { type FormEvent, useCallback, useMemo, useState } from "react";
 import { AppliedFiltersBar } from "../components/AppliedFiltersBar";
 import {
   EmptyState,
@@ -34,6 +33,7 @@ import { facetOptions } from "../lib/facets";
 import type { NewsEventSearchItemRead } from "../lib/generated";
 import { newsEntityTypes, newsEventTypeLabels } from "../lib/newsDisplay";
 import { publicCoverageNotice } from "../lib/publicWarnings";
+import { useFilterDraft } from "../lib/useFilterDraft";
 import { useModalFocus } from "../lib/useModalFocus";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import type { DossierEntityOpener } from "./EntityDossierView";
@@ -158,7 +158,7 @@ export function NewsView({
   onOpenDisease?: (diseaseId: string) => void;
   onOpenOrganization?: (organizationId: string) => void;
 }) {
-  const [filters, setFilters] = useState(initialFilters);
+  const [filters, setFilters] = useFilterDraft(initialFilters);
   const [provenanceSelection, setProvenanceSelection] = useState<ProvenanceSelection | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
@@ -198,8 +198,6 @@ export function NewsView({
     },
     [onOpenDisease, onOpenDrug, onOpenEntity, onOpenOrganization, onOpenTarget],
   );
-
-  useEffect(() => setFilters(initialFilters), [initialFilters]);
 
   function updateFilter<K extends keyof NewsSearchFilters>(key: K, value: NewsSearchFilters[K]) {
     setFilters((current) => ({ ...current, [key]: value }));

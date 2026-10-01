@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { BarChart3, BookmarkPlus, ExternalLink, List, Search } from "lucide-react";
-import { type FormEvent, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useDeferredValue, useMemo, useState } from "react";
 import { AddToComparisonControl } from "../components/AddToComparisonControl";
 import { AppliedFiltersBar } from "../components/AppliedFiltersBar";
 import { EmptyState, formatDate, ProfessionalQueryState, QueryRefreshButton, StatusBadge } from "../components/common";
@@ -37,6 +37,7 @@ import {
 } from "../lib/pipelineSignals";
 import { programModalityLabel, programTagLabel, publicProgramTags } from "../lib/programDisplay";
 import { publicCoverageNotice } from "../lib/publicWarnings";
+import { useFilterDraft } from "../lib/useFilterDraft";
 import { usePagedEntitySelection } from "../lib/usePagedEntitySelection";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import {
@@ -160,7 +161,7 @@ export function PipelineView({
   const openTarget = onOpenTarget ?? onOpenEntity;
   const openDisease = onOpenDisease ?? onOpenEntity;
   const openOrganization = onOpenOrganization ?? onOpenEntity;
-  const [filters, setFilters] = useState(initialFilters);
+  const [filters, setFilters] = useFilterDraft(initialFilters);
   const [entityValueLabels, setEntityValueLabels] = useState<Record<string, Record<string, string>>>({});
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
@@ -176,8 +177,6 @@ export function PipelineView({
   });
   const queryCancellation = useQueryCancellation(resultQueryKey);
   const save = useMutation({ mutationFn: savePipelineSearch });
-
-  useEffect(() => setFilters(initialFilters), [initialFilters]);
 
   function updateFilter<Key extends keyof PipelineSearchFilters>(key: Key, value: PipelineSearchFilters[Key]) {
     setFilterError("");

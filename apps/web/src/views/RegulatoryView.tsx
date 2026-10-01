@@ -1,7 +1,6 @@
 import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
 import { BookmarkPlus, Columns3, ExternalLink, FileText, Search, SlidersHorizontal, X } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-
 import { AppliedFiltersBar } from "../components/AppliedFiltersBar";
 import {
   EmptyState,
@@ -39,6 +38,7 @@ import {
   safetyStatusLabels,
   severityLabels,
 } from "../lib/regulatoryDisplay";
+import { useFilterDraft } from "../lib/useFilterDraft";
 import { useModalFocus } from "../lib/useModalFocus";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import type { DossierEntityOpener } from "./EntityDossierView";
@@ -123,7 +123,7 @@ export function RegulatoryView({
   onOpenDisease?: (diseaseId: string) => void;
   onOpenOrganization?: (organizationId: string) => void;
 }) {
-  const [filters, setFilters] = useState(initialFilters);
+  const [filters, setFilters] = useFilterDraft(initialFilters);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
@@ -172,9 +172,8 @@ export function RegulatoryView({
   );
 
   useEffect(() => {
-    setFilters(initialFilters);
-    setValidationError(null);
-  }, [initialFilters]);
+    if (filters === initialFilters) setValidationError(null);
+  }, [filters, initialFilters]);
 
   function updateFilter<K extends keyof RegulatorySearchFilters>(key: K, value: RegulatorySearchFilters[K]) {
     setFilters((current) => ({ ...current, [key]: value }));
