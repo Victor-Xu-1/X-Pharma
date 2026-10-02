@@ -44,8 +44,8 @@ it("renders a keyboard-scrollable table and exposes deterministic sorting state"
   const rows = within(table).getAllByRole("row").slice(1);
   expect(rows.map((row) => row.textContent)).toEqual(["AAA2", "ZZZ1"]);
   for (const row of rows) {
-    expect(row.style.transform).toBe("");
-    expect(row.style.top).toMatch(/^\d+(?:\.\d+)?px$/);
+    expect(row.style.transform).toMatch(/^translateY\(\d+(?:\.\d+)?px\)$/);
+    expect(row.style.height).toMatch(/^\d+(?:\.\d+)?px$/);
   }
 
   fireEvent.click(screen.getByText("列", { exact: true }));

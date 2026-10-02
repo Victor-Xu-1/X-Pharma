@@ -17,9 +17,10 @@ def test_dense_visual_has_one_owner_and_preserves_original_quality_thresholds() 
     assert 'maskColor: "#dce4e7"' in owner
 
 
-def test_virtual_rows_keep_geometry_without_transforming_sticky_cells() -> None:
+def test_dense_capture_preserves_virtual_offsets_without_scroll_workarounds() -> None:
     owner = (NAVIGATION / "dense-results-visual.ts").read_text(encoding="utf-8")
     table = (ROOT / "apps/web/src/components/VirtualDataTable.tsx").read_text(encoding="utf-8")
-    assert "height: virtualRow.size, top: virtualRow.start" in table
-    assert "translateY(${virtualRow.start}px)" not in table
+    assert "height: virtualRow.size, transform: `translateY(${virtualRow.start}px)`" in table
+    assert "height: virtualRow.size, top: virtualRow.start" not in table
     assert "scrollIntoViewIfNeeded" not in owner
+    assert "window.scrollTo" not in owner

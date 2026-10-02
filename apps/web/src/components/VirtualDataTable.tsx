@@ -792,8 +792,6 @@ export function VirtualDataTable<T>({
           </thead>
           <tbody className="virtual-table-body" style={{ height: totalHeight }}>
             {visibleItems.map((virtualRow) => {
-              // A transformed row gives sticky cells a separate compositor
-              // origin; absolute top preserves the virtual offset without it.
               const row = rows[virtualRow.index];
               const rowSelected = selectedRowIdSet.has(row.id);
               const rowSelectionDisabled = Boolean(
@@ -803,7 +801,7 @@ export function VirtualDataTable<T>({
                 <tr
                   className={`virtual-table-row virtual-table-data-row${rowSelected ? " is-selected" : ""}`}
                   key={row.id}
-                  style={{ height: virtualRow.size, top: virtualRow.start }}
+                  style={{ height: virtualRow.size, transform: `translateY(${virtualRow.start}px)` }}
                 >
                   {rowSelection ? (
                     <td className="virtual-table-cell virtual-table-selection-cell">
