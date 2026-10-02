@@ -101,13 +101,13 @@
     },
     "research-workbench-desktop-1440.png": {
       "capture": "full-page",
-      "sha256": "c75645822295aaa2448ac028fcb155ba429a5d4ce4f4b6f42b21962827b883c4",
+      "sha256": "487e2e7a3004879508b9df1c404fbf47e30a7a6cd351fbd17701f79c35ea92e9",
       "state": "controlled-no-result",
       "viewport": "1440x900"
     },
     "research-workbench-desktop-1920.png": {
       "capture": "full-page",
-      "sha256": "fc61918029f97b35119c548f8c6f02be6f1e818dc21cd6ba64ede9aeee2e211f",
+      "sha256": "e6a66004fe4902a3185a728a43265f9559fd003537d1a9412cce1ccba3bb8065",
       "state": "controlled-no-result",
       "viewport": "1920x1080"
     },
@@ -119,7 +119,7 @@
     },
     "research-workbench-tablet-1024.png": {
       "capture": "full-page",
-      "sha256": "71ac0a1fada39edbc2ce3a924f3c07af0ed9e5266367df8c89ce85cdb87406f1",
+      "sha256": "7df4ac09f14ea6a2e36e39980395a5989aa02908245c9fdf2d1c624375066c8b",
       "state": "controlled-no-result",
       "viewport": "1024x768"
     }

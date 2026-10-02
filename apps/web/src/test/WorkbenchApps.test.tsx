@@ -9,44 +9,23 @@ import { renderWithQueryClient } from "./renderWithQueryClient";
 const targetViewHarness = vi.hoisted(() => ({
   onPipelineSearchChange: null as ((filters: PipelineSearchFilters) => void) | null,
   onOpenTrial: null as ((trialId: string) => void) | null,
-  returnLabel: null as string | null,
-  onReturn: null as (() => void) | null,
 }));
 
 const pipelineViewHarness = vi.hoisted(() => ({
   onOpenDrug: null as ((entityId: string) => void) | null,
 }));
 
-const drugViewHarness = vi.hoisted(() => ({
-  returnLabel: null as string | null,
-  onReturn: null as (() => void) | null,
-}));
-
 vi.mock("../views/TargetView", () => ({
   TargetView: ({
     onPipelineSearchChange,
     onOpenTrial,
-    returnLabel,
-    onReturn,
   }: {
     onPipelineSearchChange?: (filters: PipelineSearchFilters) => void;
     onOpenTrial?: (trialId: string) => void;
-    returnLabel?: string;
-    onReturn?: () => void;
   }) => {
     targetViewHarness.onPipelineSearchChange = onPipelineSearchChange ?? null;
     targetViewHarness.onOpenTrial = onOpenTrial ?? null;
-    targetViewHarness.returnLabel = returnLabel ?? null;
-    targetViewHarness.onReturn = onReturn ?? null;
-    return (
-      <div data-testid="target-view-harness">
-        {onReturn && returnLabel ? (
-          <button type="button" onClick={onReturn}>
-            {returnLabel}
-          </button>
-        ) : null}
-      </div>
-    );
+    return <div data-testid="target-view-harness" />;
   },
 }));
 
@@ -62,17 +41,7 @@ vi.mock("../views/PipelineView", () => ({
 }));
 
 vi.mock("../views/DrugView", () => ({
-  DrugView: ({ returnLabel, onReturn }: { returnLabel?: string; onReturn?: () => void }) => {
-    drugViewHarness.returnLabel = returnLabel ?? null;
-    drugViewHarness.onReturn = onReturn ?? null;
-    return onReturn && returnLabel ? (
-      <button type="button" onClick={onReturn}>
-        {returnLabel}
-      </button>
-    ) : (
-      <div>测试药物档案</div>
-    );
-  },
+  DrugView: () => <div>测试药物档案</div>,
 }));
 
 afterEach(() => {
@@ -417,7 +386,7 @@ it("returns a drug dossier to the exact originating pipeline query", async () =>
   expect(new URLSearchParams(window.location.search).get("from")).toBe(pipelinePath);
 
   const returnButton = await screen.findByRole("button", { name: "返回管线查询" });
-  expect(drugViewHarness.returnLabel).toBe("返回管线查询");
+  expect(screen.getAllByRole("button", { name: "返回管线查询" })).toHaveLength(1);
   fireEvent.click(returnButton);
   await waitFor(() => expect(window.location.pathname + window.location.search).toBe(pipelinePath));
 });
@@ -434,8 +403,10 @@ it("returns a target deep link to its originating drug dossier", async () => {
   renderWithQueryClient(<ResearchApp />);
 
   expect(await screen.findByTestId("target-view-harness")).toBeInTheDocument();
-  expect(targetViewHarness.returnLabel).toBe("返回药物档案");
-  fireEvent.click(screen.getByRole("button", { name: "返回药物档案" }));
+  const returnButton = screen.getByRole("button", { name: "返回药物档案" });
+  expect(screen.getAllByRole("button", { name: "返回药物档案" })).toHaveLength(1);
+  expect(screen.getByTestId("target-view-harness")).not.toContainElement(returnButton);
+  fireEvent.click(returnButton);
 
   await waitFor(() => expect(window.location.pathname + window.location.search).toBe(drugPath));
 });

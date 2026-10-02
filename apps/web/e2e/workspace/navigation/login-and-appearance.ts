@@ -7,7 +7,16 @@ import {
 } from "../helpers";
 import type { verifySetup } from "./setup";
 
+type AppearanceContext = Pick<
+  Awaited<ReturnType<typeof verifySetup>>,
+  "page" | "testInfo" | "credentials" | "fixtureKey" | "rumBatches" | "rumStatuses"
+>;
+
 export async function verifyLoginAndAppearance(context: Awaited<ReturnType<typeof verifySetup>>) {
+  return { ...context, ...(await verifyResearchAppearance(context)) };
+}
+
+export async function verifyResearchAppearance(context: AppearanceContext) {
   const { page, testInfo, credentials, fixtureKey, rumBatches, rumStatuses } = context;
   await installBrowserQualityProbe(page);
   await page.goto("/");
