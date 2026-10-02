@@ -199,7 +199,7 @@ SQL
     [[ "$entity_id" =~ ^[0-9a-f-]{36}$ ]] || { cleanup_errors=1; continue; }
     mcp_fixture_opensearch none --request DELETE \
       "http://localhost:9200/$opensearch_index_prefix-entities-write/_doc/$tenant_id:$entity_id?routing=$tenant_id&refresh=true" \
-      --output "$fixture_root/opensearch-delete-$entity_id.json" || cleanup_errors=1
+      > "$fixture_root/opensearch-delete-$entity_id.json" || cleanup_errors=1
   done < "$fixture_ids_path"
   remaining_accounts=$(docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -At -v ON_ERROR_STOP=1 \
     -c "SELECT count(*) FROM users WHERE normalized_email = '$email'") || cleanup_errors=1

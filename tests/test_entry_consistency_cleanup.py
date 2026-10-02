@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from pharma_intel.mcp_interoperability_fixture import _definition
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -34,6 +36,15 @@ def test_entry_projection_cleanup_uses_the_scoped_bounded_opensearch_client() ->
     assert 'source "$root/scripts/lib/mcp_fixture_http.sh"' in source
     assert "mcp_fixture_opensearch none --request DELETE" in source
     assert "http://127.0.0.1:9200/" not in source
+    assert '> "$fixture_root/opensearch-delete-$entity_id.json"' in source
+    assert '--output "$fixture_root/opensearch-delete-$entity_id.json"' not in source
+
+
+def test_isolated_mcp_contract_covers_both_entity_search_and_stable_id_read() -> None:
+    items = {item.billing_class: item for item in _definition("entry-contract-test").items}
+    assert {"entity.search", "entity.read"} <= set(items)
+    assert items["entity.read"].entitlement_key == "entities.read"
+    assert items["entity.read"].max_result_rows == 1
 
 
 def test_entry_fixture_cleanup_preserves_other_accounts_and_obeys_membership_foreign_keys() -> None:
