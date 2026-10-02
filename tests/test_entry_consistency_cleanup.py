@@ -29,6 +29,13 @@ def _remove_entry_staging(parent: Path, target: Path) -> subprocess.CompletedPro
     )
 
 
+def test_entry_projection_cleanup_uses_the_scoped_bounded_opensearch_client() -> None:
+    source = (ROOT / "scripts/verify-entry-consistency.sh").read_text(encoding="utf-8")
+    assert 'source "$root/scripts/lib/mcp_fixture_http.sh"' in source
+    assert "mcp_fixture_opensearch none --request DELETE" in source
+    assert "http://127.0.0.1:9200/" not in source
+
+
 def test_entry_fixture_cleanup_preserves_other_accounts_and_obeys_membership_foreign_keys() -> None:
     source = (ROOT / "scripts/verify-entry-consistency.sh").read_text(encoding="utf-8")
     statements = re.findall(r"^DELETE FROM (?:user_sessions|organization_memberships|users) WHERE .*?;$", source, re.M)

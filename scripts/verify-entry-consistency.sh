@@ -84,6 +84,8 @@ done < "$root/deploy/protocol/versions.env"
 
 export COMPOSE_FILE="${COMPOSE_FILE:-compose.yaml:compose.dev.yaml:compose.telemetry.yaml}"
 cd "$root"
+compose=(docker compose)
+source "$root/scripts/lib/mcp_fixture_http.sh"
 pg_user=$(docker compose exec -T postgres printenv POSTGRES_USER | tr -d '\r')
 pg_db=$(docker compose exec -T postgres printenv POSTGRES_DB | tr -d '\r')
 token_prefix=${TEST_MCP_ACCESS_TOKEN:0:12}
@@ -195,8 +197,8 @@ SQL
   while IFS= read -r entity_id; do
     [[ -n "$entity_id" ]] || continue
     [[ "$entity_id" =~ ^[0-9a-f-]{36}$ ]] || { cleanup_errors=1; continue; }
-    curl --silent --show-error --request DELETE \
-      "http://127.0.0.1:9200/$opensearch_index_prefix-entities-write/_doc/$tenant_id:$entity_id?routing=$tenant_id&refresh=true" \
+    mcp_fixture_opensearch none --request DELETE \
+      "http://localhost:9200/$opensearch_index_prefix-entities-write/_doc/$tenant_id:$entity_id?routing=$tenant_id&refresh=true" \
       --output "$fixture_root/opensearch-delete-$entity_id.json" || cleanup_errors=1
   done < "$fixture_ids_path"
   remaining_accounts=$(docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -At -v ON_ERROR_STOP=1 \
