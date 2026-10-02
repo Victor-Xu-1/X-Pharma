@@ -3,7 +3,6 @@ import {
   Activity,
   Building2,
   CalendarDays,
-  ChevronLeft,
   Clock3,
   Dna,
   ExternalLink,
@@ -98,10 +97,6 @@ export function DrugView({
   onOpenDeal,
   onOpenRegulatoryEvent,
   onOpenNewsEvent,
-  returnTargetId,
-  onReturnToTarget,
-  returnLabel,
-  onReturn,
 }: {
   drug: Entity | null;
   activeSection: DrugDossierSection;
@@ -118,10 +113,6 @@ export function DrugView({
   onOpenDeal: (dealId: string) => void;
   onOpenRegulatoryEvent: (eventId: string) => void;
   onOpenNewsEvent: (eventId: string) => void;
-  returnTargetId?: string;
-  onReturnToTarget?: () => void;
-  returnLabel?: string;
-  onReturn?: () => void;
 }) {
   const [provenanceSelection, setProvenanceSelection] = useState<ProvenanceSelection | null>(null);
   const openDrug = onOpenDrug ?? onOpenEntity;
@@ -192,23 +183,9 @@ export function DrugView({
     data.coverage.find((item) => item.domain === "programs")?.total ??
     data.summary.program_count;
   const tabs = buildDrugTabs(data, programTotal);
-  const returnTargetName = returnTargetId
-    ? uniqueProgramEntities(data, "target").find((target) => target.id === returnTargetId)?.name
-    : undefined;
   return (
     <>
       <section className="drug-profile-page">
-        {onReturn && returnLabel ? (
-          <button className="trial-back-button" type="button" onClick={onReturn}>
-            <ChevronLeft size={16} aria-hidden="true" />
-            {returnLabel}
-          </button>
-        ) : onReturnToTarget && returnTargetId ? (
-          <button className="trial-back-button" type="button" onClick={onReturnToTarget}>
-            <ChevronLeft size={16} aria-hidden="true" />
-            {returnTargetName ? `返回 ${returnTargetName} 竞品管线` : "返回靶点竞品管线"}
-          </button>
-        ) : null}
         <header className="drug-profile-header">
           <div className="drug-profile-symbol">
             <Pill size={23} />

@@ -686,7 +686,9 @@ it("restores, closes and reports states for a URL-controlled quick detail", asyn
     />,
   );
 
-  expect(await screen.findByRole("dialog", { name: "EGFR" })).toBeVisible();
+  const controlledDrawer = await screen.findByRole("dialog", { name: "EGFR" });
+  expect(controlledDrawer).toBeVisible();
+  expect(controlledDrawer.parentElement?.parentElement).toBe(document.body);
   fireEvent.click(screen.getByRole("button", { name: "关闭实体详情" }));
   expect(onSelectedEntityChange).toHaveBeenCalledWith(null);
 

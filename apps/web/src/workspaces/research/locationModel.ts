@@ -113,6 +113,7 @@ const researchReturnLabels: Partial<Record<ViewKey, string>> = {
 
 export function researchReturnLabel(location: WorkspaceLocation | null): string | undefined {
   if (!location) return undefined;
+  if (location.view === "target" && location.targetSection === "pipeline") return "返回靶点竞品管线";
   return researchReturnLabels[location.view];
 }
 

@@ -120,6 +120,15 @@
   border-bottom: 0;
   padding: 0;
 }
+.target-direct-access,
+.target-direct-access .result-summary {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.target-direct-access .result-summary strong,
+.target-direct-access .result-summary small {
+  overflow-wrap: anywhere;
+}
 .pipeline-result-actions {
   display: flex;
   flex: 0 0 auto;
@@ -2146,6 +2155,8 @@
 }
 .entity-detail-drawer > footer {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   justify-content: flex-end;
   padding: 18px 24px 26px;
 }

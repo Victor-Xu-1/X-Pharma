@@ -366,10 +366,6 @@ function renderDrugView(
     onOpenTrial = vi.fn(),
     onOpenDeal = vi.fn(),
     onOpenRegulatoryEvent = vi.fn(),
-    returnTargetId,
-    onReturnToTarget,
-    returnLabel,
-    onReturn,
   }: {
     initialSection?: DrugDossierSection;
     onOpenEntity?: (entityId: string) => void;
@@ -380,10 +376,6 @@ function renderDrugView(
     onOpenTrial?: (trialId: string) => void;
     onOpenDeal?: (dealId: string) => void;
     onOpenRegulatoryEvent?: (eventId: string) => void;
-    returnTargetId?: string;
-    onReturnToTarget?: () => void;
-    returnLabel?: string;
-    onReturn?: () => void;
   } = {},
 ) {
   function Harness() {
@@ -406,10 +398,6 @@ function renderDrugView(
         onOpenDeal={onOpenDeal}
         onOpenRegulatoryEvent={onOpenRegulatoryEvent}
         onOpenNewsEvent={vi.fn()}
-        returnTargetId={returnTargetId}
-        onReturnToTarget={onReturnToTarget}
-        returnLabel={returnLabel}
-        onReturn={onReturn}
       />
     );
   }
@@ -504,33 +492,6 @@ it("summarizes available sections and exposes program-derived associations", asy
   expect(onOpenTarget).toHaveBeenCalledWith("target-1");
   expect(onOpenDisease).toHaveBeenCalledWith("disease-1");
   expect(onOpenOrganization).toHaveBeenCalledWith("organization-2");
-});
-
-it("keeps a clear return path to the target competitor pipeline", async () => {
-  const onReturnToTarget = vi.fn();
-  renderDrugView(drug, { returnTargetId: "target-1", onReturnToTarget });
-
-  const returnButton = await screen.findByRole("button", { name: "返回 EGFR 竞品管线" });
-  fireEvent.click(returnButton);
-  expect(onReturnToTarget).toHaveBeenCalledOnce();
-});
-
-it("keeps the target return action when the dossier uses a different target identifier", async () => {
-  const onReturnToTarget = vi.fn();
-  renderDrugView(drug, { returnTargetId: "canonical-target-id", onReturnToTarget });
-
-  const returnButton = await screen.findByRole("button", { name: "返回靶点竞品管线" });
-  fireEvent.click(returnButton);
-  expect(onReturnToTarget).toHaveBeenCalledOnce();
-});
-
-it("returns to the exact comparison context with novice-facing copy", async () => {
-  const onReturn = vi.fn();
-  renderDrugView(drug, { returnLabel: "返回对比列表", onReturn });
-
-  const returnButton = await screen.findByRole("button", { name: "返回对比列表" });
-  fireEvent.click(returnButton);
-  expect(onReturn).toHaveBeenCalledOnce();
 });
 
 it("uses public product language for structure and coverage information", async () => {

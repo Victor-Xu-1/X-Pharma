@@ -1,6 +1,7 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs, TestInfo } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
+import { verifyDossierSourceReturn } from "./dossier-source-return";
 
 export async function verifyEntityResearchContinuity(
   { page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">,
@@ -65,6 +66,20 @@ export async function verifyEntityResearchContinuity(
   await page.goBack();
   await expect(page).not.toHaveURL(/section=/);
   await expect(page.getByRole("tab", { name: "公司概览" })).toHaveAttribute("aria-selected", "true");
+  const projectKey = testInfo.project.name.toUpperCase().replaceAll("-", "_");
+  const publishedTargetId = process.env[`E2E_SEARCH_TARGET_ID_${projectKey}`];
+  const publishedDrugId = process.env.E2E_PIPELINE_DRUG_B_ID;
+  if (!publishedTargetId || !publishedDrugId) throw new Error("Published source-return fixture IDs are required");
+  const publishedResponse = await page.request.get(`/api/v1/entities/${publishedTargetId}`);
+  expect(publishedResponse.ok()).toBe(true);
+  const publishedTarget = (await publishedResponse.json()) as { id: string; name: string; review_status: string };
+  expect(publishedTarget.review_status).toBe("verified");
+  await verifyDossierSourceReturn(page, testInfo, {
+    targetId: publishedTarget.id,
+    targetName: publishedTarget.name,
+    drugId: publishedDrugId,
+    query: publishedTarget.name,
+  });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(
     false,
   );

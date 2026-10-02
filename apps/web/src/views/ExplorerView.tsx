@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AddToComparisonControl } from "../components/AddToComparisonControl";
 import { AppliedFiltersBar } from "../components/AppliedFiltersBar";
 import {
@@ -858,118 +859,127 @@ export function ExplorerView({
         ) : null}
       </ProfessionalQueryState>
 
-      {selectedEntityRequested ? (
-        <div className="drawer-scrim" role="presentation">
-          <aside
-            ref={entityDrawerRef}
-            className="entity-detail-drawer"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="entity-detail-title"
-            tabIndex={-1}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <header>
-              <div>
-                <span>
-                  {selectedEntity
-                    ? (entityLabels[selectedEntity.entity_type] ?? selectedEntity.entity_type)
-                    : "基础查询"}
-                </span>
-                <h2 id="entity-detail-title">{selectedEntity?.name ?? "实体详情"}</h2>
-              </div>
-              <button
-                className="icon-button"
-                type="button"
-                onClick={() => {
-                  setLocalSelectedEntity(null);
-                  onSelectedEntityChange?.(null);
-                }}
-                aria-label="关闭实体详情"
-                data-modal-autofocus="true"
+      {selectedEntityRequested
+        ? createPortal(
+            <div className="drawer-scrim" role="presentation">
+              <aside
+                ref={entityDrawerRef}
+                className="entity-detail-drawer"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="entity-detail-title"
+                tabIndex={-1}
+                onMouseDown={(event) => event.stopPropagation()}
               >
-                <X size={19} />
-              </button>
-            </header>
-            {invalidSelectedEntityId || selectedEntityError ? (
-              <ErrorState message={invalidSelectedEntityId ? "实体标识无效，无法打开快速详情" : selectedEntityError} />
-            ) : selectedEntityLoading && !selectedEntity ? (
-              <Spinner label="正在加载实体详情" />
-            ) : selectedEntity ? (
-              <>
-                <div className="entity-governance-line">
-                  <span>更新于 {formatDate(selectedEntity.updated_at)}</span>
-                </div>
-                {matchExplanation(selectedEntity) ? (
-                  <p className="entity-match-detail">{matchExplanation(selectedEntity)}</p>
-                ) : null}
-                <section>
-                  <h3>实体摘要</h3>
-                  <p>{selectedEntity.description || "暂无摘要"}</p>
-                </section>
-                <section>
-                  <h3>外部数据库标识</h3>
-                  <dl>
-                    {publicIdentifiers(selectedEntity).map(([key, value]) => (
-                      <div className="entity-detail-row" key={key}>
-                        <dt>{key}</dt>
-                        <dd>{value}</dd>
-                      </div>
-                    ))}
-                    {!publicIdentifiers(selectedEntity).length ? (
-                      <div className="entity-detail-row">
-                        <dd>暂无外部标识</dd>
-                      </div>
+                <header>
+                  <div>
+                    <span>
+                      {selectedEntity
+                        ? (entityLabels[selectedEntity.entity_type] ?? selectedEntity.entity_type)
+                        : "基础查询"}
+                    </span>
+                    <h2 id="entity-detail-title">{selectedEntity?.name ?? "实体详情"}</h2>
+                  </div>
+                  <button
+                    className="icon-button"
+                    type="button"
+                    onClick={() => {
+                      setLocalSelectedEntity(null);
+                      onSelectedEntityChange?.(null);
+                    }}
+                    aria-label="关闭实体详情"
+                    data-modal-autofocus="true"
+                  >
+                    <X size={19} />
+                  </button>
+                </header>
+                {invalidSelectedEntityId || selectedEntityError ? (
+                  <ErrorState
+                    message={invalidSelectedEntityId ? "实体标识无效，无法打开快速详情" : selectedEntityError}
+                  />
+                ) : selectedEntityLoading && !selectedEntity ? (
+                  <Spinner label="正在加载实体详情" />
+                ) : selectedEntity ? (
+                  <>
+                    <div className="entity-governance-line">
+                      <span>更新于 {formatDate(selectedEntity.updated_at)}</span>
+                    </div>
+                    {matchExplanation(selectedEntity) ? (
+                      <p className="entity-match-detail">{matchExplanation(selectedEntity)}</p>
                     ) : null}
-                  </dl>
-                </section>
-                <section>
-                  <h3>补充信息</h3>
-                  <dl>
-                    {publicEntityAttributes(selectedEntity)
-                      .slice(0, 12)
-                      .map(([key, value]) => (
-                        <div className="entity-detail-row" key={key}>
-                          <dt>{publicEntityAttributeLabels[key] ?? key}</dt>
-                          <dd>{readableAttribute(value)}</dd>
-                        </div>
-                      ))}
-                    {!publicEntityAttributes(selectedEntity).length ? (
-                      <div className="entity-detail-row">
-                        <dd>暂无补充信息</dd>
-                      </div>
-                    ) : null}
-                  </dl>
-                </section>
-                <footer>
-                  {selectedEntity.entity_type === "target" && onOpenTargetPipeline ? (
-                    <>
-                      <button
-                        className="primary-button"
-                        type="button"
-                        onClick={() => onOpenTargetPipeline(selectedEntity.id)}
-                      >
-                        查看研发项目
-                        <ArrowRight size={16} />
-                      </button>
-                      <button className="secondary-button" type="button" onClick={() => onOpenEntity(selectedEntity)}>
-                        打开靶点全景
-                      </button>
-                    </>
-                  ) : (
-                    <button className="primary-button" type="button" onClick={() => onOpenEntity(selectedEntity)}>
-                      {selectedEntity.entity_type === "target" ? "打开靶点全景" : "打开领域档案"}
-                      <ArrowRight size={16} />
-                    </button>
-                  )}
-                </footer>
-              </>
-            ) : (
-              <EmptyState title="实体不存在或当前无权访问" />
-            )}
-          </aside>
-        </div>
-      ) : null}
+                    <section>
+                      <h3>实体摘要</h3>
+                      <p>{selectedEntity.description || "暂无摘要"}</p>
+                    </section>
+                    <section>
+                      <h3>外部数据库标识</h3>
+                      <dl>
+                        {publicIdentifiers(selectedEntity).map(([key, value]) => (
+                          <div className="entity-detail-row" key={key}>
+                            <dt>{key}</dt>
+                            <dd>{value}</dd>
+                          </div>
+                        ))}
+                        {!publicIdentifiers(selectedEntity).length ? (
+                          <div className="entity-detail-row">
+                            <dd>暂无外部标识</dd>
+                          </div>
+                        ) : null}
+                      </dl>
+                    </section>
+                    <section>
+                      <h3>补充信息</h3>
+                      <dl>
+                        {publicEntityAttributes(selectedEntity)
+                          .slice(0, 12)
+                          .map(([key, value]) => (
+                            <div className="entity-detail-row" key={key}>
+                              <dt>{publicEntityAttributeLabels[key] ?? key}</dt>
+                              <dd>{readableAttribute(value)}</dd>
+                            </div>
+                          ))}
+                        {!publicEntityAttributes(selectedEntity).length ? (
+                          <div className="entity-detail-row">
+                            <dd>暂无补充信息</dd>
+                          </div>
+                        ) : null}
+                      </dl>
+                    </section>
+                    <footer>
+                      {selectedEntity.entity_type === "target" && onOpenTargetPipeline ? (
+                        <>
+                          <button
+                            className="primary-button"
+                            type="button"
+                            onClick={() => onOpenTargetPipeline(selectedEntity.id)}
+                          >
+                            查看研发项目
+                            <ArrowRight size={16} />
+                          </button>
+                          <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={() => onOpenEntity(selectedEntity)}
+                          >
+                            打开靶点全景
+                          </button>
+                        </>
+                      ) : (
+                        <button className="primary-button" type="button" onClick={() => onOpenEntity(selectedEntity)}>
+                          {selectedEntity.entity_type === "target" ? "打开靶点全景" : "打开领域档案"}
+                          <ArrowRight size={16} />
+                        </button>
+                      )}
+                    </footer>
+                  </>
+                ) : (
+                  <EmptyState title="实体不存在或当前无权访问" />
+                )}
+              </aside>
+            </div>,
+            document.body,
+          )
+        : null}
     </section>
   );
 }

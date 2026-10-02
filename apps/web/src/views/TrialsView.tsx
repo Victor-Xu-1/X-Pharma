@@ -281,8 +281,7 @@ export function TrialsView({
   onOpenOrganization,
   onDisplayModeChange,
   onAnalysisViewChange,
-  returnLabel,
-  onReturn,
+  showListReturn = true,
 }: {
   displayMode: "list" | "landscape";
   analysisView: "chart" | "table";
@@ -336,8 +335,7 @@ export function TrialsView({
   onOpenOrganization?: (entityId: string) => void;
   onDisplayModeChange: (mode: "list" | "landscape") => void;
   onAnalysisViewChange: (view: "chart" | "table") => void;
-  returnLabel?: string;
-  onReturn?: () => void;
+  showListReturn?: boolean;
 }) {
   const openDrug = onOpenDrug ?? onOpenEntity;
   const openTarget = onOpenTarget ?? onOpenEntity;
@@ -1089,8 +1087,7 @@ export function TrialsView({
           error={detail.error}
           activeSection={activeSection}
           onRetry={() => void detail.refetch()}
-          backLabel={onReturn && returnLabel ? returnLabel : "返回试验列表"}
-          onBack={onReturn && returnLabel ? onReturn : () => onTrialChange(null)}
+          onBack={showListReturn ? () => onTrialChange(null) : undefined}
           onSectionChange={onSectionChange}
           onOpenTrialEntity={openTrialEntity}
           onOpenProvenance={setProvenanceSelection}
@@ -1599,7 +1596,6 @@ function TrialProfessionalDossier({
   error,
   activeSection,
   onRetry,
-  backLabel,
   onBack,
   onSectionChange,
   onOpenTrialEntity,
@@ -1611,18 +1607,19 @@ function TrialProfessionalDossier({
   error: Error | null;
   activeSection: TrialDossierSection;
   onRetry: () => void;
-  backLabel: string;
-  onBack: () => void;
+  onBack?: () => void;
   onSectionChange: (section: TrialDossierSection, replace?: boolean) => void;
   onOpenTrialEntity: TrialEntityOpener;
   onOpenProvenance: (selection: ProvenanceSelection) => void;
 }) {
   return (
     <section className="trial-professional-page" aria-labelledby="trial-title">
-      <button className="trial-back-button" type="button" onClick={onBack}>
-        <ArrowLeft size={16} />
-        {backLabel}
-      </button>
+      {onBack ? (
+        <button className="trial-back-button" type="button" onClick={onBack}>
+          <ArrowLeft size={16} aria-hidden="true" />
+          返回试验列表
+        </button>
+      ) : null}
       <header className="trial-professional-header">
         <div className="trial-professional-symbol">
           <CalendarDays size={23} />

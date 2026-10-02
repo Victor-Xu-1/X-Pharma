@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import type { SavedSearch } from "../../lib/contracts/monitoring";
 import { loadSavedSearch, monitoringKeys } from "../../lib/contracts/monitoring";
-import { getSessionEntity, sessionKeys } from "../../lib/contracts/session";
 import { startResearchRum } from "../../lib/rum";
 import type { Entity } from "../../lib/types";
 import {
@@ -15,6 +14,7 @@ import {
 } from "../../lib/workspaceRouting";
 import { specializedSectionByEntitySection } from "./locationModel";
 import { savedSearchLocation } from "./savedSearchLocation";
+import { useRouteEntity } from "./useRouteEntity";
 
 export function useResearchNavigation() {
   const [location, setLocation] = useState<WorkspaceLocation>(() =>
@@ -29,21 +29,7 @@ export function useResearchNavigation() {
 
   const activeReturnLocation = researchReturnLocation(location.returnTo);
 
-  const routeEntity = useQuery({
-    queryKey: sessionKeys.entity(location.entityId ?? ""),
-    queryFn: ({ signal }) => getSessionEntity(location.entityId ?? "", signal),
-    enabled: Boolean(
-      (location.view === "explorer" ||
-        location.view === "target" ||
-        location.view === "drug" ||
-        location.view === "company" ||
-        location.view === "disease" ||
-        location.view === "entity") &&
-        !location.invalidEntityId &&
-        location.entityId &&
-        selectedEntity?.id !== location.entityId,
-    ),
-  });
+  const routeEntity = useRouteEntity(location, selectedEntity?.id);
 
   const routeChemistrySavedSearch = useQuery({
     queryKey: monitoringKeys.saved(location.chemistrySavedSearchId ?? ""),

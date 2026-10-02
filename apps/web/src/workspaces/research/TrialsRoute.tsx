@@ -2,7 +2,7 @@ import { lazy } from "react";
 import type { SortCriterion } from "../../lib/contracts/sorting";
 import type { SortDirection as TrialSortDirection, TrialSortField } from "../../lib/contracts/trials";
 import { workspaceUrl } from "../../lib/workspaceRouting";
-import { researchReturnLabel, trialRoleGroupIds } from "./locationModel";
+import { trialRoleGroupIds } from "./locationModel";
 import type { ResearchRouteContext } from "./routeContext";
 
 const TrialsView = lazy(() => import("../../views/TrialsView").then((module) => ({ default: module.TrialsView })));
@@ -140,8 +140,7 @@ export function TrialsRoute({ context }: { context: ResearchRouteContext }) {
           trialId === null,
         )
       }
-      returnLabel={researchReturnLabel(activeReturnLocation)}
-      onReturn={activeReturnLocation ? () => navigate(activeReturnLocation, true, true) : undefined}
+      showListReturn={!activeReturnLocation}
       onSectionChange={(trialSection, replace = false) => navigate({ ...location, trialSection }, replace)}
       onOpenEntity={openEntityById}
       onOpenDrug={(entityId) => openDrugById(entityId, location.trialId ? workspaceUrl(location) : undefined)}

@@ -107,8 +107,6 @@ export function TargetView({
   onPipelineDisplayModeChange,
   initialPipelineAnalysis,
   onPipelineAnalysisChange,
-  returnLabel,
-  onReturn,
 }: {
   target: Entity | null;
   activeSection: TargetDossierSection;
@@ -147,8 +145,6 @@ export function TargetView({
     stageScope: PipelineAnalysisStageScope;
     targetAggregation: PipelineTargetAggregation;
   }) => void;
-  returnLabel?: string;
-  onReturn?: () => void;
 }) {
   const [provenanceSelection, setProvenanceSelection] = useState<ProvenanceSelection | null>(null);
   const openDrug = onOpenDrug ?? onOpenEntity;
@@ -194,12 +190,6 @@ export function TargetView({
   return (
     <>
       <section className="target-dossier">
-        {onReturn && returnLabel ? (
-          <button className="trial-back-button" type="button" onClick={onReturn}>
-            <ChevronLeft size={16} aria-hidden="true" />
-            {returnLabel}
-          </button>
-        ) : null}
         <div className="target-title-row">
           <div>
             <div className="target-symbol">

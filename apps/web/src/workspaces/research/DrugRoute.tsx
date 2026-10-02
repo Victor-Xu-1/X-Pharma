@@ -1,7 +1,6 @@
 import { lazy } from "react";
 import { ErrorState, Spinner } from "../../components/common";
 import { workspaceUrl } from "../../lib/workspaceRouting";
-import { researchReturnLabel } from "./locationModel";
 import type { ResearchRouteContext } from "./routeContext";
 
 const DrugView = lazy(() => import("../../views/DrugView").then((module) => ({ default: module.DrugView })));
@@ -10,7 +9,6 @@ export function DrugRoute({ context }: { context: ResearchRouteContext }) {
   const {
     location,
     selectedEntity,
-    activeReturnLocation,
     routeEntity,
     navigate,
     openDrugById,
@@ -54,22 +52,6 @@ export function DrugRoute({ context }: { context: ResearchRouteContext }) {
       onOpenDeal={openDealById}
       onOpenRegulatoryEvent={openRegulatoryEventById}
       onOpenNewsEvent={openNewsEventById}
-      returnTargetId={
-        activeReturnLocation?.view === "target" && activeReturnLocation.targetSection === "pipeline"
-          ? (activeReturnLocation.entityId ?? undefined)
-          : undefined
-      }
-      onReturnToTarget={
-        activeReturnLocation?.view === "target" && activeReturnLocation.targetSection === "pipeline"
-          ? () => navigate(activeReturnLocation, true, true)
-          : undefined
-      }
-      returnLabel={
-        activeReturnLocation?.view === "target" && activeReturnLocation.targetSection === "pipeline"
-          ? undefined
-          : researchReturnLabel(activeReturnLocation)
-      }
-      onReturn={activeReturnLocation ? () => navigate(activeReturnLocation, true, true) : undefined}
     />
   );
 }
