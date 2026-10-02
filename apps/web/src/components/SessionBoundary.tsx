@@ -48,6 +48,7 @@ export function SessionBoundary({
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    retry: false,
   });
   const user = session.data?.user ?? null;
   const authMode = session.data?.mode ?? "local";

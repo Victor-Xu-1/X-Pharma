@@ -3,6 +3,10 @@ import { expect } from "@playwright/test";
 
 export async function verifySessionRecovery({ page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">) {
   let recovered = false;
+  let cancelledUserReads = 0;
+  page.on("requestfailed", (request) => {
+    if (new URL(request.url()).pathname === "/api/v1/auth/me") cancelledUserReads += 1;
+  });
   await page.route("**/api/v1/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path === "/api/v1/auth/config") {
@@ -11,6 +15,8 @@ export async function verifySessionRecovery({ page }: Pick<PlaywrightTestArgs & 
         : route.fulfill({ status: 503, json: { detail: "Identity service unavailable" } });
     }
     if (path === "/api/v1/auth/me") {
+      // The failed sibling must cancel this stalled read before manual recovery.
+      if (!recovered) return;
       return route.fulfill({ status: 401, json: { detail: "Authentication required" } });
     }
     return route.fulfill({ json: [] });
@@ -18,6 +24,7 @@ export async function verifySessionRecovery({ page }: Pick<PlaywrightTestArgs & 
 
   await page.goto("/");
   await expect(page.getByText("Identity service unavailable", { exact: true })).toBeVisible();
+  await expect.poll(() => cancelledUserReads).toBeGreaterThan(0);
   recovered = true;
   await page.getByRole("button", { name: "重试" }).click();
   await expect(page.getByRole("heading", { name: "账户登录" })).toBeVisible();
