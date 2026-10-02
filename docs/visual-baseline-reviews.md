@@ -17,10 +17,15 @@ phase. Repeated focused real-PG runs reproduced the same 5,811-pixel
 rejection against the old reference. The CI and local real-PG fixed-column
 pixels agree. A direct SQLite navigation can paint that column differently
 even with identical computed fonts and bounds for 23 relevant elements.
-These observations identify a reference/paint difference, not a pagination
-or data-correctness fix. Chromium has also documented
-[fractional-offset and compositor snapping differences](https://issues.chromium.org/issues/352722599);
-that issue is supporting context, not proof of the exact browser cause here.
+The initial paint/scroll hypothesis was insufficient: after restoring the
+original row positioning, local Chrome 154.0.8037.92 produced the previous
+reference byte for byte. The CI installation log proves that its actual
+browser is 154.0.8037.97, while the previous manifest and local browser used
+154.0.8037.92. A signed, independently cached Chrome 154.0.8037.97 then passed
+all four focused real-PG paths with the reviewed reference in 31.9 seconds.
+This is a browser/reference profile correction, not a pagination or
+data-correctness fix. The profile is now 154.0.8037.97; other assets remain
+historical captures, not claims of 19 fresh screenshots.
 
 Changing virtual rows from `translateY` to `top`, resetting the outer scroll
 and explicitly aligning the locator did not resolve the rejection. Those
@@ -34,3 +39,13 @@ consume the same `dense-results-visual` implementation. Focused checks do
 not replace the registered 140-scenario acceptance guard. Current acceptance
 must be reported against the actual new commit and automatic CI result;
 this reference review alone is not a successful release or production claim.
+
+`scripts.browser_visual_profile` uses the reference manifest's one metadata
+validator. CI checks the installed Chrome before starting the stack, and the
+local runner resolves and checks its browser before crossing the Docker
+fixture boundary. Version drift fails with an actionable diagnostic; it
+never refreshes references automatically. Explicit Chrome reference review
+is still distinct from acceptance, Edge cannot update Chrome references,
+and explicit interrupted-fixture recovery does not depend on a matching
+browser. No older browser is installed over a user's current one to conceal
+profile drift.

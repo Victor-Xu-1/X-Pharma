@@ -238,6 +238,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - name: Install test clients
+        env:
+          VISUAL_PROFILE_REVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
         run: |
           uv sync --locked --dev
           pnpm --dir apps/web install --frozen-lockfile
@@ -245,6 +247,9 @@ jobs:
           source scripts/lib/browser_fonts.sh
           sudo apt-get install --yes --no-install-recommends "$BROWSER_FONT_PACKAGE=$BROWSER_FONT_VERSION"
           verify_browser_fonts
+          profile_args=()
+          if [[ "$VISUAL_PROFILE_REVIEW" == "true" ]]; then profile_args+=(--review-update); fi
+          uv run --locked python -m scripts.browser_visual_profile --browser "$(google-chrome --version)" "${profile_args[@]}"
       - name: Start integration stack
         env:
           KNOWLEDGE_SOURCE_ROOT: /tmp/pharma-source

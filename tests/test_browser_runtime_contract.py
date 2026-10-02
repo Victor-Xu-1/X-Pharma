@@ -50,10 +50,12 @@ def test_google_chrome_acceptance_uses_a_signed_user_level_distribution() -> Non
     acceptance = root / "scripts" / "run-browser-acceptance.sh"
     bootstrap_text = bootstrap.read_text(encoding="utf-8")
     acceptance_text = acceptance.read_text(encoding="utf-8")
+    runtime_helper = root / "scripts/lib/browser_runtime.sh"
+    runtime_text = runtime_helper.read_text(encoding="utf-8")
     bash = _bash_executable()
     assert bash is not None
 
-    for script in (bootstrap, acceptance):
+    for script in (bootstrap, acceptance, runtime_helper):
         completed = subprocess.run(  # noqa: S603 - fixed repository scripts are syntax checked only.
             [bash, "-n", _bash_script_path(script)],
             cwd=root,
@@ -81,7 +83,7 @@ def test_google_chrome_acceptance_uses_a_signed_user_level_distribution() -> Non
     assert '"accessibility_dossier": "[accessibility-dossier]"' in acceptance_text
     assert "browser_workers=${PHARMA_BROWSER_WORKERS:-4}" in acceptance_text
     assert '"--workers=$browser_workers"' in acceptance_text
-    assert "E2E_CHROME_EXECUTABLE" in acceptance_text
+    assert "E2E_CHROME_EXECUTABLE" in runtime_text
     assert "browser_projects=(desktop-1440 desktop-1920 tablet-1024 mobile-390)" in acceptance_text
     assert 'E2E_EMAIL_PREFIX="$email_prefix"' in acceptance_text
     assert 'E2E_REGULATORY_SUBJECT_ID="$regulatory_subject_id"' in acceptance_text
@@ -108,7 +110,7 @@ def test_google_chrome_acceptance_uses_a_signed_user_level_distribution() -> Non
     assert "fact_key LIKE 'browser-publication-e2e-%'" in acceptance_text
     assert "name LIKE 'Browser replay e2e-%'" in acceptance_text
     assert 'E2E_EMAIL="$email"' not in acceptance_text
-    assert 'browser_product="Google Chrome"' in acceptance_text
+    assert 'browser_product="Google Chrome"' in runtime_text
     assert '"research_workbench": "[research-workbench]"' in acceptance_text
     assert '"internal_workbench": "[internal-workbench]"' in acceptance_text
     assert '"ingestion_replay": "[ingestion-replay]"' in acceptance_text
@@ -241,6 +243,7 @@ def test_microsoft_edge_acceptance_uses_signed_current_and_previous_distribution
     acceptance = root / "scripts" / "run-browser-acceptance.sh"
     bootstrap_text = bootstrap.read_text(encoding="utf-8")
     acceptance_text = acceptance.read_text(encoding="utf-8")
+    runtime_text = (root / "scripts/lib/browser_runtime.sh").read_text(encoding="utf-8")
     bash = _bash_executable()
     assert bash is not None
 
@@ -261,10 +264,10 @@ def test_microsoft_edge_acceptance_uses_signed_current_and_previous_distribution
     assert "sudo " not in bootstrap_text
     assert "edge-current" in acceptance_text
     assert "edge-previous" in acceptance_text
-    assert "browser_channel=msedge" in acceptance_text
-    assert 'browser_product="Microsoft Edge"' in acceptance_text
+    assert "browser_channel=msedge" in runtime_text
+    assert 'browser_product="Microsoft Edge"' in runtime_text
     assert "Only Google Chrome may update the repository visual baseline" in acceptance_text
-    assert 'browser_launch_executable="$browser_executable"' in acceptance_text
+    assert 'browser_launch_executable="$browser_executable"' in runtime_text
     assert 'E2E_BROWSER_EXECUTABLE="$browser_launch_executable"' in acceptance_text
     assert 'PLAYWRIGHT_JSON_OUTPUT_FILE="$playwright_json_output_file"' in acceptance_text
     assert "E2E_PLAYWRIGHT_COMMAND" in acceptance_text

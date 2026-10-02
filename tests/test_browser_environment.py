@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -93,6 +94,9 @@ def test_real_browser_entry_loads_helpers_before_crossing_the_docker_boundary(tm
     scripts = {
         "fc-match": '#!/usr/bin/env bash\nprintf "%s" "$2"\n',
         "docker": '#!/usr/bin/env bash\nprintf "owned docker boundary reached\\n" >&2\nexit 73\n',
+        "test-chrome": '#!/usr/bin/env bash\nprintf "%s\\n" "'
+        + json.loads((root / "apps/web/e2e/visual-baselines/manifest.json").read_text(encoding="utf-8"))["browser"]
+        + '"\n',
     }
     for name, body in scripts.items():
         executable = binaries / name
@@ -103,7 +107,12 @@ def test_real_browser_entry_loads_helpers_before_crossing_the_docker_boundary(tm
     result = subprocess.run(  # noqa: S603 - fixed production entry; only Docker/font boundaries are fixtures.
         [bash, str(root / "scripts/run-browser-acceptance.sh")],
         cwd=tmp_path,
-        env={**os.environ, "PATH": f"{binaries}{os.pathsep}{os.environ['PATH']}", "COMPOSE_FILE": "owned-fixture"},
+        env={
+            **os.environ,
+            "PATH": f"{binaries}{os.pathsep}{os.environ['PATH']}",
+            "COMPOSE_FILE": "owned-fixture",
+            "E2E_BROWSER_EXECUTABLE": str(binaries / "test-chrome"),
+        },
         capture_output=True,
         text=True,
         timeout=10,

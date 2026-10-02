@@ -178,11 +178,8 @@ def _captured_at(value: str) -> str:
     return captured_utc.isoformat().replace("+00:00", "Z")
 
 
-def _baseline_asset(repo: Path, platform_image: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+def load_visual_baseline_manifest(repo: Path) -> dict[str, Any]:
     baseline_directory = (repo / "apps" / "web" / "e2e" / "visual-baselines").resolve(strict=True)
-    image_path = _regular_file(platform_image, "platform baseline", max_bytes=MAX_IMAGE_BYTES)
-    if not _is_within(image_path, baseline_directory):
-        raise ReferenceVisualPairError("platform baseline must be a committed workbench visual baseline")
     manifest_path = baseline_directory / "manifest.json"
     manifest = _load_json(manifest_path, "visual baseline manifest")
     if (
@@ -201,6 +198,15 @@ def _baseline_asset(repo: Path, platform_image: Path) -> tuple[dict[str, Any], d
         or re.fullmatch(r"Google Chrome [0-9]+(?:\.[0-9]+){3}", manifest["browser"]) is None
     ):
         raise ReferenceVisualPairError("visual baseline manifest has an unsupported or unsafe contract")
+    return manifest
+
+
+def _baseline_asset(repo: Path, platform_image: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+    baseline_directory = (repo / "apps" / "web" / "e2e" / "visual-baselines").resolve(strict=True)
+    image_path = _regular_file(platform_image, "platform baseline", max_bytes=MAX_IMAGE_BYTES)
+    if not _is_within(image_path, baseline_directory):
+        raise ReferenceVisualPairError("platform baseline must be a committed workbench visual baseline")
+    manifest = load_visual_baseline_manifest(repo)
     files = manifest.get("files")
     entry = files.get(image_path.name) if isinstance(files, dict) else None
     if (

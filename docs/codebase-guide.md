@@ -92,6 +92,8 @@ ClinicalTrials.gov、NextPharma 与 ChEMBL 的确定性处理分别归属 `adapt
 
 逐次参考审阅记录见 `visual-baseline-reviews.md`；清单只记录资产身份，不把历史生成日期当作所有资产刚刚重新截图的证据。
 
+浏览器查找和版本输出由 `scripts/lib/browser_runtime.sh` 单独拥有，普通运行在 Docker/夹具之前调用。CI 安装客户端后先运行同一 `scripts.browser_visual_profile`，使用参考清单的同一安全元数据读取器；Chrome 小版本漂移给出明确错误，不自动改参考、不降级浏览器、不放宽容差。Edge 对比、显式 Chrome 审阅和显式中断夹具恢复保留原各自边界。
+
 普通浏览器验收只按本次运行生成的邮箱前缀清理账号及其关联记录，不清理其他运行或相似名称的账号。只有显式 `--recover-interrupted-run` 才进入历史测试账号恢复模式；实体仍按已登记的夹具标识清理，原用户和业务数据不属于验收清理范围。
 
 公开 CI 冷启动暴露的索引创建竞争已在唯一 `OpenSearchGateway` 中处理：只有明确的 `resource_already_exists_exception` 会触发一次别名重读，保留最新的活动索引；映射、权限、其他错误与消失的竞争结果仍失败关闭。并发测试使用独立真实 OpenSearch 服务，不接触原恢复集群。
