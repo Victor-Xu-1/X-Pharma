@@ -144,7 +144,10 @@ opensearch_index_prefix=$(
 run_id="$(date -u +%Y%m%d%H%M%S)-$RANDOM"
 browser_projects=(desktop-1440 desktop-1920 tablet-1024 mobile-390)
 email_prefix="e2e-$run_id"
-email_pattern="e2e-%@example.test"
+email_pattern="${email_prefix}-%@example.test"
+if [[ "$recover_interrupted_run" == true ]]; then
+  email_pattern="e2e-%@example.test"
+fi
 password="$(openssl rand -hex 24)Aa1!"
 fixture_key="e2e-$run_id"
 output_dir="/tmp/pharma-browser-acceptance-$$"
