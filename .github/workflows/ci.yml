@@ -208,7 +208,7 @@ jobs:
 
   two-entry-smoke:
     runs-on: ubuntu-24.04
-    timeout-minutes: ${{ inputs.refresh_visual_baselines && 60 || 35 }}
+    timeout-minutes: ${{ inputs.refresh_visual_baselines && 60 || 45 }}
     env:
       E2E_EMAIL: analyst@example.test
       E2E_PASSWORD: ci-workspace-password

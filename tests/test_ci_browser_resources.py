@@ -10,6 +10,9 @@ def test_full_stack_browser_ci_serializes_quality_measurements_but_keeps_mcp_con
     workflow = cast(dict[str, Any], yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")))
     job = workflow["jobs"]["two-entry-smoke"]
     assert job["env"]["PHARMA_BROWSER_WORKERS"] == "1"
+    # Allow the serial viewport matrix plus cold stack startup and protocol gates;
+    # this changes only the whole job envelope, not case/action/SLO thresholds.
+    assert job["timeout-minutes"] == "${{ inputs.refresh_visual_baselines && 60 || 45 }}"
     steps = {step.get("name"): step for step in job["steps"]}
     assert (
         "./scripts/run-browser-acceptance.sh --output /tmp/browser-acceptance-report.json"
