@@ -10,6 +10,10 @@ def test_governance_dependencies_do_not_cycle_back_to_the_orchestrator() -> None
     modules = {path.stem: ast.parse(path.read_text(encoding="utf-8")) for path in ROOT.glob("*.py")}
     edges: dict[str, set[str]] = {name: set() for name in modules}
     helpers = {
+        "adapter_context",
+        "adapter_clinicaltrials",
+        "adapter_nextpharma",
+        "adapter_chembl",
         "contracts",
         "temporal_merge",
         "fact_identity",
@@ -77,6 +81,9 @@ def test_governance_helper_definitions_have_exactly_one_owner() -> None:
         "materialize_structured_fact": "materialization",
         "materialize_program": "materialize_programs",
         "materialize_trial": "materialize_trials",
+        "govern_clinicaltrials_gov": "adapter_clinicaltrials",
+        "govern_nextpharma": "adapter_nextpharma",
+        "govern_chembl": "adapter_chembl",
     }
     owners: dict[str, list[str]] = {name: [] for name in expected}
     for path in ROOT.glob("*.py"):
@@ -90,6 +97,16 @@ def test_orchestrator_does_not_reintroduce_domain_projection_methods() -> None:
     service = ast.parse((ROOT / "service.py").read_text(encoding="utf-8"))
     assert not any(
         isinstance(node, ast.FunctionDef)
-        and node.name.startswith(("_materialize_", "_sync_program_", "_append_program_", "_target_combination_key"))
+        and node.name.startswith(
+            (
+                "_materialize_",
+                "_sync_program_",
+                "_append_program_",
+                "_target_combination_key",
+                "_govern_clinicaltrials_gov",
+                "_govern_nextpharma",
+                "_govern_chembl",
+            )
+        )
         for node in ast.walk(service)
     )

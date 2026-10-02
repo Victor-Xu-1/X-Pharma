@@ -60,6 +60,8 @@ ORM 的公共入口是 `models/__init__.py`，只聚合显式导出；领域表�
 
 已批准结构化事实通过 `governance/materialization` 的唯一分派进入六个 `materialize_*` 领域模块。`MaterializationContext` 显式声明现有事务、组织、规范化器及授权实体/关系/来源类型能力；各模块不自行创建治理服务、会话或另起提交边界。服务不保留旧的领域材料化方法，投影失败和延后语义仍交给原发布流程处理。
 
+ClinicalTrials.gov、NextPharma 与 ChEMBL 的确定性处理分别归属 `adapter_clinicaltrials`、`adapter_nextpharma` 和 `adapter_chembl`。`AdapterContext` 显式复用同一来源版本、会话、组织、对象存储、规范化器和统一暂存/失败/状态回调；适配器保留来源授权、不可变内容哈希、幂等策略和审计，不自行构造另一套治理服务。`govern_version` 只负责选择已识别来源及受控模型处理。
+
 `scripts/release/` 是发布证据的唯一实现，合同、记录、文件安全、策略、领域校验、采集、签名、打包、验证与交接各自归属具体模块。`release_evidence.py` 仅保留已验证的直接 CLI 与其他命令入口依赖的公共委派。该库纳入 Ruff/Mypy、依赖 DAG 和真实文件/子进程/签名回归，不保留旧 7,000 多行实现。
 
 公共名称集中在后端 `product.py` 与前端 `lib/product.ts`；API、MCP、来源请求、登录和导航复用该定义。软件版本为 v0.1.0，`pyproject.toml` 唯一拥有语义版本：API 与 MCP 读取发行包元数据，Web 构建读取生成 OpenAPI 并校验清单镜像，HTML 生成器读取同一产品清单。版本回归同时检查实际 MCP initialize 协议和页面可见标识，不能把 SDK 版本当产品版本。内部数据库、协议和 CLI 标识保持稳定，已有业务数据不因品牌变动而迁移。
