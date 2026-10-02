@@ -9,7 +9,23 @@ ROOT = Path(__file__).resolve().parents[1] / "src/pharma_intel/governance"
 def test_governance_dependencies_do_not_cycle_back_to_the_orchestrator() -> None:
     modules = {path.stem: ast.parse(path.read_text(encoding="utf-8")) for path in ROOT.glob("*.py")}
     edges: dict[str, set[str]] = {name: set() for name in modules}
-    helpers = {"contracts", "temporal_merge", "fact_identity", "citations", "source_profiles", "policy", "model_audit"}
+    helpers = {
+        "contracts",
+        "temporal_merge",
+        "fact_identity",
+        "citations",
+        "source_profiles",
+        "policy",
+        "model_audit",
+        "materialization_context",
+        "materialization",
+        "materialize_targets",
+        "materialize_chemistry",
+        "materialize_programs",
+        "materialize_trials",
+        "materialize_assets",
+        "materialize_events",
+    }
     for name, tree in modules.items():
         for node in ast.walk(tree):
             if not isinstance(node, ast.ImportFrom) or not node.module:
@@ -58,6 +74,9 @@ def test_governance_helper_definitions_have_exactly_one_owner() -> None:
         "governance_policy_manifest": "policy",
         "governance_policy_sha256": "policy",
         "_extraction_audit": "model_audit",
+        "materialize_structured_fact": "materialization",
+        "materialize_program": "materialize_programs",
+        "materialize_trial": "materialize_trials",
     }
     owners: dict[str, list[str]] = {name: [] for name in expected}
     for path in ROOT.glob("*.py"):
@@ -65,3 +84,12 @@ def test_governance_helper_definitions_have_exactly_one_owner() -> None:
             if isinstance(node, ast.FunctionDef | ast.ClassDef) and node.name in owners:
                 owners[node.name].append(path.stem)
     assert owners == {name: [owner] for name, owner in expected.items()}
+
+
+def test_orchestrator_does_not_reintroduce_domain_projection_methods() -> None:
+    service = ast.parse((ROOT / "service.py").read_text(encoding="utf-8"))
+    assert not any(
+        isinstance(node, ast.FunctionDef)
+        and node.name.startswith(("_materialize_", "_sync_program_", "_append_program_", "_target_combination_key"))
+        for node in ast.walk(service)
+    )

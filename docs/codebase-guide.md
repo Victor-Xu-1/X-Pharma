@@ -58,6 +58,8 @@ ORM 的公共入口是 `models/__init__.py`，只聚合显式导出；领域表�
 
 治理服务的公共入口为 `governance/service.py`，不重复定义辅助规则。`contracts` 拥有异常、结构化治理版本和分段类型；`citations` 拥有分段、引用定位和去重；`fact_identity` 拥有稳定事实键及载荷身份；`temporal_merge` 拥有阶段、日期和历史合并；`source_profiles` 拥有来源裁剪和权威身份校验；`policy` 与 `model_audit` 分别拥有策略指纹、预算计量和审计内容。源资料、策略指纹、字段规则与公开异常接口保持不变；这些模块不能反向导入治理编排服务。
 
+已批准结构化事实通过 `governance/materialization` 的唯一分派进入六个 `materialize_*` 领域模块。`MaterializationContext` 显式声明现有事务、组织、规范化器及授权实体/关系/来源类型能力；各模块不自行创建治理服务、会话或另起提交边界。服务不保留旧的领域材料化方法，投影失败和延后语义仍交给原发布流程处理。
+
 `scripts/release/` 是发布证据的唯一实现，合同、记录、文件安全、策略、领域校验、采集、签名、打包、验证与交接各自归属具体模块。`release_evidence.py` 仅保留已验证的直接 CLI 与其他命令入口依赖的公共委派。该库纳入 Ruff/Mypy、依赖 DAG 和真实文件/子进程/签名回归，不保留旧 7,000 多行实现。
 
 公共名称集中在后端 `product.py` 与前端 `lib/product.ts`；API、MCP、来源请求、登录和导航复用该定义。软件版本为 v0.1.0，`pyproject.toml` 唯一拥有语义版本：API 与 MCP 读取发行包元数据，Web 构建读取生成 OpenAPI 并校验清单镜像，HTML 生成器读取同一产品清单。版本回归同时检查实际 MCP initialize 协议和页面可见标识，不能把 SDK 版本当产品版本。内部数据库、协议和 CLI 标识保持稳定，已有业务数据不因品牌变动而迁移。

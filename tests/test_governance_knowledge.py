@@ -12,6 +12,7 @@ from pharma_intel.accounts.identity import create_account
 from pharma_intel.config import Settings
 from pharma_intel.governance.citations import _quote_source_match
 from pharma_intel.governance.contracts import DocumentSegment
+from pharma_intel.governance.materialize_programs import materialize_program
 from pharma_intel.governance.model_gateway import (
     ExtractionResponse,
     ModelGatewayError,
@@ -826,7 +827,7 @@ def test_ai_facts_are_quote_gated_reviewed_published_and_compiled(
     assert governed_program_organization.position == 0
     staged_program = session.scalar(select(StagedFact).where(StagedFact.fact_kind == "program"))
     assert staged_program is not None
-    service._materialize_program(staged_program, staged_program.payload)
+    materialize_program(service, staged_program, staged_program.payload)
     session.flush()
     assert session.scalar(select(func.count()).select_from(DevelopmentProgram)) == 1
     assert session.scalar(select(func.count()).select_from(DevelopmentProgramOrganization)) == 1
