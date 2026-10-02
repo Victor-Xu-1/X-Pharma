@@ -28,6 +28,9 @@ def test_architecture_overview_is_self_contained_and_preserves_honest_readiness_
     assert "OrganizationMembership" in document and "仅源码 ZIP" in document
     assert "不共享原数据" in document and "不提交 GitHub" in document
     assert "不等于" in document and "UAT" in document
+    assert 'href="#interaction"' in document and 'id="interaction"' in document
+    assert "ResearchReturnControl" in document and "useRouteEntity" in document
+    assert "Portal" in document and "筛选、排序、分页和原预览" in document
     assert escape("<script>alert('unsafe')</script>").startswith("&lt;script&gt;")
 
 

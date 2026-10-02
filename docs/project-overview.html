@@ -161,6 +161,7 @@ summary{list-style:none}
 <a href="#goals">项目目标</a>
 <a href="#architecture">完整架构</a>
 <a href="#identity">账号与组织</a>
+<a href="#interaction">页面与查询逻辑</a>
 <a href="#abilities">能力清单</a>
 <a href="#delivery">交付与缺口</a>
 </nav>
@@ -255,6 +256,46 @@ home_tenant_id 只是默认归属，不授予角色。
 组织停用仅撤销本组织会话，改密撤销全局旧会话。
 </p>
 </article>
+</div>
+</section>
+<section id="interaction">
+<h2>筛选、结果与档案的状态归属</h2>
+<p>查询草稿、已执行查询与当前预览各有明确归属；页面不以尚未提交的输入冒充结果条件。
+跨领域详情和返回使用已校验的同工作台 URL，不依赖未知浏览器历史。
+下面描述当前实现规则，实际质量结论仍以对应源码的验证证据为准。
+</p>
+<div class="flow">
+<div class="flow-row">
+<div class="node"><strong>1 · 草稿与选择</strong>
+输入和候选选择仅修改草稿；有效选择绑定规范实体 ID。
+取消、清空、无效输入与失败状态不能偷偷执行另一条查询。
+</div>
+<div class="node"><strong>2 · 已执行查询</strong>
+URL 保存筛选、排序、分页与展示方式；请求及服务端 applied_filters 对应同一查询。
+选中比较、保存和导出使用已执行条件，不混入未提交草稿。
+</div>
+<div class="node"><strong>3 · 预览与完整档案</strong>
+URL 保存预览实体和详情分节；来源保留筛选、排序、分页和原预览。
+同一实体的读取与成功缓存共用，不为各页面另造数据副本。
+</div>
+</div>
+<div class="arrow">结果 → 快速预览 → 专业档案 → 明确返回已执行查询与原预览</div>
+</div>
+<div class="grid">
+<article class="card"><h3>加载与错误也能返回</h3>
+<p><code>ResearchReturnControl</code> 位于懒加载和数据正文之外。
+药物、靶点、临床等领域共用唯一来源返回；无来源的临床详情才显示本页试验列表返回。
+</p></article>
+<article class="card"><h3>有界恢复，不形成循环</h3>
+<p><code>useRouteEntity</code> 只在明确导航后对失败且空闲的读取恢复一次。
+成功数据继续共享，普通重渲染和再次失败不自行循环请求。
+会话未确认时不显示旧账号或旧组织的保护数据。
+</p></article>
+<article class="card"><h3>真实可操作的预览</h3>
+<p>快速预览通过 Portal 脱离正文层叠与横向滚动，保留共享模态焦点管理。
+长名称与动作可换行；手机操作不依靠强制点击穿过背景。
+公开结果仍只展示已发布记录。
+</p></article>
 </div>
 </section>
 <section id="abilities">
