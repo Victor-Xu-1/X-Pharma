@@ -28,7 +28,7 @@ def _entity(name: str = "Entry consistency marker-1") -> dict[str, Any]:
             "acceptance_fixture_kind": "entry_consistency",
             "acceptance_fixture_marker": "marker-1",
         },
-        "review_status": "draft",
+        "review_status": "verified",
         "canonical_entity_id": "entity-1",
         "identity_identifiers": [
             {
@@ -36,7 +36,7 @@ def _entity(name: str = "Entry consistency marker-1") -> dict[str, Any]:
                 "value": "marker-1",
                 "normalized_value": "marker-1",
                 "trusted_namespace": False,
-                "review_status": "draft",
+                "review_status": "verified",
                 "source_document_id": None,
             }
         ],
@@ -72,8 +72,10 @@ class FakeMcpSession:
         return CallToolResult(content=[], structuredContent=payload)
 
 
-def _web_transport() -> httpx.MockTransport:
+def _web_transport(*, published: bool = True) -> httpx.MockTransport:
     entity = _entity()
+    if not published:
+        entity["review_status"] = "draft"
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/api/v1/auth/login":
@@ -86,6 +88,7 @@ def _web_transport() -> httpx.MockTransport:
         if request.url.path == "/api/v1/entities" and request.method == "GET":
             assert request.url.params["q"] == "marker-1"
             assert request.url.params["entity_type"] == "target"
+            assert request.url.params["review_status"] == "verified"
             return httpx.Response(200, json={"items": [entity]})
         return httpx.Response(404)
 
@@ -122,6 +125,20 @@ async def test_entry_consistency_rejects_cross_entry_field_drift() -> None:
             await entry_consistency_probe.verify_clients(
                 web,
                 FakeMcpSession(entity_name="Drifted name"),
+                email="analyst@example.test",
+                password=TEST_PASSWORD,
+                fixture_marker="marker-1",
+                expected_protocol_version="2025-11-25",
+            )
+
+
+@pytest.mark.asyncio
+async def test_entry_consistency_rejects_draft_without_a_scoped_publication_step() -> None:
+    async with httpx.AsyncClient(base_url="http://web.test", transport=_web_transport(published=False)) as web:
+        with pytest.raises(RuntimeError, match="published fixture"):
+            await entry_consistency_probe.verify_clients(
+                web,
+                FakeMcpSession(),
                 email="analyst@example.test",
                 password=TEST_PASSWORD,
                 fixture_marker="marker-1",

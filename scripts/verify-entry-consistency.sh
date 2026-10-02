@@ -234,6 +234,8 @@ result=$(
       --web-url "$web_url" \
       --mcp-url "$mcp_url" \
       --fixture-marker "$fixture_marker" \
+      --fixture-container "$(docker compose ps -q api)" \
+      --fixture-tenant "$tenant_id" \
       --expected-protocol-version "$protocol_baseline"
 )
 remove_fixtures 1

@@ -5,7 +5,10 @@ import asyncio
 import hashlib
 import json
 import os
+import re
+import shutil
 import uuid
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from typing import Any
 
@@ -79,6 +82,7 @@ async def verify_clients(
     password: str,
     fixture_marker: str,
     expected_protocol_version: str,
+    publish_fixture: Callable[[str], Awaitable[None]] | None = None,
 ) -> dict[str, Any]:
     await _web_json(
         web,
@@ -116,6 +120,12 @@ async def verify_clients(
         raise RuntimeError("Web entity creation omitted the stable ID")
     web_entity = await _web_json(web, "GET", f"/api/v1/entities/{entity_id}", expected_status=200)
     canonical = _assert_same_entity(created, web_entity, "Web create/read")
+    if publish_fixture is not None:
+        await publish_fixture(entity_id)
+        web_entity = await _web_json(web, "GET", f"/api/v1/entities/{entity_id}", expected_status=200)
+        canonical = _canonical_entity(web_entity, "Published Web entity")
+    if web_entity.get("review_status") != "verified":
+        raise RuntimeError("Entry consistency requires a published fixture, not an unpublished draft")
 
     web_search_item: dict[str, Any] | None = None
     for _ in range(30):
@@ -124,7 +134,13 @@ async def verify_clients(
             "GET",
             "/api/v1/entities",
             expected_status=200,
-            params={"q": fixture_marker, "entity_type": "target", "limit": 10, "offset": 0},
+            params={
+                "q": fixture_marker,
+                "entity_type": "target",
+                "review_status": "verified",
+                "limit": 10,
+                "offset": 0,
+            },
         )
         items = search.get("items")
         if not isinstance(items, list):
@@ -167,6 +183,7 @@ async def verify_clients(
             {
                 "query": fixture_marker,
                 "entity_type": "target",
+                "review_status": "verified",
                 "limit": 10,
                 "idempotency_key": f"entry-consistency-{uuid.uuid4().hex}",
                 "max_billable_units": "100",
@@ -225,7 +242,37 @@ async def verify(
     password: str,
     fixture_marker: str,
     expected_protocol_version: str,
+    fixture_container: str | None = None,
+    fixture_tenant: str | None = None,
 ) -> dict[str, Any]:
+    async def publish_fixture(entity_id: str) -> None:
+        if not fixture_container or not fixture_tenant or re.fullmatch(r"[0-9a-f]{64}", fixture_container) is None:
+            raise RuntimeError("An explicit owned fixture container and tenant are required")
+        uuid.UUID(fixture_tenant)
+        uuid.UUID(entity_id)
+        docker = shutil.which("docker")
+        if docker is None:
+            raise RuntimeError("Docker is unavailable for isolated fixture publication")
+        process = await asyncio.create_subprocess_exec(
+            docker,
+            "exec",
+            fixture_container,
+            "python",
+            "-m",
+            "pharma_intel.entry_consistency_fixture",
+            "--tenant-id",
+            fixture_tenant,
+            "--entity-id",
+            entity_id,
+            "--marker",
+            fixture_marker,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        await process.communicate()
+        if process.returncode != 0:
+            raise RuntimeError("The isolated entry fixture could not be published")
+
     timeout = httpx.Timeout(60, connect=10)
     async with httpx.AsyncClient(base_url=web_url, timeout=timeout, trust_env=False) as web:
         async with httpx.AsyncClient(
@@ -247,6 +294,7 @@ async def verify(
                         password=password,
                         fixture_marker=fixture_marker,
                         expected_protocol_version=expected_protocol_version,
+                        publish_fixture=publish_fixture if fixture_container else None,
                     )
 
 
@@ -256,6 +304,8 @@ def main() -> None:
     parser.add_argument("--mcp-url", required=True)
     parser.add_argument("--fixture-marker", required=True)
     parser.add_argument("--expected-protocol-version", required=True)
+    parser.add_argument("--fixture-container")
+    parser.add_argument("--fixture-tenant")
     args = parser.parse_args()
     token = os.environ.get("TEST_MCP_ACCESS_TOKEN", "")
     email = os.environ.get("ENTRY_TEST_EMAIL", "")
@@ -271,6 +321,8 @@ def main() -> None:
             password,
             args.fixture_marker,
             args.expected_protocol_version,
+            args.fixture_container,
+            args.fixture_tenant,
         )
     )
     print(json.dumps(result, sort_keys=True))
