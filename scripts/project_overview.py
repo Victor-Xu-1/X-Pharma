@@ -360,6 +360,10 @@ URL 保存预览实体和详情分节；来源保留筛选、排序、分页和�
 公开结果仍只展示已发布记录。
 </p></article>
 </div>
+<p class="note"><code>TargetView</code> 只组合档案和分节；概览、证据、分子数据及相关记录各有独立模块。
+竞品管线由 <code>useTargetPipeline</code> 唯一拥有查询与交互状态，筛选、工具栏和结果表只消费明确的状态与回调，
+不自行创建第二套查询。展示和分面规则保持服务端权威，旧大文件实现已移除。
+</p>
 </section>
 <section id="abilities">
 <h2>实现能力与明确缺口</h2>

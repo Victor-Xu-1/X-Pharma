@@ -31,6 +31,7 @@ def test_architecture_overview_is_self_contained_and_preserves_honest_readiness_
     assert 'href="#interaction"' in document and 'id="interaction"' in document
     assert "ResearchReturnControl" in document and "useRouteEntity" in document
     assert "Portal" in document and "筛选、排序、分页和原预览" in document
+    assert "TargetView" in document and "useTargetPipeline" in document
     assert escape("<script>alert('unsafe')</script>").startswith("&lt;script&gt;")
 
 

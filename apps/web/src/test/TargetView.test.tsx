@@ -15,7 +15,8 @@ import { loadRecordProvenance } from "../lib/contracts/provenance";
 import { loadTargetDossier, loadTargetSar } from "../lib/contracts/target";
 import type { Entity } from "../lib/types";
 import type { TargetDossierSection } from "../lib/workspaceRouting";
-import { pipelineProgramStatusLabel, pipelineSelectOptions, TargetView } from "../views/TargetView";
+import { TargetView } from "../views/TargetView";
+import { pipelineProgramStatusLabel, pipelineSelectOptions } from "../views/target/pipeline/presentation";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/target", () => ({
