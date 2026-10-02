@@ -13,7 +13,8 @@ from pharma_intel.config import Settings
 from pharma_intel.governance.model_gateway import ExtractionResponse, OpenAICompatibleExtractionGateway
 from pharma_intel.governance.nextpharma import NextPharmaWorkbookError, parse_nextpharma_workbook
 from pharma_intel.governance.schemas import ExtractionEnvelope
-from pharma_intel.governance.service import GovernanceService, _normalize_phase
+from pharma_intel.governance.service import GovernanceService
+from pharma_intel.governance.temporal_merge import _normalize_phase
 from pharma_intel.models import (
     DataSource,
     DataSourceType,

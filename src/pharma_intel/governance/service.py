@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import re
-from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any, cast
@@ -29,6 +27,11 @@ from pharma_intel.governance.chembl import (
     is_authorized_chembl_asset,
     parse_chembl_snapshot,
 )
+from pharma_intel.governance.citations import (
+    _deduplicate_prepared_facts,
+    _quote_source_match,
+    _segments,
+)
 from pharma_intel.governance.clinicaltrials_gov import (
     ADAPTER_NAME as CLINICALTRIALS_GOV_ADAPTER_NAME,
 )
@@ -42,10 +45,55 @@ from pharma_intel.governance.clinicaltrials_gov import (
     is_authorized_clinicaltrials_gov_asset,
     parse_clinicaltrials_gov_snapshot,
 )
+from pharma_intel.governance.contracts import (
+    CLINICALTRIALS_PROFILE_INPUT_STRING_CHARS as CLINICALTRIALS_PROFILE_INPUT_STRING_CHARS,
+)
+from pharma_intel.governance.contracts import (
+    HIGH_RISK_FACT_KINDS as HIGH_RISK_FACT_KINDS,
+)
+from pharma_intel.governance.contracts import (
+    MILLION_TOKENS as MILLION_TOKENS,
+)
+from pharma_intel.governance.contracts import (
+    POLICY_SCHEMA as POLICY_SCHEMA,
+)
+from pharma_intel.governance.contracts import (
+    SCHEMA_NAME as SCHEMA_NAME,
+)
+from pharma_intel.governance.contracts import (
+    SCHEMA_VERSION as SCHEMA_VERSION,
+)
+from pharma_intel.governance.contracts import (
+    DocumentSegment as DocumentSegment,
+)
+from pharma_intel.governance.contracts import (
+    GovernanceBudgetError as GovernanceBudgetError,
+)
+from pharma_intel.governance.contracts import (
+    GovernanceError as GovernanceError,
+)
+from pharma_intel.governance.contracts import (
+    PreparedSegmentFact as PreparedSegmentFact,
+)
+from pharma_intel.governance.contracts import (
+    SourceQuoteMatch as SourceQuoteMatch,
+)
+from pharma_intel.governance.fact_identity import (
+    _authority_value_matches,
+    _hash_json,
+    _payload_without_citation,
+    _prepared_fact_key,
+    _primary_subject,
+    _projection,
+    _reference_matches_entity,
+)
+from pharma_intel.governance.model_audit import (
+    _extraction_audit,
+    _model_cost,
+)
 from pharma_intel.governance.model_gateway import (
     ModelGatewayError,
     OpenAICompatibleExtractionGateway,
-    extraction_schema,
     extraction_system_prompt,
 )
 from pharma_intel.governance.nextpharma import (
@@ -63,21 +111,38 @@ from pharma_intel.governance.nextpharma import (
     adapter_policy_manifest as nextpharma_policy_manifest,
 )
 from pharma_intel.governance.normalization import FactNormalizer, PreparedFact
+from pharma_intel.governance.policy import (
+    governance_policy_manifest as governance_policy_manifest,
+)
+from pharma_intel.governance.policy import (
+    governance_policy_sha256 as governance_policy_sha256,
+)
 from pharma_intel.governance.schemas import (
-    ActivityFact,
-    ClaimFact,
-    DealFact,
-    EpidemiologyFact,
-    ExtractedFact,
     ExtractionEnvelope,
-    NewsFact,
-    PatentFact,
     ProgramFact,
-    RegulatoryFact,
     StructureFact,
-    TargetEvidenceFact,
     TargetProfileFact,
     TrialFact,
+)
+from pharma_intel.governance.source_profiles import (
+    _enforce_profiled_identity,
+    _profiled_model_text,
+    _validate_profiled_response,
+)
+from pharma_intel.governance.temporal_merge import (
+    _as_utc,
+    _merge_patent_claims,
+    _merge_patent_legal_events,
+    _merge_patent_publications,
+    _merge_program_milestones,
+    _merge_program_status_history,
+    _merge_strings,
+    _merge_trial_status_history,
+    _normalize_phase,
+    _validated_datetime,
+    _optional_decimal,
+    _required_datetime,
+    _should_update_temporal_state,
 )
 from pharma_intel.identity import EntityIdentityService, IdentityError, normalize_name
 from pharma_intel.models import (
@@ -129,34 +194,6 @@ from pharma_intel.models import (
     TrialEntityRole,
 )
 from pharma_intel.object_store import ObjectStore
-
-SCHEMA_NAME = "pharma_document_facts"
-SCHEMA_VERSION = "2.13.0"
-POLICY_SCHEMA = "pharma.governance-policy.v1"
-HIGH_RISK_FACT_KINDS = frozenset(
-    {
-        "activity",
-        "deal",
-        "epidemiology",
-        "news",
-        "patent",
-        "program",
-        "regulatory",
-        "structure",
-        "target_evidence",
-        "trial",
-    }
-)
-MILLION_TOKENS = Decimal("1000000")
-CLINICALTRIALS_PROFILE_INPUT_STRING_CHARS = 1200
-
-
-class GovernanceError(RuntimeError):
-    pass
-
-
-class GovernanceBudgetError(GovernanceError):
-    pass
 
 
 def recover_stale_extraction_runs(
@@ -213,29 +250,6 @@ def recover_stale_extraction_runs(
     if runs:
         session.commit()
     return len(runs)
-
-
-@dataclass(frozen=True)
-class DocumentSegment:
-    text: str
-    start_char: int
-    end_char: int
-
-
-@dataclass(frozen=True)
-class SourceQuoteMatch:
-    locator: str
-    quote: str
-
-
-@dataclass(frozen=True)
-class PreparedSegmentFact:
-    prepared: PreparedFact
-    segment_index: int
-    segment_sha256: str
-    quote_verified: bool
-    source_locator: str | None
-    source_quote: str | None
 
 
 class GovernanceService:
@@ -1517,7 +1531,7 @@ class GovernanceService:
             self.session.add(observation)
         elif observation.target_entity_id != target.id:
             raise GovernanceError("Target evidence record identifier is already assigned to another target")
-        incoming_observed_at = _optional_datetime(payload.get("observed_at"))
+        incoming_observed_at = _validated_datetime(payload.get("observed_at"))
         if _should_update_temporal_state(observation.observed_at, incoming_observed_at):
             observation.disease_entity_id = disease.id if disease else None
             observation.evidence_type = str(payload["evidence_type"])
@@ -1716,7 +1730,7 @@ class GovernanceService:
                 phase=phase,
             )
             self.session.add(program)
-        incoming_status_date = _optional_datetime(payload.get("status_date"))
+        incoming_status_date = _validated_datetime(payload.get("status_date"))
         should_update_current = program.status_date is None or (
             incoming_status_date is not None and _as_utc(incoming_status_date) >= _as_utc(program.status_date)
         )
@@ -1752,7 +1766,7 @@ class GovernanceService:
             ("china_phase", "china_phase_started_at"),
         ):
             regional_phase = regional_phases[field_name]
-            incoming_phase_at = _optional_datetime(payload.get(date_field))
+            incoming_phase_at = _validated_datetime(payload.get(date_field))
             current_phase_at = cast(datetime | None, getattr(program, date_field))
             if regional_phase is not None and _should_update_temporal_state(current_phase_at, incoming_phase_at):
                 setattr(program, field_name, regional_phase.value)
@@ -1951,9 +1965,9 @@ class GovernanceService:
         trial.phases = list(payload.get("phases") or [])
         trial.study_type = cast(str | None, payload.get("study_type"))
         trial.enrollment = cast(int | None, payload.get("enrollment"))
-        trial.start_date = _optional_datetime(payload.get("start_date"))
+        trial.start_date = _validated_datetime(payload.get("start_date"))
         trial.start_date_precision = cast(str | None, payload.get("start_date_precision"))
-        trial.completion_date = _optional_datetime(payload.get("completion_date"))
+        trial.completion_date = _validated_datetime(payload.get("completion_date"))
         trial.completion_date_precision = cast(str | None, payload.get("completion_date_precision"))
         trial.conditions = list(payload.get("conditions") or [])
         trial.interventions = [dict(item) for item in payload.get("interventions") or []]
@@ -1964,8 +1978,8 @@ class GovernanceService:
         trial.arms = [dict(item) for item in payload.get("arms") or []]
         trial.outcomes = [dict(item) for item in payload.get("outcomes") or []]
         trial.result_evaluation = cast(str | None, payload.get("result_evaluation"))
-        trial.results_first_posted = _optional_datetime(payload.get("results_first_posted"))
-        trial.last_update_posted = _optional_datetime(payload.get("last_update_posted"))
+        trial.results_first_posted = _validated_datetime(payload.get("results_first_posted"))
+        trial.last_update_posted = _validated_datetime(payload.get("last_update_posted"))
         trial.status_history = _merge_trial_status_history(
             trial.status_history or [],
             cast(list[dict[str, Any]], payload.get("status_history") or []),
@@ -2155,18 +2169,18 @@ class GovernanceService:
             patent.publications or [],
             cast(list[dict[str, Any] | str], payload.get("publications") or []),
         )
-        incoming_priority_date = _optional_datetime(payload.get("priority_date"))
+        incoming_priority_date = _validated_datetime(payload.get("priority_date"))
         if incoming_priority_date is not None and (
             patent.priority_date is None or _as_utc(incoming_priority_date) < _as_utc(patent.priority_date)
         ):
             patent.priority_date = incoming_priority_date
-        incoming_status_at = _optional_datetime(payload.get("legal_status_at"))
+        incoming_status_at = _validated_datetime(payload.get("legal_status_at"))
         should_update_status = _should_update_temporal_state(patent.legal_status_at, incoming_status_at)
         if should_update_status and payload.get("legal_status") is not None:
             patent.legal_status = cast(str | None, payload.get("legal_status"))
             patent.legal_status_at = incoming_status_at
             if payload.get("expiration_date") is not None:
-                patent.expiration_date = _optional_datetime(payload.get("expiration_date"))
+                patent.expiration_date = _validated_datetime(payload.get("expiration_date"))
         patent.legal_events = _merge_patent_legal_events(
             patent.legal_events or [],
             cast(list[dict[str, Any]], payload.get("legal_events") or []),
@@ -2253,9 +2267,9 @@ class GovernanceService:
             {"entity_id": entity.id, "name": entity.name, "entity_type": entity.entity_type.value} for entity in parties
         ]
         deal.asset_entity_ids = [entity.id for entity in assets]
-        deal.announced_at = _optional_datetime(payload.get("announced_at"))
-        deal.terminated_at = _optional_datetime(payload.get("terminated_at"))
-        deal.source_updated_at = _optional_datetime(payload.get("source_updated_at"))
+        deal.announced_at = _validated_datetime(payload.get("announced_at"))
+        deal.terminated_at = _validated_datetime(payload.get("terminated_at"))
+        deal.source_updated_at = _validated_datetime(payload.get("source_updated_at"))
         deal.territory = cast(str | None, payload.get("territory"))
         deal.upfront_amount = cast(float | None, payload.get("upfront_amount"))
         deal.total_potential_amount = cast(float | None, payload.get("total_potential_amount"))
@@ -2376,11 +2390,11 @@ class GovernanceService:
         event.event_type = str(payload["event_type"])
         event.status = cast(str | None, payload.get("status"))
         event.title = str(payload["title"])
-        event.decision_date = _optional_datetime(payload.get("decision_date"))
+        event.decision_date = _validated_datetime(payload.get("decision_date"))
         event.designation_type = cast(str | None, payload.get("designation_type"))
         event.label_change_type = cast(str | None, payload.get("label_change_type"))
         event.label_version = cast(str | None, payload.get("label_version"))
-        event.label_effective_at = _optional_datetime(payload.get("label_effective_at"))
+        event.label_effective_at = _validated_datetime(payload.get("label_effective_at"))
         event.approved_population = cast(str | None, payload.get("approved_population"))
         event.line_of_therapy = cast(str | None, payload.get("line_of_therapy"))
         event.biomarker = cast(str | None, payload.get("biomarker"))
@@ -2391,12 +2405,12 @@ class GovernanceService:
         event.safety_term = cast(str | None, payload.get("safety_term"))
         event.safety_severity = cast(str | None, payload.get("safety_severity"))
         event.safety_status = cast(str | None, payload.get("safety_status"))
-        event.safety_identified_at = _optional_datetime(payload.get("safety_identified_at"))
-        event.safety_confirmed_at = _optional_datetime(payload.get("safety_confirmed_at"))
-        event.safety_resolved_at = _optional_datetime(payload.get("safety_resolved_at"))
+        event.safety_identified_at = _validated_datetime(payload.get("safety_identified_at"))
+        event.safety_confirmed_at = _validated_datetime(payload.get("safety_confirmed_at"))
+        event.safety_resolved_at = _validated_datetime(payload.get("safety_resolved_at"))
         event.affected_population = cast(str | None, payload.get("affected_population"))
         event.risk_actions = [str(action) for action in payload.get("risk_actions") or []]
-        event.source_updated_at = _optional_datetime(payload.get("source_updated_at"))
+        event.source_updated_at = _validated_datetime(payload.get("source_updated_at"))
         event.indication_entity_id = indication.id if indication else None
         event.organization_entity_id = organization.id if organization else None
         event.details = dict(payload.get("details") or {})
@@ -2489,8 +2503,8 @@ class GovernanceService:
             observation.patient_population_id = population.id
         observation.age_group = cast(str | None, payload.get("age_group"))
         observation.sex = cast(str | None, payload.get("sex"))
-        observation.period_start = _optional_datetime(payload.get("period_start"))
-        observation.period_end = _optional_datetime(payload.get("period_end"))
+        observation.period_start = _validated_datetime(payload.get("period_start"))
+        observation.period_end = _validated_datetime(payload.get("period_end"))
         observation.sample_size = _optional_decimal(payload.get("sample_size"))
         observation.methodology = cast(str | None, payload.get("methodology"))
         observation.publisher_entity_id = publisher.id if publisher else None
@@ -2527,7 +2541,7 @@ class GovernanceService:
         event.event_type = str(payload["event_type"])
         event.title = str(payload["title"])
         event.summary = cast(str | None, payload.get("summary"))
-        event.published_at = _optional_datetime(payload.get("published_at"))
+        event.published_at = _validated_datetime(payload.get("published_at"))
         event.language = cast(str | None, payload.get("language"))
         event.publisher_entity_id = publisher.id if publisher else None
         event.related_entity_ids = [entity.id for entity in related_entities]
@@ -2630,851 +2644,3 @@ class GovernanceService:
         for status in GovernanceStatus:
             summary[status.value] = statuses.count(status)
         return summary
-
-
-def _segments(text: str, max_chars: int, overlap: int = 1000) -> list[DocumentSegment]:
-    if max_chars <= overlap:
-        raise GovernanceError("AI_MAX_INPUT_CHARS must be larger than the extraction overlap")
-    if len(text) <= max_chars:
-        return [DocumentSegment(text=text, start_char=0, end_char=len(text))]
-    segments: list[DocumentSegment] = []
-    start = 0
-    while start < len(text):
-        end = min(start + max_chars, len(text))
-        if end < len(text):
-            boundary = text.rfind("\n", start + max_chars // 2, end)
-            if boundary > start:
-                end = boundary
-        segments.append(DocumentSegment(text=text[start:end], start_char=start, end_char=end))
-        if end == len(text):
-            break
-        start = end - overlap
-    return segments
-
-
-def _optional_datetime(value: Any) -> datetime | None:
-    if value is None:
-        return None
-    if isinstance(value, datetime):
-        return value
-    if isinstance(value, str):
-        try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError as exc:
-            raise GovernanceError("Validated governance date is not ISO 8601") from exc
-    raise GovernanceError("Validated governance date has an invalid type")
-
-
-def _required_datetime(value: Any, field_name: str) -> datetime:
-    parsed = _optional_datetime(value)
-    if parsed is None:
-        raise GovernanceError(f"{field_name} is required")
-    return parsed
-
-
-def _as_utc(value: datetime) -> datetime:
-    if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
-    return value.astimezone(UTC)
-
-
-def _should_update_temporal_state(current_at: datetime | None, incoming_at: datetime | None) -> bool:
-    return current_at is None or (incoming_at is not None and _as_utc(incoming_at) >= _as_utc(current_at))
-
-
-def _merge_program_status_history(
-    existing: list[dict[str, Any]],
-    incoming: list[dict[str, Any]],
-    *,
-    current_phase: str,
-    current_status: str | None,
-    current_status_at: datetime | None,
-    current_geography: str | None,
-    source_document_id: str | None,
-) -> list[dict[str, Any]]:
-    events: dict[tuple[str, str, str, str], dict[str, Any]] = {}
-    for raw_event in [*existing, *incoming]:
-        phase = str(raw_event.get("phase") or "").strip()
-        effective_at = _optional_datetime(raw_event.get("effective_at"))
-        if not phase or effective_at is None:
-            continue
-        timestamp = effective_at.isoformat()
-        status = str(raw_event.get("status") or "").strip()
-        geography = str(raw_event.get("geography") or "").strip()
-        event = {
-            "phase": phase,
-            "status": status or None,
-            "effective_at": timestamp,
-            "geography": geography or None,
-            "reason": raw_event.get("reason"),
-            "source_document_id": raw_event.get("source_document_id") or source_document_id,
-        }
-        events[(phase, status, timestamp, geography)] = event
-    if current_status_at:
-        timestamp = current_status_at.isoformat()
-        status = (current_status or "").strip()
-        geography = (current_geography or "").strip()
-        events.setdefault(
-            (current_phase, status, timestamp, geography),
-            {
-                "phase": current_phase,
-                "status": status or None,
-                "effective_at": timestamp,
-                "geography": geography or None,
-                "reason": None,
-                "source_document_id": source_document_id,
-            },
-        )
-    return sorted(
-        events.values(),
-        key=lambda event: (event["effective_at"], event["phase"], event.get("geography") or ""),
-    )[-500:]
-
-
-def _merge_program_milestones(
-    existing: list[dict[str, Any]],
-    incoming: list[dict[str, Any]],
-    *,
-    source_document_id: str | None,
-) -> list[dict[str, Any]]:
-    events: dict[tuple[str, str, str, str], dict[str, Any]] = {}
-    for raw_event in [*existing, *incoming]:
-        milestone_type = str(raw_event.get("milestone_type") or "").strip()
-        title = str(raw_event.get("title") or "").strip()
-        occurred_at = _optional_datetime(raw_event.get("occurred_at"))
-        if not milestone_type or not title or occurred_at is None:
-            continue
-        timestamp = occurred_at.isoformat()
-        geography = str(raw_event.get("geography") or "").strip()
-        event = {
-            "milestone_type": milestone_type,
-            "title": title,
-            "occurred_at": timestamp,
-            "geography": geography or None,
-            "description": raw_event.get("description"),
-            "source_document_id": raw_event.get("source_document_id") or source_document_id,
-        }
-        events[(milestone_type, title, timestamp, geography)] = event
-    return sorted(
-        events.values(),
-        key=lambda event: (event["occurred_at"], event["milestone_type"], event["title"]),
-    )[-500:]
-
-
-def _merge_strings(existing: list[str], incoming: list[str], *, limit: int) -> list[str]:
-    values = {str(value).strip() for value in [*existing, *incoming] if str(value).strip()}
-    return sorted(values, key=str.casefold)[:limit]
-
-
-def _merge_patent_publications(
-    existing: list[dict[str, Any]],
-    incoming: list[dict[str, Any] | str],
-) -> list[dict[str, Any]]:
-    publications: dict[str, dict[str, Any]] = {}
-    for raw in [*existing, *incoming]:
-        item = {"publication_number": raw} if isinstance(raw, str) else dict(raw)
-        publication_number = str(item.get("publication_number") or "").strip()
-        if not publication_number:
-            continue
-        normalized = {
-            "publication_number": publication_number,
-            "application_number": item.get("application_number"),
-            "jurisdiction": item.get("jurisdiction"),
-            "publication_date": _iso_datetime(item.get("publication_date")),
-            "grant_date": _iso_datetime(item.get("grant_date")),
-        }
-        previous = publications.get(publication_number)
-        publications[publication_number] = {
-            key: value if value is not None else (previous or {}).get(key) for key, value in normalized.items()
-        }
-    return sorted(publications.values(), key=lambda item: item["publication_number"])[:500]
-
-
-def _merge_patent_legal_events(
-    existing: list[dict[str, Any]],
-    incoming: list[dict[str, Any]],
-    *,
-    current_status: str | None,
-    current_status_at: datetime | None,
-    source_document_id: str | None,
-) -> list[dict[str, Any]]:
-    events: dict[tuple[str, str, str, str], dict[str, Any]] = {}
-    for raw in [*existing, *incoming]:
-        event_type = str(raw.get("event_type") or "").strip()
-        occurred_at = _optional_datetime(raw.get("occurred_at"))
-        if not event_type or occurred_at is None:
-            continue
-        status = str(raw.get("status") or "").strip()
-        jurisdiction = str(raw.get("jurisdiction") or "").strip()
-        timestamp = occurred_at.isoformat()
-        event = {
-            "event_type": event_type,
-            "status": status or None,
-            "occurred_at": timestamp,
-            "jurisdiction": jurisdiction or None,
-            "publication_number": raw.get("publication_number"),
-            "description": raw.get("description"),
-            "source_document_id": raw.get("source_document_id") or source_document_id,
-        }
-        events[(event_type, status, timestamp, jurisdiction)] = event
-    if current_status and current_status_at:
-        timestamp = current_status_at.isoformat()
-        events.setdefault(
-            ("status_update", current_status, timestamp, ""),
-            {
-                "event_type": "status_update",
-                "status": current_status,
-                "occurred_at": timestamp,
-                "jurisdiction": None,
-                "publication_number": None,
-                "description": None,
-                "source_document_id": source_document_id,
-            },
-        )
-    return sorted(events.values(), key=lambda event: (event["occurred_at"], event["event_type"]))[-1000:]
-
-
-def _merge_patent_claims(
-    existing: list[dict[str, Any]],
-    incoming: list[dict[str, Any]],
-    *,
-    source_document_id: str | None,
-) -> list[dict[str, Any]]:
-    claims: dict[tuple[str, str], dict[str, Any]] = {}
-    for raw in [*existing, *incoming]:
-        claim_number = str(raw.get("claim_number") or "").strip()
-        claim_type = str(raw.get("claim_type") or "").strip()
-        summary = str(raw.get("summary") or "").strip()
-        if not claim_number or not claim_type or not summary:
-            continue
-        claims[(claim_number, claim_type)] = {
-            "claim_number": claim_number,
-            "claim_type": claim_type,
-            "summary": summary,
-            "scope": raw.get("scope"),
-            "source_document_id": raw.get("source_document_id") or source_document_id,
-        }
-    return sorted(claims.values(), key=lambda claim: (claim["claim_number"], claim["claim_type"]))[:100]
-
-
-def _iso_datetime(value: Any) -> str | None:
-    parsed = _optional_datetime(value)
-    return parsed.isoformat() if parsed is not None else None
-
-
-def _merge_trial_status_history(
-    existing: list[dict[str, Any]],
-    incoming: list[dict[str, Any]],
-    *,
-    current_status: str | None,
-    current_status_at: datetime | None,
-    source_document_id: str | None,
-) -> list[dict[str, Any]]:
-    events: dict[tuple[str, str], dict[str, Any]] = {}
-    for raw_event in [*existing, *incoming]:
-        status = str(raw_event.get("status") or "").strip()
-        effective_at = _optional_datetime(raw_event.get("effective_at"))
-        if not status or effective_at is None:
-            continue
-        timestamp = effective_at.isoformat()
-        event = {
-            "status": status,
-            "effective_at": timestamp,
-            "reason": raw_event.get("reason"),
-            "source_document_id": raw_event.get("source_document_id") or source_document_id,
-        }
-        events[(status, timestamp)] = event
-    if current_status and current_status_at:
-        timestamp = current_status_at.isoformat()
-        events.setdefault(
-            (current_status, timestamp),
-            {
-                "status": current_status,
-                "effective_at": timestamp,
-                "reason": None,
-                "source_document_id": source_document_id,
-            },
-        )
-    return sorted(events.values(), key=lambda event: (event["effective_at"], event["status"]))[-500:]
-
-
-def _optional_decimal(value: Any) -> Decimal | None:
-    if value is None:
-        return None
-    try:
-        return Decimal(str(value))
-    except (ArithmeticError, ValueError) as exc:
-        raise GovernanceError("Validated governance number has an invalid value") from exc
-
-
-def _deduplicate_prepared_facts(facts: Iterable[PreparedSegmentFact]) -> list[PreparedSegmentFact]:
-    unique: dict[str, PreparedSegmentFact] = {}
-    for fact in facts:
-        key = _prepared_fact_key(fact.prepared)
-        previous = unique.get(key)
-        candidate_rank = (fact.quote_verified, fact.prepared.fact.citation.confidence)
-        previous_rank = (
-            (
-                previous.quote_verified,
-                previous.prepared.fact.citation.confidence,
-            )
-            if previous is not None
-            else None
-        )
-        if previous_rank is None or candidate_rank > previous_rank:
-            unique[key] = fact
-    return list(unique.values())
-
-
-def _quote_source_match(quote: str, segment: DocumentSegment) -> SourceQuoteMatch | None:
-    stripped = quote.strip()
-    if not stripped:
-        return None
-    start = segment.text.find(stripped)
-    end = start + len(stripped)
-    if start < 0:
-        tokens = stripped.split()
-        if not tokens:
-            return None
-        match = re.search(r"\s+".join(re.escape(token) for token in tokens), segment.text, flags=re.IGNORECASE)
-        if match is None:
-            return None
-        start, end = match.span()
-    return SourceQuoteMatch(
-        locator=f"chars={segment.start_char + start}-{segment.start_char + end}",
-        quote=segment.text[start:end],
-    )
-
-
-def _model_cost(
-    input_tokens: int,
-    output_tokens: int,
-    input_rate: Decimal,
-    output_rate: Decimal,
-) -> Decimal:
-    return (Decimal(input_tokens) * input_rate + Decimal(output_tokens) * output_rate) / MILLION_TOKENS
-
-
-def _extraction_audit(
-    segment_audits: list[dict[str, Any]],
-    settings: Settings,
-    estimated_cost: Decimal,
-    *,
-    policy_sha256: str | None = None,
-) -> dict[str, Any]:
-    return {
-        "governance_schema_version": SCHEMA_VERSION,
-        "policy_sha256": policy_sha256 or governance_policy_sha256(settings),
-        "segments": segment_audits,
-        "budget": {
-            "max_document_chars": settings.ai_max_document_chars,
-            "max_segments_per_document": settings.ai_max_segments_per_document,
-            "max_input_tokens": settings.ai_max_document_input_tokens,
-            "max_output_tokens": settings.ai_max_document_output_tokens,
-            "max_output_tokens_per_segment": settings.ai_max_output_tokens_per_segment,
-            "max_response_bytes": settings.ai_max_response_bytes,
-            "input_cost_per_million_tokens": format(settings.ai_input_cost_per_million_tokens, "f"),
-            "output_cost_per_million_tokens": format(settings.ai_output_cost_per_million_tokens, "f"),
-            "max_document_cost": format(settings.ai_max_document_cost, "f"),
-            "estimated_cost": format(estimated_cost, "f"),
-        },
-    }
-
-
-def _profiled_model_text(
-    text: str,
-    source_profile: str | None,
-    *,
-    max_string_chars: int = 4000,
-) -> tuple[str, dict[str, str] | None]:
-    if source_profile is None:
-        return text, None
-    if source_profile == "pubmed":
-        return text, None
-    if source_profile != "clinicaltrials_gov":
-        raise GovernanceError("Unsupported source governance profile")
-    try:
-        study = json.loads(text)
-        protocol = study["protocolSection"]
-        identification = protocol["identificationModule"]
-        nct_id = str(identification["nctId"])
-        official_title = str(identification.get("officialTitle") or identification["briefTitle"])
-    except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
-        raise GovernanceError("ClinicalTrials.gov source is missing its authoritative identity") from exc
-    if re.fullmatch(r"NCT[0-9]{8}", nct_id) is None or not official_title.strip():
-        raise GovernanceError("ClinicalTrials.gov source has an invalid authoritative identity")
-    module_names = (
-        "identificationModule",
-        "statusModule",
-        "sponsorCollaboratorsModule",
-        "conditionsModule",
-        "designModule",
-        "armsInterventionsModule",
-        "outcomesModule",
-        "eligibilityModule",
-        "contactsLocationsModule",
-    )
-    profiled_protocol = {name: protocol[name] for name in module_names if name in protocol}
-    contacts = profiled_protocol.get("contactsLocationsModule")
-    if isinstance(contacts, dict):
-        locations = contacts.get("locations")
-        if isinstance(locations, list):
-            contacts["locations"] = [
-                {key: location[key] for key in ("facility", "city", "state", "country", "status") if key in location}
-                for location in locations[:10]
-                if isinstance(location, dict)
-            ]
-        contacts.pop("centralContacts", None)
-        contacts.pop("overallOfficials", None)
-    outcomes = profiled_protocol.get("outcomesModule")
-    if isinstance(outcomes, dict):
-        for field in ("primaryOutcomes", "secondaryOutcomes", "otherOutcomes"):
-            if isinstance(outcomes.get(field), list):
-                outcomes[field] = [
-                    {
-                        key: outcome[key]
-                        for key in ("measure", "type", "timeFrame", "description", "unitOfMeasure")
-                        if key in outcome
-                    }
-                    for outcome in outcomes[field][:10]
-                    if isinstance(outcome, dict)
-                ]
-    arms = profiled_protocol.get("armsInterventionsModule")
-    if isinstance(arms, dict):
-        for field in ("armGroups", "interventions"):
-            if isinstance(arms.get(field), list):
-                arms[field] = arms[field][:50]
-    sponsors = profiled_protocol.get("sponsorCollaboratorsModule")
-    if isinstance(sponsors, dict):
-        if isinstance(sponsors.get("collaborators"), list):
-            sponsors["collaborators"] = [
-                {key: collaborator[key] for key in ("name", "class") if key in collaborator}
-                for collaborator in sponsors["collaborators"][:10]
-                if isinstance(collaborator, dict)
-            ]
-        lead_sponsor = sponsors.get("leadSponsor")
-        if isinstance(lead_sponsor, dict):
-            sponsors["leadSponsor"] = {key: lead_sponsor[key] for key in ("name", "class") if key in lead_sponsor}
-    eligibility = profiled_protocol.get("eligibilityModule")
-    if isinstance(eligibility, dict):
-        profiled_protocol["eligibilityModule"] = {
-            key: eligibility[key]
-            for key in (
-                "healthyVolunteers",
-                "sex",
-                "minimumAge",
-                "maximumAge",
-                "stdAges",
-                "genderBased",
-                "samplingMethod",
-            )
-            if key in eligibility
-        }
-    profiled = _bound_profile_strings(
-        {
-            "protocolSection": profiled_protocol,
-            "hasResults": bool(study.get("hasResults")),
-        },
-        max_string_chars,
-    )
-    return (
-        json.dumps(profiled, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
-        {"registry_id": nct_id, "official_title": official_title},
-    )
-
-
-def _bound_profile_strings(value: Any, max_string_chars: int) -> Any:
-    if isinstance(value, str):
-        return value[:max_string_chars]
-    if isinstance(value, list):
-        return [_bound_profile_strings(item, max_string_chars) for item in value]
-    if isinstance(value, dict):
-        return {key: _bound_profile_strings(item, max_string_chars) for key, item in value.items()}
-    return value
-
-
-def _validate_profiled_response(
-    envelope: ExtractionEnvelope,
-    source_profile: str | None,
-    identity: dict[str, str] | None,
-) -> None:
-    if source_profile is None:
-        return
-    if source_profile == "pubmed":
-        if any(fact.fact_kind != "claim" for fact in envelope.facts):
-            raise ModelGatewayError("PubMed governance may return only claim facts")
-        return
-    if source_profile != "clinicaltrials_gov" or identity is None:
-        raise ModelGatewayError("Source governance profile identity is invalid")
-    if len(envelope.facts) != 1 or not isinstance(envelope.facts[0], TrialFact):
-        raise ModelGatewayError("ClinicalTrials.gov governance must return exactly one trial fact")
-    fact = envelope.facts[0]
-    if fact.registry_name.casefold() != "clinicaltrials.gov" or fact.registry_id != identity["registry_id"]:
-        raise ModelGatewayError("ClinicalTrials.gov governance changed the authoritative registry identity")
-    if fact.official_title != identity["official_title"]:
-        raise ModelGatewayError("ClinicalTrials.gov governance changed the authoritative official title")
-    if identity["registry_id"] not in fact.trial.external_ids.values():
-        raise ModelGatewayError("ClinicalTrials.gov governance omitted the authoritative NCT identifier")
-
-
-def _enforce_profiled_identity(
-    envelope: ExtractionEnvelope,
-    source_profile: str | None,
-    identity: dict[str, str] | None,
-) -> ExtractionEnvelope:
-    if source_profile is None:
-        return envelope
-    if source_profile == "pubmed":
-        return envelope
-    if source_profile != "clinicaltrials_gov" or identity is None:
-        raise ModelGatewayError("Source governance profile identity is invalid")
-    if len(envelope.facts) != 1 or not isinstance(envelope.facts[0], TrialFact):
-        return envelope
-    fact = envelope.facts[0]
-    authoritative_trial = fact.trial.model_copy(
-        update={
-            "name": identity["official_title"],
-            "external_ids": {"NCT": identity["registry_id"]},
-        }
-    )
-    authoritative_fact = fact.model_copy(
-        update={
-            "trial": authoritative_trial,
-            "registry_name": "ClinicalTrials.gov",
-            "registry_id": identity["registry_id"],
-            "official_title": identity["official_title"],
-        }
-    )
-    return envelope.model_copy(update={"facts": [authoritative_fact]})
-
-
-def governance_policy_manifest(settings: Settings) -> dict[str, Any]:
-    prompt = extraction_system_prompt(
-        settings.ai_max_facts_per_segment,
-        settings.ai_max_model_string_chars,
-    )
-    schema_parameters = (
-        settings.ai_max_facts_per_segment,
-        settings.ai_max_model_string_chars,
-        settings.ai_max_model_collection_items,
-    )
-    schemas = {
-        "default_sha256": _hash_json(extraction_schema(*schema_parameters, allow_structure=False)),
-        "structure_sha256": _hash_json(extraction_schema(*schema_parameters, allow_structure=True)),
-    }
-    clinicaltrials_fact_kinds = frozenset({"trial"})
-    clinicaltrials_prompt = extraction_system_prompt(
-        1,
-        settings.ai_max_model_string_chars,
-        fact_kind_allowlist=clinicaltrials_fact_kinds,
-        source_profile="clinicaltrials_gov",
-    )
-    clinicaltrials_schema = extraction_schema(
-        1,
-        settings.ai_max_model_string_chars,
-        settings.ai_max_model_collection_items,
-        fact_kind_allowlist=clinicaltrials_fact_kinds,
-    )
-    pubmed_fact_kinds = frozenset({"claim"})
-    pubmed_max_facts = min(5, settings.ai_max_facts_per_segment)
-    pubmed_prompt = extraction_system_prompt(
-        pubmed_max_facts,
-        settings.ai_max_model_string_chars,
-        fact_kind_allowlist=pubmed_fact_kinds,
-        source_profile="pubmed",
-    )
-    pubmed_schema = extraction_schema(
-        pubmed_max_facts,
-        settings.ai_max_model_string_chars,
-        settings.ai_max_model_collection_items,
-        fact_kind_allowlist=pubmed_fact_kinds,
-    )
-    return {
-        "schema": POLICY_SCHEMA,
-        "governance_schema_name": SCHEMA_NAME,
-        "governance_schema_version": SCHEMA_VERSION,
-        "model_provider": "openai-compatible",
-        "model_name": settings.ai_model,
-        "model_endpoint_sha256": hashlib.sha256(settings.ai_base_url.strip().rstrip("/").encode("utf-8")).hexdigest(),
-        "allowed_response_models": sorted(settings.ai_allowed_response_models),
-        "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
-        "response_schemas": schemas,
-        "source_profiles": {
-            "clinicaltrials_gov": {
-                "prompt_sha256": hashlib.sha256(clinicaltrials_prompt.encode("utf-8")).hexdigest(),
-                "response_schema_sha256": _hash_json(clinicaltrials_schema),
-                "max_facts": 1,
-            },
-            "pubmed": {
-                "prompt_sha256": hashlib.sha256(pubmed_prompt.encode("utf-8")).hexdigest(),
-                "response_schema_sha256": _hash_json(pubmed_schema),
-                "max_facts": pubmed_max_facts,
-            },
-        },
-        "limits": {
-            "max_input_chars": settings.ai_max_input_chars,
-            "max_document_chars": settings.ai_max_document_chars,
-            "max_segments_per_document": settings.ai_max_segments_per_document,
-            "max_facts_per_segment": settings.ai_max_facts_per_segment,
-            "max_model_string_chars": settings.ai_max_model_string_chars,
-            "max_model_collection_items": settings.ai_max_model_collection_items,
-            "max_output_tokens_per_segment": settings.ai_max_output_tokens_per_segment,
-            "max_document_input_tokens": settings.ai_max_document_input_tokens,
-            "max_document_output_tokens": settings.ai_max_document_output_tokens,
-            "max_response_bytes": settings.ai_max_response_bytes,
-        },
-        "accounting": {
-            "require_usage_metadata": settings.ai_require_usage_metadata,
-            "require_provider_request_id": settings.ai_require_provider_request_id,
-            "input_cost_per_million_tokens": format(settings.ai_input_cost_per_million_tokens, "f"),
-            "output_cost_per_million_tokens": format(settings.ai_output_cost_per_million_tokens, "f"),
-            "max_document_cost": format(settings.ai_max_document_cost, "f"),
-        },
-        "publication": {
-            "auto_publish_threshold": format(Decimal(str(settings.ai_auto_publish_threshold)), "f"),
-            "auto_publish_fact_kinds": sorted(settings.ai_auto_publish_fact_kinds),
-            "high_risk_fact_kinds": sorted(HIGH_RISK_FACT_KINDS),
-        },
-    }
-
-
-def governance_policy_sha256(settings: Settings) -> str:
-    return _hash_json(governance_policy_manifest(settings))
-
-
-def _hash_json(value: object) -> str:
-    encoded = json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    return hashlib.sha256(encoded).hexdigest()
-
-
-def _prepared_fact_key(prepared: PreparedFact) -> str:
-    if isinstance(prepared.fact, StructureFact):
-        inchi_key = prepared.payload.get("standard_inchi_key")
-        if isinstance(inchi_key, str) and inchi_key:
-            return _hash_identity({"kind": "structure", "standard_inchi_key": inchi_key})
-    return _fact_key(prepared.fact)
-
-
-def _fact_key(fact: ExtractedFact) -> str:
-    return _hash_identity(_fact_identity(fact))
-
-
-def _hash_identity(identity: dict[str, Any]) -> str:
-    encoded = json.dumps(identity, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
-    return hashlib.sha256(encoded).hexdigest()
-
-
-def _fact_identity(fact: ExtractedFact) -> dict[str, Any]:
-    if isinstance(fact, ClaimFact):
-        return {
-            "kind": fact.fact_kind,
-            "subject": _entity_identity(fact.subject.model_dump(mode="json")),
-            "predicate": fact.predicate,
-            "qualifier_keys": sorted(fact.qualifiers),
-        }
-    if isinstance(fact, TargetProfileFact):
-        return {"kind": fact.fact_kind, "subject": _entity_identity(fact.subject.model_dump(mode="json"))}
-    if isinstance(fact, TargetEvidenceFact):
-        return {
-            "kind": fact.fact_kind,
-            "record_identifier": fact.record_identifier.casefold(),
-            "target": _entity_identity(fact.target.model_dump(mode="json")),
-        }
-    if isinstance(fact, StructureFact):
-        return {
-            "kind": fact.fact_kind,
-            "subject": _entity_identity(fact.subject.model_dump(mode="json")),
-            "reported_smiles": fact.canonical_smiles.strip(),
-        }
-    if isinstance(fact, ActivityFact):
-        return {
-            "kind": fact.fact_kind,
-            "compound": _entity_identity(fact.compound.model_dump(mode="json")),
-            "target": _entity_identity(fact.target.model_dump(mode="json")),
-            "assay_name": fact.assay_name.casefold(),
-            "reported_type": fact.reported_type.casefold(),
-        }
-    if isinstance(fact, ProgramFact):
-        program_payload = fact.model_dump(mode="json")
-        targets = list(program_payload.get("targets") or [])
-        if program_payload.get("target") is not None:
-            targets = [
-                {
-                    "role": ProgramTargetRole.PRIMARY.value,
-                    "entity": program_payload["target"],
-                }
-            ]
-        organizations = list(program_payload.get("organizations") or [])
-        if program_payload.get("organization") is not None and not organizations:
-            organizations = [
-                {
-                    "role": "originator",
-                    "entity": program_payload["organization"],
-                }
-            ]
-        return {
-            "kind": fact.fact_kind,
-            "drug": _entity_identity(fact.drug.model_dump(mode="json")),
-            "targets": [
-                {
-                    "role": str(item["role"]),
-                    "entity": _entity_identity(item["entity"]),
-                }
-                for item in targets
-            ],
-            "indication": _entity_identity(fact.indication.model_dump(mode="json")) if fact.indication else None,
-            "organizations": [
-                {
-                    "role": str(item["role"]),
-                    "entity": _entity_identity(item["entity"]),
-                }
-                for item in organizations
-            ],
-        }
-    if isinstance(fact, TrialFact):
-        return {"kind": fact.fact_kind, "registry": fact.registry_name.casefold(), "id": fact.registry_id.casefold()}
-    if isinstance(fact, PatentFact):
-        return {"kind": fact.fact_kind, "family": fact.family_identifier.casefold()}
-    if isinstance(fact, DealFact):
-        return {"kind": fact.fact_kind, "deal": _entity_identity(fact.deal.model_dump(mode="json"))}
-    if isinstance(fact, RegulatoryFact):
-        return {
-            "kind": fact.fact_kind,
-            "agency": fact.agency.casefold(),
-            "event_identifier": fact.event_identifier.casefold(),
-        }
-    if isinstance(fact, EpidemiologyFact):
-        return {
-            "kind": fact.fact_kind,
-            "observation_identifier": fact.observation_identifier.casefold(),
-            "disease": _entity_identity(fact.disease.model_dump(mode="json")),
-        }
-    if isinstance(fact, NewsFact):
-        return {"kind": fact.fact_kind, "event_identifier": fact.event_identifier.casefold()}
-    raise TypeError(f"Unsupported fact type: {type(fact).__name__}")
-
-
-def _entity_identity(reference: dict[str, Any]) -> dict[str, Any]:
-    external_ids = reference.get("external_ids") or {}
-    return {
-        "entity_type": str(reference["entity_type"]),
-        "name": " ".join(str(reference["name"]).casefold().split()),
-        "external_ids": dict(sorted(external_ids.items())),
-    }
-
-
-def _reference_matches_entity(reference: object, entity: Entity) -> bool:
-    if not isinstance(reference, dict):
-        return False
-    if str(reference.get("entity_type")) != entity.entity_type.value:
-        return False
-    name = " ".join(str(reference.get("name") or "").casefold().split())
-    if name and name == entity.normalized_name:
-        return True
-    supplied_ids = reference.get("external_ids")
-    if not isinstance(supplied_ids, dict):
-        return False
-    return any(entity.external_ids.get(str(key)) == str(value) for key, value in supplied_ids.items())
-
-
-def _authority_value_matches(current: object, expected: str | float) -> bool:
-    if isinstance(expected, float):
-        return (
-            isinstance(current, int | float)
-            and not isinstance(current, bool)
-            and abs(float(current) - expected) <= 1e-6
-        )
-    return current == expected
-
-
-def _primary_subject(payload: dict[str, Any]) -> dict[str, Any]:
-    for key in (
-        "subject",
-        "compound",
-        "drug",
-        "trial",
-        "patent",
-        "deal",
-        "disease",
-        "publisher",
-    ):
-        value = payload.get(key)
-        if isinstance(value, dict):
-            return cast(dict[str, Any], value)
-    raise GovernanceError("Extracted fact does not have a primary subject")
-
-
-def _payload_without_citation(payload: dict[str, Any]) -> dict[str, Any]:
-    return {key: value for key, value in payload.items() if key != "citation"}
-
-
-def _projection(resource_type: str, resource_id: str) -> dict[str, str]:
-    return {"resource_type": resource_type, "resource_id": resource_id}
-
-
-def _normalize_phase(value: str) -> DevelopmentPhase | None:
-    chinese_value = re.sub(r"\s+", "", value).casefold()
-    chinese_aliases = {
-        "药物发现": DevelopmentPhase.DISCOVERY,
-        "发现": DevelopmentPhase.DISCOVERY,
-        "临床前": DevelopmentPhase.PRECLINICAL,
-        "临床前研究": DevelopmentPhase.PRECLINICAL,
-        "申报临床": DevelopmentPhase.IND,
-        "临床申请": DevelopmentPhase.IND,
-        "i期临床": DevelopmentPhase.PHASE_1,
-        "ⅰ期临床": DevelopmentPhase.PHASE_1,
-        "一期临床": DevelopmentPhase.PHASE_1,
-        "i/ii期临床": DevelopmentPhase.PHASE_1_2,
-        "i-ii期临床": DevelopmentPhase.PHASE_1_2,
-        "ⅰ/ⅱ期临床": DevelopmentPhase.PHASE_1_2,
-        "一期/二期临床": DevelopmentPhase.PHASE_1_2,
-        "ii期临床": DevelopmentPhase.PHASE_2,
-        "ⅱ期临床": DevelopmentPhase.PHASE_2,
-        "二期临床": DevelopmentPhase.PHASE_2,
-        "ii/iii期临床": DevelopmentPhase.PHASE_2_3,
-        "ii-iii期临床": DevelopmentPhase.PHASE_2_3,
-        "ⅱ/ⅲ期临床": DevelopmentPhase.PHASE_2_3,
-        "二期/三期临床": DevelopmentPhase.PHASE_2_3,
-        "iii期临床": DevelopmentPhase.PHASE_3,
-        "ⅲ期临床": DevelopmentPhase.PHASE_3,
-        "三期临床": DevelopmentPhase.PHASE_3,
-        "申请上市": DevelopmentPhase.FILED,
-        "申报上市": DevelopmentPhase.FILED,
-        "上市申请": DevelopmentPhase.FILED,
-        "批准上市": DevelopmentPhase.APPROVED,
-        "已批准": DevelopmentPhase.APPROVED,
-        "已上市": DevelopmentPhase.APPROVED,
-        "停止": DevelopmentPhase.DISCONTINUED,
-        "停止研发": DevelopmentPhase.DISCONTINUED,
-        "终止": DevelopmentPhase.DISCONTINUED,
-        "撤回": DevelopmentPhase.DISCONTINUED,
-    }
-    if chinese_value in chinese_aliases:
-        return chinese_aliases[chinese_value]
-    normalized = re.sub(r"[^a-z0-9]+", "_", value.casefold()).strip("_")
-    aliases = {
-        "discovery": DevelopmentPhase.DISCOVERY,
-        "research": DevelopmentPhase.DISCOVERY,
-        "preclinical": DevelopmentPhase.PRECLINICAL,
-        "pre_clinical": DevelopmentPhase.PRECLINICAL,
-        "ind": DevelopmentPhase.IND,
-        "phase_1": DevelopmentPhase.PHASE_1,
-        "phase_i": DevelopmentPhase.PHASE_1,
-        "phase_1_2": DevelopmentPhase.PHASE_1_2,
-        "phase_i_ii": DevelopmentPhase.PHASE_1_2,
-        "phase_2": DevelopmentPhase.PHASE_2,
-        "phase_ii": DevelopmentPhase.PHASE_2,
-        "phase_2_3": DevelopmentPhase.PHASE_2_3,
-        "phase_ii_iii": DevelopmentPhase.PHASE_2_3,
-        "phase_3": DevelopmentPhase.PHASE_3,
-        "phase_iii": DevelopmentPhase.PHASE_3,
-        "filed": DevelopmentPhase.FILED,
-        "registration": DevelopmentPhase.FILED,
-        "nda_bla_filed": DevelopmentPhase.FILED,
-        "approved": DevelopmentPhase.APPROVED,
-        "marketed": DevelopmentPhase.APPROVED,
-        "discontinued": DevelopmentPhase.DISCONTINUED,
-        "terminated": DevelopmentPhase.DISCONTINUED,
-        "withdrawn": DevelopmentPhase.DISCONTINUED,
-    }
-    return aliases.get(normalized)

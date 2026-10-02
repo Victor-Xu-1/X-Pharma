@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 from pharma_intel.governance.schemas import ExtractionEnvelope, TrialFact
-from pharma_intel.governance.service import (
+from pharma_intel.governance.source_profiles import (
     _enforce_profiled_identity,
     _profiled_model_text,
     _validate_profiled_response,

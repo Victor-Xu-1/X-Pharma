@@ -14,7 +14,7 @@ from pharma_intel.governance.model_gateway import (
     _chat_completions_endpoint,
 )
 from pharma_intel.governance.schemas import ClaimFact
-from pharma_intel.governance.service import _profiled_model_text
+from pharma_intel.governance.source_profiles import _profiled_model_text
 
 
 def _response_payload() -> dict[str, object]:

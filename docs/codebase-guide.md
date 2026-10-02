@@ -56,6 +56,8 @@ ORM 的公共入口是 `models/__init__.py`，只聚合显式导出；领域表�
 
 `EntityPreviewDrawer` 单独拥有快速预览的呈现、状态与模态焦点生命周期；检索页只提供当前实体和导航回调，不在内部再放一份抽屉实现。`entityPresentation` 为检索行和预览共用类型名称、匹配解释及公开标识去重，继续调用 `publicEntity` 的公开字段边界，不能展示内部来源或治理标识。关闭预览仍由检索页唯一更新本地选择及 URL。
 
+治理服务的公共入口为 `governance/service.py`，不重复定义辅助规则。`contracts` 拥有异常、结构化治理版本和分段类型；`citations` 拥有分段、引用定位和去重；`fact_identity` 拥有稳定事实键及载荷身份；`temporal_merge` 拥有阶段、日期和历史合并；`source_profiles` 拥有来源裁剪和权威身份校验；`policy` 与 `model_audit` 分别拥有策略指纹、预算计量和审计内容。源资料、策略指纹、字段规则与公开异常接口保持不变；这些模块不能反向导入治理编排服务。
+
 `scripts/release/` 是发布证据的唯一实现，合同、记录、文件安全、策略、领域校验、采集、签名、打包、验证与交接各自归属具体模块。`release_evidence.py` 仅保留已验证的直接 CLI 与其他命令入口依赖的公共委派。该库纳入 Ruff/Mypy、依赖 DAG 和真实文件/子进程/签名回归，不保留旧 7,000 多行实现。
 
 公共名称集中在后端 `product.py` 与前端 `lib/product.ts`；API、MCP、来源请求、登录和导航复用该定义。软件版本为 v0.1.0，`pyproject.toml` 唯一拥有语义版本：API 与 MCP 读取发行包元数据，Web 构建读取生成 OpenAPI 并校验清单镜像，HTML 生成器读取同一产品清单。版本回归同时检查实际 MCP initialize 协议和页面可见标识，不能把 SDK 版本当产品版本。内部数据库、协议和 CLI 标识保持稳定，已有业务数据不因品牌变动而迁移。
