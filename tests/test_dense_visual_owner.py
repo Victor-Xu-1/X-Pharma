@@ -24,3 +24,15 @@ def test_dense_capture_preserves_virtual_offsets_without_scroll_workarounds() ->
     assert "height: virtualRow.size, top: virtualRow.start" not in table
     assert "scrollIntoViewIfNeeded" not in owner
     assert "window.scrollTo" not in owner
+
+
+def test_reflow_reproduction_and_official_suite_use_the_same_owned_flow_and_budgets() -> None:
+    registration = (ROOT / "apps/web/e2e/accessibility.spec.ts").read_text(encoding="utf-8")
+    reflow = (ROOT / "apps/web/e2e/accessibility/reflow-keyboard.ts").read_text(encoding="utf-8")
+    assert "verifyKeyboardReflow," in registration
+    assert "effectiveZoomViewports" not in registration
+    assert "async function expectNamedKeyboardScrollableTables" not in registration
+    assert "testInfo.setTimeout(120_000)" in reflow
+    assert "width: 320" in reflow
+    assert "width: 720" in reflow
+    assert "width: 360" in reflow

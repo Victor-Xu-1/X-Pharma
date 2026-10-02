@@ -5,9 +5,9 @@
 Only `research-dense-results-tablet-1024.png` is maintained in this review.
 The viewport is 1024×768 and the table-shell image is 724×646.
 
-- Previous SHA-256: `b871674923e9aeb30c7584db6068c81728ab6a23d032b54f942091bf7ba04693`.
-- Reviewed SHA-256: `94b90c8ab9e4e24dcc9167e23bef18c0c0343b04898559a1d37e79f06f456119`.
-- Source: the actual image from [automatic CI run 36963858242](https://github.com/Victor-Xu-1/X-Pharma/actions/runs/36963858242), commit `ed953406eb6e1f128f975c7c37b8de3895da63a6`.
+- Current canonical SHA-256: `b871674923e9aeb30c7584db6068c81728ab6a23d032b54f942091bf7ba04693`, the restored original repository reference.
+- Withdrawn intermediate SHA-256: `94b90c8ab9e4e24dcc9167e23bef18c0c0343b04898559a1d37e79f06f456119`.
+- Intermediate source: the actual image from [automatic CI run 36963858242](https://github.com/Victor-Xu-1/X-Pharma/actions/runs/36963858242), commit `ed953406eb6e1f128f975c7c37b8de3895da63a6`. It is retained as diagnostic evidence, not the current reference.
 - Data: only the existing synthetic 205-result pagination fixture; the existing alias-match mask is unchanged. No production data or third-party brand assets are added.
 
 The old reference, CI actual and diff were visually inspected. Columns,
@@ -23,9 +23,13 @@ reference byte for byte. The CI installation log proves that its actual
 browser is 154.0.8037.97, while the previous manifest and local browser used
 154.0.8037.92. A signed, independently cached Chrome 154.0.8037.97 then passed
 all four focused real-PG paths with the reviewed reference in 31.9 seconds.
-This is a browser/reference profile correction, not a pagination or
-data-correctness fix. The profile is now 154.0.8037.97; other assets remain
-historical captures, not claims of 19 fresh screenshots.
+That was only a browser/reference profile correction, not proof of a
+pagination/data-correctness fix or complete-suite stability. Automatic run
+36982327415 still finished at 139/140: with both runtime and reference at
+154.0.8037.97, its actual PNG byte-matched the previous b871 reference.
+Version alignment alone therefore did not explain or resolve the failure.
+The profile remains 154.0.8037.97; other assets are historical captures, not
+claims of 19 fresh screenshots.
 
 Changing virtual rows from `translateY` to `top`, resetting the outer scroll
 and explicitly aligning the locator did not resolve the rejection. Those
@@ -49,3 +53,44 @@ is still distinct from acceptance, Edge cannot update Chrome references,
 and explicit interrupted-fixture recovery does not depend on a matching
 browser. No older browser is installed over a user's current one to conceal
 profile drift.
+
+### Reflow/process-isolation evidence
+
+The actual CI order runs keyboard reflow before the visual workbench flow.
+With the same .97 binary and real PG, adding only public/internal login
+prefixes passed 12/12 and did not reproduce the issue. Adding the original
+320/720/360 CSS-pixel reflow flow produced 15/16 in 44.3 seconds, including
+the identical 5,811-pixel tablet rejection. Retaining that entire sequence
+but giving the visual flow its own worker passed 16/16 in 45.6 seconds.
+Neither the PNG nor mask, pixel, action, case or performance budget changed.
+
+The worker-isolation hypothesis was then checked against the original
+complete staged workbench flow, not just the four initial helpers. That
+broader focused run still finished at 15/16 (5.1 minutes), with the same
+tablet rejection. The worker fixture is therefore withdrawn: it was not a
+complete fix. Browser/context/page setup and teardown remain entirely
+framework-owned. The original keyboard flow and shared reflow checks have
+one reusable implementation used by official registration and focused
+reproduction. Discovery still registers 140 tests in the same four files.
+
+This is process-isolation evidence, not a claim that the next automatic
+full-suite run has already passed. Full-suite and downstream MCP conclusions
+must still come from the actual new commit's automatic CI.
+
+### Canonical full-flow validation and rollback
+
+Directly invoking only the initial helpers was not equivalent to the
+official staged orchestration for pixel-reference selection. The current
+complete staged flow and automatic CI actual both byte-matched the original
+b871 reference. Restoring that already-reviewed original, and removing the
+ineffective worker fork, passed 16/16 focused real-PG scenarios in 6.5 minutes:
+original keyboard reflow, both login prefixes and the complete original
+workbench flow at all four viewports. All original assertions, snapshots,
+timings and the complete-coverage guard remain enforced. CSS containment,
+3D/layer and pixel-translation experiments stayed private and are not product
+or screenshot-only rendering paths.
+
+The intermediate 94b90 reference is withdrawn rather than claimed as a
+product fix. The sole shared reflow implementation is retained so focused
+reproduction can use the actual official flow. Partial helper results must
+not replace complete-flow or actual automatic-CI acceptance evidence.
