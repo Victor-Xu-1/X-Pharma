@@ -51,6 +51,7 @@ export function EnvironmentView() {
       <div role="tabpanel" id={`environment-panel-${tab}`} aria-labelledby={`environment-tab-${tab}`}>
         {tab === "runtime" ? (
           <>
+            <p>“已检测”只表示读取到版本；未声明明确版本要求时，不判定为兼容。详细要求以项目锁文件或部署配置为准。</p>
             <section>
               <header>
                 <h2>应用运行环境</h2>

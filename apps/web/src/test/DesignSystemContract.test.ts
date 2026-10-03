@@ -101,13 +101,23 @@ function workspaceWhereRule(css: string, selector: string) {
 }
 
 describe("unified OpenAI-inspired minimal light design system", () => {
-  it("wraps full target identifiers without hiding or clipping mobile dossier content", () => {
+  it("wraps full entity identifiers without hiding or clipping mobile dossier content", () => {
     const layout = source("../styles.css");
     const identity = ruleBody(layout, ".target-title-row > div > div:last-child");
     expect(identity).toContain("min-width: 0;");
     expect(identity).toContain("overflow-wrap: anywhere;");
     expect(identity).not.toContain("overflow: hidden");
     expect(ruleBody(layout, ".target-symbol")).toContain("flex-shrink: 0;");
+    for (const selector of [
+      ".drug-profile-identity",
+      ".company-profile-identity",
+      ".entity-dossier-title > div:last-child",
+    ]) {
+      const body = ruleBody(layout, selector);
+      expect(body).toContain("min-width: 0;");
+      expect(body).toContain("overflow-wrap: anywhere;");
+      expect(body).not.toContain("overflow: hidden");
+    }
   });
   it("lets composed candidate controls own a single input border", () => {
     const layout = source("../styles.css");

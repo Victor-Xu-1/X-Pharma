@@ -17,7 +17,6 @@ export function EnvironmentProbeTable({ probes, label }: { probes: EnvironmentPr
             <th>实际版本</th>
             <th>项目要求</th>
             <th>状态</th>
-            <th>说明</th>
           </tr>
         </thead>
         <tbody>
@@ -28,12 +27,12 @@ export function EnvironmentProbeTable({ probes, label }: { probes: EnvironmentPr
                 <code>{probe.observed ?? "未检测到"}</code>
               </td>
               <td>
-                <code>{probe.expected ?? "以锁文件或部署配置为准"}</code>
+                <code>{probe.expected ?? "未声明"}</code>
               </td>
               <td>
                 <span className={`badge environment-status-${probe.status}`}>{stateLabels[probe.status]}</span>
+                {probe.status !== "present" ? <p>{probe.detail}</p> : null}
               </td>
-              <td>{probe.detail}</td>
             </tr>
           ))}
         </tbody>

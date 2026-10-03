@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { loadEnvironment, prepareEnvironmentPlan } from "../lib/contracts/environment";
 import type { EnvironmentRead } from "../lib/generated";
@@ -41,6 +41,31 @@ const environment: EnvironmentRead = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(loadEnvironment).mockResolvedValue(environment);
+});
+
+it("keeps probe requirements and actionable failures without repeating routine explanations", async () => {
+  vi.mocked(loadEnvironment).mockResolvedValue({
+    ...environment,
+    runtime: [
+      environment.runtime[0],
+      {
+        id: "pnpm",
+        label: "pnpm",
+        scope: "gateway",
+        status: "mismatch",
+        observed: "0.0.0",
+        expected: "pnpm@11.7.0",
+        detail: "缓存中的包管理器版本与项目要求不符",
+      },
+    ],
+  });
+  renderWithQueryClient(<EnvironmentView />);
+  const table = await screen.findByRole("table", { name: "网关依赖版本" });
+  expect(within(table).getAllByRole("columnheader")).toHaveLength(4);
+  expect(within(table).getByText("pnpm@11.7.0")).toBeInTheDocument();
+  expect(within(table).getByText("缓存中的包管理器版本与项目要求不符")).toBeInTheDocument();
+  expect(within(table).queryByText("网关进程实际版本")).not.toBeInTheDocument();
+  expect(screen.getByText(/未声明明确版本要求时，不判定为兼容/)).toBeInTheDocument();
 });
 
 it.each([null, "d".repeat(40)])(

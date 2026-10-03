@@ -121,6 +121,10 @@ export async function verifyResearcherReview(
   await page.goto("/workspace/internal?view=environment");
   await expect(page.getByRole("heading", { name: "运行环境与安装管理", exact: true })).toBeVisible();
   await expect(page.getByRole("table", { name: "网关依赖版本" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "网关依赖版本" }).getByRole("columnheader")).toHaveCount(4);
+  await expect(page.getByText(/未声明明确版本要求时，不判定为兼容/)).toBeVisible();
+  await noOverflow();
+  await page.screenshot({ path: testInfo.outputPath("researcher-environment-detection.png"), fullPage: true });
   await page.getByRole("tab", { name: "安装与修复" }).click();
   await expect(page.getByRole("checkbox", { name: "仅使用离线缓存（缺失时失败，不自动联网）" })).toBeChecked();
   await expect(page.getByRole("button", { name: "立即安装", exact: true })).toHaveCount(0);
