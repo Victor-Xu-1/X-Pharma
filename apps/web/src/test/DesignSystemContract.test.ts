@@ -452,9 +452,7 @@ describe("unified OpenAI-inspired minimal light design system", () => {
     expect(iconButton).toContain("width: var(--ds-icon-control-size);");
     expect(iconButton).toContain("height: var(--ds-icon-control-size);");
 
-    const shellNavigation = designSystem.match(
-      /\.nav-button,\s*\.collapse-button\s*\{([^}]*)\}/,
-    )?.[1];
+    const shellNavigation = designSystem.match(/\.nav-button,\s*\.collapse-button\s*\{([^}]*)\}/)?.[1];
     expect(shellNavigation).toContain("min-height: var(--ds-control-height);");
     expect(shellNavigation).toContain("border-radius: var(--ds-radius-control);");
 
