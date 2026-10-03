@@ -14,7 +14,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-import httpx
+import httpx2
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.types import TextContent
@@ -49,9 +49,9 @@ def percentile(values: list[float], quantile: float) -> float:
 
 
 def _structured(result: Any) -> dict[str, Any]:
-    if result.isError:
+    if result.is_error:
         raise ToolCallError(_tool_error_message(result))
-    payload = result.structuredContent
+    payload = result.structured_content
     if payload is None:
         if not result.content or not isinstance(result.content[0], TextContent):
             raise RuntimeError("MCP tool returned no structured content")
@@ -68,9 +68,9 @@ def _tool_error_message(result: Any) -> str:
 
 
 async def _open_session(url: str, token: str) -> Any:
-    http_client = httpx.AsyncClient(
+    http_client = httpx2.AsyncClient(
         headers={"Authorization": f"Bearer {token}"},
-        timeout=httpx.Timeout(30),
+        timeout=httpx2.Timeout(30),
         follow_redirects=True,
         trust_env=False,
     )
@@ -81,20 +81,20 @@ async def _open_session(url: str, token: str) -> Any:
 async def _usage_summary(url: str, token: str) -> tuple[dict[str, Any], str]:
     http_client, transport = await _open_session(url, token)
     async with http_client:
-        async with transport as (read_stream, write_stream, _):
+        async with transport as (read_stream, write_stream):
             async with ClientSession(read_stream, write_stream) as session:
                 initialization = await session.initialize()
                 summary = _structured(await session.call_tool("get_usage_summary", {}))
-                return summary, str(initialization.protocolVersion)
+                return summary, str(initialization.protocol_version)
 
 
 async def _call_tool_result(url: str, token: str, name: str, arguments: dict[str, Any]) -> Any:
     http_client, transport = await _open_session(url, token)
     async with http_client:
-        async with transport as (read_stream, write_stream, _):
+        async with transport as (read_stream, write_stream):
             async with ClientSession(read_stream, write_stream) as session:
                 initialization = await session.initialize()
-                if str(initialization.protocolVersion) != MCP_PROTOCOL_BASELINE:
+                if str(initialization.protocol_version) != MCP_PROTOCOL_BASELINE:
                     raise RuntimeError("MCP protocol changed during commercial acceptance")
                 return await session.call_tool(name, arguments)
 
@@ -106,13 +106,13 @@ async def _call_tool(url: str, token: str, name: str, arguments: dict[str, Any])
 async def _expect_tool_error(url: str, token: str, name: str, arguments: dict[str, Any]) -> str:
     http_client, transport = await _open_session(url, token)
     async with http_client:
-        async with transport as (read_stream, write_stream, _):
+        async with transport as (read_stream, write_stream):
             async with ClientSession(read_stream, write_stream) as session:
                 initialization = await session.initialize()
-                if str(initialization.protocolVersion) != MCP_PROTOCOL_BASELINE:
+                if str(initialization.protocol_version) != MCP_PROTOCOL_BASELINE:
                     raise RuntimeError("MCP protocol changed during expected-failure probe")
                 result = await session.call_tool(name, arguments)
-                if not result.isError:
+                if not result.is_error:
                     raise RuntimeError(f"{name} unexpectedly succeeded")
                 return _tool_error_message(result)
 
@@ -120,10 +120,10 @@ async def _expect_tool_error(url: str, token: str, name: str, arguments: dict[st
 async def _cancellation_probe(url: str, token: str, idempotency_key: str) -> dict[str, Any]:
     http_client, transport = await _open_session(url, token)
     async with http_client:
-        async with transport as (read_stream, write_stream, _):
+        async with transport as (read_stream, write_stream):
             async with ClientSession(read_stream, write_stream) as session:
                 initialization = await session.initialize()
-                if str(initialization.protocolVersion) != MCP_PROTOCOL_BASELINE:
+                if str(initialization.protocol_version) != MCP_PROTOCOL_BASELINE:
                     raise RuntimeError("MCP protocol changed during cancellation probe")
                 task = asyncio.create_task(
                     session.call_tool(
@@ -169,10 +169,10 @@ async def _timeout_probe(url: str, token: str, idempotency_key: str) -> dict[str
     timed_out = False
     initial_settlement: str | None = None
     async with http_client:
-        async with transport as (read_stream, write_stream, _):
+        async with transport as (read_stream, write_stream):
             async with ClientSession(read_stream, write_stream) as session:
                 initialization = await session.initialize()
-                if str(initialization.protocolVersion) != MCP_PROTOCOL_BASELINE:
+                if str(initialization.protocol_version) != MCP_PROTOCOL_BASELINE:
                     raise RuntimeError("MCP protocol changed during timeout probe")
                 try:
                     async with asyncio.timeout(0.025):
@@ -342,10 +342,10 @@ async def _worker(
 ) -> None:
     http_client, transport = await _open_session(url, token)
     async with http_client:
-        async with transport as (read_stream, write_stream, _):
+        async with transport as (read_stream, write_stream):
             async with ClientSession(read_stream, write_stream) as session:
                 initialization = await session.initialize()
-                negotiated_protocol = str(initialization.protocolVersion)
+                negotiated_protocol = str(initialization.protocol_version)
                 if negotiated_protocol != MCP_PROTOCOL_BASELINE:
                     raise RuntimeError(f"MCP protocol mismatch: {negotiated_protocol} != {MCP_PROTOCOL_BASELINE}")
                 for request_index in range(worker_id, total_requests, concurrency):

@@ -64,14 +64,27 @@ describe("LoginScreen", () => {
 
     expect(screen.getByRole("region", { name: "内部管理平台" })).toBeInTheDocument();
     expect(screen.getByText("数据治理与运营管理")).toBeInTheDocument();
-    expect(screen.getByText("内部管理")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "内部管理工作台", level: 1 })).toBeInTheDocument();
     expect(screen.getByText("仅限授权内部人员")).toBeInTheDocument();
-    expect(screen.getByText("管理员登录")).toBeInTheDocument();
+    expect(screen.queryByText("管理员登录")).not.toBeInTheDocument();
     expect(screen.queryByText("Internal Management Workspace")).not.toBeInTheDocument();
     expect(screen.queryByText("INTERNAL ACCESS")).not.toBeInTheDocument();
     expect(screen.queryByText("Controlled workspace · v0.1")).not.toBeInTheDocument();
     expect(screen.queryByText("HUMAN WORKSPACE")).not.toBeInTheDocument();
   });
+
+  it.each(["research", "internal"] as const)(
+    "keeps the %s entry task-focused without repeated decorative headings",
+    (workbench) => {
+      renderLogin(workbench);
+      expect(document.querySelector(".login-title .eyebrow")).toBeNull();
+      expect(document.querySelector(".login-form .eyebrow")).toBeNull();
+      expect(document.querySelector(".login-form > svg")).toBeNull();
+      expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+      expect(screen.getByRole("navigation", { name: "账号入口" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "进入工作台" })).toBeDisabled();
+    },
+  );
 
   it.each(["research", "internal"] as const)(
     "only enables the %s local login when both credentials are complete",

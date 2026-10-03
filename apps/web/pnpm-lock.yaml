@@ -24,22 +24,22 @@ importers:
         version: 5.101.2(react@19.3.0)
       '@tanstack/react-table':
         specifier: 8.21.3
-        version: 8.21.3(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
+        version: 8.21.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-virtual':
         specifier: 3.14.6
-        version: 3.14.6(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
+        version: 3.14.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       echarts:
         specifier: 6.1.0
         version: 6.1.0
       ketcher-core:
         specifier: 3.17.1
-        version: 3.17.1(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
+        version: 3.17.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       ketcher-react:
         specifier: 3.17.1
-        version: 3.17.1(@types/react@19.3.0)(react-dom@19.2.7(react@19.3.0))(react@19.3.0)(yjs@13.6.31)
+        version: 3.17.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(yjs@13.6.31)
       ketcher-standalone:
         specifier: 3.17.1
-        version: 3.17.1(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
+        version: 3.17.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       lucide-react:
         specifier: 1.24.0
         version: 1.24.0(react@19.3.0)
@@ -50,8 +50,8 @@ importers:
         specifier: 19.3.0
         version: 19.3.0
       react-dom:
-        specifier: 19.2.7
-        version: 19.2.7(react@19.3.0)
+        specifier: 19.3.0
+        version: 19.3.0(react@19.3.0)
       web-vitals:
         specifier: 6.0.1
         version: 6.0.1
@@ -70,7 +70,7 @@ importers:
         version: 6.9.1
       '@testing-library/react':
         specifier: 16.3.2
-        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@types/node':
         specifier: 26.6.3
         version: 26.6.3
@@ -1863,10 +1863,10 @@ packages:
       react: '>= 0.14.0'
       react-dom: '>= 0.14.0'
 
-  react-dom@19.2.7:
-    resolution: {integrity: sha512-t0BRVXvbiE/o20Hfw669rLbMCDWtYZLvmJigy2f0MxsXF+71pxhR3xOkspmsO8h3ZlNzyibAmtCa3l4lYKk6gQ==}
+  react-dom@19.3.0:
+    resolution: {integrity: sha512-JDk8dgif51OjFoDE70+OT9ICyYr+69HlmihNwp1+Nsfbna3t5sIiCa9ZJktDmQ4/1b/rn26hIAR2uYXDMr5r0Q==}
     peerDependencies:
-      react: ^19.2.7
+      react: ^19.3.0
 
   react-dropzone@11.7.1:
     resolution: {integrity: sha512-zxCMwhfPy1olUEbw3FLNPLhAm/HnaYH5aELIEglRbqabizKAdHs0h+WuyOpmA+v1JXn0++fpQDdNfUagWt5hJQ==}
@@ -1999,8 +1999,8 @@ packages:
     resolution: {integrity: sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==}
     engines: {node: '>=v12.22.7'}
 
-  scheduler@0.27.0:
-    resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
+  scheduler@0.28.0:
+    resolution: {integrity: sha512-juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw==}
 
   set-function-length@1.2.2:
     resolution: {integrity: sha512-pgRc4hJ4/sNjWCSS9AmnS40x3bNMDTknHgL5UaMBTMyJnU90EgWh1Rz+MC9eFu4BuN/UwZjKQuY/1v3rM7HMfg==}
@@ -2160,6 +2160,7 @@ packages:
   vite@8.1.4:
     resolution: {integrity: sha512-bTT9PsdWO+MQMNG9ZXIP/qM9wGh37DFxTV/sPq9cFpHr3w4jkgef032PkAL9jAqhk3Nz8NQw3O8n6/xFkqO4QQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
+    hasBin: true
     peerDependencies:
       '@types/node': ^20.19.0 || >=22.12.0
       '@vitejs/devtools': ^0.3.0
@@ -2202,6 +2203,7 @@ packages:
   vitest@4.1.11:
     resolution: {integrity: sha512-fhACrNXUidIbGSBr5FlbuBkO7VWC1ZyLl0DO4CU2DrQoAPxX84Ysxs+HeGQpii5lZWV1Q4gBZTTu49mF+A6Edw==}
     engines: {node: ^20.0.0 || ^22.0.0 || >=24.0.0}
+    hasBin: true
     peerDependencies:
       '@edge-runtime/vm': '*'
       '@opentelemetry/api': ^1.9.0
@@ -2576,18 +2578,18 @@ snapshots:
       '@floating-ui/core': 1.8.0
       '@floating-ui/utils': 0.2.12
 
-  '@floating-ui/react-dom@2.1.9(react-dom@19.2.7(react@19.3.0))(react@19.3.0)':
+  '@floating-ui/react-dom@2.1.9(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@floating-ui/dom': 1.8.0
       react: 19.3.0
-      react-dom: 19.2.7(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
 
-  '@floating-ui/react@0.27.20(react-dom@19.2.7(react@19.3.0))(react@19.3.0)':
+  '@floating-ui/react@0.27.20(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@floating-ui/react-dom': 2.1.9(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
+      '@floating-ui/react-dom': 2.1.9(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@floating-ui/utils': 0.2.12
       react: 19.3.0
-      react-dom: 19.2.7(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
       tabbable: 6.5.0
 
   '@floating-ui/utils@0.2.12': {}
@@ -2620,7 +2622,7 @@ snapshots:
       lexical: 0.40.0
       prismjs: 1.30.0
 
-  '@lexical/devtools-core@0.40.0(react-dom@19.2.7(react@19.3.0))(react@19.3.0)':
+  '@lexical/devtools-core@0.40.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@lexical/html': 0.40.0
       '@lexical/link': 0.40.0
@@ -2629,7 +2631,7 @@ snapshots:
       '@lexical/utils': 0.40.0
       lexical: 0.40.0
       react: 19.3.0
-      react-dom: 19.2.7(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
 
   '@lexical/dragon@0.40.0':
     dependencies:
@@ -2704,10 +2706,10 @@ snapshots:
       '@lexical/utils': 0.40.0
       lexical: 0.40.0
 
-  '@lexical/react@0.40.0(react-dom@19.2.7(react@19.3.0))(react@19.3.0)(yjs@13.6.31)':
+  '@lexical/react@0.40.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(yjs@13.6.31)':
     dependencies:
-      '@floating-ui/react': 0.27.20(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
-      '@lexical/devtools-core': 0.40.0(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
+      '@floating-ui/react': 0.27.20(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@lexical/devtools-core': 0.40.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@lexical/dragon': 0.40.0
       '@lexical/extension': 0.40.0
       '@lexical/hashtag': 0.40.0
@@ -2725,7 +2727,7 @@ snapshots:
       '@lexical/yjs': 0.40.0(yjs@13.6.31)
       lexical: 0.40.0
       react: 19.3.0
-      react-dom: 19.2.7(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
       react-error-boundary: 6.1.2(react@19.3.0)
     transitivePeerDependencies:
       - yjs
@@ -2767,7 +2769,7 @@ snapshots:
 
   '@mui/core-downloads-tracker@5.18.0': {}
 
-  '@mui/material@5.18.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.7(react@19.3.0))(react@19.3.0)':
+  '@mui/material@5.18.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@babel/runtime': 7.29.7
       '@mui/core-downloads-tracker': 5.18.0
@@ -2780,9 +2782,9 @@ snapshots:
       csstype: 3.2.3
       prop-types: 15.8.1
       react: 19.3.0
-      react-dom: 19.2.7(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
       react-is: 19.2.8
-      react-transition-group: 4.4.5(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
+      react-transition-group: 4.4.5(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
     optionalDependencies:
       '@emotion/react': 11.14.0(@types/react@19.3.0)(react@19.3.0)
       '@emotion/styled': 11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0)
@@ -2920,17 +2922,17 @@ snapshots:
       '@tanstack/query-core': 5.101.2
       react: 19.3.0
 
-  '@tanstack/react-table@8.21.3(react-dom@19.2.7(react@19.3.0))(react@19.3.0)':
+  '@tanstack/react-table@8.21.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@tanstack/table-core': 8.21.3
       react: 19.3.0
-      react-dom: 19.2.7(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
 
-  '@tanstack/react-virtual@3.14.6(react-dom@19.2.7(react@19.3.0))(react@19.3.0)':
+  '@tanstack/react-virtual@3.14.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@tanstack/virtual-core': 3.17.4
       react: 19.3.0
-      react-dom: 19.2.7(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
 
   '@tanstack/table-core@8.21.3': {}
 
@@ -2956,12 +2958,12 @@ snapshots:
       picocolors: 1.1.1
       redent: 3.0.0
 
-  '@testing-library/react@16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.7(react@19.3.0))(react@19.3.0)':
+  '@testing-library/react@16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@babel/runtime': 7.29.7
       '@testing-library/dom': 10.4.1
       react: 19.3.0
-      react-dom: 19.2.7(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
     optionalDependencies:
       '@types/react': 19.3.0
       '@types/react-dom': 19.2.3(@types/react@19.3.0)
@@ -3725,7 +3727,7 @@ snapshots:
 
   jsonschema@1.5.0: {}
 
-  ketcher-core@3.17.1(react-dom@19.2.7(react@19.3.0))(react@19.3.0):
+  ketcher-core@3.17.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       '@babel/runtime': 7.29.7
       assert: 2.1.0
@@ -3735,21 +3737,21 @@ snapshots:
       lodash: 4.18.1
       paper: 0.12.18
       raphael: 2.3.0
-      react-device-detect: 2.2.3(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
+      react-device-detect: 2.2.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       svgpath: 2.6.0
     transitivePeerDependencies:
       - react
       - react-dom
 
-  ketcher-react@3.17.1(@types/react@19.3.0)(react-dom@19.2.7(react@19.3.0))(react@19.3.0)(yjs@13.6.31):
+  ketcher-react@3.17.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(yjs@13.6.31):
     dependencies:
       '@babel/runtime': 7.29.7
       '@emotion/react': 11.14.0(@types/react@19.3.0)(react@19.3.0)
       '@emotion/styled': 11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0)
-      '@lexical/react': 0.40.0(react-dom@19.2.7(react@19.3.0))(react@19.3.0)(yjs@13.6.31)
+      '@lexical/react': 0.40.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(yjs@13.6.31)
       '@lexical/rich-text': 0.40.0
       '@lexical/selection': 0.40.0
-      '@mui/material': 5.18.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
+      '@mui/material': 5.18.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       cfb: 1.2.2
       clsx: 1.2.1
       dpdm: 4.2.0
@@ -3759,19 +3761,19 @@ snapshots:
       hoist-non-react-statics: 3.3.2
       intersection-observer: 0.12.2
       jsonschema: 1.5.0
-      ketcher-core: 3.17.1(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
+      ketcher-core: 3.17.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       lexical: 0.40.0
       lodash: 4.18.1
       paper: 0.12.18
       react: 19.3.0
-      react-colorful: 5.8.0(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
-      react-contexify: 6.0.0(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
-      react-device-detect: 2.2.3(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
-      react-dom: 19.2.7(react@19.3.0)
+      react-colorful: 5.8.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react-contexify: 6.0.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react-device-detect: 2.2.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
       react-dropzone: 11.7.1(react@19.3.0)
-      react-intersection-observer: 9.16.0(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
+      react-intersection-observer: 9.16.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react-redux: 9.3.0(@types/react@19.3.0)(react@19.3.0)(redux@5.0.1)
-      react-virtualized: 9.22.6(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
+      react-virtualized: 9.22.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       redux: 5.0.1
       redux-logger: 3.0.6
       redux-thunk: 3.1.0(redux@5.0.1)
@@ -3781,18 +3783,18 @@ snapshots:
       reselect: 4.1.8
       subscription: 3.0.0
       url-search-params-polyfill: 8.2.5
-      use-resize-observer: 7.0.1(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
+      use-resize-observer: 7.0.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       whatwg-fetch: 3.6.20
     transitivePeerDependencies:
       - '@types/react'
       - supports-color
       - yjs
 
-  ketcher-standalone@3.17.1(react-dom@19.2.7(react@19.3.0))(react@19.3.0):
+  ketcher-standalone@3.17.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       '@babel/runtime': 7.29.7
       indigo-ketcher: 1.45.0
-      ketcher-core: 3.17.1(react-dom@19.2.7(react@19.3.0))(react@19.3.0)
+      ketcher-core: 3.17.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
     transitivePeerDependencies:
       - react
       - react-dom
@@ -4133,27 +4135,27 @@ snapshots:
     dependencies:
       eve-raphael: 0.5.0
 
-  react-colorful@5.8.0(react-dom@19.2.7(react@19.3.0))(react@19.3.0):
+  react-colorful@5.8.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       react: 19.3.0
-      react-dom: 19.2.7(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
 
-  react-contexify@6.0.0(react-dom@19.2.7(react@19.3.0))(react@19.3.0):
+  react-contexify@6.0.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       clsx: 1.2.1
       react: 19.3.0
-      react-dom: 19.2.7(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
 
-  react-device-detect@2.2.3(react-dom@19.2.7(react@19.3.0))(react@19.3.0):
+  react-device-detect@2.2.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       react: 19.3.0
-      react-dom: 19.2.7(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
       ua-parser-js: 1.0.41
 
-  react-dom@19.2.7(react@19.3.0):
+  react-dom@19.3.0(react@19.3.0):
     dependencies:
       react: 19.3.0
-      scheduler: 0.27.0
+      scheduler: 0.28.0
 
   react-dropzone@11.7.1(react@19.3.0):
     dependencies:
@@ -4166,11 +4168,11 @@ snapshots:
     dependencies:
       react: 19.3.0
 
-  react-intersection-observer@9.16.0(react-dom@19.2.7(react@19.3.0))(react@19.3.0):
+  react-intersection-observer@9.16.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       react: 19.3.0
     optionalDependencies:
-      react-dom: 19.2.7(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
 
   react-is@16.13.1: {}
 
@@ -4189,16 +4191,16 @@ snapshots:
       '@types/react': 19.3.0
       redux: 5.0.1
 
-  react-transition-group@4.4.5(react-dom@19.2.7(react@19.3.0))(react@19.3.0):
+  react-transition-group@4.4.5(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       '@babel/runtime': 7.29.7
       dom-helpers: 5.2.1
       loose-envify: 1.4.0
       prop-types: 15.8.1
       react: 19.3.0
-      react-dom: 19.2.7(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
 
-  react-virtualized@9.22.6(react-dom@19.2.7(react@19.3.0))(react@19.3.0):
+  react-virtualized@9.22.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       '@babel/runtime': 7.29.7
       clsx: 1.2.1
@@ -4206,7 +4208,7 @@ snapshots:
       loose-envify: 1.4.0
       prop-types: 15.8.1
       react: 19.3.0
-      react-dom: 19.2.7(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
       react-lifecycles-compat: 3.0.4
 
   react@19.3.0: {}
@@ -4300,7 +4302,7 @@ snapshots:
     dependencies:
       xmlchars: 2.2.0
 
-  scheduler@0.27.0: {}
+  scheduler@0.28.0: {}
 
   set-function-length@1.2.2:
     dependencies:
@@ -4436,10 +4438,10 @@ snapshots:
 
   url-search-params-polyfill@8.2.5: {}
 
-  use-resize-observer@7.0.1(react-dom@19.2.7(react@19.3.0))(react@19.3.0):
+  use-resize-observer@7.0.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       react: 19.3.0
-      react-dom: 19.2.7(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
       resize-observer-polyfill: 1.5.1
 
   use-sync-external-store@1.6.0(react@19.3.0):

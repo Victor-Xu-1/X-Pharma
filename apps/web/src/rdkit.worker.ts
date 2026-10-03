@@ -1,5 +1,5 @@
-import type { RDKitLoader, RDKitModule } from "@rdkit/rdkit";
-import rdkitWasmUrl from "@rdkit/rdkit/dist/RDKit_minimal.wasm?url";
+import type { MainModule } from "@rdkit/rdkit";
+import rdkitWasmUrl from "@rdkit/rdkit/RDKit_minimal.wasm?url";
 
 interface RenderRequest {
   id: string;
@@ -9,15 +9,12 @@ interface RenderRequest {
 type RenderResponse = { id: string; ok: true; svg: string; version: string } | { id: string; ok: false; error: string };
 
 const MAX_SMILES_LENGTH = 4_096;
-let modulePromise: Promise<RDKitModule> | null = null;
+let modulePromise: Promise<MainModule> | null = null;
 
-function loadRDKit(): Promise<RDKitModule> {
+function loadRDKit(): Promise<MainModule> {
   if (!modulePromise) {
     modulePromise = import("@rdkit/rdkit")
-      .then((module) => {
-        const loader = (module as unknown as { default: RDKitLoader }).default;
-        return loader({ locateFile: () => rdkitWasmUrl });
-      })
+      .then((module) => module.default({ locateFile: () => rdkitWasmUrl }))
       .catch((error: unknown) => {
         modulePromise = null;
         throw error;

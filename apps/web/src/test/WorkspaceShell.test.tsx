@@ -3,6 +3,29 @@ import { expect, it, vi } from "vitest";
 
 import { WorkspaceShell } from "../components/WorkspaceShell";
 
+it.each(["research", "internal"] as const)(
+  "keeps the %s account actions together without an invented online status",
+  (workbench) => {
+    render(
+      <WorkspaceShell
+        user={{ id: "admin", tenant_id: "tenant", email: "admin@example.test", display_name: "Admin", role: "admin" }}
+        activeWorkbench={workbench}
+        activeView={workbench === "research" ? "explorer" : "factory"}
+        onView={vi.fn()}
+        onLogout={vi.fn()}
+      >
+        workspace
+      </WorkspaceShell>,
+    );
+    const accountNavigation = screen.getByRole("navigation", { name: "账户导航" });
+    expect(screen.getByLabelText("工作台导航").lastElementChild).toBe(accountNavigation);
+    expect(within(accountNavigation).getByRole("button", { name: "退出账号" })).toBeInTheDocument();
+    expect(within(accountNavigation).getByRole("button", { name: "收起导航" })).toBeInTheDocument();
+    expect(screen.queryByRole("status", { name: "在线" })).not.toBeInTheDocument();
+    expect(document.querySelector(".page-heading .eyebrow")).toBeNull();
+  },
+);
+
 it("does not let a closing mobile navigation drawer steal focus from the destination heading", () => {
   const frames = new Map<number, FrameRequestCallback>();
   let nextFrame = 0;

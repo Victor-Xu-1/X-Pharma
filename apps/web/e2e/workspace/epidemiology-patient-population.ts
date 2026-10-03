@@ -104,6 +104,10 @@ export async function verifyEpidemiologyPatientPopulation({
   await page.goto("/workspace/research?view=epidemiology");
   await expect(page.getByRole("table", { name: "流行病学结果" })).toBeVisible();
   await expect(page.getByText("中国 EGFR 阳性 NSCLC 患者", { exact: true })).toBeVisible();
+  const secondaryFilters = page.getByRole("form", { name: "流行病学筛选" }).locator(".secondary-filter-panel");
+  await expect(secondaryFilters).not.toHaveAttribute("open");
+  await secondaryFilters.locator("summary").click();
+  await expect(page.getByLabel("标准患者人群")).toBeVisible();
   await page.getByLabel("标准患者人群").selectOption(populationId);
   await page.getByRole("button", { name: "查询" }).click();
   await expect(page).toHaveURL(new RegExp(`patient_population_id=${populationId}`));

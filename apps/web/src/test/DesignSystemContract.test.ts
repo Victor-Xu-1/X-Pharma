@@ -100,8 +100,8 @@ function workspaceWhereRule(css: string, selector: string) {
   throw new Error(`Missing workspace :where() rule containing ${selector}`);
 }
 
-describe("unified Claude-inspired light design system", () => {
-  it("uses warm paper, neutral navigation and restrained clay accents in both entrances", () => {
+describe("unified OpenAI-inspired minimal light design system", () => {
+  it("uses white canvas, neutral navigation and one sans-serif hierarchy in both entrances", () => {
     const designSystem = source("../design-system.css");
     const baseStyles = source("../styles.css");
     const mount = source("../mount.tsx");
@@ -109,13 +109,14 @@ describe("unified Claude-inspired light design system", () => {
     const internalEntry = source("../internal-main.tsx");
     const combinedStyles = `${designSystem}\n${baseStyles}`;
 
-    expect(designSystem).toContain("--ds-canvas: #faf9f5;");
-    expect(designSystem).toContain("--ds-nav: #f0eee6;");
-    expect(designSystem).toContain("--ds-ink-strong: #141413;");
-    expect(designSystem).toContain("--ds-accent: #d97757;");
-    expect(designSystem).toContain("--ds-accent-strong: #9c4a2b;");
-    expect(designSystem).toContain("--ds-action: #2f2e2b;");
-    expect(designSystem).toContain("--ds-font-display:");
+    expect(designSystem).toContain("--ds-canvas: #ffffff;");
+    expect(designSystem).toContain("--ds-nav: #f9f9f9;");
+    expect(designSystem).toContain("--ds-ink-strong: #0d0d0d;");
+    expect(designSystem).toContain("--ds-accent: #5d5d5d;");
+    expect(designSystem).toContain("--ds-accent-strong: #303030;");
+    expect(designSystem).toContain("--ds-action: #0d0d0d;");
+    expect(designSystem).toContain("--ds-font-display: var(--ds-font-sans);");
+    expect(designSystem).not.toMatch(/Georgia|Noto Serif|Songti SC|SimSun|#faf9f5|#f0eee6/i);
     expect(mount).toContain('import "./design-system.css";');
     expect(mount.indexOf('import "./styles.css";')).toBeLessThan(mount.indexOf('import "./design-system.css";'));
     expect(publicEntry).toContain("mountApplication");
@@ -139,7 +140,7 @@ describe("unified Claude-inspired light design system", () => {
     expect([...used].filter((token) => !defined.has(token))).toEqual([]);
   });
 
-  it("uses a shared warm chart palette without per-chart color overrides", () => {
+  it("uses a shared neutral chart palette without per-chart color overrides", () => {
     const palette = source("../components/chartPalette.ts");
     const chartSources = [
       source("../components/ClinicalTrialLandscape.tsx"),
@@ -148,7 +149,8 @@ describe("unified Claude-inspired light design system", () => {
     ].join("\n");
 
     expect(palette).not.toMatch(/#356b80|#0284c7|#a7d0d9/i);
-    expect(palette).toContain("#d97757");
+    expect(palette).toContain("#5d5d5d");
+    expect(palette).not.toMatch(/#d97757|#9c4a2b/i);
     expect(chartSources).toContain("chartPalette");
     expect(chartSources).not.toMatch(/#[0-9a-f]{6}\b|rgba\(/i);
   });
@@ -184,7 +186,7 @@ describe("unified Claude-inspired light design system", () => {
     }
   });
 
-  it("keeps both login entrances on the Claude-direction light surface", () => {
+  it("keeps both login entrances on the same neutral light surface", () => {
     const designSystem = source("../design-system.css");
 
     expect(designSystem).toMatch(/\.workspace-sidebar\s*\{[^}]*background: var\(--ds-nav\);/s);
@@ -237,9 +239,7 @@ describe("unified Claude-inspired light design system", () => {
       "span",
       ".factory-warning strong",
     ]);
-    const shellHierarchyRule = designSystem.match(
-      /\.sidebar-account-copy strong,\s*\.sidebar-agent-status strong\s*\{([^}]*)\}/,
-    );
+    const shellHierarchyRule = ruleBody(designSystem, ".sidebar-account-copy strong");
     const shellContextRule = ruleContainingSelectors(designSystem, [
       ".user-copy small",
       ".section-header p",
@@ -260,8 +260,8 @@ describe("unified Claude-inspired light design system", () => {
     expect(loginMicrocopyRule).not.toBeNull();
     expect(loginMicrocopyRule?.[1]).toContain("font-size: var(--ds-text-xs);");
     expect(loginMicrocopyRule?.[1]).toContain("line-height: var(--ds-leading-compact);");
-    expect(shellHierarchyRule?.[1]).toContain("font-size: var(--ds-text-sm);");
-    expect(shellHierarchyRule?.[1]).toContain("line-height: var(--ds-leading-compact);");
+    expect(shellHierarchyRule).toContain("font-size: var(--ds-text-sm);");
+    expect(shellHierarchyRule).toContain("line-height: var(--ds-leading-compact);");
     expect(shellContextRule.body).toContain("font-size: var(--ds-text-xs);");
     expect(shellContextRule.body).toContain("line-height: var(--ds-leading-compact);");
     expect(microcopyRule.body).toContain("font-size: var(--ds-text-xs);");
@@ -417,7 +417,7 @@ describe("unified Claude-inspired light design system", () => {
     const designSystem = source("../design-system.css");
 
     for (const token of [
-      "--ds-radius-control: 8px;",
+      "--ds-radius-control: 10px;",
       "--ds-radius-panel: 12px;",
       "--ds-control-height: 40px;",
       "--ds-button-height: 36px;",

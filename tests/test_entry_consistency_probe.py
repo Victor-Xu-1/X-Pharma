@@ -66,15 +66,15 @@ class FakeMcpSession:
 
     async def initialize(self) -> InitializeResult:
         return InitializeResult(
-            protocolVersion="2025-11-25",
+            protocol_version="2025-11-25",
             capabilities=ServerCapabilities(),
-            serverInfo=Implementation(name="test", version="1"),
+            server_info=Implementation(name="test", version="1"),
         )
 
     async def list_tools(self, cursor: str | None = None) -> ListToolsResult:
         assert cursor is None
         self.list_calls += 1
-        return ListToolsResult(tools=[Tool(name=name, inputSchema={"type": "object"}) for name in sorted(self.tools)])
+        return ListToolsResult(tools=[Tool(name=name, input_schema={"type": "object"}) for name in sorted(self.tools)])
 
     async def call_tool(self, name: str, arguments: dict[str, Any] | None = None) -> CallToolResult:
         self.calls.append(name)
@@ -102,7 +102,7 @@ class FakeMcpSession:
             }
         else:
             raise AssertionError(f"unexpected MCP tool: {name}")
-        return CallToolResult(content=[], structuredContent=payload)
+        return CallToolResult(content=[], structured_content=payload)
 
 
 def _web_transport(*, published: bool = True) -> httpx.MockTransport:

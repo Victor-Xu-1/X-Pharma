@@ -537,9 +537,7 @@
     transform: translateX(0);
   }
   .workspace-sidebar .brand-copy,
-  .workspace-sidebar .nav-button span,
-  .workspace-sidebar .sidebar-agent-status > span,
-  .workspace-sidebar .sidebar-agent-status i {
+  .workspace-sidebar .nav-button span {
     display: flex;
   }
   .workspace-sidebar .nav-button {

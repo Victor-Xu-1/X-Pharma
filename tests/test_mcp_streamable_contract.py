@@ -49,5 +49,5 @@ def test_ci_uses_the_fixture_owned_gate_once_without_removing_other_mcp_boundari
     assert "Independent MCP dual-client interoperability" in workflow
     assert "--requests 20 --concurrency 4" in workflow and "--max-p95-ms 10000" in workflow
     probe = (ROOT / "scripts/entry_consistency_probe.py").read_text(encoding="utf-8")
-    assert "timeout=httpx.Timeout(30, connect=10)" in probe
+    assert "timeout=httpx2.Timeout(30, connect=10)" in probe
     assert 'Implementation(name="pharma-entry-consistency", version=PRODUCT_VERSION)' in probe

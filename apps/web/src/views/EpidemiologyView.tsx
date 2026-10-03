@@ -18,6 +18,7 @@ import { EntityFilterSelect } from "../components/EntityFilterSelect";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResultPagination } from "../components/ResultPagination";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
+import { SecondaryFilters } from "../components/SecondaryFilters";
 import { type ColumnDef, type SortingState, VirtualDataTable } from "../components/VirtualDataTable";
 import {
   type EpidemiologyFilters,
@@ -503,84 +504,98 @@ export function EpidemiologyView({
             ))}
           </select>
         </label>
-        <label>
-          <span>单位</span>
-          <select value={filters.unit} onChange={(event) => setFilter("unit", event.target.value)}>
-            <option value="">全部</option>
-            {unitOptions.map((value) => (
-              <option value={value} key={value}>
-                {value} ({data?.facets?.unit?.[value] ?? 0})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>标准患者人群</span>
-          <select
-            value={filters.patientPopulationId}
-            onChange={(event) => setFilter("patientPopulationId", event.target.value)}
-          >
-            <option value="">全部</option>
-            {patientPopulationOptions.map((option) => (
-              <option value={option.id} key={option.id}>
-                {option.name} ({option.count})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>人群口径</span>
-          <select
-            value={filters.populationScope}
-            onChange={(event) => setFilter("populationScope", event.target.value)}
-          >
-            <option value="">全部</option>
-            {populationOptions.map((value) => (
-              <option value={value} key={value}>
-                {value} ({data?.facets?.population_scope?.[value] ?? 0})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>年龄组</span>
-          <select value={filters.ageGroup} onChange={(event) => setFilter("ageGroup", event.target.value)}>
-            <option value="">全部</option>
-            {ageOptions.map((value) => (
-              <option value={value} key={value}>
-                {value} ({data?.facets?.age_group?.[value] ?? 0})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>性别</span>
-          <select value={filters.sex} onChange={(event) => setFilter("sex", event.target.value)}>
-            <option value="">全部</option>
-            {sexOptions.map((value) => (
-              <option value={value} key={value}>
-                {value} ({data?.facets?.sex?.[value] ?? 0})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>观察期起</span>
-          <input
-            type="date"
-            value={filters.periodStartFrom}
-            onChange={(event) => setFilter("periodStartFrom", event.target.value)}
-          />
-        </label>
-        <label>
-          <span>观察期止</span>
-          <input
-            type="date"
-            value={filters.periodEndTo}
-            min={filters.periodStartFrom || undefined}
-            onChange={(event) => setFilter("periodEndTo", event.target.value)}
-          />
-        </label>
+        <SecondaryFilters
+          activeCount={
+            [
+              filters.unit,
+              filters.patientPopulationId,
+              filters.populationScope,
+              filters.ageGroup,
+              filters.sex,
+              filters.periodStartFrom,
+              filters.periodEndTo,
+            ].filter(Boolean).length
+          }
+        >
+          <label>
+            <span>单位</span>
+            <select value={filters.unit} onChange={(event) => setFilter("unit", event.target.value)}>
+              <option value="">全部</option>
+              {unitOptions.map((value) => (
+                <option value={value} key={value}>
+                  {value} ({data?.facets?.unit?.[value] ?? 0})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>标准患者人群</span>
+            <select
+              value={filters.patientPopulationId}
+              onChange={(event) => setFilter("patientPopulationId", event.target.value)}
+            >
+              <option value="">全部</option>
+              {patientPopulationOptions.map((option) => (
+                <option value={option.id} key={option.id}>
+                  {option.name} ({option.count})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>人群口径</span>
+            <select
+              value={filters.populationScope}
+              onChange={(event) => setFilter("populationScope", event.target.value)}
+            >
+              <option value="">全部</option>
+              {populationOptions.map((value) => (
+                <option value={value} key={value}>
+                  {value} ({data?.facets?.population_scope?.[value] ?? 0})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>年龄组</span>
+            <select value={filters.ageGroup} onChange={(event) => setFilter("ageGroup", event.target.value)}>
+              <option value="">全部</option>
+              {ageOptions.map((value) => (
+                <option value={value} key={value}>
+                  {value} ({data?.facets?.age_group?.[value] ?? 0})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>性别</span>
+            <select value={filters.sex} onChange={(event) => setFilter("sex", event.target.value)}>
+              <option value="">全部</option>
+              {sexOptions.map((value) => (
+                <option value={value} key={value}>
+                  {value} ({data?.facets?.sex?.[value] ?? 0})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>观察期起</span>
+            <input
+              type="date"
+              value={filters.periodStartFrom}
+              onChange={(event) => setFilter("periodStartFrom", event.target.value)}
+            />
+          </label>
+          <label>
+            <span>观察期止</span>
+            <input
+              type="date"
+              value={filters.periodEndTo}
+              min={filters.periodStartFrom || undefined}
+              onChange={(event) => setFilter("periodEndTo", event.target.value)}
+            />
+          </label>
+        </SecondaryFilters>
         <div className="domain-filter-actions">
           <button className="primary-button" type="submit" disabled={result.isFetching}>
             <Search size={16} />
