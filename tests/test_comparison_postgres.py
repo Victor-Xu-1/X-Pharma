@@ -10,6 +10,7 @@ from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, sessionmaker
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.comparison.exports import WorkspaceComparisonExportService
 from pharma_intel.comparison.service import ComparisonSetConflict, ComparisonSetService
 from pharma_intel.db import set_tenant_context
@@ -18,7 +19,6 @@ from pharma_intel.models import (
     ComparisonSetVersion,
     EntityType,
     Tenant,
-    User,
     UserRole,
     WorkspaceExportEvent,
 )
@@ -41,7 +41,7 @@ def test_comparison_concurrency_rls_and_export_history_immutability() -> None:
     with Session(engine, expire_on_commit=False) as session:
         set_tenant_context(session, tenant_id)
         tenant = Tenant(id=tenant_id, slug=f"comparison-{tenant_id}", name="Comparison PostgreSQL")
-        user = User(
+        user = create_account(
             tenant_id=tenant_id,
             email=f"comparison-{tenant_id}@example.test",
             normalized_email=f"comparison-{tenant_id}@example.test",
@@ -53,7 +53,9 @@ def test_comparison_concurrency_rls_and_export_history_immutability() -> None:
         session.commit()
         first = EntityRepository(session, tenant_id).create(EntityCreate(entity_type=EntityType.TARGET, name="EGFR"))
         second = EntityRepository(session, tenant_id).create(EntityCreate(entity_type=EntityType.TARGET, name="KRAS"))
-        comparison = ComparisonSetService(session, tenant_id, user.id).create_set(ComparisonSetCreate(name="Landscape"))
+        comparison = ComparisonSetService(session, tenant_id, user.id, include_unpublished=True).create_set(
+            ComparisonSetCreate(name="Landscape")
+        )
         set_id = comparison.item.id
         user_id = user.id
 
@@ -64,7 +66,9 @@ def test_comparison_concurrency_rls_and_export_history_immutability() -> None:
             set_tenant_context(session, tenant_id)
             barrier.wait(timeout=10)
             try:
-                ComparisonSetService(session, tenant_id, user_id).add_member(set_id, entity_id, expected_version=1)
+                ComparisonSetService(session, tenant_id, user_id, include_unpublished=True).add_member(
+                    set_id, entity_id, expected_version=1
+                )
                 return "added"
             except ComparisonSetConflict:
                 return "conflict"
@@ -75,10 +79,10 @@ def test_comparison_concurrency_rls_and_export_history_immutability() -> None:
 
     with Session(engine, expire_on_commit=False) as session:
         set_tenant_context(session, tenant_id)
-        comparison = ComparisonSetService(session, tenant_id, user_id).get_set(set_id)
+        comparison = ComparisonSetService(session, tenant_id, user_id, include_unpublished=True).get_set(set_id)
         assert comparison.item.version == 2
         assert comparison.member_count == 1
-        export_service = WorkspaceComparisonExportService(session, tenant_id, user_id)
+        export_service = WorkspaceComparisonExportService(session, tenant_id, user_id, include_unpublished=True)
         export_service.upsert_policy(
             WorkspaceExportPolicyUpsert(
                 policy_version="postgres-v1",

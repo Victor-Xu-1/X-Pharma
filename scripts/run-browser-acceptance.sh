@@ -95,6 +95,14 @@ if [[ -z "${COMPOSE_FILE:-}" ]]; then
   fi
 fi
 export SEARCH_ALLOW_NON_AUTHORITATIVE_PROJECTION=true
+source "$ROOT_DIR/scripts/lib/browser_fonts.sh"
+source "$ROOT_DIR/scripts/lib/browser_runtime_health.sh"
+verify_browser_fonts
+if [[ "$recover_interrupted_run" != true ]]; then
+  source "$ROOT_DIR/scripts/lib/browser_runtime.sh"
+  resolve_browser_runtime
+  verify_browser_visual_profile
+fi
 
 api_container_id=$(docker compose ps -q api)
 if [[ -z "$api_container_id" ]]; then
@@ -110,8 +118,7 @@ if [[ "$api_runtime_state" != true\ * ]]; then
   exit 1
 fi
 if [[ "$api_runtime_state" != "true healthy" && "$recover_interrupted_run" != true ]]; then
-  echo "The local API container is not healthy in the selected Docker daemon: $api_runtime_state" >&2
-  exit 1
+  wait_for_browser_container_healthy "$api_container_id" api 30 || exit 1
 fi
 
 package_manager=$(node -p "require('./apps/web/package.json').packageManager")
@@ -142,7 +149,10 @@ opensearch_index_prefix=$(
 run_id="$(date -u +%Y%m%d%H%M%S)-$RANDOM"
 browser_projects=(desktop-1440 desktop-1920 tablet-1024 mobile-390)
 email_prefix="e2e-$run_id"
-email_pattern="e2e-%@example.test"
+email_pattern="${email_prefix}-%@example.test"
+if [[ "$recover_interrupted_run" == true ]]; then
+  email_pattern="e2e-%@example.test"
+fi
 password="$(openssl rand -hex 24)Aa1!"
 fixture_key="e2e-$run_id"
 output_dir="/tmp/pharma-browser-acceptance-$$"
@@ -226,6 +236,10 @@ ALTER TABLE saved_search_versions ENABLE TRIGGER immutable_saved_search_versions
 DELETE FROM user_sessions
 WHERE tenant_id = :'tenant_id'
   AND user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
+DELETE FROM account_invitations WHERE created_by_user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern')
+  OR claimed_user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
+DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
+DELETE FROM organization_memberships WHERE user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
 DELETE FROM users WHERE normalized_email LIKE :'email_pattern';
 COMMIT;
 SQL
@@ -290,6 +304,10 @@ ALTER TABLE saved_search_versions ENABLE TRIGGER immutable_saved_search_versions
 DELETE FROM user_sessions
 WHERE tenant_id = :'tenant_id'
   AND user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
+DELETE FROM account_invitations WHERE created_by_user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern')
+  OR claimed_user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
+DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
+DELETE FROM organization_memberships WHERE user_id IN (SELECT id FROM users WHERE normalized_email LIKE :'email_pattern');
 DELETE FROM users WHERE normalized_email LIKE :'email_pattern';
 COMMIT;
 SQL
@@ -359,6 +377,10 @@ ALTER TABLE saved_search_versions ENABLE TRIGGER immutable_saved_search_versions
 DELETE FROM user_sessions
 WHERE tenant_id = '$tenant_id'
   AND user_id IN (SELECT id FROM users WHERE normalized_email LIKE '$email_pattern');
+DELETE FROM account_invitations WHERE created_by_user_id IN (SELECT id FROM users WHERE normalized_email LIKE '$email_pattern')
+  OR claimed_user_id IN (SELECT id FROM users WHERE normalized_email LIKE '$email_pattern');
+DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE normalized_email LIKE '$email_pattern');
+DELETE FROM organization_memberships WHERE user_id IN (SELECT id FROM users WHERE normalized_email LIKE '$email_pattern');
 DELETE FROM users WHERE normalized_email LIKE '$email_pattern';
 COMMIT;
 SQL
@@ -831,18 +853,8 @@ resume_worker_after_cleanup() {
 }
 wait_for_worker_healthy() {
   local worker_container_id
-  local worker_state
-  local attempt
   worker_container_id=$(docker compose ps -q worker)
-  for ((attempt = 1; attempt <= 60; attempt++)); do
-    worker_state=$(docker inspect --format '{{.State.Running}} {{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$worker_container_id" 2>/dev/null || true)
-    if [[ "$worker_state" == "true healthy" ]]; then
-      return 0
-    fi
-    sleep 1
-  done
-  echo "The browser acceptance worker did not become healthy: $worker_state" >&2
-  return 1
+  wait_for_browser_container_healthy "$worker_container_id" worker 60
 }
 restore_runtime_projection() {
   # The acceptance build moves the shared aliases to browser-scoped indices. Rebuild
@@ -850,6 +862,8 @@ restore_runtime_projection() {
   # guard never observes the temporary aliases and enters a crash loop.
   docker compose run --rm --no-deps worker pharma-search rebuild --build-id "runtime-$run_id" >/dev/null
   SEARCH_ALLOW_NON_AUTHORITATIVE_PROJECTION=false docker compose up -d --no-deps --force-recreate worker >/dev/null
+  wait_for_worker_healthy
+  wait_for_browser_container_healthy "$api_container_id" api 30
   cleanup_worker_was_running=false
   cleanup_worker_stopped=false
 }
@@ -950,6 +964,7 @@ fi
 
 browser_user_id=""
 declare -A project_user_ids
+declare -A search_target_ids search_company_ids
 for project in "${browser_projects[@]}"; do
   project_email="$email_prefix-$project@example.test"
   docker compose run --rm --no-deps migrate pharma-bootstrap \
@@ -971,6 +986,15 @@ for project in "${browser_projects[@]}"; do
     browser_user_id="$project_user_id"
   fi
   project_user_ids[$project]=$project_user_id
+  search_target_ids[$project]=$(python3 -c 'import uuid; print(uuid.uuid4())')
+  search_company_ids[$project]=$(python3 -c 'import uuid; print(uuid.uuid4())')
+  project_fixture_key="$fixture_key-$project"
+  docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -v ON_ERROR_STOP=1 \
+    -v tenant_id="$tenant_id" -v target_id="${search_target_ids[$project]}" \
+    -v company_id="${search_company_ids[$project]}" -v fixture_key="$project_fixture_key" \
+    -v target_name="Browser acceptance target $project_fixture_key" \
+    -v company_name="Browser acceptance company $project_fixture_key" \
+    < scripts/browser_fixtures/research_entities.sql >/dev/null
 done
 [[ "$browser_user_id" =~ ^[0-9a-f-]{36}$ ]] || {
   echo "Browser acceptance policy owner was not created" >&2
@@ -993,12 +1017,14 @@ docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -v ON_ERROR_ST
   -v permission_email="$permission_email" -v permission_password_hash="$permission_password_hash" \
   >/dev/null <<'SQL'
 INSERT INTO users (
-  id, tenant_id, email, normalized_email, display_name, password_hash,
-  role, active, token_version, created_at, updated_at
+  id, home_tenant_id, email, normalized_email, display_name, password_hash,
+  active, token_version, created_at, updated_at
 ) VALUES (
   :'permission_user_id', :'tenant_id', :'permission_email', lower(:'permission_email'),
-  'Browser Permission Viewer', :'permission_password_hash', 'VIEWER', true, 1, now(), now()
+  'Browser Permission Viewer', :'permission_password_hash', true, 1, now(), now()
 );
+INSERT INTO organization_memberships (tenant_id, user_id, role, active, token_version, created_at, updated_at)
+VALUES (:'tenant_id', :'permission_user_id', 'VIEWER', true, 1, now(), now());
 SQL
 policy_snapshot=$(
   docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -At -v ON_ERROR_STOP=1 \
@@ -2097,65 +2123,6 @@ resume_worker_after_cleanup
 wait_for_worker_healthy
 
 base_url="${E2E_BASE_URL:-http://127.0.0.1:18380}"
-browser_executable=${E2E_BROWSER_EXECUTABLE:-${E2E_CHROME_EXECUTABLE:-}}
-browser_channel=chrome
-browser_product="Google Chrome"
-browser_version_pattern='^Google Chrome [0-9]+([.][0-9]+){3}$'
-if [[ $browser_target == chrome ]]; then
-  if [[ -z "$browser_executable" ]] && command -v google-chrome >/dev/null 2>&1; then
-    browser_executable=$(command -v google-chrome)
-  fi
-  if [[ -z "$browser_executable" ]]; then
-    chrome_cache=${PHARMA_CHROME_CACHE_DIR:-"$HOME/.cache/pharma-intelligence/google-chrome"}
-    release_file="$chrome_cache/current"
-    if [[ -f "$release_file" && ! -L "$release_file" ]]; then
-      browser_release=$(<"$release_file")
-      [[ "$browser_release" =~ ^[0-9]+([.][0-9]+){3}-[0-9]+$ ]] || {
-        echo "user-level Google Chrome current release is invalid" >&2
-        exit 1
-      }
-      browser_executable="$chrome_cache/releases/$browser_release/opt/google/chrome/google-chrome"
-    fi
-  fi
-  unavailable_message="Google Chrome is unavailable; run ./scripts/bootstrap-wsl-chrome.sh"
-else
-  browser_channel=msedge
-  browser_product="Microsoft Edge"
-  browser_version_pattern='^Microsoft Edge [0-9]+([.][0-9]+){3}( unknown)?$'
-  edge_track=${browser_target#edge-}
-  edge_cache=${PHARMA_EDGE_CACHE_DIR:-"$HOME/.cache/pharma-intelligence/microsoft-edge"}
-  release_file="$edge_cache/$edge_track"
-  if [[ -z "$browser_executable" && -f "$release_file" && ! -L "$release_file" ]]; then
-    browser_release=$(<"$release_file")
-    [[ "$browser_release" =~ ^[0-9]+([.][0-9]+){3}-[0-9]+$ ]] || {
-      echo "user-level Microsoft Edge $edge_track release is invalid" >&2
-      exit 1
-    }
-    browser_executable="$edge_cache/releases/$browser_release/opt/microsoft/msedge/msedge"
-  fi
-  unavailable_message="Microsoft Edge $edge_track is unavailable; run ./scripts/bootstrap-wsl-edge.sh --track $edge_track"
-fi
-[[ -n "$browser_executable" && "$browser_executable" = /* && -x "$browser_executable" ]] || {
-  echo "$unavailable_message" >&2
-  exit 1
-}
-browser_executable=$(realpath "$browser_executable")
-browser_launch_executable="$browser_executable"
-if [[ -n "${MSYSTEM:-}" && -x "$(command -v cygpath || true)" ]]; then
-  browser_launch_executable=$(cygpath -w "$browser_executable")
-  browser_version="${browser_product} $(powershell.exe -NoProfile -Command "(Get-Item -LiteralPath '$browser_launch_executable').VersionInfo.ProductVersion" | tr -d '\r\n')"
-else
-  browser_version=$($browser_executable --version)
-fi
-while [[ "$browser_version" == *[[:space:]] ]]; do
-  browser_version=${browser_version%?}
-done
-[[ "$browser_version" =~ $browser_version_pattern ]] || {
-  echo "$browser_product returned an invalid version string: $browser_version" >&2
-  exit 1
-}
-browser_version=${browser_version% unknown}
-expected_browser_version=${browser_version#"$browser_product "}
 playwright_output_dir="$output_dir"
 playwright_json_output_file="$output_dir/results.json"
 if [[ -n "${MSYSTEM:-}" && -x "$(command -v cygpath || true)" ]]; then
@@ -2186,6 +2153,11 @@ sync_updated_snapshots() {
   [[ "$update_snapshots" == true && -n "${E2E_PLAYWRIGHT_COMMAND:-}" ]] || return 0
   local source_dir="${E2E_PLAYWRIGHT_WORKDIR:-apps/web}/e2e/visual-baselines"
   local target_dir="$ROOT_DIR/apps/web/e2e/visual-baselines"
+  # An alternate launcher can still execute this exact checkout. In that case
+  # Playwright already wrote the owned baseline and copying it onto itself fails.
+  if [[ "$(realpath -- "$source_dir")" == "$(realpath -- "$target_dir")" ]]; then
+    return 0
+  fi
   local source_path="$source_dir"
   local target_path="$target_dir"
   if [[ -n "${MSYSTEM:-}" && -x "$(command -v cygpath || true)" ]]; then
@@ -2243,6 +2215,14 @@ CI=1 \
   E2E_PERMISSION_EMAIL="$permission_email" \
   E2E_PERMISSION_PASSWORD="$permission_password" \
   E2E_FIXTURE_KEY="$fixture_key" \
+  E2E_SEARCH_TARGET_ID_DESKTOP_1440="${search_target_ids[desktop-1440]}" \
+  E2E_SEARCH_TARGET_ID_DESKTOP_1920="${search_target_ids[desktop-1920]}" \
+  E2E_SEARCH_TARGET_ID_TABLET_1024="${search_target_ids[tablet-1024]}" \
+  E2E_SEARCH_TARGET_ID_MOBILE_390="${search_target_ids[mobile-390]}" \
+  E2E_SEARCH_COMPANY_ID_DESKTOP_1440="${search_company_ids[desktop-1440]}" \
+  E2E_SEARCH_COMPANY_ID_DESKTOP_1920="${search_company_ids[desktop-1920]}" \
+  E2E_SEARCH_COMPANY_ID_TABLET_1024="${search_company_ids[tablet-1024]}" \
+  E2E_SEARCH_COMPANY_ID_MOBILE_390="${search_company_ids[mobile-390]}" \
   E2E_PIPELINE_TARGET_ID="$pipeline_target_id" \
   E2E_PIPELINE_COMBINATION_TARGET_ID="$pipeline_combination_target_id" \
   E2E_PIPELINE_DRUG_B_ID="$pipeline_drug_b_id" \

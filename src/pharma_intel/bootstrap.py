@@ -8,6 +8,7 @@ from pathlib import Path
 from pydantic import ValidationError
 from sqlalchemy import select
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.config import get_settings
 from pharma_intel.db import get_session_factory, set_tenant_context
 from pharma_intel.ingest.readiness import AUTHORIZATION_SCOPE_PATTERN
@@ -148,7 +149,7 @@ def run() -> None:
             if existing_user is not None:
                 parser.error("An account with this email already exists")
             session.add(
-                User(
+                create_account(
                     tenant_id=tenant.id,
                     email=args.admin_email.strip(),
                     normalized_email=normalized_email,

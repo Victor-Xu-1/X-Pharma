@@ -12,9 +12,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
-from pharma_intel.api import app, browser_security_headers_for_path
+from pharma_intel.accounts.identity import create_account
+from pharma_intel.api import app
 from pharma_intel.config import Settings
 from pharma_intel.db import get_session
+from pharma_intel.http.middleware import browser_security_headers_for_path
 from pharma_intel.licensing import internal_evidence_license_policy
 from pharma_intel.models import (
     ApiKey,
@@ -30,7 +32,6 @@ from pharma_intel.models import (
     SourceAssetState,
     Tenant,
     TenantDataset,
-    User,
     UserRole,
     UserSession,
 )
@@ -52,8 +53,8 @@ def test_database_readiness_does_not_require_an_opensearch_projection(
         def assert_projection_ready() -> None:
             raise AssertionError("database readiness must not inspect the OpenSearch projection")
 
-    monkeypatch.setattr("pharma_intel.api.get_settings", lambda: Settings(search_backend="database"))
-    monkeypatch.setattr("pharma_intel.api.get_opensearch_gateway", UnexpectedSearchGateway)
+    monkeypatch.setattr("pharma_intel.http.runtime.get_settings", lambda: Settings(search_backend="database"))
+    monkeypatch.setattr("pharma_intel.http.health.get_opensearch_gateway", UnexpectedSearchGateway)
     app.dependency_overrides[get_session] = session_override
     try:
         with TestClient(app) as client:
@@ -234,7 +235,7 @@ def test_health_and_authenticated_entity_flow(
         def assert_projection_ready() -> None:
             return None
 
-    monkeypatch.setattr("pharma_intel.api.get_opensearch_gateway", ReadySearchGateway)
+    monkeypatch.setattr("pharma_intel.http.health.get_opensearch_gateway", ReadySearchGateway)
     app.dependency_overrides[get_session] = session_override
     app.dependency_overrides[require_principal] = principal_override
     try:
@@ -579,13 +580,14 @@ def test_authenticated_route_without_session_dependency_is_audited(
         def delivery_counts() -> dict[str, int]:
             return {}
 
+    session_factory = sessionmaker(bind=session.get_bind(), autoflush=False, expire_on_commit=False)
+    monkeypatch.setattr("pharma_intel.http.search_projection.get_session_factory", lambda: session_factory)
+    monkeypatch.setattr("pharma_intel.http.middleware.get_session_factory", lambda: session_factory)
+    monkeypatch.setattr("pharma_intel.http.search_projection.get_opensearch_gateway", ReadyGateway)
+    monkeypatch.setattr("pharma_intel.http.search_projection.SearchProjectionConsumer", ReadyConsumer)
     monkeypatch.setattr(
-        "pharma_intel.api.get_session_factory",
-        lambda: sessionmaker(bind=session.get_bind(), autoflush=False, expire_on_commit=False),
+        "pharma_intel.http.search_projection.object_store_module.build_object_store", lambda _: object()
     )
-    monkeypatch.setattr("pharma_intel.api.get_opensearch_gateway", ReadyGateway)
-    monkeypatch.setattr("pharma_intel.api.SearchProjectionConsumer", ReadyConsumer)
-    monkeypatch.setattr("pharma_intel.api.object_store_module.build_object_store", lambda _: object())
     app.dependency_overrides[require_principal] = principal_override
     try:
         with TestClient(app) as client:
@@ -686,7 +688,7 @@ def test_internal_api_rejects_valid_agent_api_key(session: Session, tenant: Tena
 
 
 def test_human_login_session_and_csrf_protection(session: Session, tenant: Tenant) -> None:
-    user = User(
+    user = create_account(
         tenant_id=tenant.id,
         email="analyst@example.test",
         normalized_email="analyst@example.test",
@@ -738,7 +740,7 @@ def test_human_user_can_update_profile_with_server_persistence(
     session: Session,
     tenant: Tenant,
 ) -> None:
-    user = User(
+    user = create_account(
         tenant_id=tenant.id,
         email="profile@example.test",
         normalized_email="profile@example.test",
@@ -746,7 +748,7 @@ def test_human_user_can_update_profile_with_server_persistence(
         password_hash=hash_password("profile-password"),
         role=UserRole.ANALYST,
     )
-    conflict = User(
+    conflict = create_account(
         tenant_id=tenant.id,
         email="taken@example.test",
         normalized_email="taken@example.test",
@@ -789,6 +791,7 @@ def test_human_user_can_update_profile_with_server_persistence(
                 "tenant_id": tenant.id,
                 "email": "Profile.Updated@example.test",
                 "display_name": "Updated Profile",
+                "organization_name": tenant.name,
                 "phone": "+86 138 0000 0000",
                 "avatar_url": "https://cdn.example.test/avatar.png",
                 "role": "analyst",
@@ -832,7 +835,7 @@ def test_password_change_keeps_current_session_and_revokes_other_sessions(
     session: Session,
     tenant: Tenant,
 ) -> None:
-    user = User(
+    user = create_account(
         tenant_id=tenant.id,
         email="password@example.test",
         normalized_email="password@example.test",
@@ -883,7 +886,7 @@ def test_recent_entity_visits_are_personal_deduplicated_and_permission_checked(
     session: Session,
     tenant: Tenant,
 ) -> None:
-    first_user = User(
+    first_user = create_account(
         tenant_id=tenant.id,
         email="recent-first@example.test",
         normalized_email="recent-first@example.test",
@@ -891,7 +894,7 @@ def test_recent_entity_visits_are_personal_deduplicated_and_permission_checked(
         password_hash=hash_password("recent-first-password"),
         role=UserRole.ANALYST,
     )
-    second_user = User(
+    second_user = create_account(
         tenant_id=tenant.id,
         email="recent-second@example.test",
         normalized_email="recent-second@example.test",
@@ -1009,7 +1012,7 @@ def test_domain_and_data_factory_api_contracts_cover_empty_error_and_state_paths
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     settings = Settings(source_roots_config=str(tmp_path), temporal_enabled=False)
-    monkeypatch.setattr("pharma_intel.api.get_settings", lambda: settings)
+    monkeypatch.setattr("pharma_intel.http.runtime.get_settings", lambda: settings)
     session.add(
         TenantDataset(
             tenant_id=tenant.id,
@@ -1595,7 +1598,7 @@ def test_http_manifest_source_registration_is_allowlisted_and_never_exposes_cred
         source_credential_env_allowlist_config="SUPPLIER_API_TOKEN",
         source_http_allowed_origins_config="https://supplier.example",
     )
-    monkeypatch.setattr("pharma_intel.api.get_settings", lambda: settings)
+    monkeypatch.setattr("pharma_intel.http.runtime.get_settings", lambda: settings)
     session.add(
         TenantDataset(
             tenant_id=tenant.id,
@@ -1671,7 +1674,7 @@ def test_public_research_source_registration_preserves_governed_routing_rules(
         source_roots_config=str(tmp_path),
         source_ncbi_tool="pharma-platform-tests",
     )
-    monkeypatch.setattr("pharma_intel.api.get_settings", lambda: settings)
+    monkeypatch.setattr("pharma_intel.http.runtime.get_settings", lambda: settings)
     session.add(
         TenantDataset(
             tenant_id=tenant.id,
@@ -1814,7 +1817,7 @@ def test_s3_snapshot_source_registration_is_allowlisted_and_never_exposes_creden
         source_credential_env_allowlist_config=credential_name,
         source_s3_allowed_buckets_config="licensed-supplier",
     )
-    monkeypatch.setattr("pharma_intel.api.get_settings", lambda: settings)
+    monkeypatch.setattr("pharma_intel.http.runtime.get_settings", lambda: settings)
     session.add(
         TenantDataset(
             tenant_id=tenant.id,
@@ -1892,7 +1895,7 @@ def test_sftp_snapshot_source_registration_requires_host_trust_and_never_exposes
         source_sftp_known_hosts_path=str(known_hosts),
         source_sftp_allow_password_auth=True,
     )
-    monkeypatch.setattr("pharma_intel.api.get_settings", lambda: settings)
+    monkeypatch.setattr("pharma_intel.http.runtime.get_settings", lambda: settings)
     session.add(
         TenantDataset(
             tenant_id=tenant.id,
@@ -1961,7 +1964,7 @@ def test_smb_snapshot_source_registration_requires_allowlisted_encrypted_origin_
         source_smb_allowed_origins_config="smb://fileserver.example:445",
         source_smb_require_encryption=True,
     )
-    monkeypatch.setattr("pharma_intel.api.get_settings", lambda: settings)
+    monkeypatch.setattr("pharma_intel.http.runtime.get_settings", lambda: settings)
     session.add(
         TenantDataset(
             tenant_id=tenant.id,
@@ -2088,8 +2091,8 @@ def test_web_evidence_search_hides_internal_projection_details(
         "user",
         frozenset({"evidence:read"}),
     )
-    monkeypatch.setattr("pharma_intel.api.get_settings", lambda: Settings(search_semantic_enabled=True))
-    monkeypatch.setattr("pharma_intel.api.get_opensearch_gateway", lambda: Gateway())
+    monkeypatch.setattr("pharma_intel.http.runtime.get_settings", lambda: Settings(search_semantic_enabled=True))
+    monkeypatch.setattr("pharma_intel.http.evidence.get_opensearch_gateway", lambda: Gateway())
     try:
         with TestClient(app) as client:
             response = client.post(
@@ -2187,10 +2190,10 @@ def test_evidence_search_applies_dataset_license_and_hides_private_projection_id
         )
 
     monkeypatch.setattr(
-        "pharma_intel.api.get_settings",
+        "pharma_intel.http.runtime.get_settings",
         lambda: Settings(search_semantic_enabled=True),
     )
-    monkeypatch.setattr("pharma_intel.api.get_opensearch_gateway", lambda: Gateway())
+    monkeypatch.setattr("pharma_intel.http.evidence.get_opensearch_gateway", lambda: Gateway())
     app.dependency_overrides[get_session] = session_override
     app.dependency_overrides[require_principal] = principal_override
     try:
@@ -2377,7 +2380,7 @@ def test_evidence_search_rejects_results_outside_approved_logical_datasets(
             frozenset({"evidence:read"}),
         )
 
-    monkeypatch.setattr("pharma_intel.api.get_opensearch_gateway", lambda: Gateway())
+    monkeypatch.setattr("pharma_intel.http.evidence.get_opensearch_gateway", lambda: Gateway())
     app.dependency_overrides[get_session] = session_override
     app.dependency_overrides[require_principal] = principal_override
     try:
@@ -2457,7 +2460,7 @@ def test_evidence_search_filters_deleted_source_assets_before_projection_cleanup
                 )
             ]
 
-    monkeypatch.setattr("pharma_intel.api.get_opensearch_gateway", lambda: Gateway())
+    monkeypatch.setattr("pharma_intel.http.evidence.get_opensearch_gateway", lambda: Gateway())
 
     def session_override() -> Generator[Session]:
         yield session

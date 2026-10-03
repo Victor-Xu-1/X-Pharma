@@ -9,8 +9,9 @@ import pytest
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import sessionmaker
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.db import set_tenant_context
-from pharma_intel.models import Tenant, User, UserRole, WorkspaceTablePreference
+from pharma_intel.models import Tenant, UserRole, WorkspaceTablePreference
 from pharma_intel.schemas import WorkspaceTablePreferenceUpdate
 from pharma_intel.workspace_preferences import (
     WorkspaceTablePreferenceConflict,
@@ -33,7 +34,7 @@ def test_workspace_preferences_are_concurrent_user_scoped_and_rls_isolated() -> 
     with factory() as session:
         set_tenant_context(session, tenant_id)
         tenant = Tenant(id=tenant_id, slug=f"workspace-preferences-{tenant_id}", name="Workspace Preferences")
-        owner = User(
+        owner = create_account(
             tenant_id=tenant_id,
             email=f"workspace-owner-{tenant_id}@example.test",
             normalized_email=f"workspace-owner-{tenant_id}@example.test",
@@ -41,7 +42,7 @@ def test_workspace_preferences_are_concurrent_user_scoped_and_rls_isolated() -> 
             password_hash="not-used",  # noqa: S106
             role=UserRole.ANALYST,
         )
-        colleague = User(
+        colleague = create_account(
             tenant_id=tenant_id,
             email=f"workspace-colleague-{tenant_id}@example.test",
             normalized_email=f"workspace-colleague-{tenant_id}@example.test",

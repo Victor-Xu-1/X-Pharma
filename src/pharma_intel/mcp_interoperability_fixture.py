@@ -85,6 +85,15 @@ def _definition(rate_card_key: str) -> RateCardDefinition:
             "effective_from": (datetime.now(UTC) - timedelta(days=1)).isoformat(),
             "items": [
                 {
+                    "billing_class": "entity.read",
+                    "entitlement_key": "entities.read",
+                    "base_units": "1",
+                    "per_result_units": "0.01",
+                    "per_kib_units": "0.001",
+                    "per_compute_unit": "0",
+                    "max_result_rows": 1,
+                },
+                {
                     "billing_class": "entity.search",
                     "entitlement_key": "entities.read",
                     "base_units": "1",

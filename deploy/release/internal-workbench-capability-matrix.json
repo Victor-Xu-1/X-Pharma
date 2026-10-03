@@ -19,7 +19,7 @@
       "status": "partial",
       "capabilities": [
         {"id": "governed_source_registration", "priority": "P0", "status": "implemented", "evidence": ["apps/web/src/views/DataFactoryView.tsx", "src/pharma_intel/ingest/data_factory.py", "tests/test_data_factory.py"]},
-        {"id": "source_health_and_license_enforcement", "priority": "P1", "status": "implemented", "evidence": ["src/pharma_intel/api.py", "src/pharma_intel/ingest/connectors.py", "tests/test_source_connectors.py"]}
+        {"id": "source_health_and_license_enforcement", "priority": "P1", "status": "implemented", "evidence": ["src/pharma_intel/http/ingestion_sources.py", "src/pharma_intel/ingest/connectors.py", "tests/test_source_connectors.py"]}
       ],
       "remaining_gaps": ["付费来源合同和字段级授权需真实录入并由数据责任人验收"]
     },
@@ -29,7 +29,7 @@
       "status": "partial",
       "capabilities": [
         {"id": "scheduled_incremental_ingestion", "priority": "P0", "status": "implemented", "evidence": ["src/pharma_intel/ingest/data_factory.py", "src/pharma_intel/ingest/workflows.py", "tests/test_automatic_ingestion_contract.py"]},
-        {"id": "operator_run_graph_and_recovery", "priority": "P1", "status": "implemented", "evidence": ["apps/web/src/views/DataFactoryView.tsx", "src/pharma_intel/api.py", "src/pharma_intel/ingest/run_read_model.py", "src/pharma_intel/ingest/data_factory.py", "src/pharma_intel/ingest/replay.py", "scripts/verify-ingestion-cancellation.sh", "scripts/verify-source-stage-replay.sh", "tests/test_data_factory.py", "tests/test_source_asset_operations.py", "tests/test_ingestion_run_operations.py", "tests/test_ingestion_run_read_model.py", "tests/test_ingestion_cancellation_acceptance.py", "tests/test_source_stage_replay_acceptance.py", "apps/web/src/test/DataFactoryView.test.tsx", "apps/web/e2e/workspace.spec.ts"]}
+        {"id": "operator_run_graph_and_recovery", "priority": "P1", "status": "implemented", "evidence": ["apps/web/src/views/DataFactoryView.tsx", "src/pharma_intel/ingest/commands/runs.py", "src/pharma_intel/http/ingestion_runs.py", "src/pharma_intel/ingest/run_read_model.py", "src/pharma_intel/ingest/data_factory.py", "src/pharma_intel/ingest/replay.py", "scripts/verify-ingestion-cancellation.sh", "scripts/verify-source-stage-replay.sh", "tests/test_data_factory.py", "tests/test_source_asset_operations.py", "tests/test_ingestion_run_operations.py", "tests/test_ingestion_run_read_model.py", "tests/test_ingestion_cancellation_acceptance.py", "tests/test_source_stage_replay_acceptance.py", "apps/web/src/test/DataFactoryView.test.tsx", "apps/web/e2e/workspace.spec.ts"]}
       ],
       "remaining_gaps": ["六阶段运行图、精确 Temporal execution 取消、终态整次重放，以及从安全扫描、解析、AI 治理或检索投影指定阶段恢复均已闭环；目标环境的大规模真实来源吞吐、失败恢复演练和数据运营 UAT 仍待完成"]
     },
@@ -39,7 +39,7 @@
       "status": "partial",
       "capabilities": [
         {"id": "isolated_parser_and_malware_boundary", "priority": "P0", "status": "implemented", "evidence": ["src/pharma_intel/ingest/parser_service.py", "scripts/verify-local-parser.sh", "scripts/verify-local-malware.sh"]},
-        {"id": "operator_asset_preview_quarantine_replay", "priority": "P1", "status": "implemented", "evidence": ["apps/web/src/views/DataFactoryView.tsx", "src/pharma_intel/api.py", "src/pharma_intel/ingest/workflows.py", "src/pharma_intel/ingest/replay.py", "src/pharma_intel/ingest/quarantine.py", "migrations/versions/e9a2c5d7f604_add_source_quarantine_decisions.py", "scripts/verify-source-version-replay.sh", "scripts/verify-source-stage-replay.sh", "scripts/verify-quarantine-workflow.sh", "tests/test_source_asset_operations.py", "tests/test_source_version_replay_acceptance.py", "tests/test_source_stage_replay_acceptance.py", "tests/test_quarantine_operations.py", "tests/test_quarantine_workflow_acceptance.py", "apps/web/src/test/DataFactoryView.test.tsx", "apps/web/e2e/workspace.spec.ts"]}
+        {"id": "operator_asset_preview_quarantine_replay", "priority": "P1", "status": "implemented", "evidence": ["apps/web/src/views/DataFactoryView.tsx", "src/pharma_intel/ingest/commands/quarantine.py", "src/pharma_intel/ingest/commands/versions.py", "src/pharma_intel/http/source_versions.py", "src/pharma_intel/ingest/workflows.py", "src/pharma_intel/ingest/replay.py", "src/pharma_intel/ingest/quarantine.py", "migrations/versions/e9a2c5d7f604_add_source_quarantine_decisions.py", "scripts/verify-source-version-replay.sh", "scripts/verify-source-stage-replay.sh", "scripts/verify-quarantine-workflow.sh", "tests/test_source_asset_operations.py", "tests/test_source_version_replay_acceptance.py", "tests/test_source_stage_replay_acceptance.py", "tests/test_quarantine_operations.py", "tests/test_quarantine_workflow_acceptance.py", "apps/web/src/test/DataFactoryView.test.tsx", "apps/web/e2e/workspace.spec.ts"]}
       ],
       "remaining_gaps": ["原始对象版本、hash、MIME、阶段状态、安全解析文本预览、指定阶段恢复，以及恶意文件留置、强制 ClamAV 复扫、永久拒绝、不可变历史和通用重放阻断均已通过真实运行线；目标环境仍需批准恶意文档 corpus、规模吞吐和安全运营 UAT"]
     },
@@ -49,7 +49,7 @@
       "status": "partial",
       "capabilities": [
         {"id": "schema_quote_confidence_review", "priority": "P0", "status": "implemented", "evidence": ["apps/web/src/views/GovernanceView.tsx", "src/pharma_intel/governance/service.py", "tests/test_governance_knowledge.py"]},
-        {"id": "policy_version_and_decision_audit", "priority": "P1", "status": "implemented", "evidence": ["src/pharma_intel/governance/model_gateway.py", "src/pharma_intel/governance/service.py", "src/pharma_intel/api.py", "apps/web/src/lib/contracts/governance.ts", "apps/web/src/views/GovernanceView.tsx", "tests/test_governance_runs_api.py", "apps/web/src/test/GovernanceView.test.tsx", "apps/web/e2e/workspace.spec.ts"]}
+        {"id": "policy_version_and_decision_audit", "priority": "P1", "status": "implemented", "evidence": ["src/pharma_intel/governance/model_gateway.py", "src/pharma_intel/governance/service.py", "src/pharma_intel/http/governance_review.py", "apps/web/src/lib/contracts/governance.ts", "apps/web/src/views/GovernanceView.tsx", "tests/test_governance_runs_api.py", "apps/web/src/test/GovernanceView.test.tsx", "apps/web/e2e/workspace.spec.ts"]}
       ],
       "remaining_gaps": ["模型、提示词、schema、发布策略、token、成本与校验结果已形成租户隔离运行视图；正式 provider 账单对账、业务阈值和数据责任人 UAT 仍需在目标环境完成"]
     },
@@ -88,7 +88,7 @@
       "title": "企业管理",
       "status": "partial",
       "capabilities": [
-        {"id": "tenant_user_group_role_audit", "priority": "P0", "status": "implemented", "evidence": ["apps/web/src/views/EnterpriseView.tsx", "src/pharma_intel/api.py", "tests/test_identity.py"]},
+        {"id": "tenant_user_group_role_audit", "priority": "P0", "status": "implemented", "evidence": ["apps/web/src/views/EnterpriseView.tsx", "src/pharma_intel/http/enterprise.py", "src/pharma_intel/accounts/access.py", "tests/test_identity.py"]},
         {"id": "dataset_session_client_and_lifecycle_controls", "priority": "P1", "status": "implemented", "evidence": ["apps/web/src/views/EnterpriseView.tsx", "apps/web/src/lib/contracts/enterprise.ts", "src/pharma_intel/enterprise/admin.py", "src/pharma_intel/security.py", "migrations/versions/fc5e8a1b3d72_add_enterprise_sessions.py", "tests/test_enterprise_admin.py", "tests/test_enterprise_postgres.py", "scripts/verify-enterprise-postgres.sh", "apps/web/src/test/EnterpriseView.test.tsx", "apps/web/e2e/workspace.spec.ts"]}
       ],
       "remaining_gaps": ["dataset 许可与启停、可撤销登录会话、API/MCP client、保留策略和 Legal Hold 已统一到企业管理入口；目标环境仍需企业管理员和合规责任人 UAT"]
@@ -99,7 +99,7 @@
       "status": "partial",
       "capabilities": [
         {"id": "subscription_entitlement_rate_card_ledger", "priority": "P0", "status": "implemented", "evidence": ["apps/web/src/views/CommercialView.tsx", "src/pharma_intel/commercial/service.py", "tests/test_commercial_service.py"]},
-        {"id": "billing_risk_dispute_and_export_operations", "priority": "P1", "status": "implemented", "evidence": ["apps/web/src/views/CommercialView.tsx", "src/pharma_intel/api.py", "tests/test_commercial_api.py"]}
+        {"id": "billing_risk_dispute_and_export_operations", "priority": "P1", "status": "implemented", "evidence": ["apps/web/src/views/CommercialView.tsx", "src/pharma_intel/http/commercial_accounting.py", "src/pharma_intel/commercial/query.py", "tests/test_commercial_api.py"]}
       ],
       "remaining_gaps": ["真实账单/ERP、税务、收款、贷项和财务运营 UAT 属于生产阻断项"]
     },
@@ -108,7 +108,7 @@
       "title": "平台运营",
       "status": "partial",
       "capabilities": [
-        {"id": "service_health_and_audit_visibility", "priority": "P0", "status": "implemented", "evidence": ["apps/web/src/views/EnterpriseView.tsx", "apps/web/src/views/DataFactoryView.tsx", "apps/web/src/lib/contracts/enterprise.ts", "src/pharma_intel/platform/operations.py", "src/pharma_intel/api.py", "tests/test_platform_operations.py", "apps/web/src/test/EnterpriseView.test.tsx", "apps/web/e2e/workspace.spec.ts"]},
+        {"id": "service_health_and_audit_visibility", "priority": "P0", "status": "implemented", "evidence": ["apps/web/src/views/EnterpriseView.tsx", "apps/web/src/views/DataFactoryView.tsx", "apps/web/src/lib/contracts/enterprise.ts", "src/pharma_intel/platform/operations.py", "src/pharma_intel/http/enterprise.py", "src/pharma_intel/platform/service_health.py", "tests/test_platform_operations.py", "apps/web/src/test/EnterpriseView.test.tsx", "apps/web/e2e/workspace.spec.ts"]},
         {"id": "workflow_slo_backup_migration_release_controls", "priority": "P1", "status": "implemented", "evidence": ["apps/web/src/views/EnterpriseView.tsx", "src/pharma_intel/platform/operations.py", "src/pharma_intel/operations_contract.py", "deploy/operations/operations-contract.yaml", "scripts/verify-local-backup-restore.sh", "scripts/verify_postgres_migration_roundtrip.py", "scripts/capture_local_release_candidate.py", "scripts/capture_production_topology.py", "tests/test_platform_operations.py", "tests/test_operations_contract.py", "apps/web/src/test/EnterpriseView.test.tsx", "apps/web/e2e/workspace.spec.ts"]}
       ],
       "remaining_gaps": ["统一控制面已区分真实租户队列、Temporal、模型预算、迁移状态、SLO 目标与外部部署探针，并安全读取机器生成的备份恢复、发布候选和生产拓扑证据；目标环境仍需集中遥测、真实证据挂载和值班运维 UAT"]

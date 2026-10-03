@@ -1,3 +1,5 @@
+import { notifySessionContext, organizationHeaders, trackSessionWrite } from "./organizationSession";
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -22,13 +24,20 @@ function cookie(name: string): string {
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const method = (init.method ?? "GET").toUpperCase();
   const headers = new Headers(init.headers);
+  for (const [name, value] of Object.entries(organizationHeaders(path, method))) headers.set(name, value);
   if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
     const csrf = cookie("pharma_csrf");
     if (csrf) headers.set("X-CSRF-Token", csrf);
   }
-  const response = await fetch(path, { ...init, headers, credentials: "same-origin" });
-  if (response.status === 401) window.dispatchEvent(new Event("pharma:unauthorized"));
+  const release = trackSessionWrite(method);
+  let response: Response;
+  try {
+    response = await fetch(path, { ...init, headers, credentials: "same-origin" });
+  } finally {
+    release();
+  }
+  notifySessionContext(response);
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { detail?: string };
     throw new ApiError(
@@ -48,7 +57,8 @@ export const api = {
   put: <T>(path: string, body: unknown) => request<T>(path, { method: "PUT", body: JSON.stringify(body) }),
   patch: <T>(path: string, body: unknown) => request<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
   async download(path: string, filename: string): Promise<void> {
-    const response = await fetch(path, { credentials: "same-origin" });
+    const response = await fetch(path, { credentials: "same-origin", headers: organizationHeaders(path) });
+    notifySessionContext(response);
     if (!response.ok)
       throw new ApiError(`下载失败 (${response.status})`, response.status, response.headers.get("X-Request-ID"));
     const url = URL.createObjectURL(await response.blob());
@@ -60,15 +70,22 @@ export const api = {
   },
   async downloadPost(path: string, body: unknown, fallbackFilename: string): Promise<void> {
     const headers = new Headers({ "Content-Type": "application/json" });
+    for (const [name, value] of Object.entries(organizationHeaders(path, "POST"))) headers.set(name, value);
     const csrf = cookie("pharma_csrf");
     if (csrf) headers.set("X-CSRF-Token", csrf);
-    const response = await fetch(path, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-      credentials: "same-origin",
-    });
-    if (response.status === 401) window.dispatchEvent(new Event("pharma:unauthorized"));
+    const release = trackSessionWrite("POST");
+    let response: Response;
+    try {
+      response = await fetch(path, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        credentials: "same-origin",
+      });
+    } finally {
+      release();
+    }
+    notifySessionContext(response);
     if (!response.ok) {
       const payload = (await response.json().catch(() => ({}))) as { detail?: string };
       throw new ApiError(

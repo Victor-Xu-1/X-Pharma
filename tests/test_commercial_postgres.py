@@ -14,6 +14,7 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, sessionmaker
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.commercial.accounting import (
     BillingStatementCommand,
     CommercialAccountingConflict,
@@ -81,7 +82,6 @@ from pharma_intel.models import (
     SourceAssetState,
     SourceVersion,
     Tenant,
-    User,
     UserRole,
 )
 from pharma_intel.object_store import FileSystemObjectStore
@@ -130,7 +130,7 @@ def test_postgres_data_lifecycle_purge_is_rls_isolated_and_append_only(tmp_path:
     with Session(engine, expire_on_commit=False) as session:
         set_tenant_context(session, tenant_id)
         tenant = Tenant(id=tenant_id, slug=f"lifecycle-{tenant_id}", name="Lifecycle PostgreSQL")
-        user = User(
+        user = create_account(
             tenant_id=tenant_id,
             email=f"lifecycle-{tenant_id}@example.test",
             normalized_email=f"lifecycle-{tenant_id}@example.test",

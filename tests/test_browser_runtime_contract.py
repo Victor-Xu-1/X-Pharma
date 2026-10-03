@@ -5,6 +5,13 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
+from fastapi.testclient import TestClient
+
+from pharma_intel.api import create_app
+from pharma_intel.config import Settings
+from pharma_intel.http import runtime
+
 
 def _bash_executable() -> str | None:
     if os.name == "nt":
@@ -43,10 +50,12 @@ def test_google_chrome_acceptance_uses_a_signed_user_level_distribution() -> Non
     acceptance = root / "scripts" / "run-browser-acceptance.sh"
     bootstrap_text = bootstrap.read_text(encoding="utf-8")
     acceptance_text = acceptance.read_text(encoding="utf-8")
+    runtime_helper = root / "scripts/lib/browser_runtime.sh"
+    runtime_text = runtime_helper.read_text(encoding="utf-8")
     bash = _bash_executable()
     assert bash is not None
 
-    for script in (bootstrap, acceptance):
+    for script in (bootstrap, acceptance, runtime_helper):
         completed = subprocess.run(  # noqa: S603 - fixed repository scripts are syntax checked only.
             [bash, "-n", _bash_script_path(script)],
             cwd=root,
@@ -74,7 +83,7 @@ def test_google_chrome_acceptance_uses_a_signed_user_level_distribution() -> Non
     assert '"accessibility_dossier": "[accessibility-dossier]"' in acceptance_text
     assert "browser_workers=${PHARMA_BROWSER_WORKERS:-4}" in acceptance_text
     assert '"--workers=$browser_workers"' in acceptance_text
-    assert "E2E_CHROME_EXECUTABLE" in acceptance_text
+    assert "E2E_CHROME_EXECUTABLE" in runtime_text
     assert "browser_projects=(desktop-1440 desktop-1920 tablet-1024 mobile-390)" in acceptance_text
     assert 'E2E_EMAIL_PREFIX="$email_prefix"' in acceptance_text
     assert 'E2E_REGULATORY_SUBJECT_ID="$regulatory_subject_id"' in acceptance_text
@@ -101,7 +110,7 @@ def test_google_chrome_acceptance_uses_a_signed_user_level_distribution() -> Non
     assert "fact_key LIKE 'browser-publication-e2e-%'" in acceptance_text
     assert "name LIKE 'Browser replay e2e-%'" in acceptance_text
     assert 'E2E_EMAIL="$email"' not in acceptance_text
-    assert 'browser_product="Google Chrome"' in acceptance_text
+    assert 'browser_product="Google Chrome"' in runtime_text
     assert '"research_workbench": "[research-workbench]"' in acceptance_text
     assert '"internal_workbench": "[internal-workbench]"' in acceptance_text
     assert '"ingestion_replay": "[ingestion-replay]"' in acceptance_text
@@ -234,6 +243,7 @@ def test_microsoft_edge_acceptance_uses_signed_current_and_previous_distribution
     acceptance = root / "scripts" / "run-browser-acceptance.sh"
     bootstrap_text = bootstrap.read_text(encoding="utf-8")
     acceptance_text = acceptance.read_text(encoding="utf-8")
+    runtime_text = (root / "scripts/lib/browser_runtime.sh").read_text(encoding="utf-8")
     bash = _bash_executable()
     assert bash is not None
 
@@ -254,10 +264,10 @@ def test_microsoft_edge_acceptance_uses_signed_current_and_previous_distribution
     assert "sudo " not in bootstrap_text
     assert "edge-current" in acceptance_text
     assert "edge-previous" in acceptance_text
-    assert "browser_channel=msedge" in acceptance_text
-    assert 'browser_product="Microsoft Edge"' in acceptance_text
+    assert "browser_channel=msedge" in runtime_text
+    assert 'browser_product="Microsoft Edge"' in runtime_text
     assert "Only Google Chrome may update the repository visual baseline" in acceptance_text
-    assert 'browser_launch_executable="$browser_executable"' in acceptance_text
+    assert 'browser_launch_executable="$browser_executable"' in runtime_text
     assert 'E2E_BROWSER_EXECUTABLE="$browser_launch_executable"' in acceptance_text
     assert 'PLAYWRIGHT_JSON_OUTPUT_FILE="$playwright_json_output_file"' in acceptance_text
     assert "E2E_PLAYWRIGHT_COMMAND" in acceptance_text
@@ -268,19 +278,22 @@ def test_microsoft_edge_acceptance_uses_signed_current_and_previous_distribution
     assert "datetime.now(timezone.utc)" in acceptance_text
 
 
-def test_api_serves_both_same_origin_workbench_routes_before_the_static_mount() -> None:
-    root = Path(__file__).parents[1]
-    api_text = (root / "src" / "pharma_intel" / "api.py").read_text(encoding="utf-8")
-
-    research_route = api_text.index('@app.api_route("/workspace/research", methods=["GET", "HEAD"]')
-    internal_route = api_text.index('@app.api_route("/workspace/internal", methods=["GET", "HEAD"]')
-    static_mount = api_text.index('app.mount("/", StaticFiles')
-    assert research_route < static_mount
-    assert internal_route < static_mount
-    assert 'return FileResponse(web_root / "research.html")' in api_text
-    assert 'return FileResponse(web_root / "internal.html")' in api_text
-    assert api_text.index('web_root / "research.html"') < internal_route
-    assert api_text.index('web_root / "internal.html"') > internal_route
+def test_api_serves_both_same_origin_workbench_routes_before_the_static_mount(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    (tmp_path / "research.html").write_text("<title>Research entry</title>", encoding="utf-8")
+    (tmp_path / "internal.html").write_text("<title>Internal entry</title>", encoding="utf-8")
+    (tmp_path / "index.html").write_text("<title>Static root</title>", encoding="utf-8")
+    monkeypatch.setattr(runtime, "get_settings", lambda: Settings(web_root=tmp_path))
+    with TestClient(create_app()) as client:
+        for path, expected in (("/workspace/research", "Research entry"), ("/workspace/internal", "Internal entry")):
+            response = client.get(path)
+            assert response.status_code == 200
+            assert expected in response.text and "Static root" not in response.text
+            assert response.headers["cache-control"] == "no-cache, must-revalidate"
+            assert client.head(path).status_code == 200
+        assert "Static root" in client.get("/").text
 
 
 def test_ci_installs_branded_chrome_instead_of_playwright_chromium() -> None:

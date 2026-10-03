@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.identity import EntityIdentityService, IdentityError, normalize_identifier
 from pharma_intel.models import (
     EntityCanonicalLink,
@@ -22,7 +23,7 @@ from pharma_intel.schemas import EntityCreate
 
 
 def _user(session: Session, tenant: Tenant) -> User:
-    user = User(
+    user = create_account(
         tenant_id=tenant.id,
         email="reviewer@example.test",
         normalized_email="reviewer@example.test",

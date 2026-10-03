@@ -13,11 +13,11 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, contains_eager
 
 from pharma_intel.config import Settings, get_settings
-from pharma_intel.db import get_session, set_tenant_context
-from pharma_intel.models import ApiKey, Tenant, User, UserRole, UserSession
+from pharma_intel.db import get_session, set_account_context, set_tenant_context
+from pharma_intel.models import ApiKey, OrganizationMembership, Tenant, User, UserRole, UserSession
 from pharma_intel.request_correlation import api_key_credential_fingerprint
 
 SESSION_COOKIE = "pharma_session"
@@ -140,15 +140,15 @@ def issue_api_key() -> tuple[str, str]:
     return secret, hash_api_key(secret)
 
 
-def issue_human_session(user: User, session_id: str) -> tuple[str, str, datetime]:
+def issue_human_session(member: OrganizationMembership, session_id: str) -> tuple[str, str, datetime]:
     settings = get_settings()
     expires_at = datetime.now(UTC) + timedelta(minutes=settings.session_lifetime_minutes)
     csrf_token = secrets.token_urlsafe(32)
     claims = {
-        "sub": user.id,
-        "tenant_id": user.tenant_id,
-        "role": user.role.value,
-        "token_version": user.token_version,
+        "sub": member.user_id,
+        "tenant_id": member.tenant_id,
+        "token_version": member.account.token_version,
+        "membership_version": member.token_version,
         "sid": session_id,
         "type": "human",
         "iat": datetime.now(UTC),
@@ -182,12 +182,9 @@ def issue_internal_service_token(principal: Principal, settings: Settings | None
 
 def authenticate_user(session: Session, email: str, password: str) -> User | None:
     user = session.scalar(
-        select(User)
-        .join(Tenant)
-        .where(
+        select(User).where(
             User.normalized_email == normalize_email(email),
             User.active.is_(True),
-            Tenant.active.is_(True),
         )
     )
     if user is None:
@@ -195,6 +192,7 @@ def authenticate_user(session: Session, email: str, password: str) -> User | Non
         return None
     if not verify_password(password, user.password_hash):
         return None
+    set_account_context(session, user.id)
     return user
 
 
@@ -284,31 +282,44 @@ def _principal_from_session(session: Session, request: Request, token: str) -> P
     # the query boundary only after the session JWT signature has been verified.
     set_tenant_context(session, claims["tenant_id"])
     now = datetime.now(UTC)
-    user = session.scalar(
-        select(User)
-        .join(Tenant)
-        .join(UserSession, UserSession.user_id == User.id)
+    member = session.scalar(
+        select(OrganizationMembership)
+        .join(User, User.id == OrganizationMembership.user_id)
+        .join(Tenant, Tenant.id == OrganizationMembership.tenant_id)
+        .join(
+            UserSession, (UserSession.user_id == User.id) & (UserSession.tenant_id == OrganizationMembership.tenant_id)
+        )
+        .options(contains_eager(OrganizationMembership.account), contains_eager(OrganizationMembership.organization))
         .where(
             User.id == claims["sub"],
             User.active.is_(True),
+            OrganizationMembership.tenant_id == claims["tenant_id"],
+            OrganizationMembership.active.is_(True),
             Tenant.active.is_(True),
             UserSession.id == claims["sid"],
-            UserSession.tenant_id == User.tenant_id,
             UserSession.revoked_at.is_(None),
             UserSession.expires_at > now,
         )
     )
-    if user is None or claims.get("token_version") != user.token_version or claims.get("tenant_id") != user.tenant_id:
+    if member is None or claims.get("token_version") != member.account.token_version:
+        return None
+    membership_version = claims.get("membership_version")
+    # Existing stored sessions remain valid only in their migrated home member
+    # and until their original expiry. New sessions always carry both versions.
+    if membership_version is None and member.tenant_id == member.account.home_tenant_id:
+        membership_version = claims.get("token_version")
+    if membership_version != member.token_version:
         return None
     if request.method not in {"GET", "HEAD", "OPTIONS"}:
         csrf_cookie = request.cookies.get(CSRF_COOKIE, "")
         csrf_header = request.headers.get("X-CSRF-Token", "")
         if not csrf_cookie or not csrf_header or not secrets.compare_digest(csrf_cookie, csrf_header):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF validation failed")
-    scopes = ROLE_SCOPES[user.role]
-    if user.id in get_settings().platform_operator_user_ids:
+    scopes = ROLE_SCOPES[member.role]
+    if member.user_id in get_settings().platform_operator_user_ids:
         scopes = scopes | {PLATFORM_PROJECTION_SCOPE}
-    principal = Principal(user.tenant_id, user.id, "user", scopes, session_id=claims["sid"])
+    principal = Principal(member.tenant_id, member.user_id, "user", scopes, session_id=claims["sid"])
+    set_account_context(session, member.user_id)
     set_tenant_context(session, principal.tenant_id)
     return principal
 
@@ -332,6 +343,19 @@ def require_principal(
     if session_token:
         principal = _principal_from_session(session, request, session_token)
         if principal is not None:
+            # Tabs and deferred requests must not apply an old workspace action
+            # to the newly selected organization after the shared cookie changes.
+            if not (request.url.path == "/api/v1/auth/me" and request.method == "GET"):
+                expected_org = request.headers.get("X-Organization-ID")
+                expected_account = request.headers.get("X-Account-ID")
+                if (expected_org is not None and expected_org != principal.tenant_id) or (
+                    expected_account is not None and expected_account != principal.user_id
+                ):
+                    raise HTTPException(
+                        status_code=409,
+                        detail="账号或组织会话已变更，请刷新工作台后重试",
+                        headers={"X-Session-Context": "changed"},
+                    )
             request.state.principal = principal
             return principal
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")

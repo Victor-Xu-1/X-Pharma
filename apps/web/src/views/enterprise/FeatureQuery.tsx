@@ -1,0 +1,17 @@
+import type { UseQueryResult } from "@tanstack/react-query";
+import type { ReactNode } from "react";
+import { ErrorState, Spinner } from "../../components/common";
+
+export function FeatureQuery<T>({
+  query,
+  children,
+}: {
+  query: UseQueryResult<T, Error>;
+  children: (data: T) => ReactNode;
+}) {
+  // Administrative data must disappear after a failed permission recheck.
+  // Never replace a failed request with an empty, apparently successful list.
+  if (query.isError) return <ErrorState message={query.error.message} retry={query.refetch} />;
+  if (query.data === undefined) return <Spinner label="正在读取企业管理数据" />;
+  return children(query.data);
+}

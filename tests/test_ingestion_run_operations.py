@@ -78,9 +78,9 @@ def test_replay_terminal_ingestion_run_starts_governed_workflow_and_audits(
         return Principal(tenant.id, "operator-1", "user", frozenset({"ingestion:manage"}))
 
     temporal_client = AsyncMock()
-    monkeypatch.setattr("pharma_intel.api.Client.connect", AsyncMock(return_value=temporal_client))
+    monkeypatch.setattr("pharma_intel.ingest.commands.runs.Client.connect", AsyncMock(return_value=temporal_client))
     monkeypatch.setattr(
-        "pharma_intel.api.get_settings",
+        "pharma_intel.http.runtime.get_settings",
         lambda: Settings(source_roots_config=str(tmp_path), temporal_enabled=True),
     )
     app.dependency_overrides[get_session] = session_override
@@ -182,9 +182,9 @@ def test_replay_rejects_non_terminal_missing_cross_tenant_and_invalid_requests(
         return Principal(tenant.id, "operator-1", "user", frozenset({"ingestion:manage"}))
 
     connect = AsyncMock()
-    monkeypatch.setattr("pharma_intel.api.Client.connect", connect)
+    monkeypatch.setattr("pharma_intel.ingest.commands.runs.Client.connect", connect)
     monkeypatch.setattr(
-        "pharma_intel.api.get_settings",
+        "pharma_intel.http.runtime.get_settings",
         lambda: Settings(source_roots_config=str(tmp_path), temporal_enabled=True),
     )
     app.dependency_overrides[get_session] = session_override
@@ -257,9 +257,9 @@ def test_cancel_running_ingestion_run_targets_exact_temporal_execution_and_audit
     handle = AsyncMock()
     temporal_client = MagicMock()
     temporal_client.get_workflow_handle.return_value = handle
-    monkeypatch.setattr("pharma_intel.api.Client.connect", AsyncMock(return_value=temporal_client))
+    monkeypatch.setattr("pharma_intel.ingest.commands.runs.Client.connect", AsyncMock(return_value=temporal_client))
     monkeypatch.setattr(
-        "pharma_intel.api.get_settings",
+        "pharma_intel.http.runtime.get_settings",
         lambda: Settings(source_roots_config=str(tmp_path), temporal_enabled=True),
     )
     app.dependency_overrides[get_session] = session_override
@@ -341,7 +341,7 @@ def test_cancel_rejects_terminal_or_unbound_ingestion_execution(
         return Principal(tenant.id, "operator-1", "user", frozenset({"ingestion:manage"}))
 
     connect = AsyncMock()
-    monkeypatch.setattr("pharma_intel.api.Client.connect", connect)
+    monkeypatch.setattr("pharma_intel.ingest.commands.runs.Client.connect", connect)
     app.dependency_overrides[get_session] = session_override
     app.dependency_overrides[require_principal] = principal_override
     payload = {

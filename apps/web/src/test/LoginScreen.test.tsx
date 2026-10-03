@@ -6,7 +6,10 @@ import { ApiError } from "../lib/api";
 import { login } from "../lib/contracts/session";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
-vi.mock("../lib/contracts/session", () => ({ login: vi.fn() }));
+vi.mock("../lib/contracts/session", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../lib/contracts/session")>()),
+  login: vi.fn(),
+}));
 
 const loginMock = vi.mocked(login);
 
@@ -37,6 +40,7 @@ describe("LoginScreen", () => {
     expect(mark).toHaveAttribute("aria-hidden", "true");
     expect(mark?.querySelector("svg")).toBeNull();
     expect(screen.getByText("X-Pharma")).toBeInTheDocument();
+    expect(screen.getByText("v0.1.0")).toBeInTheDocument();
   });
 
   it("keeps the public login shell free of internal workspace language", () => {

@@ -8,12 +8,16 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
+from pharma_intel.config import get_settings
 from pharma_intel.models import Base, Tenant
+
+pytest_plugins = ["tests.support.account_postgres"]
 
 
 def pytest_configure() -> None:
     test_environment = {
         "APP_ENV": "test",
+        "HUMAN_AUTH_MODE": "local",
         "JWT_SECRET": "pytest-only-human-session-secret-not-for-runtime",  # noqa: S105
         "MALWARE_SCAN_ENABLED": "false",
         "PARSER_SERVICE_ENABLED": "false",
@@ -30,6 +34,16 @@ def pytest_configure() -> None:
         "AI_RESPONSE_FORMAT_MODE": "json_schema",
     }
     os.environ.update(test_environment)
+
+
+@pytest.fixture(autouse=True)
+def isolated_settings_cache() -> Generator[None]:
+    """Environment patches must not leave a previous test's cached auth mode."""
+    get_settings.cache_clear()
+    try:
+        yield
+    finally:
+        get_settings.cache_clear()
 
 
 @pytest.fixture

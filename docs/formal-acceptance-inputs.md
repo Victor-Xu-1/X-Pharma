@@ -5,9 +5,11 @@
 ## 当前基线
 
 - 代码候选：当前工作树最新提交，交接前必须保持干净。
-- 外部 capability matrix：Goal `v1.9.100`；`41` 项代码级能力已实现。
+- 软件版本：`X-Pharma v0.1.0`；外部 capability matrix：Goal `v1.10.1`、`12` 个业务域、`41` 项代码级能力已实现。Goal 和数据/协议版本独立于软件版本。
 - 当前正式未闭合项：`global_search`、`personal_team_productivity` 两个业务域，以及 `dense_result_operations`、`personal_productivity_and_delivery`、`state_accessibility_and_responsive_quality`、`performance_and_visual_regression` 四个体验门禁。
-- 代码与本地真实链路证据：前端全量 `362/362`，化学保存/刷新回放在真实 Chrome 四视口每次 `4/4`；完整套件两次均为 `123/124`，报告见 [release-evidence.md](release-evidence.md)。该证据不替代正式数据、人工 UAT 或生产环境验证，全球性能/稳定性门禁仍未通过。
+- 当前工程候选为 `refactor/architecture`，不是原 `main` 或正式生产发布。最近变动按受影响模块做定向验证：来源返回/错误恢复、URL 状态、模态焦点和治理材料化均有对应行为、真实 Chrome 或独立 PostgreSQL 证据；这些结果不等价整站、人工 UAT 或生产性能通过。旧 `123/124`、`124/124` 等历史记录见 [release-evidence.md](release-evidence.md)，不能作为最新源码的完整验收结论。
+- 既有自动 GitHub CI 保留所有门禁；不主动运行全局测试或手动调度全量 CI，除非取得明确授权。最新提交的门禁结果、镜像身份和未完成项必须逐轮记录，历史绿色结果不能关闭新候选的失败或未完成门禁。
+- 自包含架构 HTML 可以断网打开；源码、锁文件和缓存依赖不等于包含全部容器运行时、镜像、数据与模型的整体离线迁移包，该交付仍须独立验证。
 
 ## 必须提供的输入
 

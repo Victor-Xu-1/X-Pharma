@@ -69,4 +69,20 @@ describe("shared account logout", () => {
     fireEvent.click(screen.getByRole("button", { name: "退出账号" }));
     await screen.findByRole("heading", { name: "账户登录" });
   });
+
+  it("shows an initial session error once and uses an explicit retry even when ordinary queries retry automatically", async () => {
+    vi.mocked(loadSession).mockRejectedValueOnce(new Error("会话验证超时，请检查服务连接后重试"));
+    renderWithQueryClient(
+      <SessionBoundary workbench="research">{(session) => <p>{session.user.display_name}</p>}</SessionBoundary>,
+      undefined,
+      (client) => client.setDefaultOptions({ queries: { retry: 2, retryDelay: 0 } }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent("会话验证超时");
+    expect(loadSession).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("正在验证会话")).not.toBeInTheDocument();
+    expect(screen.queryByText("Fixture")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
+    await screen.findByText("Fixture");
+    expect(loadSession).toHaveBeenCalledTimes(2);
+  });
 });

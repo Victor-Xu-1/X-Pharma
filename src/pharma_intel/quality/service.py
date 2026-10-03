@@ -19,6 +19,7 @@ from pharma_intel.models import (
     FactProvenanceLink,
     GovernanceStatus,
     IngestionRun,
+    OrganizationMembership,
     RunState,
     SourceAsset,
     SourceAssetState,
@@ -352,11 +353,14 @@ class DataQualityService:
             if owner_user_id is None:
                 raise DataQualityError("Issue assignment requires an owner")
             owner = self.session.scalar(
-                select(User).where(
-                    User.tenant_id == self.tenant_id,
-                    User.id == owner_user_id,
+                select(OrganizationMembership)
+                .join(User, User.id == OrganizationMembership.user_id)
+                .where(
+                    OrganizationMembership.tenant_id == self.tenant_id,
+                    OrganizationMembership.user_id == owner_user_id,
+                    OrganizationMembership.active.is_(True),
                     User.active.is_(True),
-                    User.role.in_([UserRole.ADMIN, UserRole.ANALYST]),
+                    OrganizationMembership.role.in_([UserRole.ADMIN, UserRole.ANALYST]),
                 )
             )
             if owner is None:

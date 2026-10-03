@@ -19,12 +19,13 @@ from scripts import mcp_sdk_probe
 class FakeSession:
     def __init__(self) -> None:
         self.calls: list[tuple[str, dict[str, Any] | None]] = []
+        self.server_info = Implementation(name="X-Pharma", version="0.1.0")
 
     async def initialize(self) -> InitializeResult:
         return InitializeResult(
             protocolVersion="2025-11-25",
             capabilities=ServerCapabilities(),
-            serverInfo=Implementation(name="pharma-intelligence", version="1.0"),
+            serverInfo=self.server_info,
         )
 
     async def list_tools(self, cursor: str | None = None) -> ListToolsResult:
@@ -115,6 +116,8 @@ async def test_python_sdk_verifies_initialize_discovery_and_billed_calls() -> No
     )
 
     assert result["client"] == "Python MCP SDK"
+    assert result["server_name"] == "X-Pharma"
+    assert result["server_version"] == "0.1.0"
     assert result["protocol_version"] == "2025-11-25"
     assert result["tools"] == 11
     assert result["billed_calls"] == 5
@@ -135,6 +138,19 @@ async def test_python_sdk_verifies_initialize_discovery_and_billed_calls() -> No
         "search_evidence",
         "get_usage_summary",
     ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("name", "product_version"),
+    [("Pharma Intelligence", "0.1.0"), ("X-Pharma", "1.28.1"), ("X-Pharma", "1.0.0")],
+)
+async def test_sdk_probe_rejects_wrong_product_identity_before_any_billed_call(name: str, product_version: str) -> None:
+    session = FakeSession()
+    session.server_info = Implementation(name=name, version=product_version)
+    with pytest.raises(RuntimeError, match="product identity"):
+        await mcp_sdk_probe.verify_session(session, "mcp-acceptance-query", "2025-11-25")
+    assert not session.calls
 
 
 def test_combined_client_evidence_requires_same_query_and_entity() -> None:

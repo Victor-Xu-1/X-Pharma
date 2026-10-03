@@ -10,6 +10,7 @@ from sqlalchemy import create_engine, func, select, text, update
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.config import Settings
 from pharma_intel.db import set_tenant_context
 from pharma_intel.governance.publication import GovernancePublicationService
@@ -28,7 +29,6 @@ from pharma_intel.models import (
     SourceVersion,
     StagedFact,
     Tenant,
-    User,
     UserRole,
 )
 from pharma_intel.object_store import FileSystemObjectStore
@@ -143,7 +143,7 @@ def test_publication_is_atomic_tenant_scoped_append_only_and_globally_exclusive(
         with Session(engine, expire_on_commit=False) as session:
             set_tenant_context(session, tenant_id)
             tenant = Tenant(id=tenant_id, slug=f"publication-{tenant_id}", name="Publication acceptance")
-            reviewer = User(
+            reviewer = create_account(
                 tenant_id=tenant_id,
                 email=f"publication-{tenant_id}@example.test",
                 normalized_email=f"publication-{tenant_id}@example.test",
@@ -210,7 +210,7 @@ def test_publication_is_atomic_tenant_scoped_append_only_and_globally_exclusive(
                 slug=f"publication-{other_tenant_id}",
                 name="Other publication tenant",
             )
-            other_reviewer = User(
+            other_reviewer = create_account(
                 tenant_id=other_tenant_id,
                 email=f"publication-{other_tenant_id}@example.test",
                 normalized_email=f"publication-{other_tenant_id}@example.test",

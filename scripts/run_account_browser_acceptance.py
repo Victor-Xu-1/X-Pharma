@@ -18,7 +18,8 @@ from urllib.request import urlopen
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from pharma_intel.models import Base, Tenant, User, UserRole
+from pharma_intel.accounts.identity import create_account
+from pharma_intel.models import Base, Tenant, UserRole
 from pharma_intel.security import hash_password
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +27,7 @@ WEB = ROOT / "apps" / "web"
 PROJECTS = ("desktop-1440", "desktop-1920", "tablet-1024", "mobile-390")
 
 
-def seed(database: Path, prefix: str, password: str) -> None:
+def seed(database: Path, prefix: str, password: str, projects: tuple[str, ...] = PROJECTS) -> None:
     engine = create_engine(f"sqlite:///{database}")
     try:
         Base.metadata.create_all(engine)
@@ -34,10 +35,10 @@ def seed(database: Path, prefix: str, password: str) -> None:
             tenant = Tenant(slug="account-browser-acceptance", name="Disposable account acceptance")
             session.add(tenant)
             session.flush()
-            for project in PROJECTS:
+            for project in projects:
                 email = f"{prefix}-{project}@example.test"
                 session.add(
-                    User(
+                    create_account(
                         tenant_id=tenant.id,
                         email=email,
                         normalized_email=email,
@@ -102,29 +103,21 @@ def ready(process: subprocess.Popen[bytes], origin: str) -> None:
     raise RuntimeError("Disposable account gateway readiness timed out")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Real Chrome registration/logout acceptance in an isolated database")
-    parser.add_argument("--output", type=Path)
-    arguments = parser.parse_args()
-    if not (WEB / "dist" / "index.html").is_file():
-        raise RuntimeError("Build apps/web before running account browser acceptance")
-    manager = json.loads((WEB / "package.json").read_text())["packageManager"]
-    if not isinstance(manager, str) or re.fullmatch(r"pnpm@[0-9]+\.[0-9]+\.[0-9]+", manager) is None:
-        raise RuntimeError("apps/web/package.json must pin the pnpm version")
-    corepack = shutil.which("corepack")
-    if corepack is None:
-        raise RuntimeError("Corepack is required for browser acceptance")
-    with TemporaryDirectory(prefix="x-pharma-account-browser-") as temporary:
+def run_project(project: str, manager: str, corepack: str) -> dict[str, object]:
+    # Viewports are independent users of independent deployments, not extra
+    # anonymous registrations from one shared peer. Keep the real abuse budget.
+    with TemporaryDirectory(prefix=f"x-pharma-account-browser-{project}-") as temporary:
         state = Path(temporary)
         for name in ("sources", "objects", "wiki"):
             (state / name).mkdir()
         prefix, password = f"e2e-{secrets.token_hex(12)}", secrets.token_urlsafe(48)
-        seed(state / "accounts.db", prefix, password)
+        seed(state / "accounts.db", prefix, password, (project,))
         with socket.socket() as port_probe:
             port_probe.bind(("127.0.0.1", 0))
             port = port_probe.getsockname()[1]
         origin = f"http://127.0.0.1:{port}"
         child_environment = environment(state, origin, port, prefix, password)
+        child_environment["PLAYWRIGHT_JSON_OUTPUT_FILE"] = str(state / "results.json")
         with (state / "gateway.log").open("wb") as log:
             process = subprocess.Popen(  # noqa: S603  # Fixed interpreter and module; no shell or caller command.
                 [sys.executable, "-c", "from pharma_intel.gateway import run; run()"],
@@ -146,6 +139,10 @@ def main() -> None:
                         "test",
                         "--config",
                         "playwright.accounts.config.ts",
+                        "--project",
+                        project,
+                        "--reporter",
+                        "line,json",
                         "--output",
                         str(state / "browser-output"),
                     ],
@@ -173,15 +170,35 @@ def main() -> None:
                 except subprocess.TimeoutExpired:
                     process.kill()
                     process.wait(timeout=10)
-        report = {
-            "schema": "x-pharma.account-browser-acceptance.v1",
-            "passed": True,
-            "projects": list(PROJECTS),
-            "isolated_database": True,
-        }
-        if arguments.output:
-            arguments.output.write_text(json.dumps(report, indent=2) + "\n")
-        print(json.dumps(report))
+        stats = json.loads((state / "results.json").read_text())["stats"]
+        if stats["expected"] != 2 or stats["unexpected"] or stats["skipped"] or stats["flaky"]:
+            raise RuntimeError("Both required account/organization scenarios must pass without skips or retries")
+        return {"project": project, "passed": True, "tests": stats["expected"], "isolated_database": True}
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Real Chrome account/organization acceptance in isolated databases")
+    parser.add_argument("--output", type=Path)
+    arguments = parser.parse_args()
+    if not (WEB / "dist" / "index.html").is_file():
+        raise RuntimeError("Build apps/web before running account browser acceptance")
+    manager = json.loads((WEB / "package.json").read_text())["packageManager"]
+    if not isinstance(manager, str) or re.fullmatch(r"pnpm@[0-9]+\.[0-9]+\.[0-9]+", manager) is None:
+        raise RuntimeError("apps/web/package.json must pin the pnpm version")
+    corepack = shutil.which("corepack")
+    if corepack is None:
+        raise RuntimeError("Corepack is required for browser acceptance")
+    results = [run_project(project, manager, corepack) for project in PROJECTS]
+    report = {
+        "schema": "x-pharma.account-browser-acceptance.v1",
+        "passed": True,
+        "projects": list(PROJECTS),
+        "results": results,
+        "isolated_database": True,
+    }
+    if arguments.output:
+        arguments.output.write_text(json.dumps(report, indent=2) + "\n")
+    print(json.dumps(report))
 
 
 if __name__ == "__main__":

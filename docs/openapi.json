@@ -5216,14 +5216,38 @@
       },
       "CommercialOverviewRead": {
         "properties": {
+          "active_client_count": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Active Client Count",
+            "type": "integer"
+          },
           "as_of": {
             "format": "date-time",
             "title": "As Of",
             "type": "string"
           },
+          "dead_billing_delivery_count": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Dead Billing Delivery Count",
+            "type": "integer"
+          },
+          "open_dispute_count": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Open Dispute Count",
+            "type": "integer"
+          },
           "open_risk_count": {
             "minimum": 0.0,
             "title": "Open Risk Count",
+            "type": "integer"
+          },
+          "pending_export_count": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Pending Export Count",
             "type": "integer"
           },
           "period_start": {
@@ -15275,6 +15299,46 @@
         "title": "IngestionScanAcceptedRead",
         "type": "object"
       },
+      "InvitationAcceptance": {
+        "additionalProperties": false,
+        "properties": {
+          "confirmed": {
+            "const": true,
+            "title": "Confirmed",
+            "type": "boolean"
+          },
+          "email": {
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          },
+          "invitation_code": {
+            "format": "password",
+            "maxLength": 2048,
+            "minLength": 20,
+            "title": "Invitation Code",
+            "type": "string",
+            "writeOnly": true
+          },
+          "password": {
+            "format": "password",
+            "maxLength": 200,
+            "minLength": 8,
+            "title": "Password",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "invitation_code",
+          "confirmed",
+          "email",
+          "password"
+        ],
+        "title": "InvitationAcceptance",
+        "type": "object"
+      },
       "InvitationCreate": {
         "additionalProperties": false,
         "properties": {
@@ -15741,6 +15805,19 @@
             "minLength": 3,
             "title": "Email",
             "type": "string"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "maxLength": 36,
+                "minLength": 36,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
           },
           "password": {
             "maxLength": 200,
@@ -16461,6 +16538,19 @@
         "title": "NewsSavedSearchQuery",
         "type": "object"
       },
+      "OidcInvitationStart": {
+        "properties": {
+          "authorization_url": {
+            "title": "Authorization Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "authorization_url"
+        ],
+        "title": "OidcInvitationStart",
+        "type": "object"
+      },
       "OntologyTermRead": {
         "properties": {
           "active": {
@@ -16637,6 +16727,82 @@
           "preferred_label"
         ],
         "title": "OntologyTermUpsert",
+        "type": "object"
+      },
+      "OrganizationJoin": {
+        "additionalProperties": false,
+        "properties": {
+          "confirmed": {
+            "const": true,
+            "title": "Confirmed",
+            "type": "boolean"
+          },
+          "invitation_code": {
+            "format": "password",
+            "maxLength": 2048,
+            "minLength": 20,
+            "title": "Invitation Code",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "invitation_code",
+          "confirmed"
+        ],
+        "title": "OrganizationJoin",
+        "type": "object"
+      },
+      "OrganizationRead": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "selected": {
+            "title": "Selected",
+            "type": "boolean"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tenant_id",
+          "name",
+          "slug",
+          "role",
+          "active",
+          "selected"
+        ],
+        "title": "OrganizationRead",
+        "type": "object"
+      },
+      "OrganizationSwitch": {
+        "additionalProperties": false,
+        "properties": {
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "organization_id"
+        ],
+        "title": "OrganizationSwitch",
         "type": "object"
       },
       "PatentClaimRead": {
@@ -18743,12 +18909,41 @@
             "title": "Detail",
             "type": "string"
           },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
           "escalation_policy": {
             "title": "Escalation Policy",
             "type": "string"
           },
+          "liveness": {
+            "enum": [
+              "observed",
+              "unverified",
+              "not_applicable"
+            ],
+            "title": "Liveness",
+            "type": "string"
+          },
           "owner": {
             "title": "Owner",
+            "type": "string"
+          },
+          "queue_status": {
+            "enum": [
+              "healthy",
+              "degraded",
+              "not_applicable"
+            ],
+            "title": "Queue Status",
             "type": "string"
           },
           "service_id": {
@@ -18771,6 +18966,9 @@
           "owner",
           "escalation_policy",
           "status",
+          "enabled",
+          "liveness",
+          "queue_status",
           "detail"
         ],
         "title": "PlatformServiceRead",
@@ -24305,6 +24503,17 @@
             "title": "Id",
             "type": "string"
           },
+          "organization_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Name"
+          },
           "phone": {
             "anyOf": [
               {
@@ -25884,6 +26093,48 @@
         ]
       }
     },
+    "/api/v1/auth/invitations/accept": {
+      "post": {
+        "description": "Permit a locally verified identity with no active org to accept an invitation.",
+        "operationId": "accept_invitation_with_credentials_api_v1_auth_invitations_accept_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationAcceptance"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept Invitation With Credentials",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "operationId": "login_api_v1_auth_login_post",
@@ -26086,6 +26337,47 @@
         ]
       }
     },
+    "/api/v1/auth/oidc/invitation": {
+      "post": {
+        "operationId": "start_oidc_invitation_api_v1_auth_oidc_invitation_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationJoin"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OidcInvitationStart"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Oidc Invitation",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
     "/api/v1/auth/oidc/login": {
       "get": {
         "operationId": "oidc_login_api_v1_auth_oidc_login_get",
@@ -26100,6 +26392,113 @@
           }
         },
         "summary": "Oidc Login",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/organizations": {
+      "get": {
+        "operationId": "list_organizations_api_v1_auth_organizations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OrganizationRead"
+                  },
+                  "title": "Response List Organizations Api V1 Auth Organizations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Organizations",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/organizations/join": {
+      "post": {
+        "operationId": "join_organization_api_v1_auth_organizations_join_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationJoin"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Join Organization",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/organizations/switch": {
+      "post": {
+        "operationId": "switch_organization_api_v1_auth_organizations_switch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationSwitch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Switch Organization",
         "tags": [
           "authentication"
         ]

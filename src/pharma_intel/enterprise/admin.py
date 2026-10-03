@@ -11,13 +11,16 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
 from sqlalchemy import and_, delete, func, or_, select, update
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
+from pharma_intel.accounts.access import organization_administrator
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.licensing import EvidenceLicensePolicy
 from pharma_intel.models import (
     AuditEvent,
     DataSource,
     DataSourceState,
+    OrganizationMembership,
     Tenant,
     TenantDataset,
     User,
@@ -38,6 +41,10 @@ class EnterpriseAdminNotFound(EnterpriseAdminError):
 
 
 class EnterpriseAdminConflict(EnterpriseAdminError):
+    pass
+
+
+class EnterpriseAdminAccessDenied(EnterpriseAdminError):
     pass
 
 
@@ -212,9 +219,13 @@ class EnterpriseAdminService:
         since = datetime.now(UTC) - timedelta(hours=24)
         return {
             "tenant": tenant,
-            "user_count": self._count(User),
-            "active_user_count": self._count(User, User.active.is_(True)),
-            "admin_count": self._count(User, User.active.is_(True), User.role == UserRole.ADMIN),
+            "user_count": self._count(OrganizationMembership),
+            "active_user_count": self._count(OrganizationMembership, OrganizationMembership.active.is_(True)),
+            "admin_count": self._count(
+                OrganizationMembership,
+                OrganizationMembership.active.is_(True),
+                OrganizationMembership.role == UserRole.ADMIN,
+            ),
             "group_count": self._count(UserGroup),
             "active_group_count": self._count(UserGroup, UserGroup.active.is_(True)),
             "dataset_count": self._count(TenantDataset, TenantDataset.active.is_(True)),
@@ -222,14 +233,18 @@ class EnterpriseAdminService:
             "audit_event_count_24h": self._count(AuditEvent, AuditEvent.occurred_at >= since),
         }
 
-    def list_users(self) -> list[User]:
+    def list_users(self) -> list[OrganizationMembership]:
         return list(
             self._session.scalars(
-                select(User).where(User.tenant_id == self._tenant_id).order_by(User.normalized_email, User.id)
+                select(OrganizationMembership)
+                .join(User, User.id == OrganizationMembership.user_id)
+                .where(OrganizationMembership.tenant_id == self._tenant_id)
+                .options(joinedload(OrganizationMembership.account))
+                .order_by(User.normalized_email, User.id)
             )
         )
 
-    def create_user(self, command: CreateUserCommand) -> User:
+    def create_user(self, command: CreateUserCommand) -> OrganizationMembership:
         self._lock_tenant()
         email = command.email.strip()
         normalized_email = normalize_email(email)
@@ -254,7 +269,7 @@ class EnterpriseAdminService:
                 is not None
             ):
                 raise EnterpriseAdminConflict("An account with this identity already exists")
-        user = User(
+        user = create_account(
             tenant_id=self._tenant_id,
             email=email,
             normalized_email=normalized_email,
@@ -270,13 +285,13 @@ class EnterpriseAdminService:
             action="enterprise.user.created",
             resource_type="user",
             resource_id=user.id,
-            details={"role": user.role.value, "auth_mode": command.auth_mode},
+            details={"role": command.role.value, "auth_mode": command.auth_mode},
         )
         self._session.commit()
         self._session.refresh(user)
-        return user
+        return user.memberships[0]
 
-    def update_user_role(self, user_id: str, command: UpdateUserRoleCommand) -> User:
+    def update_user_role(self, user_id: str, command: UpdateUserRoleCommand) -> OrganizationMembership:
         self._lock_tenant()
         user = self._locked_user(user_id)
         self._assert_user_mutation(user, command.expected_token_version)
@@ -298,7 +313,7 @@ class EnterpriseAdminService:
         self._session.refresh(user)
         return user
 
-    def update_user_status(self, user_id: str, command: UpdateUserStatusCommand) -> User:
+    def update_user_status(self, user_id: str, command: UpdateUserStatusCommand) -> OrganizationMembership:
         self._lock_tenant()
         user = self._locked_user(user_id)
         self._assert_user_mutation(user, command.expected_token_version)
@@ -421,9 +436,14 @@ class EnterpriseAdminService:
             list(
                 self._session.scalars(
                     select(User).where(
-                        User.tenant_id == self._tenant_id,
                         User.id.in_(requested),
                         User.active.is_(True),
+                        User.id.in_(
+                            select(OrganizationMembership.user_id).where(
+                                OrganizationMembership.tenant_id == self._tenant_id,
+                                OrganizationMembership.active.is_(True),
+                            )
+                        ),
                     )
                 )
             )
@@ -522,13 +542,14 @@ class EnterpriseAdminService:
         rows = self._session.execute(
             select(UserSession, User)
             .join(User, User.id == UserSession.user_id)
-            .where(UserSession.tenant_id == self._tenant_id, User.tenant_id == self._tenant_id)
+            .where(UserSession.tenant_id == self._tenant_id)
             .order_by(UserSession.issued_at.desc(), UserSession.id.desc())
             .limit(limit)
         ).all()
         return [SessionView(user_session, user) for user_session, user in rows]
 
     def revoke_session(self, session_id: str, *, reason: str) -> SessionView:
+        self._lock_tenant()
         target = self._session.scalar(
             select(UserSession)
             .where(UserSession.tenant_id == self._tenant_id, UserSession.id == session_id)
@@ -536,7 +557,7 @@ class EnterpriseAdminService:
         )
         if target is None:
             raise EnterpriseAdminNotFound("Session not found")
-        user = self._session.scalar(select(User).where(User.tenant_id == self._tenant_id, User.id == target.user_id))
+        user = self._session.get(User, target.user_id)
         if user is None:
             raise EnterpriseAdminNotFound("Session user not found")
         if target.revoked_at is not None:
@@ -614,11 +635,19 @@ class EnterpriseAdminService:
         tenant = self._session.scalar(select(Tenant).where(Tenant.id == self._tenant_id).with_for_update())
         if tenant is None or not tenant.active:
             raise EnterpriseAdminNotFound("Active tenant not found")
+        actor = organization_administrator(self._session, self._tenant_id, self._actor_id)
+        if actor is None:
+            raise EnterpriseAdminAccessDenied("An active organization administrator is required")
         return tenant
 
-    def _locked_user(self, user_id: str) -> User:
+    def _locked_user(self, user_id: str) -> OrganizationMembership:
         user = self._session.scalar(
-            select(User).where(User.tenant_id == self._tenant_id, User.id == user_id).with_for_update()
+            select(OrganizationMembership)
+            .where(
+                OrganizationMembership.tenant_id == self._tenant_id,
+                OrganizationMembership.user_id == user_id,
+            )
+            .with_for_update()
         )
         if user is None:
             raise EnterpriseAdminNotFound("User not found")
@@ -632,14 +661,18 @@ class EnterpriseAdminService:
             raise EnterpriseAdminNotFound("User group not found")
         return group
 
-    def _assert_user_mutation(self, user: User, expected_token_version: int) -> None:
+    def _assert_user_mutation(self, user: OrganizationMembership, expected_token_version: int) -> None:
         if user.id == self._actor_id:
             raise EnterpriseAdminConflict("Administrators cannot change their own role or status")
         if user.token_version != expected_token_version:
             raise EnterpriseAdminConflict("User changed; refresh before retrying")
 
     def _assert_admin_remains(self) -> None:
-        active_admins = self._count(User, User.active.is_(True), User.role == UserRole.ADMIN)
+        active_admins = self._count(
+            OrganizationMembership,
+            OrganizationMembership.active.is_(True),
+            OrganizationMembership.role == UserRole.ADMIN,
+        )
         if active_admins <= 1:
             raise EnterpriseAdminConflict("At least one active administrator must remain")
 

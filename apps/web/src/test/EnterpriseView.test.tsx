@@ -5,8 +5,13 @@ import {
   executeEnterpriseApiKeyOperation,
   executeEnterpriseLLMProviderOperation,
   executeEnterpriseOperation,
+  loadEnterpriseAccess,
   loadEnterpriseAudit,
-  loadEnterpriseWorkspace,
+  loadEnterpriseGroups,
+  loadEnterpriseModels,
+  loadEnterpriseOverview,
+  loadEnterprisePlatform,
+  loadEnterpriseUsers,
 } from "../lib/contracts/enterprise";
 import type { User } from "../lib/types";
 import { EnterpriseView } from "../views/EnterpriseView";
@@ -15,14 +20,24 @@ import { renderWithQueryClient } from "./renderWithQueryClient";
 vi.mock("../lib/contracts/enterprise", () => ({
   enterpriseKeys: {
     root: ["enterprise"],
-    workspace: ["enterprise", "workspace"],
+    overview: ["enterprise", "overview"],
+    users: ["enterprise", "users"],
+    groups: ["enterprise", "groups"],
+    access: ["enterprise", "access"],
+    models: ["enterprise", "models"],
+    platform: ["enterprise", "platform"],
     audit: (filters: unknown) => ["enterprise", "audit", filters],
   },
   executeEnterpriseApiKeyOperation: vi.fn(),
   executeEnterpriseLLMProviderOperation: vi.fn(),
   executeEnterpriseOperation: vi.fn(),
   loadEnterpriseAudit: vi.fn(),
-  loadEnterpriseWorkspace: vi.fn(),
+  loadEnterpriseAccess: vi.fn(),
+  loadEnterpriseGroups: vi.fn(),
+  loadEnterpriseModels: vi.fn(),
+  loadEnterpriseOverview: vi.fn(),
+  loadEnterprisePlatform: vi.fn(),
+  loadEnterpriseUsers: vi.fn(),
 }));
 vi.mock("../lib/contracts/accounts", () => ({
   accountInvitations: vi.fn(),
@@ -31,7 +46,7 @@ vi.mock("../lib/contracts/accounts", () => ({
 }));
 
 it("keeps registration invitations usable when unrelated platform data is unavailable", async () => {
-  vi.mocked(loadEnterpriseWorkspace).mockRejectedValue(new Error("Platform status is unavailable"));
+  vi.mocked(loadEnterpriseOverview).mockRejectedValue(new Error("Organization overview is unavailable"));
   vi.mocked(accountInvitations).mockResolvedValue([]);
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
   await screen.findByRole("tab", { name: "注册邀请" });
@@ -40,6 +55,21 @@ it("keeps registration invitations usable when unrelated platform data is unavai
   expect(accountInvitations).toHaveBeenCalled();
   expect(screen.getByRole("button", { name: "生成注册邀请码" })).toBeDisabled();
 });
+
+it("keeps user management usable when platform operations are unavailable", async () => {
+  vi.mocked(loadEnterprisePlatform).mockRejectedValue(new Error("Platform status is unavailable"));
+  renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
+  await selectEnterpriseTab("平台运营");
+  await screen.findByText("Platform status is unavailable");
+  await selectEnterpriseTab("用户与角色");
+  await screen.findByText("Research Analyst");
+  expect(screen.getByRole("button", { name: "新建用户" })).toBeEnabled();
+});
+
+async function selectEnterpriseTab(name: string) {
+  fireEvent.click(await screen.findByRole("tab", { name }));
+  await waitFor(() => expect(screen.queryByText("正在读取企业管理数据")).not.toBeInTheDocument());
+}
 
 const user: User = {
   id: "admin-1",
@@ -202,6 +232,9 @@ const workspace = {
         owner: "platform-operations",
         escalation_policy: "role://platform-operations/on-call",
         status: "ready" as const,
+        enabled: true,
+        liveness: "observed" as const,
+        queue_status: "not_applicable" as const,
         detail: "Current authenticated API request completed",
       },
       {
@@ -209,6 +242,9 @@ const workspace = {
         owner: "platform-operations",
         escalation_policy: "role://platform-operations/on-call",
         status: "external" as const,
+        enabled: null,
+        liveness: "unverified" as const,
+        queue_status: "not_applicable" as const,
         detail: "MCP liveness is evaluated at the dedicated Agent entry",
       },
     ],
@@ -331,7 +367,12 @@ const workspace = {
 };
 
 beforeEach(() => {
-  vi.mocked(loadEnterpriseWorkspace).mockResolvedValue(workspace);
+  vi.mocked(loadEnterpriseOverview).mockResolvedValue(workspace.overview);
+  vi.mocked(loadEnterpriseUsers).mockResolvedValue(workspace.users);
+  vi.mocked(loadEnterpriseGroups).mockResolvedValue(workspace.groups);
+  vi.mocked(loadEnterpriseAccess).mockResolvedValue(workspace);
+  vi.mocked(loadEnterpriseModels).mockResolvedValue(workspace.llmProviders);
+  vi.mocked(loadEnterprisePlatform).mockResolvedValue(workspace.platform);
   vi.mocked(loadEnterpriseAudit).mockResolvedValue({ items: [], next_cursor: null });
   vi.mocked(executeEnterpriseOperation).mockResolvedValue({});
   vi.mocked(executeEnterpriseApiKeyOperation).mockResolvedValue(workspace.apiKeyCatalog.items[0]);
@@ -340,7 +381,7 @@ beforeEach(() => {
 
 it("shows the primary and fallback LLM order and switches primary with an audited reason", async () => {
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
-  fireEvent.click(await screen.findByRole("tab", { name: "模型设置" }));
+  await selectEnterpriseTab("模型设置");
 
   expect(screen.getByRole("table", { name: "LLM 供应商顺序" })).toHaveTextContent("mimo-v2.5");
   expect(screen.getByText("主模型")).toBeInTheDocument();
@@ -359,7 +400,7 @@ it("shows the primary and fallback LLM order and switches primary with an audite
 
 it("adds an OpenAI-compatible LLM without ever displaying a stored secret", async () => {
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
-  fireEvent.click(await screen.findByRole("tab", { name: "模型设置" }));
+  await selectEnterpriseTab("模型设置");
   fireEvent.click(screen.getByRole("button", { name: "增加 LLM" }));
   fireEvent.change(screen.getByLabelText("供应商名称"), { target: { value: "backup-provider" } });
   fireEvent.change(screen.getByLabelText("模型 ID"), { target: { value: "backup-model" } });
@@ -382,7 +423,7 @@ it("adds an OpenAI-compatible LLM without ever displaying a stored secret", asyn
 
 it("offers MiMo primary and GLM fallback presets without filling a credential", async () => {
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
-  fireEvent.click(await screen.findByRole("tab", { name: "\u6a21\u578b\u8bbe\u7f6e" }));
+  await selectEnterpriseTab("\u6a21\u578b\u8bbe\u7f6e");
   fireEvent.click(screen.getByRole("button", { name: "\u589e\u52a0 LLM" }));
 
   fireEvent.click(screen.getByRole("button", { name: "\u4f7f\u7528 MiMo v2.5 \u4e3b\u6a21\u578b\u9884\u8bbe" }));
@@ -403,7 +444,7 @@ it("renders tenant metrics and protects the current administrator controls", asy
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
   expect(await screen.findByText("Pharma R&D")).toBeInTheDocument();
   expect(screen.getByText("业务数据集")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("tab", { name: "用户与角色" }));
+  await selectEnterpriseTab("用户与角色");
   expect(screen.getByRole("button", { name: "调整 Administrator 的角色" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "调整 Research Analyst 的角色" })).toBeEnabled();
 });
@@ -427,7 +468,7 @@ it("keeps enterprise tabs keyboard reachable on narrow screens", async () => {
 
 it("moves focus into a user action dialog and returns it to the trigger", async () => {
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
-  fireEvent.click(await screen.findByRole("tab", { name: "用户与角色" }));
+  await selectEnterpriseTab("用户与角色");
   const trigger = screen.getByRole("button", { name: "调整 Research Analyst 的角色" });
   trigger.focus();
   fireEvent.click(trigger);
@@ -441,7 +482,7 @@ it("moves focus into a user action dialog and returns it to the trigger", async 
 
 it("closes enterprise user dialogs with Escape and restores the trigger", async () => {
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
-  fireEvent.click(await screen.findByRole("tab", { name: "用户与角色" }));
+  await selectEnterpriseTab("用户与角色");
   const trigger = screen.getByRole("button", { name: "新建用户" });
   trigger.focus();
   fireEvent.click(trigger);
@@ -453,7 +494,7 @@ it("closes enterprise user dialogs with Escape and restores the trigger", async 
 
 it("creates a local account through the versioned enterprise operation", async () => {
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
-  fireEvent.click(await screen.findByRole("tab", { name: "用户与角色" }));
+  await selectEnterpriseTab("用户与角色");
   fireEvent.click(screen.getByRole("button", { name: "新建用户" }));
   fireEvent.change(screen.getByLabelText("邮箱"), { target: { value: "new@example.test" } });
   fireEvent.change(screen.getByLabelText("显示名称"), { target: { value: "New Analyst" } });
@@ -477,9 +518,9 @@ it("creates a local account through the versioned enterprise operation", async (
 
 it("updates group membership with the displayed concurrency version", async () => {
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
-  fireEvent.click(await screen.findByRole("tab", { name: "用户组" }));
+  await selectEnterpriseTab("用户组");
   fireEvent.click(screen.getByRole("button", { name: "管理 Research Operations 的成员" }));
-  fireEvent.click(screen.getByRole("checkbox", { name: /Administrator/ }));
+  fireEvent.click(await screen.findByRole("checkbox", { name: /Administrator/ }));
   fireEvent.change(screen.getByLabelText("变更原因"), { target: { value: "Add tenant administrator" } });
   fireEvent.click(screen.getByRole("button", { name: "保存变更" }));
 
@@ -498,7 +539,7 @@ it("updates group membership with the displayed concurrency version", async () =
 it("does not retry a rejected administrative mutation", async () => {
   vi.mocked(executeEnterpriseOperation).mockRejectedValue(new Error("stale administrative version"));
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
-  fireEvent.click(await screen.findByRole("tab", { name: "用户组" }));
+  await selectEnterpriseTab("用户组");
   fireEvent.click(screen.getByRole("button", { name: "编辑 Research Operations" }));
   fireEvent.change(screen.getByLabelText("变更原因"), { target: { value: "Update team definition" } });
   fireEvent.click(screen.getByRole("button", { name: "保存变更" }));
@@ -509,7 +550,7 @@ it("does not retry a rejected administrative mutation", async () => {
 
 it("governs datasets, remote sessions and MCP clients from one access view", async () => {
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
-  fireEvent.click(await screen.findByRole("tab", { name: "访问与生命周期" }));
+  await selectEnterpriseTab("访问与生命周期");
   expect(screen.getByRole("heading", { name: "数据集与交付授权" })).toBeInTheDocument();
   expect(screen.getByText("WEB / MCP")).toBeInTheDocument();
   const revokeButton = screen
@@ -539,7 +580,7 @@ it("creates a scoped API key and clears its one-time secret after acknowledgemen
     secret: "phk_one-time-secret",
   });
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
-  fireEvent.click(await screen.findByRole("tab", { name: "访问与生命周期" }));
+  await selectEnterpriseTab("访问与生命周期");
   expect(screen.getByText("Research Agent Key")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "新建密钥" }));
   fireEvent.change(screen.getByLabelText("密钥名称"), { target: { value: "New Research Agent" } });
@@ -567,7 +608,7 @@ it("creates a scoped API key and clears its one-time secret after acknowledgemen
 
 it("requires an explicit reason before revoking an active API key", async () => {
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
-  fireEvent.click(await screen.findByRole("tab", { name: "访问与生命周期" }));
+  await selectEnterpriseTab("访问与生命周期");
   fireEvent.click(screen.getByRole("button", { name: "撤销 Research Agent Key" }));
   const confirm = screen.getByRole("button", { name: "确认撤销" });
   expect(confirm).toBeDisabled();
@@ -584,7 +625,7 @@ it("requires an explicit reason before revoking an active API key", async () => 
 
 it("separates live platform signals from external release evidence", async () => {
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
-  fireEvent.click(await screen.findByRole("tab", { name: "平台运营" }));
+  await selectEnterpriseTab("平台运营");
   expect(screen.getByRole("table", { name: "平台服务状态" })).toHaveTextContent("platform-operations");
   expect(screen.getByText("pharma-data-factory", { exact: true })).toBeInTheDocument();
   expect(screen.getByRole("table", { name: "平台 SLO" })).toHaveTextContent("web-availability");

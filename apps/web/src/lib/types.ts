@@ -7,9 +7,10 @@ import type {
   MonitoringAlertRead,
   MonitoringTopicRead,
   SavedSearchRead,
+  UserRead,
 } from "./generated";
 
-export type UserRole = "admin" | "analyst" | "viewer";
+export type UserRole = UserRead["role"];
 export type EntityType =
   | "target"
   | "drug"
@@ -22,15 +23,8 @@ export type EntityType =
   | "technology"
   | "person";
 
-export interface User {
-  id: string;
-  tenant_id: string;
-  email: string;
-  display_name: string;
-  role: UserRole;
-  phone?: string | null;
-  avatar_url?: string | null;
-}
+export type User = Pick<UserRead, "id" | "tenant_id" | "email" | "display_name" | "role"> &
+  Partial<Pick<UserRead, "phone" | "avatar_url" | "organization_name">>;
 
 export interface Entity {
   id: string;

@@ -4,6 +4,7 @@ set -Eeuo pipefail
 umask 077
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+source "$root/scripts/lib/entry_staging.sh"
 web_url="http://127.0.0.1:18380"
 mcp_url="http://127.0.0.1:18390/mcp"
 output_path=""
@@ -83,6 +84,8 @@ done < "$root/deploy/protocol/versions.env"
 
 export COMPOSE_FILE="${COMPOSE_FILE:-compose.yaml:compose.dev.yaml:compose.telemetry.yaml}"
 cd "$root"
+compose=(docker compose)
+source "$root/scripts/lib/mcp_fixture_http.sh"
 pg_user=$(docker compose exec -T postgres printenv POSTGRES_USER | tr -d '\r')
 pg_db=$(docker compose exec -T postgres printenv POSTGRES_DB | tr -d '\r')
 token_prefix=${TEST_MCP_ACCESS_TOKEN:0:12}
@@ -120,7 +123,8 @@ stale_entities=$(docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_d
 fixture_marker="entry-$(python3 -c 'import uuid; print(uuid.uuid4().hex[:16])')"
 email="$fixture_marker@example.test"
 password="$(openssl rand -hex 24)Aa1!"
-fixture_root=$(mktemp -d -t pharma-entry-consistency.XXXXXX)
+fixture_parent=$(realpath -e -- "${TMPDIR:-/tmp}")
+fixture_root=$(mktemp -d "$fixture_parent/pharma-entry-consistency.XXXXXX")
 fixture_ids_path="$fixture_root/entity-ids"
 touch "$fixture_ids_path"
 fixture_active=1
@@ -181,6 +185,8 @@ WITH deleted AS (
   RETURNING 1
 )
 SELECT count(*) FROM deleted;
+DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE normalized_email = '$email');
+DELETE FROM organization_memberships WHERE user_id IN (SELECT id FROM users WHERE normalized_email = '$email');
 DELETE FROM users WHERE normalized_email = '$email';
 COMMIT;
 SQL
@@ -191,21 +197,16 @@ SQL
   while IFS= read -r entity_id; do
     [[ -n "$entity_id" ]] || continue
     [[ "$entity_id" =~ ^[0-9a-f-]{36}$ ]] || { cleanup_errors=1; continue; }
-    curl --silent --show-error --request DELETE \
-      "http://127.0.0.1:9200/$opensearch_index_prefix-entities-write/_doc/$tenant_id:$entity_id?routing=$tenant_id&refresh=true" \
-      --output "$fixture_root/opensearch-delete-$entity_id.json" || cleanup_errors=1
+    mcp_fixture_opensearch none --request DELETE \
+      "http://localhost:9200/$opensearch_index_prefix-entities-write/_doc/$tenant_id:$entity_id?routing=$tenant_id&refresh=true" \
+      > "$fixture_root/opensearch-delete-$entity_id.json" || cleanup_errors=1
   done < "$fixture_ids_path"
   remaining_accounts=$(docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -At -v ON_ERROR_STOP=1 \
     -c "SELECT count(*) FROM users WHERE normalized_email = '$email'") || cleanup_errors=1
   remaining_entities=$(docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -At -v ON_ERROR_STOP=1 \
     -c "SELECT count(*) FROM entities WHERE tenant_id = '$tenant_id' AND attributes ->> 'acceptance_fixture_marker' = '$fixture_marker'") || cleanup_errors=1
   [[ "$remaining_accounts" == "0" && "$remaining_entities" == "0" ]] || cleanup_errors=1
-  if [[ "$fixture_root" == /tmp/pharma-entry-consistency.* ]]; then
-    find "$fixture_root" -mindepth 1 -delete || cleanup_errors=1
-    rmdir -- "$fixture_root" || cleanup_errors=1
-  else
-    cleanup_errors=1
-  fi
+  entry_staging_remove "$fixture_parent" "$fixture_root" || cleanup_errors=1
   fixture_active=0
   [[ $cleanup_errors -eq 0 ]]
 }
@@ -233,6 +234,8 @@ result=$(
       --web-url "$web_url" \
       --mcp-url "$mcp_url" \
       --fixture-marker "$fixture_marker" \
+      --fixture-container "$(docker compose ps -q api)" \
+      --fixture-tenant "$tenant_id" \
       --expected-protocol-version "$protocol_baseline"
 )
 remove_fixtures 1

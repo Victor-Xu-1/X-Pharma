@@ -33,10 +33,10 @@ jobs:
         run: uv sync --locked --dev
       - name: Lint and format gate
         run: |
-          uv run ruff format --check src tests migrations scripts/mcp_inspector_probe.py
-          uv run ruff check src tests migrations scripts/mcp_inspector_probe.py
+          uv run ruff format --check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py
+          uv run ruff check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py
       - name: Strict typing gate
-        run: uv run mypy src tests scripts/mcp_inspector_probe.py
+        run: uv run mypy src tests scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py
       - name: OpenAPI 3.1.2 drift gate
         run: uv run pharma-openapi --check
       - name: Unit and service tests
@@ -121,10 +121,10 @@ jobs:
         run: |
           uv run pharma-bootstrap --tenant-slug ci --tenant-name "CI Tenant" --skip-api-key
           uv run pharma-verify-rls
-      - name: Verify account invitation RLS and concurrent registration
+      - name: Verify account and organization RLS and concurrent invitation acceptance
         env:
           TEST_ACCOUNT_REGISTRATION_DATABASE_URL: postgresql+psycopg://pharma_runtime:ci-runtime-password@127.0.0.1:5432/pharma_migration
-        run: uv run pytest -m integration tests/test_account_registration_postgres.py
+        run: uv run pytest -m integration tests/test_account_registration_postgres.py tests/test_organization_memberships_postgres.py
       - name: OpenBao dynamic PostgreSQL group-role contract
         run: |
           uv run python -c "import psycopg; c=psycopg.connect('postgresql://postgres:postgres@127.0.0.1:5432/postgres', autocommit=True); c.execute('CREATE DATABASE provision_test'); c.close()"
@@ -208,12 +208,16 @@ jobs:
 
   two-entry-smoke:
     runs-on: ubuntu-24.04
-    timeout-minutes: ${{ inputs.refresh_visual_baselines && 60 || 35 }}
+    timeout-minutes: ${{ inputs.refresh_visual_baselines && 60 || 45 }}
     env:
       E2E_EMAIL: analyst@example.test
       E2E_PASSWORD: ci-workspace-password
       E2E_BASE_URL: http://127.0.0.1:18380
       TEST_MCP_URL: http://127.0.0.1:18390/mcp
+      # Measure each browser against unchanged interaction budgets while the
+      # complete service stack shares this runner. Keep every viewport/scenario;
+      # paid MCP concurrency is exercised independently below.
+      PHARMA_BROWSER_WORKERS: "1"
       COMPOSE_PROJECT_NAME: x-pharma-ci
       COMPOSE_FILE: compose.yaml:compose.dev.yaml:compose.telemetry.yaml
       DOCKER_LIBRARY_REGISTRY: docker.io/library
@@ -234,10 +238,18 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - name: Install test clients
+        env:
+          VISUAL_PROFILE_REVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
         run: |
           uv sync --locked --dev
           pnpm --dir apps/web install --frozen-lockfile
           pnpm --dir apps/web exec playwright install --with-deps chrome
+          source scripts/lib/browser_fonts.sh
+          sudo apt-get install --yes --no-install-recommends "$BROWSER_FONT_PACKAGE=$BROWSER_FONT_VERSION"
+          verify_browser_fonts
+          profile_args=()
+          if [[ "$VISUAL_PROFILE_REVIEW" == "true" ]]; then profile_args+=(--review-update); fi
+          uv run --locked python -m scripts.browser_visual_profile --browser "$(google-chrome --version)" "${profile_args[@]}"
       - name: Start integration stack
         env:
           KNOWLEDGE_SOURCE_ROOT: /tmp/pharma-source
@@ -275,13 +287,24 @@ jobs:
           corepack pnpm@11.7.0 --dir apps/web build
           uv run python scripts/run_account_browser_acceptance.py --output /tmp/account-browser-acceptance-report.json
       - name: Browser workbench smoke
+        id: workbench_smoke
         env:
           REFRESH_VISUAL_BASELINES: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
+          PHARMA_BROWSER_KEEP_OUTPUT: "true"
         run: |
           if [[ "$REFRESH_VISUAL_BASELINES" == "true" ]]; then
             ./scripts/run-browser-acceptance.sh --update-snapshots
           fi
           ./scripts/run-browser-acceptance.sh --output /tmp/browser-acceptance-report.json
+      - name: Archive failed visual comparisons
+        if: ${{ failure() && steps.workbench_smoke.outcome == 'failure' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: X-Pharma-failed-visual-comparisons
+          path: |
+            /tmp/pharma-browser-acceptance-*/**/*-actual.png
+            /tmp/pharma-browser-acceptance-*/**/*-diff.png
+          if-no-files-found: warn
       - name: Archive visual baseline candidates for review
         if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -289,12 +312,10 @@ jobs:
           name: X-Pharma-visual-baseline-candidates
           path: apps/web/e2e/visual-baselines/
           if-no-files-found: error
-      - name: Real MCP streamable HTTP smoke
-        run: uv run pytest tests/test_mcp_integration.py
+      - name: Real MCP HTTP and Web canonical fact consistency
+        run: ./scripts/verify-entry-consistency.sh --web-url "$E2E_BASE_URL" --mcp-url "$TEST_MCP_URL" --output /tmp/entry-consistency-report.json
       - name: Independent MCP dual-client interoperability
         run: ./scripts/verify-mcp-interoperability.sh --mcp-url "$TEST_MCP_URL" --output /tmp/mcp-interoperability-report.json
-      - name: Web and MCP canonical fact consistency
-        run: ./scripts/verify-entry-consistency.sh --web-url "$E2E_BASE_URL" --mcp-url "$TEST_MCP_URL" --output /tmp/entry-consistency-report.json
       - name: Billed MCP concurrency baseline
         run: >-
           uv run pharma-mcp-load --url "$TEST_MCP_URL" --requests 20 --concurrency 4

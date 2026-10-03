@@ -8,6 +8,7 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.config import Settings
 from pharma_intel.governance.publication import GovernancePublicationService, PublicationError
 from pharma_intel.models import (
@@ -47,7 +48,7 @@ def _publication_service(session: Session, tenant: Tenant, tmp_path: Path) -> Go
 
 
 def _reviewer(session: Session, tenant: Tenant) -> User:
-    reviewer = User(
+    reviewer = create_account(
         tenant_id=tenant.id,
         email="publication-reviewer@example.test",
         normalized_email="publication-reviewer@example.test",

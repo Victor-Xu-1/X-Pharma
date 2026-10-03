@@ -7,6 +7,11 @@ PostgreSQL-to-OpenSearch dense result table, and deterministic clinical-result,
 patent-timeline, and deal-rights dossier sections without request mocks.
 
 Required viewports are `1440x900`, `1920x1080`, `1024x768`, and `390x844`.
+The Linux reference profile requires `Noto Sans CJK SC` and `Noto Serif CJK SC`;
+`scripts/lib/browser_fonts.sh` owns the reviewed font package/version. CI installs
+that exact profile, and acceptance rejects missing fonts rather than silently
+capturing a different fallback typeface. The system-font fallback in the product
+is unchanged; this prerequisite makes the review environment reproducible.
 Baselines may only be regenerated after an intentional visual review with:
 
 ```bash

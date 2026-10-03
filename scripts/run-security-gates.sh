@@ -14,6 +14,7 @@ ocr_image="pharma-intelligence-ocr:3.5.0-paddle3.3.1"
 release_mode=0
 risk_acceptance_reference=""
 skip_dependency_audit=0
+build_network=default
 
 usage() {
   cat <<'EOF'
@@ -27,6 +28,7 @@ Options:
   --release-mode
   --risk-acceptance-reference REF
   --skip-dependency-audit
+  --build-network default|host|none
   -h, --help
 EOF
 }
@@ -65,6 +67,14 @@ while [[ $# -gt 0 ]]; do
     --skip-dependency-audit)
       skip_dependency_audit=1
       shift
+      ;;
+    --build-network)
+      [[ $# -ge 2 ]] || { echo "--build-network requires a value" >&2; exit 2; }
+      case "$2" in
+        default|host|none) build_network=$2 ;;
+        *) echo "unsupported build network: $2" >&2; exit 2 ;;
+      esac
+      shift 2
       ;;
     -h|--help)
       usage
@@ -284,17 +294,19 @@ for required in GITLEAKS_IMAGE SEMGREP_IMAGE SYFT_IMAGE GRYPE_IMAGE; do
     checked "Pull $required" docker pull "$image" >/dev/null
   fi
 done
-staging_root=$(mktemp -d -t pharma-security.XXXXXX)
+source "$root/scripts/lib/security_staging.sh"
+staging_parent=$(realpath -e -- "${TMPDIR:-/tmp}")
+staging_root=$(mktemp -d "$staging_parent/pharma-security.XXXXXX")
 cleanup() {
-  case "$staging_root" in
-    /tmp/pharma-security.*)
-      chmod -R u+w "$staging_root" >/dev/null 2>&1 || true
-      rm -rf -- "$staging_root"
-      ;;
-    *) echo "refusing to remove unexpected security staging path: $staging_root" >&2 ;;
-  esac
+  local status=$?
+  if ! security_staging_remove "$staging_parent" "$staging_root"; then
+    [[ $status -ne 0 ]] || status=1
+  fi
+  return "$status"
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 repo_prefix="$root/"
 source_file_count=0
@@ -343,6 +355,7 @@ api_build_labels=(
   --label "io.pharma.source-tree-sha256=$source_tree_sha256"
 )
 checked "Application image build from staged source" docker build \
+  --network "$build_network" \
   --file "$staging_root/deploy/api.Dockerfile" \
   --build-arg "DOCKER_LIBRARY_REGISTRY=${DOCKER_LIBRARY_REGISTRY:-public.ecr.aws/docker/library}" \
   "${api_build_labels[@]}" \
@@ -368,6 +381,7 @@ if [[ -n "${OCR_PYPI_INDEX_URL:-}" ]]; then
   ocr_build_arguments+=(--build-arg "OCR_PYPI_INDEX_URL=$OCR_PYPI_INDEX_URL")
 fi
 checked "OCR image build from staged source" docker build \
+  --network "$build_network" \
   --file "$staging_root/services/ocr/Dockerfile" \
   "${ocr_build_arguments[@]}" \
   "${ocr_build_labels[@]}" \
@@ -402,6 +416,7 @@ if [[ "$postgres_image_definition" != "$postgres_definition_sha256" ]]; then
     )
   fi
   checked "PostgreSQL/RDKit image build from pinned definition" docker build \
+    --network "$build_network" \
     --file "$staging_root/deploy/postgres-rdkit.Dockerfile" \
     "${postgres_build_arguments[@]}" \
     --label "io.pharma.build-definition-sha256=$postgres_definition_sha256" \

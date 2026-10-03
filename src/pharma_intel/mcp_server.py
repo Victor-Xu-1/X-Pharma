@@ -22,12 +22,13 @@ from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.types import ASGIApp
 
+from pharma_intel.commercial.cursor import INVALID_CURSOR_CODE
 from pharma_intel.config import get_settings
 from pharma_intel.dossier import DOSSIER_RECORD_COLLECTIONS, dossier_result_capacity
 from pharma_intel.mcp_auth import build_token_verifier
 from pharma_intel.mcp_dpop import DpopProofVerifier, DpopSenderConstraintMiddleware, ValkeyDpopReplayStore
 from pharma_intel.operational_metrics import McpOutcome, operational_metrics
-from pharma_intel.product import PRODUCT_NAME
+from pharma_intel.product import PRODUCT_NAME, PRODUCT_VERSION
 from pharma_intel.request_correlation import (
     NETWORK_FINGERPRINT_HEADER,
     CorrelationSignalError,
@@ -105,6 +106,20 @@ class McpCommercialError(RuntimeError):
         super().__init__(f"{code}: {message}")
 
 
+def _commercial_error_code(response: httpx.Response) -> str | None:
+    # Only a bounded, allowlisted machine code crosses the API/MCP boundary.
+    # Provider text, URLs and arbitrary nested payloads are never forwarded.
+    if len(response.content) > 4096:
+        return None
+    try:
+        payload = response.json()
+    except (ValueError, RecursionError):
+        return None
+    if isinstance(payload, dict) and payload.get("code") == INVALID_CURSOR_CODE:
+        return INVALID_CURSOR_CODE
+    return None
+
+
 def _safe_commercial_http_error(error: httpx.HTTPStatusError) -> McpCommercialError:
     status_code = error.response.status_code
     if status_code == 401:
@@ -115,6 +130,10 @@ def _safe_commercial_http_error(error: httpx.HTTPStatusError) -> McpCommercialEr
             "The active Agent subscription does not have enough available credit",
         )
     if status_code == 403:
+        if _commercial_error_code(error.response) == INVALID_CURSOR_CODE:
+            return McpCommercialError(
+                INVALID_CURSOR_CODE, "The pagination cursor is invalid or expired; restart the query"
+            )
         return McpCommercialError(
             "ENTITLEMENT_REQUIRED",
             "The requested data access is not included in the active Agent subscription",
@@ -187,6 +206,10 @@ mcp = FastMCP(
     auth=auth,
     token_verifier=token_verifier,
 )
+# Pinned FastMCP does not forward a product-version constructor argument. Bind
+# its existing low-level server once; the real initialize regression protects
+# this SDK boundary without replacing handlers or creating another runtime.
+mcp._mcp_server.version = PRODUCT_VERSION
 
 
 async def api_request(ctx: McpContext, method: str, path: str, **kwargs: Any) -> Any:

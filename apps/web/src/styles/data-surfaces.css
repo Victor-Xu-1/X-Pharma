@@ -653,10 +653,12 @@ tbody tr:last-child td {
   border: 1px solid;
 }
 .virtual-data-table {
+  display: block;
   width: 100%;
   min-width: 100%;
 }
 .virtual-table-header {
+  display: block;
   position: sticky;
   top: 0;
   z-index: 2;
@@ -717,12 +719,10 @@ tbody tr:last-child td {
   color: var(--ds-accent-strong);
 }
 .virtual-table-body {
+  display: block;
   position: relative;
 }
 .virtual-table-data-row {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
 }
 .virtual-table-selection-heading,

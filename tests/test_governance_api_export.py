@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 import pharma_intel.object_store as object_store_module
-from pharma_intel import api
+from pharma_intel.http import governance_review, runtime
 from pharma_intel.models import EvidenceClaim, GovernanceStatus
 from pharma_intel.schemas import ReviewDecision
 from pharma_intel.security import Principal
@@ -66,14 +66,14 @@ def test_approval_returns_published_fact_when_markdown_export_fails(
         def error(self, event: str, **kwargs: object) -> None:
             events.append((event, kwargs))
 
-    monkeypatch.setattr(api, "GovernanceService", FakeGovernanceService)
-    monkeypatch.setattr(api, "KnowledgeCompiler", FakeCompiler)
+    monkeypatch.setattr(governance_review, "GovernanceService", FakeGovernanceService)
+    monkeypatch.setattr(governance_review, "KnowledgeCompiler", FakeCompiler)
     monkeypatch.setattr(object_store_module, "build_object_store", lambda settings: object())
     monkeypatch.setattr(session, "get", fixture_get)
-    monkeypatch.setattr(api, "get_settings", lambda: SimpleNamespace(markdown_export_root="unused"))
-    monkeypatch.setattr(api, "request_logger", FakeLogger())
+    monkeypatch.setattr(runtime, "get_settings", lambda: SimpleNamespace(markdown_export_root="unused"))
+    monkeypatch.setattr(governance_review, "request_logger", FakeLogger())
 
-    result = api.decide_staged_fact(
+    result = governance_review.decide_staged_fact(
         staged.id,
         ReviewDecision(decision="approve"),
         Principal("tenant-1", "reviewer-1", "user", frozenset({"governance:review"})),

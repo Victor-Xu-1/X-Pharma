@@ -1,7 +1,58 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 
 import { WorkspaceShell } from "../components/WorkspaceShell";
+
+it("does not let a closing mobile navigation drawer steal focus from the destination heading", () => {
+  const frames = new Map<number, FrameRequestCallback>();
+  let nextFrame = 0;
+  const requestFrame = vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+    const id = ++nextFrame;
+    frames.set(id, callback);
+    return id;
+  });
+  const cancelFrame = vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+    frames.delete(id);
+  });
+  const props = {
+    user: {
+      id: "user",
+      tenant_id: "tenant",
+      email: "user@example.test",
+      display_name: "User",
+      role: "analyst" as const,
+    },
+    activeWorkbench: "research" as const,
+    onView: vi.fn(),
+    onLogout: vi.fn(),
+  };
+  try {
+    const { rerender } = render(
+      <WorkspaceShell {...props} activeView="explorer">
+        workspace
+      </WorkspaceShell>,
+    );
+    const opener = screen.getByRole("button", { name: "打开导航" });
+    opener.focus();
+    fireEvent.click(opener);
+    fireEvent.click(screen.getByRole("button", { name: "药物与管线" }));
+    rerender(
+      <WorkspaceShell {...props} activeView="pipeline">
+        workspace
+      </WorkspaceShell>,
+    );
+    act(() => {
+      for (const [id, callback] of frames) {
+        frames.delete(id);
+        callback(0);
+      }
+    });
+    expect(screen.getByRole("heading", { name: "药物与研发管线" })).toHaveFocus();
+  } finally {
+    requestFrame.mockRestore();
+    cancelFrame.mockRestore();
+  }
+});
 
 it.each(["research", "internal"] as const)("uses the same supplied logo in the %s sidebar", (workbench) => {
   render(
@@ -19,6 +70,7 @@ it.each(["research", "internal"] as const)("uses the same supplied logo in the %
   expect(mark?.querySelector("img")).toHaveAttribute("src", expect.stringContaining("X-Pharma-logo-128.png"));
   expect(mark?.querySelector("svg")).toBeNull();
   expect(screen.getByText("X-Pharma")).toBeInTheDocument();
+  expect(screen.getByText("v0.1.0")).toBeInTheDocument();
 });
 
 it("keeps the external workbench focused while retaining progressive access to specialist databases", () => {

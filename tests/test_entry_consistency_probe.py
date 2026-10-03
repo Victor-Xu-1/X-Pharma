@@ -8,10 +8,13 @@ from mcp.types import (
     CallToolResult,
     Implementation,
     InitializeResult,
+    ListToolsResult,
     ServerCapabilities,
+    Tool,
 )
 
 from scripts import entry_consistency_probe
+from scripts.mcp_streamable_contract import REQUIRED_DOMAIN_TOOLS
 
 TEST_PASSWORD = "entry-consistency-test-password"  # noqa: S105
 
@@ -28,7 +31,7 @@ def _entity(name: str = "Entry consistency marker-1") -> dict[str, Any]:
             "acceptance_fixture_kind": "entry_consistency",
             "acceptance_fixture_marker": "marker-1",
         },
-        "review_status": "draft",
+        "review_status": "verified",
         "canonical_entity_id": "entity-1",
         "identity_identifiers": [
             {
@@ -36,7 +39,7 @@ def _entity(name: str = "Entry consistency marker-1") -> dict[str, Any]:
                 "value": "marker-1",
                 "normalized_value": "marker-1",
                 "trusted_namespace": False,
-                "review_status": "draft",
+                "review_status": "verified",
                 "source_document_id": None,
             }
         ],
@@ -46,9 +49,20 @@ def _entity(name: str = "Entry consistency marker-1") -> dict[str, Any]:
 
 
 class FakeMcpSession:
-    def __init__(self, *, entity_name: str = "Entry consistency marker-1") -> None:
+    def __init__(
+        self,
+        *,
+        entity_name: str = "Entry consistency marker-1",
+        tools: set[str] | None = None,
+        engine: str = "opensearch",
+        usage_override: dict[str, Any] | None = None,
+    ) -> None:
         self.entity_name = entity_name
         self.calls: list[str] = []
+        self.tools = set(REQUIRED_DOMAIN_TOOLS) if tools is None else tools
+        self.engine = engine
+        self.usage_override = usage_override or {}
+        self.list_calls = 0
 
     async def initialize(self) -> InitializeResult:
         return InitializeResult(
@@ -57,23 +71,44 @@ class FakeMcpSession:
             serverInfo=Implementation(name="test", version="1"),
         )
 
-    async def list_tools(self, cursor: str | None = None) -> Any:
-        raise AssertionError(f"unexpected tools/list: {cursor}")
+    async def list_tools(self, cursor: str | None = None) -> ListToolsResult:
+        assert cursor is None
+        self.list_calls += 1
+        return ListToolsResult(tools=[Tool(name=name, inputSchema={"type": "object"}) for name in sorted(self.tools)])
 
     async def call_tool(self, name: str, arguments: dict[str, Any] | None = None) -> CallToolResult:
         self.calls.append(name)
         entity = _entity(self.entity_name)
         if name == "get_entity":
-            payload = {"data": entity, "usage": {"settlement_id": "settlement-get"}}
+            payload = {
+                "data": entity,
+                "usage": {
+                    "settlement_id": "settlement-get",
+                    "billing_class": "entity.read",
+                    "result_count": 1,
+                    "charged_units": "1.01",
+                },
+            }
         elif name == "search_entities":
-            payload = {"data": {"items": [entity]}, "usage": {"settlement_id": "settlement-search"}}
+            payload = {
+                "data": {"items": [entity], "engine": self.engine},
+                "usage": {
+                    "settlement_id": "settlement-search",
+                    "billing_class": "entity.search",
+                    "result_count": 1,
+                    "charged_units": "1.01",
+                    **self.usage_override,
+                },
+            }
         else:
             raise AssertionError(f"unexpected MCP tool: {name}")
         return CallToolResult(content=[], structuredContent=payload)
 
 
-def _web_transport() -> httpx.MockTransport:
+def _web_transport(*, published: bool = True) -> httpx.MockTransport:
     entity = _entity()
+    if not published:
+        entity["review_status"] = "draft"
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/api/v1/auth/login":
@@ -86,6 +121,7 @@ def _web_transport() -> httpx.MockTransport:
         if request.url.path == "/api/v1/entities" and request.method == "GET":
             assert request.url.params["q"] == "marker-1"
             assert request.url.params["entity_type"] == "target"
+            assert request.url.params["review_status"] == "verified"
             return httpx.Response(200, json={"items": [entity]})
         return httpx.Response(404)
 
@@ -113,6 +149,37 @@ async def test_entry_consistency_compares_web_and_billed_mcp_facts() -> None:
     assert result["mcp_billed_calls"] == 2
     assert result["unique_settlements"] == 2
     assert mcp.calls == ["get_entity", "search_entities"]
+    assert mcp.list_calls == 1
+    assert result["streamable_http_contract_verified"] is True
+    assert set(REQUIRED_DOMAIN_TOOLS) <= set(result["listed_mcp_tools"])
+
+
+@pytest.mark.parametrize(
+    ("mcp", "message"),
+    [
+        (FakeMcpSession(tools=set(REQUIRED_DOMAIN_TOOLS) - {"get_bioactivity_landscape"}), "omitted required"),
+        (FakeMcpSession(tools=set(REQUIRED_DOMAIN_TOOLS) | {"build_research_bundle"}), "forbidden research"),
+        (FakeMcpSession(engine="postgresql"), "OpenSearch"),
+        (FakeMcpSession(usage_override={"billing_class": "target.profile"}), "entity.search"),
+        (FakeMcpSession(usage_override={"result_count": 0}), "exactly one fixture"),
+        (FakeMcpSession(usage_override={"charged_units": "0.00000000"}), "positive finite"),
+        (FakeMcpSession(usage_override={"charged_units": "NaN"}), "positive finite"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_canonical_probe_preserves_streamable_domain_and_billing_contract(
+    mcp: FakeMcpSession, message: str
+) -> None:
+    async with httpx.AsyncClient(base_url="http://web.test", transport=_web_transport()) as web:
+        with pytest.raises(RuntimeError, match=message):
+            await entry_consistency_probe.verify_clients(
+                web,
+                mcp,
+                email="analyst@example.test",
+                password=TEST_PASSWORD,
+                fixture_marker="marker-1",
+                expected_protocol_version="2025-11-25",
+            )
 
 
 @pytest.mark.asyncio
@@ -122,6 +189,20 @@ async def test_entry_consistency_rejects_cross_entry_field_drift() -> None:
             await entry_consistency_probe.verify_clients(
                 web,
                 FakeMcpSession(entity_name="Drifted name"),
+                email="analyst@example.test",
+                password=TEST_PASSWORD,
+                fixture_marker="marker-1",
+                expected_protocol_version="2025-11-25",
+            )
+
+
+@pytest.mark.asyncio
+async def test_entry_consistency_rejects_draft_without_a_scoped_publication_step() -> None:
+    async with httpx.AsyncClient(base_url="http://web.test", transport=_web_transport(published=False)) as web:
+        with pytest.raises(RuntimeError, match="published fixture"):
+            await entry_consistency_probe.verify_clients(
+                web,
+                FakeMcpSession(),
                 email="analyst@example.test",
                 password=TEST_PASSWORD,
                 fixture_marker="marker-1",

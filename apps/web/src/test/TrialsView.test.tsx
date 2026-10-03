@@ -533,7 +533,6 @@ it("saves and subscribes the applied clinical trial query", async () => {
 
 it("renders the trial detail deep link with design, outcomes, history and provenance access", async () => {
   const onTrialChange = vi.fn();
-  const onReturn = vi.fn();
   const onOpenEntity = vi.fn();
   const onOpenDrug = vi.fn();
   const onOpenTarget = vi.fn();
@@ -583,8 +582,7 @@ it("renders the trial detail deep link with design, outcomes, history and proven
         activeSection={activeSection}
         onSearchChange={vi.fn()}
         onTrialChange={onTrialChange}
-        returnLabel={contextual ? "返回靶点档案" : undefined}
-        onReturn={contextual ? onReturn : undefined}
+        showListReturn={!contextual}
         onSectionChange={setActiveSection}
         onOpenEntity={onOpenEntity}
         onOpenDrug={onOpenDrug}
@@ -626,8 +624,7 @@ it("renders the trial detail deep link with design, outcomes, history and proven
   expect(screen.getByText("Shanghai Oncology Center")).toBeInTheDocument();
   expect(screen.getByText("First site opened")).toBeInTheDocument();
   expect(screen.getByText("来源记录已收录")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "返回靶点档案" }));
-  expect(onReturn).toHaveBeenCalledOnce();
+  expect(screen.queryByRole("button", { name: "返回试验列表" })).not.toBeInTheDocument();
   expect(onTrialChange).not.toHaveBeenCalledWith(null);
 
   view.rerender(<Harness contextual={false} />);

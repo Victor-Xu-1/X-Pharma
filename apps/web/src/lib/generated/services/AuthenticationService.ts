@@ -2,10 +2,15 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { InvitationAcceptance } from '../models/InvitationAcceptance';
 import type { InvitationCreate } from '../models/InvitationCreate';
 import type { InvitationIssued } from '../models/InvitationIssued';
 import type { InvitationRead } from '../models/InvitationRead';
 import type { LoginRequest } from '../models/LoginRequest';
+import type { OidcInvitationStart } from '../models/OidcInvitationStart';
+import type { OrganizationJoin } from '../models/OrganizationJoin';
+import type { OrganizationRead } from '../models/OrganizationRead';
+import type { OrganizationSwitch } from '../models/OrganizationSwitch';
 import type { RegistrationPolicy } from '../models/RegistrationPolicy';
 import type { RegistrationRequest } from '../models/RegistrationRequest';
 import type { UserPasswordChange } from '../models/UserPasswordChange';
@@ -24,6 +29,27 @@ export class AuthenticationService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/api/v1/auth/config',
+    });
+  }
+  /**
+   * Accept Invitation With Credentials
+   * Permit a locally verified identity with no active org to accept an invitation.
+   * @returns UserRead Successful Response
+   * @throws ApiError
+   */
+  public static acceptInvitationWithCredentialsApiV1AuthInvitationsAcceptPost({
+    requestBody,
+  }: {
+    requestBody: InvitationAcceptance,
+  }): CancelablePromise<UserRead> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v1/auth/invitations/accept',
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
     });
   }
   /**
@@ -133,6 +159,26 @@ export class AuthenticationService {
     });
   }
   /**
+   * Start Oidc Invitation
+   * @returns OidcInvitationStart Successful Response
+   * @throws ApiError
+   */
+  public static startOidcInvitationApiV1AuthOidcInvitationPost({
+    requestBody,
+  }: {
+    requestBody: OrganizationJoin,
+  }): CancelablePromise<OidcInvitationStart> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v1/auth/oidc/invitation',
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
    * Oidc Login
    * @returns any Successful Response
    * @throws ApiError
@@ -141,6 +187,57 @@ export class AuthenticationService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/api/v1/auth/oidc/login',
+    });
+  }
+  /**
+   * List Organizations
+   * @returns OrganizationRead Successful Response
+   * @throws ApiError
+   */
+  public static listOrganizationsApiV1AuthOrganizationsGet(): CancelablePromise<Array<OrganizationRead>> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v1/auth/organizations',
+    });
+  }
+  /**
+   * Join Organization
+   * @returns OrganizationRead Successful Response
+   * @throws ApiError
+   */
+  public static joinOrganizationApiV1AuthOrganizationsJoinPost({
+    requestBody,
+  }: {
+    requestBody: OrganizationJoin,
+  }): CancelablePromise<OrganizationRead> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v1/auth/organizations/join',
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Switch Organization
+   * @returns UserRead Successful Response
+   * @throws ApiError
+   */
+  public static switchOrganizationApiV1AuthOrganizationsSwitchPost({
+    requestBody,
+  }: {
+    requestBody: OrganizationSwitch,
+  }): CancelablePromise<UserRead> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v1/auth/organizations/switch',
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
     });
   }
   /**

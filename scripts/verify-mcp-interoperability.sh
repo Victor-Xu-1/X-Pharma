@@ -254,6 +254,7 @@ if [[ -z "${COMPOSE_FILE:-}" ]]; then
   fi
 fi
 compose=(docker compose --project-name "$project_name")
+source "$root/scripts/lib/mcp_fixture_http.sh"
 
 remove_local_fixture() {
   local require_present=${1:-1}
@@ -271,9 +272,9 @@ remove_local_fixture() {
   fi
   [[ $fixture_enabled -eq 1 ]] || return 0
   for fixture_target_id in "$fixture_target_id_a" "$fixture_target_id_b"; do
-    curl --disable --silent --show-error --request DELETE \
+    mcp_fixture_opensearch none --request DELETE \
       "http://127.0.0.1:9200/$opensearch_index_prefix-entities-write/_doc/$fixture_tenant_id:$fixture_target_id?routing=$fixture_tenant_id&refresh=true" \
-      --output "$fixture_root/opensearch-delete-$fixture_target_id.json" || cleanup_errors=1
+      > "$fixture_root/opensearch-delete-$fixture_target_id.json" || cleanup_errors=1
   done
   if ! python3 - "$fixture_root" "$require_present" "$fixture_target_id_a" "$fixture_target_id_b" <<'PY'
 import json
@@ -314,7 +315,7 @@ PY
   fi
   [[ "$database_remaining" == "0" ]] || cleanup_errors=1
   for fixture_target_id in "$fixture_target_id_a" "$fixture_target_id_b"; do
-    opensearch_status=$(curl --disable --silent --show-error \
+    opensearch_status=$(mcp_fixture_opensearch none \
       "http://127.0.0.1:9200/$opensearch_index_prefix-entities-read/_doc/$fixture_tenant_id:$fixture_target_id?routing=$fixture_tenant_id" \
       --output /dev/null \
       --write-out '%{http_code}') || cleanup_errors=1
@@ -416,7 +417,13 @@ cleanup_local_fixture() {
   exit "$status"
 }
 
-if [[ "$mcp_url" == "http://127.0.0.1:18390/mcp" ]]; then
+if [[ "$mcp_url" == "http://127.0.0.1:18390/mcp" || $seed_local_commercial_fixture -eq 1 ]]; then
+  # Explicit local seeding must work on an isolated project's published port,
+  # never silently skip the paid-query fixture or mutate a remote deployment.
+  if [[ ! "$mcp_url" =~ ^http://(127\.0\.0\.1|localhost|\[::1\]):[0-9]+/mcp$ ]]; then
+    echo "Local commercial fixtures require a loopback MCP endpoint" >&2
+    exit 2
+  fi
   for command in curl docker; do
     command -v "$command" >/dev/null 2>&1 || {
       echo "required local runtime command is unavailable: $command" >&2
@@ -468,12 +475,14 @@ if [[ "$mcp_url" == "http://127.0.0.1:18390/mcp" ]]; then
     "${compose[@]}" exec -T api python -m pharma_intel.mcp_interoperability_fixture seed \
       --api-key-prefix "$token_prefix" >/dev/null
   fi
+  # These UUID-tagged synthetic records exercise published public queries.
+  # Draft production records remain outside the public query boundary.
   "${compose[@]}" exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -v ON_ERROR_STOP=1 \
     -c "INSERT INTO entities (id, tenant_id, entity_type, name, normalized_name, description, external_ids, attributes, review_status, created_at, updated_at) VALUES
-      ('$fixture_target_id_a', '$fixture_tenant_id', 'TARGET', 'MCP interoperability $acceptance_query Alpha', 'mcp interoperability $acceptance_query alpha', 'Isolated MCP interoperability target fixture Alpha', '{\"acceptance\": \"$acceptance_query\"}'::json, '{\"acceptance_fixture\": true, \"acceptance_fixture_kind\": \"mcp_interoperability\"}'::json, 'DRAFT', now(), now()),
-      ('$fixture_target_id_b', '$fixture_tenant_id', 'TARGET', 'MCP interoperability $acceptance_query Beta', 'mcp interoperability $acceptance_query beta', 'Isolated MCP interoperability target fixture Beta', '{\"acceptance\": \"$acceptance_query\"}'::json, '{\"acceptance_fixture\": true, \"acceptance_fixture_kind\": \"mcp_interoperability\"}'::json, 'DRAFT', now(), now()),
-      ('$fixture_drug_id_a', '$fixture_tenant_id', 'DRUG', 'MCP candidate $acceptance_query Alpha', 'mcp candidate $acceptance_query alpha', 'Isolated MCP competitive drug fixture Alpha', '{}'::json, '{\"acceptance_fixture\": true, \"acceptance_fixture_kind\": \"mcp_interoperability\"}'::json, 'DRAFT', now(), now()),
-      ('$fixture_drug_id_b', '$fixture_tenant_id', 'DRUG', 'MCP candidate $acceptance_query Beta', 'mcp candidate $acceptance_query beta', 'Isolated MCP competitive drug fixture Beta', '{}'::json, '{\"acceptance_fixture\": true, \"acceptance_fixture_kind\": \"mcp_interoperability\"}'::json, 'DRAFT', now(), now());
+      ('$fixture_target_id_a', '$fixture_tenant_id', 'TARGET', 'MCP interoperability $acceptance_query Alpha', 'mcp interoperability $acceptance_query alpha', 'Isolated MCP interoperability target fixture Alpha', '{\"acceptance\": \"$acceptance_query\"}'::json, '{\"acceptance_fixture\": true, \"acceptance_fixture_kind\": \"mcp_interoperability\"}'::json, 'VERIFIED', now(), now()),
+      ('$fixture_target_id_b', '$fixture_tenant_id', 'TARGET', 'MCP interoperability $acceptance_query Beta', 'mcp interoperability $acceptance_query beta', 'Isolated MCP interoperability target fixture Beta', '{\"acceptance\": \"$acceptance_query\"}'::json, '{\"acceptance_fixture\": true, \"acceptance_fixture_kind\": \"mcp_interoperability\"}'::json, 'VERIFIED', now(), now()),
+      ('$fixture_drug_id_a', '$fixture_tenant_id', 'DRUG', 'MCP candidate $acceptance_query Alpha', 'mcp candidate $acceptance_query alpha', 'Isolated MCP competitive drug fixture Alpha', '{}'::json, '{\"acceptance_fixture\": true, \"acceptance_fixture_kind\": \"mcp_interoperability\"}'::json, 'VERIFIED', now(), now()),
+      ('$fixture_drug_id_b', '$fixture_tenant_id', 'DRUG', 'MCP candidate $acceptance_query Beta', 'mcp candidate $acceptance_query beta', 'Isolated MCP competitive drug fixture Beta', '{}'::json, '{\"acceptance_fixture\": true, \"acceptance_fixture_kind\": \"mcp_interoperability\"}'::json, 'VERIFIED', now(), now());
       INSERT INTO development_programs (
         id, tenant_id, drug_entity_id, target_entity_id, modality, mechanism_of_action, phase,
         status_date, geography, status_detail, global_phase, china_phase,
@@ -510,7 +519,7 @@ for entity_id, suffix in ((target_a, "Alpha"), (target_b, "Beta")):
         "description": f"Isolated MCP interoperability target fixture {suffix}",
         "external_id_values": [query],
         "external_ids": {"acceptance": query},
-        "review_status": "draft",
+        "review_status": "verified",
         "updated_at": datetime.now(UTC).isoformat(),
     }
     (Path(root) / f"entity-{entity_id}.json").write_text(
@@ -519,11 +528,12 @@ for entity_id, suffix in ((target_a, "Alpha"), (target_b, "Beta")):
     )
 PY
   for fixture_target_id in "$fixture_target_id_a" "$fixture_target_id_b"; do
-    curl --disable --fail --silent --show-error --request PUT \
+    mcp_fixture_opensearch body --fail --request PUT \
       "http://127.0.0.1:9200/$opensearch_index_prefix-entities-write/_doc/$fixture_tenant_id:$fixture_target_id?routing=$fixture_tenant_id&refresh=true" \
       --header 'Content-Type: application/json' \
-      --data-binary "@$fixture_root/entity-$fixture_target_id.json" \
-      --output "$fixture_root/opensearch-index-$fixture_target_id.json"
+      --data-binary @- \
+      < "$fixture_root/entity-$fixture_target_id.json" \
+      > "$fixture_root/opensearch-index-$fixture_target_id.json"
   done
 elif [[ -z "$acceptance_query" ]]; then
   echo "MCP_ACCEPTANCE_QUERY is required for a non-local MCP endpoint" >&2

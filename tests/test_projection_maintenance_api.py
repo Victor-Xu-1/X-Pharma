@@ -7,10 +7,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.api import app
 from pharma_intel.config import get_settings
 from pharma_intel.db import get_session
-from pharma_intel.models import AuditEvent, Tenant, User, UserRole
+from pharma_intel.models import AuditEvent, Tenant, UserRole
 from pharma_intel.security import PLATFORM_PROJECTION_SCOPE, Principal, hash_password, require_principal
 
 
@@ -18,7 +19,7 @@ def test_projection_maintenance_requires_explicit_platform_operator_scope(
     session: Session,
     tenant: Tenant,
 ) -> None:
-    administrator = User(
+    administrator = create_account(
         tenant_id=tenant.id,
         email="operator@example.test",
         normalized_email="operator@example.test",
@@ -121,7 +122,7 @@ def test_configured_platform_operator_receives_exact_scope_through_human_session
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     password = "configured-platform-operator-password"  # noqa: S105
-    administrator = User(
+    administrator = create_account(
         tenant_id=tenant.id,
         email="configured-operator@example.test",
         normalized_email="configured-operator@example.test",

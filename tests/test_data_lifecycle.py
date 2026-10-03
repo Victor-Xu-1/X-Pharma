@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.governance.lifecycle import DataLifecycleService, LifecycleConflict
 from pharma_intel.models import (
     DataExportJob,
@@ -22,7 +23,6 @@ from pharma_intel.models import (
     SourceVersion,
     StagedFact,
     Tenant,
-    User,
     UserRole,
 )
 from pharma_intel.object_store import FileSystemObjectStore
@@ -30,7 +30,7 @@ from pharma_intel.security import Principal
 
 
 def _principal(session: Session, tenant: Tenant) -> Principal:
-    user = User(
+    user = create_account(
         tenant_id=tenant.id,
         email="lifecycle@example.test",
         normalized_email=f"lifecycle-{tenant.id}@example.test",

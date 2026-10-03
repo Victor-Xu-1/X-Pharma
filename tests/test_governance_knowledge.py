@@ -8,7 +8,11 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.config import Settings
+from pharma_intel.governance.citations import _quote_source_match
+from pharma_intel.governance.contracts import DocumentSegment
+from pharma_intel.governance.materialize_programs import materialize_program
 from pharma_intel.governance.model_gateway import (
     ExtractionResponse,
     ModelGatewayError,
@@ -39,14 +43,12 @@ from pharma_intel.governance.schemas import (
     TrialResultDisclosureFact,
 )
 from pharma_intel.governance.service import (
-    DocumentSegment,
     GovernanceError,
     GovernanceService,
-    _quote_source_match,
-    _should_update_temporal_state,
     governance_policy_manifest,
     governance_policy_sha256,
 )
+from pharma_intel.governance.temporal_merge import _should_update_temporal_state
 from pharma_intel.intelligence import IntelligenceService
 from pharma_intel.knowledge.compiler import KnowledgeCompiler
 from pharma_intel.models import (
@@ -95,7 +97,6 @@ from pharma_intel.models import (
     Tenant,
     TrialEntityRole,
     TrialResultDisclosureType,
-    User,
     UserRole,
 )
 from pharma_intel.object_store import FileSystemObjectStore
@@ -683,7 +684,7 @@ def test_ai_facts_are_quote_gated_reviewed_published_and_compiled(
     assert session.scalar(select(func.count()).select_from(FactProvenanceLink)) == 3
     assert session.scalar(select(func.count()).select_from(ReviewTask)) == 10
 
-    reviewer = User(
+    reviewer = create_account(
         tenant_id=tenant.id,
         email="reviewer@example.test",
         normalized_email="reviewer@example.test",
@@ -826,7 +827,7 @@ def test_ai_facts_are_quote_gated_reviewed_published_and_compiled(
     assert governed_program_organization.position == 0
     staged_program = session.scalar(select(StagedFact).where(StagedFact.fact_kind == "program"))
     assert staged_program is not None
-    service._materialize_program(staged_program, staged_program.payload)
+    materialize_program(service, staged_program, staged_program.payload)
     session.flush()
     assert session.scalar(select(func.count()).select_from(DevelopmentProgram)) == 1
     assert session.scalar(select(func.count()).select_from(DevelopmentProgramOrganization)) == 1

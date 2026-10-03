@@ -12,10 +12,11 @@ from pydantic import ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-import pharma_intel.api as api_module
+import pharma_intel.http.workspace as workspace_module
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.api import app
 from pharma_intel.db import get_session
-from pharma_intel.models import AuditEvent, Tenant, User, UserRole
+from pharma_intel.models import AuditEvent, Tenant, UserRole
 from pharma_intel.operational_metrics import (
     OPERATIONAL_METRIC_NAMES,
     WEB_VITAL_CLS_BUCKETS,
@@ -116,7 +117,7 @@ def test_web_vital_api_accepts_bounded_human_batches_and_rejects_agents(
         "user",
         frozenset({"entities:read"}),
     )
-    monkeypatch.setattr(api_module, "operational_metrics", lambda: RecordingMetrics())
+    monkeypatch.setattr(workspace_module, "operational_metrics", lambda: RecordingMetrics())
     try:
         with TestClient(app) as client:
             response = client.post(
@@ -172,7 +173,7 @@ def test_web_vital_api_requires_real_human_csrf_without_expanding_business_audit
     session: Session,
     tenant: Tenant,
 ) -> None:
-    user = User(
+    user = create_account(
         tenant_id=tenant.id,
         email="rum-auth@example.test",
         normalized_email="rum-auth@example.test",
@@ -192,7 +193,7 @@ def test_web_vital_api_requires_real_human_csrf_without_expanding_business_audit
         yield session
 
     app.dependency_overrides[get_session] = session_override
-    monkeypatch.setattr(api_module, "operational_metrics", lambda: RecordingMetrics())
+    monkeypatch.setattr(workspace_module, "operational_metrics", lambda: RecordingMetrics())
     try:
         with TestClient(app) as client:
             login = client.post(

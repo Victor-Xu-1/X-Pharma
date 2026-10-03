@@ -10,6 +10,7 @@ from sqlalchemy import create_engine, func, select, text, update
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.api import app
 from pharma_intel.db import get_session, set_tenant_context
 from pharma_intel.models import (
@@ -22,7 +23,6 @@ from pharma_intel.models import (
     ReviewStatus,
     TargetProfile,
     Tenant,
-    User,
     UserRole,
 )
 from pharma_intel.security import Principal, require_principal
@@ -69,7 +69,7 @@ def test_entity_resolution_api_is_reversible_tenant_scoped_and_append_only() -> 
             source = _entity(session, tenant_id, "ERBB2 imported")
             candidate = _entity(session, tenant_id, "HER2 canonical")
             target_profile = TargetProfile(tenant_id=tenant_id, entity_id=candidate.id, gene_symbol="ERBB2")
-            reviewer = User(
+            reviewer = create_account(
                 tenant_id=tenant_id,
                 email=f"resolution-{tenant_id}@example.test",
                 normalized_email=f"resolution-{tenant_id}@example.test",

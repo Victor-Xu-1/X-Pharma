@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import { EntityFilterSelect } from "../components/EntityFilterSelect";
@@ -41,6 +41,27 @@ beforeEach(() => {
   vi.mocked(lookupEntityTypes).mockResolvedValue([target]);
   vi.mocked(getEntity).mockResolvedValue(target);
 });
+
+it.each(["", "x", "unresolved"])(
+  "never submits an unresolved candidate input, including closed or short query %j",
+  (query) => {
+    const onChange = vi.fn();
+    renderWithQueryClient(
+      <EntityFilterSelect
+        label="关联实体"
+        entityType="target"
+        value=""
+        onChange={onChange}
+        placeholder="输入关联实体"
+      />,
+    );
+    const input = screen.getByRole("combobox");
+    fireEvent.change(input, { target: { value: query } });
+    if (query.length >= 2) fireEvent.keyDown(input, { key: "Escape" });
+    expect(fireEvent.keyDown(input, { key: "Enter" })).toBe(false);
+    expect(onChange).not.toHaveBeenCalled();
+  },
+);
 
 it("searches and restores one stable entity across multiple governed types", async () => {
   const onChange = vi.fn();
@@ -187,4 +208,54 @@ it("uses public-facing language for the selector and empty result", async () => 
 
   expect(await screen.findByText("未找到匹配项")).toBeInTheDocument();
   expect(group).not.toHaveTextContent("规范实体");
+});
+
+it.each(["ALK", "E"])("never offers candidates for the previous query while typing %s", async (nextQuery) => {
+  const onChange = vi.fn();
+  renderWithQueryClient(
+    <EntityFilterSelect label="靶点" entityType="target" value="" onChange={onChange} placeholder="输入靶点" />,
+  );
+  const input = screen.getByRole("combobox", { name: "靶点筛选" });
+  fireEvent.change(input, { target: { value: "EGFR" } });
+  await screen.findByRole("option", { name: /EGFR/ });
+  fireEvent.change(input, { target: { value: nextQuery } });
+  expect(screen.queryByRole("option", { name: /EGFR/ })).not.toBeInTheDocument();
+  expect(input).not.toHaveAttribute("aria-activedescendant");
+  fireEvent.keyDown(input, { key: "ArrowDown" });
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(onChange).not.toHaveBeenCalled();
+});
+
+it("offers an explicit bounded retry when the candidate lookup fails", async () => {
+  vi.mocked(lookupEntities).mockRejectedValueOnce(new Error("lookup unavailable"));
+  const onChange = vi.fn();
+  renderWithQueryClient(
+    <EntityFilterSelect label="靶点" entityType="target" value="" onChange={onChange} placeholder="输入靶点" />,
+  );
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "EGFR" } });
+  const retry = await screen.findByRole("button", { name: "重试靶点候选检索" });
+  expect(screen.queryByRole("option")).not.toBeInTheDocument();
+  expect(onChange).not.toHaveBeenCalled();
+  retry.focus();
+  fireEvent.click(retry);
+  expect(screen.getByRole("combobox")).toHaveFocus();
+  await screen.findByRole("option", { name: /EGFR/ });
+  await waitFor(() => expect(lookupEntities).toHaveBeenCalledTimes(2));
+});
+
+it("closes only the candidate popup on the first Escape", async () => {
+  const parentKey = vi.fn();
+  renderWithQueryClient(
+    <div role="dialog" aria-label="父弹窗" tabIndex={-1} onKeyDown={parentKey}>
+      <EntityFilterSelect label="靶点" entityType="target" value="" onChange={vi.fn()} placeholder="输入靶点" />
+    </div>,
+  );
+  const input = screen.getByRole("combobox");
+  fireEvent.change(input, { target: { value: "EGFR" } });
+  await screen.findByRole("option");
+  fireEvent.keyDown(input, { key: "Escape" });
+  expect(screen.queryByRole("option")).not.toBeInTheDocument();
+  expect(parentKey).not.toHaveBeenCalled();
+  fireEvent.keyDown(input, { key: "Escape" });
+  expect(parentKey).toHaveBeenCalledOnce();
 });

@@ -15,7 +15,8 @@ import { loadRecordProvenance } from "../lib/contracts/provenance";
 import { loadTargetDossier, loadTargetSar } from "../lib/contracts/target";
 import type { Entity } from "../lib/types";
 import type { TargetDossierSection } from "../lib/workspaceRouting";
-import { pipelineProgramStatusLabel, pipelineSelectOptions, TargetView } from "../views/TargetView";
+import { TargetView } from "../views/TargetView";
+import { pipelineProgramStatusLabel, pipelineSelectOptions } from "../views/target/pipeline/presentation";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/target", () => ({
@@ -78,8 +79,6 @@ function renderTargetView({
   onPipelineLandscapeFilterApply,
   onPipelineDisplayModeChange = vi.fn(),
   onPipelineAnalysisChange = vi.fn(),
-  returnLabel,
-  onReturn,
   initialPipelineFilters,
   initialPipelineDisplayMode,
   initialPipelineAnalysis,
@@ -102,8 +101,6 @@ function renderTargetView({
   ) => void;
   onPipelineDisplayModeChange?: (displayMode: "drug" | "program" | "landscape") => void;
   onPipelineAnalysisChange?: (analysis: TargetPipelineAnalysisState) => void;
-  returnLabel?: string;
-  onReturn?: () => void;
   initialPipelineFilters?: Parameters<typeof searchPipelines>[0];
   initialPipelineDisplayMode?: "drug" | "program" | "landscape";
   initialPipelineAnalysis?: TargetPipelineAnalysisState;
@@ -134,8 +131,6 @@ function renderTargetView({
         onPipelineDisplayModeChange={onPipelineDisplayModeChange}
         initialPipelineAnalysis={initialPipelineAnalysis}
         onPipelineAnalysisChange={onPipelineAnalysisChange}
-        returnLabel={returnLabel}
-        onReturn={onReturn}
       />
     );
   }
@@ -435,15 +430,6 @@ beforeEach(() => {
     license_scopes: [],
     warnings: [],
   });
-});
-
-it("keeps a clear return path to the originating drug dossier", async () => {
-  const onReturn = vi.fn();
-  renderTargetView({ returnLabel: "返回 LAZERTINIB MESYLATE 药物档案", onReturn });
-
-  const returnButton = await screen.findByRole("button", { name: "返回 LAZERTINIB MESYLATE 药物档案" });
-  fireEvent.click(returnButton);
-  expect(onReturn).toHaveBeenCalledOnce();
 });
 
 it("presents linked trial phases and recruitment states in novice-friendly Chinese", async () => {

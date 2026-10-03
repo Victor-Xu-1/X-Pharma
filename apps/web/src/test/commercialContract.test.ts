@@ -1,6 +1,14 @@
 import { afterEach, expect, it, vi } from "vitest";
 
-import { loadCommercialRiskPage, loadCommercialWorkspace, loadLifecycleWorkspace } from "../lib/contracts/commercial";
+import {
+  loadCommercialBilling,
+  loadCommercialClients,
+  loadCommercialDisputes,
+  loadCommercialExports,
+  loadCommercialOverview,
+  loadCommercialRiskPage,
+  loadLifecycleWorkspace,
+} from "../lib/contracts/commercial";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -20,7 +28,13 @@ it("uses generated commercial routes and preserves operator filters", async () =
     );
   });
 
-  await loadCommercialWorkspace("dead", "investigating");
+  await Promise.all([
+    loadCommercialOverview(),
+    loadCommercialClients(),
+    loadCommercialBilling("dead"),
+    loadCommercialDisputes("investigating"),
+    loadCommercialExports(),
+  ]);
 
   expect(urls).toHaveLength(6);
   expect(urls.some((url) => url.includes("/billing-deliveries?") && url.includes("delivery_state=dead"))).toBe(true);
@@ -29,7 +43,7 @@ it("uses generated commercial routes and preserves operator filters", async () =
   );
 });
 
-it("cancels all six commercial requests when the owning query is abandoned", async () => {
+it("cancels both billing-pane requests when the owning query is abandoned", async () => {
   const signals: AbortSignal[] = [];
   let resolveStarted: () => void = () => undefined;
   const started = new Promise<void>((resolve) => {
@@ -39,19 +53,19 @@ it("cancels all six commercial requests when the owning query is abandoned", asy
     const signal = init?.signal;
     if (!(signal instanceof AbortSignal)) throw new Error("Expected a request AbortSignal");
     signals.push(signal);
-    if (signals.length === 6) resolveStarted();
+    if (signals.length === 2) resolveStarted();
     return new Promise((_resolve, reject) => {
       signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
     });
   });
   const controller = new AbortController();
 
-  const workspace = loadCommercialWorkspace("all", "all", controller.signal);
+  const workspace = loadCommercialBilling("all", controller.signal);
   await started;
   controller.abort();
 
   await expect(workspace).rejects.toBeDefined();
-  expect(signals).toHaveLength(6);
+  expect(signals).toHaveLength(2);
   expect(signals.every((signal) => signal.aborted)).toBe(true);
 });
 

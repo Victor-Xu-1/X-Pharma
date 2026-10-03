@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 
 import { AccessDeniedState, Spinner } from "./components/common";
+import { OrganizationPanel } from "./components/OrganizationPanel";
 import { SessionBoundary } from "./components/SessionBoundary";
 import { WorkspaceShell } from "./components/WorkspaceShell";
 import type { AuthMode } from "./lib/contracts/session";
@@ -94,6 +95,7 @@ function InternalWorkspace({
     return (
       <div className="session-loading">
         <AccessDeniedState onReturn={onLogout} actionLabel={logoutPending ? "退出中…" : "退出账号"} />
+        <OrganizationPanel />
         {logoutError ? (
           <p className="form-error" role="alert">
             {logoutError}

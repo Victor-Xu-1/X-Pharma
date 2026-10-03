@@ -8,6 +8,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.config import Settings
 from pharma_intel.models import (
     AgentClient,
@@ -19,7 +20,6 @@ from pharma_intel.models import (
     Entity,
     EntityType,
     Tenant,
-    User,
     UserRole,
 )
 from pharma_intel.runtime_hygiene import inspect_runtime_hygiene
@@ -49,7 +49,7 @@ def test_runtime_hygiene_accepts_clean_runtime(
         session.flush()
         (object_root / tenant.id).mkdir()
         session.add(
-            User(
+            create_account(
                 tenant_id=tenant.id,
                 email="operator@customer.invalid",
                 normalized_email="operator@customer.invalid",
@@ -90,7 +90,7 @@ def test_runtime_hygiene_reports_synthetic_and_orphaned_state(
         session.flush()
         session.add_all(
             [
-                User(
+                create_account(
                     tenant_id=tenant.id,
                     email="acceptance@example.test",
                     normalized_email="acceptance@example.test",

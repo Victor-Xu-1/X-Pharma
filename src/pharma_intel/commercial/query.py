@@ -7,14 +7,21 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from pharma_intel.commercial.billing_operations import BILLING_CONSUMER_NAME, BILLING_STATEMENT_EVENT_TYPE
 from pharma_intel.models import (
     AgentClient,
     BillingAccount,
+    BillingDispute,
+    BillingPeriodStatement,
     CommercialCoverageRecord,
     CommercialEntitlement,
     CommercialPolicyEvent,
     CommercialRiskCase,
     CommercialSubscription,
+    DataExportJob,
+    OutboxEvent,
+    ProjectionDelivery,
+    ProjectionDeliveryState,
     RateCardVersion,
     UsageEvent,
     UsageReservation,
@@ -45,12 +52,64 @@ def commercial_overview(session: Session, tenant_id: str, *, now: datetime | Non
             .order_by(CommercialSubscription.subscription_key)
         ).all()
     )
+    # Counts belong to the full authorized set, not to independently bounded UI lists.
+    counts = {
+        "active_client_count": int(
+            session.scalar(
+                select(func.count())
+                .select_from(AgentClient)
+                .where(
+                    AgentClient.tenant_id == tenant_id,
+                    AgentClient.active.is_(True),
+                )
+            )
+            or 0
+        ),
+        "pending_export_count": int(
+            session.scalar(
+                select(func.count())
+                .select_from(DataExportJob)
+                .where(
+                    DataExportJob.tenant_id == tenant_id,
+                    DataExportJob.state.in_(["pending_approval", "queued", "running"]),
+                )
+            )
+            or 0
+        ),
+        "open_dispute_count": int(
+            session.scalar(
+                select(func.count())
+                .select_from(BillingDispute)
+                .where(
+                    BillingDispute.tenant_id == tenant_id,
+                    BillingDispute.status.in_(["open", "investigating"]),
+                )
+            )
+            or 0
+        ),
+        "dead_billing_delivery_count": int(
+            session.scalar(
+                select(func.count(func.distinct(OutboxEvent.id)))
+                .join(BillingPeriodStatement, BillingPeriodStatement.id == OutboxEvent.aggregate_id)
+                .join(BillingAccount, BillingAccount.id == BillingPeriodStatement.billing_account_id)
+                .join(ProjectionDelivery, ProjectionDelivery.outbox_event_id == OutboxEvent.id)
+                .where(
+                    OutboxEvent.tenant_id == tenant_id,
+                    OutboxEvent.event_type == BILLING_STATEMENT_EVENT_TYPE,
+                    ProjectionDelivery.consumer_name == BILLING_CONSUMER_NAME,
+                    ProjectionDelivery.state == ProjectionDeliveryState.DEAD,
+                )
+            )
+            or 0
+        ),
+    }
     if not subscriptions:
         return {
             "as_of": timestamp,
             "period_start": period_start,
             "open_risk_count": open_risk_count,
             "subscriptions": [],
+            **counts,
         }
 
     subscription_ids = [item.id for item in subscriptions]
@@ -192,6 +251,7 @@ def commercial_overview(session: Session, tenant_id: str, *, now: datetime | Non
         "period_start": period_start,
         "open_risk_count": open_risk_count,
         "subscriptions": rows,
+        **counts,
     }
 
 

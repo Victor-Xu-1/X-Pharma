@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { canAccessView, canAccessWorkbench, parseWorkbenchLocation, workspaceUrl } from "../lib/workspaceRouting";
-import { pipelineFiltersFromLocation } from "../ResearchApp";
+import { pipelineFiltersFromLocation } from "../workspaces/research/locationModel";
 
 describe("workspace URL contract", () => {
   it("opens the research workbench at intelligence search while keeping the user center explicit", () => {
@@ -200,7 +200,7 @@ describe("workspace URL contract", () => {
     expect(
       parseWorkbenchLocation(
         "research",
-        "?view=drug&entity=550e8400-e29b-41d4-a716-446655440000&from=%2Fworkspace%2Fresearch%3Fview%3Dexplorer%26q%3DEGFR",
+        "?view=drug&entity=550e8400-e29b-41d4-a716-446655440000&from=%2Fworkspace%2Fresearch%3Fview%3Dunknown%26q%3DEGFR",
       ).returnTo,
     ).toBeUndefined();
     expect(
@@ -218,7 +218,7 @@ describe("workspace URL contract", () => {
     expect(
       parseWorkbenchLocation(
         "research",
-        "?view=target&entity=550e8400-e29b-41d4-a716-446655440000&from=%2Fworkspace%2Fresearch%3Fview%3Dexplorer%26q%3DEGFR",
+        "?view=target&entity=550e8400-e29b-41d4-a716-446655440000&from=%2Fworkspace%2Fresearch%3Fview%3Dfactory%26q%3DEGFR",
       ).returnTo,
     ).toBeUndefined();
     expect(
@@ -230,7 +230,7 @@ describe("workspace URL contract", () => {
     expect(
       parseWorkbenchLocation(
         "research",
-        "?view=trials&trial=770e8400-e29b-41d4-a716-446655440000&from=%2Fworkspace%2Fresearch%3Fview%3Dexplorer%26q%3DEGFR",
+        "?view=trials&trial=770e8400-e29b-41d4-a716-446655440000&from=%2Fworkspace%2Fresearch%3Fview%3Denterprise%26q%3DEGFR",
       ).returnTo,
     ).toBeUndefined();
   });

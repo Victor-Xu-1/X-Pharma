@@ -51,13 +51,21 @@ def get_session(request: Request) -> Generator[Session]:
 @event.listens_for(Session, "after_begin")
 def _set_postgres_tenant_context(session: Session, _transaction: object, connection: Connection) -> None:
     tenant_id = session.info.get("tenant_id")
-    if not tenant_id or connection.dialect.name != "postgresql":
+    if connection.dialect.name != "postgresql":
         return
-    signature = _sign_tenant_context(tenant_id, session.info.get("tenant_context_signing_secret"))
-    connection.exec_driver_sql(
-        "SELECT set_config('app.tenant_id', %s, true), set_config('app.tenant_signature', %s, true)",
-        (tenant_id, signature),
-    )
+    if tenant_id:
+        signature = _sign_tenant_context(tenant_id, session.info.get("tenant_context_signing_secret"))
+        connection.exec_driver_sql(
+            "SELECT set_config('app.tenant_id', %s, true), set_config('app.tenant_signature', %s, true)",
+            (tenant_id, signature),
+        )
+    account_id = session.info.get("account_id")
+    if account_id:
+        signature = _sign_tenant_context("account:" + account_id, session.info.get("tenant_context_signing_secret"))
+        connection.exec_driver_sql(
+            "SELECT set_config('app.account_id', %s, true), set_config('app.account_signature', %s, true)",
+            (account_id, signature),
+        )
 
 
 def _sign_tenant_context(tenant_id: str, signing_secret: object = None) -> str:
@@ -79,5 +87,31 @@ def set_tenant_context(session: Session, tenant_id: str, *, signing_secret: str 
                 "SELECT set_config('app.tenant_id', :tenant_id, true), "
                 "set_config('app.tenant_signature', :signature, true)"
             ),
-            {"tenant_id": tenant_id, "signature": _sign_tenant_context(tenant_id, signing_secret)},
+            {
+                "tenant_id": tenant_id,
+                "signature": _sign_tenant_context(tenant_id, session.info.get("tenant_context_signing_secret")),
+            },
+        )
+
+
+def set_account_context(session: Session, account_id: str, *, signing_secret: str | None = None) -> None:
+    """Permit verified identities to read only their own membership catalog.
+
+    This never grants cross-organization write or business-data access.
+    """
+    session.info["account_id"] = account_id
+    if signing_secret is not None:
+        session.info["tenant_context_signing_secret"] = signing_secret
+    if session.in_transaction() and session.get_bind().dialect.name == "postgresql":
+        session.execute(
+            text(
+                "SELECT set_config('app.account_id', :account_id, true), "
+                "set_config('app.account_signature', :signature, true)"
+            ),
+            {
+                "account_id": account_id,
+                "signature": _sign_tenant_context(
+                    "account:" + account_id, session.info.get("tenant_context_signing_secret")
+                ),
+            },
         )

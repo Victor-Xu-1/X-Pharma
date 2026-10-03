@@ -8,6 +8,7 @@ export type UserRead = {
   display_name: string;
   email: string;
   id: string;
+  organization_name?: (string | null);
   phone: (string | null);
   role: UserRole;
   tenant_id: string;

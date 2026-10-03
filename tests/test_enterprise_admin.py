@@ -8,12 +8,14 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.api import app
 from pharma_intel.db import get_session
 from pharma_intel.enterprise.admin import (
     AuditCursorCodec,
     CreateGroupCommand,
     CreateUserCommand,
+    EnterpriseAdminAccessDenied,
     EnterpriseAdminConflict,
     EnterpriseAdminNotFound,
     EnterpriseAdminService,
@@ -38,7 +40,7 @@ CURSOR_SECRET = "enterprise-audit-cursor-test-secret-32-bytes"  # noqa: S105
 
 
 def _user(tenant_id: str, email: str, role: UserRole, *, active: bool = True) -> User:
-    return User(
+    return create_account(
         tenant_id=tenant_id,
         email=email,
         normalized_email=email.casefold(),
@@ -179,7 +181,7 @@ def test_enterprise_admin_protects_self_last_admin_and_tenant_boundaries(
     session.add(operator)
     session.commit()
     operator_service = _service(session, tenant.id, operator.id)
-    with pytest.raises(EnterpriseAdminConflict, match="At least one active administrator"):
+    with pytest.raises(EnterpriseAdminAccessDenied, match="active organization administrator"):
         operator_service.update_user_status(
             actor.id,
             UpdateUserStatusCommand(actor.token_version, False, "Attempt to remove final administrator"),

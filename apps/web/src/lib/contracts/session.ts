@@ -12,17 +12,40 @@ export const sessionKeys = {
   entity: (entityId: string) => ["session", "entity", entityId] as const,
 };
 
+const sessionRequestTimeoutMs = 10_000;
+
 export async function loadSession(signal?: AbortSignal): Promise<SessionSnapshot> {
-  const [config, currentUser] = await Promise.allSettled([
-    contractRequest(AuthenticationService.authenticationConfigApiV1AuthConfigGet(), signal),
-    contractRequest(AuthenticationService.currentUserApiV1AuthMeGet(), signal),
-  ]);
-  if (config.status === "rejected") throw config.reason;
-  const mode = config.value.mode;
-  if (mode !== "local" && mode !== "oidc") throw new Error("身份配置返回了不支持的登录模式");
-  if (currentUser.status === "fulfilled") return { mode, user: currentUser.value };
-  if (currentUser.reason instanceof ApiError && currentUser.reason.status === 401) return { mode, user: null };
-  throw currentUser.reason;
+  const requestScope = new AbortController();
+  const cancel = () => requestScope.abort(signal?.reason);
+  if (signal?.aborted) cancel();
+  else signal?.addEventListener("abort", cancel, { once: true });
+  const timeout = new Error("会话验证超时，请检查服务连接后重试");
+  const deadline = setTimeout(() => requestScope.abort(timeout), sessionRequestTimeoutMs);
+  try {
+    const [mode, user] = await Promise.all([
+      contractRequest(AuthenticationService.authenticationConfigApiV1AuthConfigGet(), requestScope.signal).then(
+        (config) => {
+          if (config.mode !== "local" && config.mode !== "oidc") throw new Error("身份配置返回了不支持的登录模式");
+          return config.mode;
+        },
+      ),
+      contractRequest(AuthenticationService.currentUserApiV1AuthMeGet(), requestScope.signal).catch(
+        (error: unknown) => {
+          if (error instanceof ApiError && error.status === 401) return null;
+          throw error;
+        },
+      ),
+    ]);
+    return { mode, user };
+  } catch (error) {
+    if (requestScope.signal.reason === timeout) throw timeout;
+    throw error;
+  } finally {
+    clearTimeout(deadline);
+    signal?.removeEventListener("abort", cancel);
+    // Failure must release its sibling; a retry owns entirely new requests.
+    requestScope.abort();
+  }
 }
 
 export function login(email: string, password: string): Promise<UserRead> {

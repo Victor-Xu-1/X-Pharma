@@ -10,6 +10,7 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.config import Settings
 from pharma_intel.models import (
     Base,
@@ -50,10 +51,10 @@ class QualityFixture(TypedDict):
 
 
 def _quality_fixture(session: Session, tenant: Tenant, tmp_path: Path) -> QualityFixture:
-    owner = User(
+    owner = create_account(
         tenant_id=tenant.id,
-        email="quality-owner@example.test",
-        normalized_email="quality-owner@example.test",
+        email=f"quality-owner-{tenant.id}@example.test",
+        normalized_email=f"quality-owner-{tenant.id}@example.test",
         display_name="Quality Owner",
         password_hash="not-used",  # noqa: S106
         role=UserRole.ANALYST,
@@ -124,7 +125,7 @@ def _quality_fixture(session: Session, tenant: Tenant, tmp_path: Path) -> Qualit
     run = IngestionRun(
         tenant_id=tenant.id,
         data_source_id=source.id,
-        workflow_id="quality-test-run",
+        workflow_id=f"quality-test-run-{tenant.id}",
         state=RunState.FAILED,
     )
     session.add_all([extraction, subject, run])
@@ -298,7 +299,7 @@ def test_quality_issue_assignment_and_versions_enforce_operational_concurrency(
     tmp_path: Path,
 ) -> None:
     fixture = _quality_fixture(session, tenant, tmp_path)
-    viewer = User(
+    viewer = create_account(
         tenant_id=tenant.id,
         email="quality-viewer@example.test",
         normalized_email="quality-viewer@example.test",

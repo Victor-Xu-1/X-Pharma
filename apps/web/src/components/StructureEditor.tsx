@@ -5,6 +5,7 @@ import { StandaloneStructServiceProvider } from "ketcher-standalone/dist/binaryW
 import { Check, Eraser } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { observeStructureAvailability } from "../lib/structureAvailability";
 import { applyStructureEditorAccessibility } from "../lib/structureEditorAccessibility";
 import { isStructureApplyDisabled } from "../lib/structureEditorState";
 
@@ -53,19 +54,29 @@ const simplifiedButtons: ButtonsConfig = {
 
 const STRUCTURE_SERIALIZATION_TIMEOUT_MS = 15_000;
 
-function withTimeout<T>(operation: Promise<T>): Promise<T> {
+function withTimeout<T>(operation: Promise<T>, signal?: AbortSignal): Promise<T> {
   return new Promise((resolve, reject) => {
-    const timeoutId = window.setTimeout(
-      () => reject(new Error("Structure serialization timed out")),
-      STRUCTURE_SERIALIZATION_TIMEOUT_MS,
-    );
+    const release = () => {
+      window.clearTimeout(timeoutId);
+      signal?.removeEventListener("abort", abort);
+    };
+    const abort = () => {
+      release();
+      reject(new DOMException("Structure reading was cancelled", "AbortError"));
+    };
+    const timeoutId = window.setTimeout(() => {
+      release();
+      reject(new Error("Structure serialization timed out"));
+    }, STRUCTURE_SERIALIZATION_TIMEOUT_MS);
+    signal?.addEventListener("abort", abort, { once: true });
+    if (signal?.aborted) abort();
     operation.then(
       (value) => {
-        window.clearTimeout(timeoutId);
+        release();
         resolve(value);
       },
       (error: unknown) => {
-        window.clearTimeout(timeoutId);
+        release();
         reject(error);
       },
     );
@@ -85,23 +96,16 @@ export function StructureEditor({
 }) {
   const provider = useMemo(() => new StandaloneStructServiceProvider(), []);
   const editorRootRef = useRef<HTMLDivElement | null>(null);
-  const ketcherRef = useRef<Ketcher | null>(null);
+  const [ketcher, setKetcher] = useState<Ketcher | null>(null);
+  const valueRef = useRef(value);
+  valueRef.current = value;
   const lastLoadedValue = useRef("");
-  const [ready, setReady] = useState(false);
+  const ready = ketcher !== null;
   const [busy, setBusy] = useState(false);
   const [hasStructure, setHasStructure] = useState(Boolean(value.trim()));
   const [status, setStatus] = useState("正在准备结构画板");
-
-  const refreshStructureAvailability = useCallback(async () => {
-    const ketcher = ketcherRef.current;
-    if (!ketcher) return;
-    try {
-      const structure = await withTimeout(format === "smarts" ? ketcher.getSmarts() : ketcher.getSmiles());
-      setHasStructure(Boolean(structure.trim()));
-    } catch {
-      // Keep the last known state when the editor is still serializing a change.
-    }
-  }, [format]);
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
 
   useEffect(() => {
     const root = editorRootRef.current;
@@ -113,30 +117,22 @@ export function StructureEditor({
   }, []);
 
   useEffect(() => {
-    const root = editorRootRef.current;
-    if (!root || !ready) return;
-    let frameId: number | null = null;
-    const scheduleRefresh = () => {
-      if (frameId !== null) window.cancelAnimationFrame(frameId);
-      frameId = window.requestAnimationFrame(() => {
-        frameId = null;
-        void refreshStructureAvailability();
-      });
-    };
-    const events = ["pointerup", "keyup", "paste", "cut", "drop"] as const;
-    events.forEach((eventName) => {
-      root.addEventListener(eventName, scheduleRefresh);
+    if (!ketcher) return;
+    return observeStructureAvailability({
+      subscribe: (changed) => {
+        const subscription = ketcher.editor.subscribe("change", changed);
+        return () => ketcher.editor.unsubscribe("change", subscription);
+      },
+      read: (signal) => withTimeout(format === "smarts" ? ketcher.getSmarts() : ketcher.getSmiles(), signal),
+      update: setHasStructure,
+      fail: () => {
+        setStatus("结构读取失败，请重新绘制或刷新画板");
+        onErrorRef.current("无法读取当前画板结构，请重新绘制或刷新画板后重试。");
+      },
     });
-    return () => {
-      if (frameId !== null) window.cancelAnimationFrame(frameId);
-      events.forEach((eventName) => {
-        root.removeEventListener(eventName, scheduleRefresh);
-      });
-    };
-  }, [ready, refreshStructureAvailability]);
+  }, [format, ketcher]);
 
   useEffect(() => {
-    const ketcher = ketcherRef.current;
     if (!ready || !ketcher || value === lastLoadedValue.current) return;
     lastLoadedValue.current = value;
     setHasStructure(Boolean(value.trim()));
@@ -151,30 +147,30 @@ export function StructureEditor({
         setStatus("结构载入失败");
         onError("无法载入当前结构，请检查内容后重试。");
       });
-  }, [onError, ready, value]);
+  }, [ketcher, onError, ready, value]);
 
-  async function initialize(ketcher: Ketcher) {
-    ketcherRef.current = ketcher;
-    setReady(true);
-    if (!value) {
+  const initialize = useCallback(async (instance: Ketcher) => {
+    const initialValue = valueRef.current;
+    if (!initialValue) {
       setHasStructure(false);
       setStatus("可以开始绘制");
+      setKetcher(instance);
       return;
     }
-    lastLoadedValue.current = value;
-    setHasStructure(Boolean(value.trim()));
+    lastLoadedValue.current = initialValue;
+    setHasStructure(false);
     try {
-      await ketcher.setMolecule(value, { needZoom: true });
+      await instance.setMolecule(initialValue, { needZoom: true });
       setHasStructure(true);
       setStatus("结构已载入，可继续编辑");
     } catch {
       setStatus("结构载入失败");
-      onError("无法载入当前结构，请检查内容后重试。");
+      onErrorRef.current("无法载入当前结构，请检查内容后重试。");
     }
-  }
+    setKetcher(instance);
+  }, []);
 
   async function applyStructure() {
-    const ketcher = ketcherRef.current;
     if (!ketcher) return;
     setBusy(true);
     setStatus("正在读取结构");
@@ -200,7 +196,6 @@ export function StructureEditor({
   }
 
   async function clearStructure() {
-    const ketcher = ketcherRef.current;
     if (!ketcher) return;
     setBusy(true);
     try {
@@ -218,12 +213,12 @@ export function StructureEditor({
 
   return (
     <section className="structure-editor" aria-label="结构式编辑器">
-      <div className="structure-editor-canvas" ref={editorRootRef}>
+      <div className="structure-editor-canvas" ref={editorRootRef} inert={busy} aria-busy={busy}>
         <Editor
           staticResourcesUrl={import.meta.env.BASE_URL}
           structServiceProvider={provider}
           errorHandler={() => onError("结构编辑器无法处理当前操作，请调整结构后重试。")}
-          onInit={(ketcher) => void initialize(ketcher)}
+          onInit={initialize}
           buttons={simplifiedButtons}
           disableMacromoleculesEditor
         />

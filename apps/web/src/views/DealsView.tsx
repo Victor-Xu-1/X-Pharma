@@ -10,7 +10,6 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-
 import { AddToComparisonControl } from "../components/AddToComparisonControl";
 import { AppliedFiltersBar } from "../components/AppliedFiltersBar";
 import {
@@ -63,6 +62,7 @@ import { facetOptions } from "../lib/facets";
 import type { DealSearchItemRead } from "../lib/generated";
 import { programTagLabel, publicProgramTags } from "../lib/programDisplay";
 import { publicCoverageNotice } from "../lib/publicWarnings";
+import { useFilterDraft } from "../lib/useFilterDraft";
 import { usePagedEntitySelection } from "../lib/usePagedEntitySelection";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import type { DealDossierSection } from "../lib/workspaceRouting";
@@ -181,7 +181,7 @@ export function DealsView({
   onOpenDisease?: (diseaseId: string) => void;
   onOpenOrganization?: (organizationId: string) => void;
 }) {
-  const [filters, setFilters] = useState(initialFilters);
+  const [filters, setFilters] = useFilterDraft(initialFilters);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [provenanceSelection, setProvenanceSelection] = useState<ProvenanceSelection | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
@@ -236,15 +236,14 @@ export function DealsView({
   );
 
   useEffect(() => {
-    setFilters(initialFilters);
-    setValidationError(null);
-  }, [initialFilters]);
+    if (filters === initialFilters) setValidationError(null);
+  }, [filters, initialFilters]);
 
   useEffect(() => {
     if (!initialFilters.party && initialFilters.partyEntityId && selectedParty.data?.name) {
       setFilters((current) => ({ ...current, party: selectedParty.data?.name ?? "" }));
     }
-  }, [initialFilters.party, initialFilters.partyEntityId, selectedParty.data?.name]);
+  }, [initialFilters.party, initialFilters.partyEntityId, selectedParty.data?.name, setFilters]);
 
   function updateFilter<K extends keyof DealSearchFilters>(key: K, value: DealSearchFilters[K]) {
     setFilters((current) => ({ ...current, [key]: value }));

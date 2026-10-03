@@ -29,9 +29,6 @@ import {
   X,
 } from "lucide-react";
 import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-
-import type { SessionSnapshot } from "../lib/contracts/session";
-import { sessionKeys } from "../lib/contracts/session";
 import {
   defaultWorkspaceTablePreference,
   loadWorkspaceTablePreference,
@@ -41,6 +38,7 @@ import {
   type WorkspaceTablePreferences,
   workspacePreferenceKeys,
 } from "../lib/contracts/workspacePreferences";
+import { useSessionIdentity } from "./SessionIdentityContext";
 
 type TablePreferences = WorkspaceTablePreferences;
 
@@ -134,9 +132,11 @@ export function VirtualDataTable<T>({
   rowSelection?: TableRowSelection<T>;
 }) {
   const queryClient = useQueryClient();
-  const userId = queryClient.getQueryData<SessionSnapshot>(sessionKeys.current)?.user?.id ?? null;
-  const preferenceQueryKey = workspacePreferenceKeys.table(userId ?? "anonymous", preferenceKey);
-  const preferenceIdentity = userId ? `${userId}:${preferenceKey}` : null;
+  const user = useSessionIdentity();
+  const userId = user?.id ?? null;
+  const ownerScope = user ? `${user.tenant_id}:${user.id}` : "anonymous";
+  const preferenceQueryKey = workspacePreferenceKeys.table(ownerScope, preferenceKey);
+  const preferenceIdentity = user ? `${ownerScope}:${preferenceKey}` : null;
   const preferenceQuery = useQuery({
     queryKey: preferenceQueryKey,
     queryFn: ({ signal }) => loadWorkspaceTablePreference(preferenceKey, signal),
@@ -790,7 +790,10 @@ export function VirtualDataTable<T>({
               </tr>
             ))}
           </thead>
-          <tbody className="virtual-table-body" style={{ height: totalHeight }}>
+          <tbody
+            className="virtual-table-body"
+            style={{ height: totalHeight, paddingTop: visibleItems[0]?.start ?? 0 }}
+          >
             {visibleItems.map((virtualRow) => {
               const row = rows[virtualRow.index];
               const rowSelected = selectedRowIdSet.has(row.id);
@@ -801,7 +804,7 @@ export function VirtualDataTable<T>({
                 <tr
                   className={`virtual-table-row virtual-table-data-row${rowSelected ? " is-selected" : ""}`}
                   key={row.id}
-                  style={{ height: virtualRow.size, transform: `translateY(${virtualRow.start}px)` }}
+                  style={{ height: virtualRow.size }}
                 >
                   {rowSelection ? (
                     <td className="virtual-table-cell virtual-table-selection-cell">

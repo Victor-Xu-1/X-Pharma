@@ -1,6 +1,22 @@
+import { readFileSync } from "node:fs";
 import react from "@vitejs/plugin-react";
 import type { Plugin } from "vite";
 import { defineConfig } from "vitest/config";
+
+// OpenAPI is generated from the installed Python metadata owned by pyproject.toml.
+// The Web manifest is a verified mirror, not an independent product release.
+const apiContract = JSON.parse(readFileSync(new URL("../../docs/openapi.json", import.meta.url), "utf8"));
+const webManifest = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
+const productVersion = apiContract.info?.version;
+if (
+  typeof productVersion !== "string" ||
+  !/^\d+\.\d+\.\d+$/.test(productVersion) ||
+  webManifest.version !== productVersion
+) {
+  throw new Error(
+    "Web product version differs from the canonical OpenAPI metadata; regenerate and verify the contract",
+  );
+}
 
 const backendTarget = process.env.WORKBENCH_PROXY_TARGET ?? "http://127.0.0.1:8080";
 const backendProxy = {
@@ -46,7 +62,7 @@ function workbenchEntryRoutes(): Plugin {
 
 export default defineConfig({
   plugins: [workbenchEntryRoutes(), react()],
-  define: { global: "globalThis" },
+  define: { global: "globalThis", __PRODUCT_VERSION__: JSON.stringify(productVersion) },
   resolve: {
     alias: [
       // The small-molecule editor hides these optional scripting/3D paths so the production bundle remains CSP-safe.

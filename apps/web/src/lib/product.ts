@@ -2,5 +2,7 @@ import productLogo from "../assets/brand/X-Pharma-logo-128.png";
 
 /** Public branding is independent of persisted API and storage identifiers. */
 export const PRODUCT_NAME = "X-Pharma";
+export const PRODUCT_VERSION = __PRODUCT_VERSION__;
+export const PRODUCT_RELEASE = `v${PRODUCT_VERSION}`;
 export const OPERATIONS_NAME = `${PRODUCT_NAME} Operations`;
 export const PRODUCT_LOGO_URL = productLogo;

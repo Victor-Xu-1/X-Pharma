@@ -66,8 +66,8 @@ def test_bootstrap_creates_tenant_admin_key_dataset_and_source(
 
     tenant = session.scalar(select(Tenant).where(Tenant.slug == "enterprise"))
     assert tenant is not None
-    user = session.scalar(select(User).where(User.tenant_id == tenant.id))
-    assert user is not None and user.role == UserRole.ADMIN
+    user = session.scalar(select(User).where(User.home_tenant_id == tenant.id))
+    assert user is not None and user.memberships[0].role == UserRole.ADMIN
     assert session.scalar(select(ApiKey).where(ApiKey.tenant_id == tenant.id)) is not None
     assert session.scalar(select(TenantDataset).where(TenantDataset.tenant_id == tenant.id)) is not None
     source = session.scalar(select(DataSource).where(DataSource.tenant_id == tenant.id))

@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.api import app
 from pharma_intel.config import Settings
 from pharma_intel.db import get_session
@@ -77,7 +78,7 @@ from pharma_intel.security import Principal, require_principal
 
 
 def _user(session: Session, tenant: Tenant, suffix: str) -> User:
-    user = User(
+    user = create_account(
         tenant_id=tenant.id,
         email=f"{suffix}@example.test",
         normalized_email=f"{suffix}@example.test",

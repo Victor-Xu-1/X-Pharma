@@ -15,6 +15,7 @@ import jwt
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.config import Settings
 from pharma_intel.models import Tenant, User, UserRole
 from pharma_intel.security import hash_password, normalize_email
@@ -123,7 +124,7 @@ def get_oidc_id_token_verifier(settings: Settings) -> OidcIdTokenVerifier:
     return verifier
 
 
-def create_oidc_authorization(settings: Settings) -> OidcAuthorization:
+def create_oidc_authorization(settings: Settings, *, invitation_code: str | None = None) -> OidcAuthorization:
     state = secrets.token_urlsafe(32)
     nonce = secrets.token_urlsafe(32)
     verifier = secrets.token_urlsafe(64)
@@ -139,6 +140,7 @@ def create_oidc_authorization(settings: Settings) -> OidcAuthorization:
             "iat": now,
             "exp": expires_at,
             "aud": OIDC_TRANSACTION_AUDIENCE,
+            **({"invitation_code": invitation_code} if invitation_code is not None else {}),
         },
         settings.jwt_secret,
         algorithm="HS256",
@@ -181,7 +183,13 @@ def read_oidc_transaction(settings: Settings, token: str, state: str) -> dict[st
     verifier = claims.get("code_verifier")
     if not isinstance(nonce, str) or not nonce or not isinstance(verifier, str) or not verifier:
         raise OidcAuthenticationError("OIDC transaction is incomplete")
-    return {"nonce": nonce, "code_verifier": verifier}
+    result = {"nonce": nonce, "code_verifier": verifier}
+    invitation_code = claims.get("invitation_code")
+    if invitation_code is not None:
+        if not isinstance(invitation_code, str) or len(invitation_code) > 256:
+            raise OidcAuthenticationError("OIDC invitation context is invalid")
+        result["invitation_code"] = invitation_code
+    return result
 
 
 async def exchange_oidc_code(settings: Settings, code: str, verifier: str) -> str:
@@ -216,29 +224,26 @@ async def exchange_oidc_code(settings: Settings, code: str, verifier: str) -> st
     return id_token
 
 
-def resolve_oidc_user(session: Session, settings: Settings, claims: dict[str, Any]) -> User:
+def resolve_oidc_user(
+    session: Session, settings: Settings, claims: dict[str, Any], *, allow_provision: bool = True
+) -> User:
     issuer = str(claims["iss"])
     subject = str(claims["sub"])
-    tenant_claim = claims.get(settings.human_oidc_tenant_claim)
-    if not isinstance(tenant_claim, str) or not tenant_claim:
-        raise OidcAuthenticationError("ID token does not identify a tenant")
     user = session.scalar(
-        select(User)
-        .join(Tenant)
-        .where(
+        select(User).where(
             User.oidc_issuer == issuer,
             User.oidc_subject == subject,
             User.active.is_(True),
-            Tenant.active.is_(True),
         )
     )
     if user is not None:
-        tenant = session.get(Tenant, user.tenant_id)
-        if tenant is None or tenant_claim not in {tenant.id, tenant.slug}:
-            raise OidcAuthenticationError("ID token tenant does not match the linked account")
         return user
-    if not settings.human_oidc_auto_provision:
+    if not allow_provision or not settings.human_oidc_auto_provision:
         raise OidcAuthenticationError("OIDC identity is not provisioned")
+
+    tenant_claim = claims.get(settings.human_oidc_tenant_claim)
+    if not isinstance(tenant_claim, str) or not tenant_claim:
+        raise OidcAuthenticationError("ID token does not identify a tenant")
 
     tenant = session.scalar(
         select(Tenant).where(
@@ -253,7 +258,7 @@ def resolve_oidc_user(session: Session, settings: Settings, claims: dict[str, An
     if len(normalized_email) > 320 or session.scalar(select(User.id).where(User.normalized_email == normalized_email)):
         raise OidcAuthenticationError("OIDC email cannot be auto-provisioned")
     display_name = str(claims.get("name") or email).strip()[:200]
-    user = User(
+    user = create_account(
         tenant_id=tenant.id,
         email=email.strip()[:320],
         normalized_email=normalized_email,

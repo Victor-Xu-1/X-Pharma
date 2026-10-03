@@ -11,6 +11,7 @@ from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, sessionmaker
 
+from pharma_intel.accounts.identity import create_account
 from pharma_intel.config import Settings
 from pharma_intel.db import set_tenant_context
 from pharma_intel.models import (
@@ -21,7 +22,6 @@ from pharma_intel.models import (
     SavedSearchVersion,
     SavedSearchVisibility,
     Tenant,
-    User,
     UserRole,
 )
 from pharma_intel.monitoring.consumer import MonitoringConsumer
@@ -45,7 +45,7 @@ def test_monitoring_delivery_is_concurrent_idempotent_rls_isolated_and_alerts_ar
     with Session(engine, expire_on_commit=False) as session:
         set_tenant_context(session, tenant_id)
         tenant = Tenant(id=tenant_id, slug=f"monitoring-{tenant_id}", name="Monitoring PostgreSQL")
-        user = User(
+        user = create_account(
             tenant_id=tenant_id,
             email=f"monitoring-{tenant_id}@example.test",
             normalized_email=f"monitoring-{tenant_id}@example.test",
@@ -123,7 +123,7 @@ def test_shared_monitoring_revocation_stops_cross_owner_delivery() -> None:
     with Session(engine, expire_on_commit=False) as session:
         set_tenant_context(session, tenant_id)
         tenant = Tenant(id=tenant_id, slug=f"monitoring-revoke-{tenant_id}", name="Monitoring Revocation")
-        owner = User(
+        owner = create_account(
             tenant_id=tenant_id,
             email=f"monitoring-owner-{tenant_id}@example.test",
             normalized_email=f"monitoring-owner-{tenant_id}@example.test",
@@ -131,7 +131,7 @@ def test_shared_monitoring_revocation_stops_cross_owner_delivery() -> None:
             password_hash="not-used",  # noqa: S106
             role=UserRole.ANALYST,
         )
-        colleague = User(
+        colleague = create_account(
             tenant_id=tenant_id,
             email=f"monitoring-colleague-{tenant_id}@example.test",
             normalized_email=f"monitoring-colleague-{tenant_id}@example.test",

@@ -26,7 +26,13 @@ it("preserves canonical multi-type entity filters for governed exports", () => {
   expect(currentDomainExportQuery("entities")).toEqual({
     q: "EGFR",
     entity_types: ["drug", "target"],
+    review_status: "verified",
   });
+});
+
+it("exports the published research result set even when an obsolete URL requests drafts", () => {
+  window.history.replaceState({}, "", "/workspace/research?view=explorer&q=EGFR&review_status=draft");
+  expect(currentDomainExportQuery("entities")).toEqual({ q: "EGFR", review_status: "verified" });
 });
 
 it("preserves repeated normalized trial entities for governed exports", () => {

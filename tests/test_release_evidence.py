@@ -15,8 +15,9 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
 
-import scripts.release_evidence as release_evidence
-from scripts.release_evidence import (
+import scripts.release as release_evidence
+import scripts.release.capture as release_capture
+from scripts.release import (
     SECURITY_REQUIRED_FILES,
     ReleaseEvidenceError,
     _rename_noreplace,
@@ -337,7 +338,7 @@ def test_capture_enforces_log_limit_while_command_is_running(tmp_path: Path, mon
     policy = _policy(tmp_path)
     security = _security(tmp_path, repo)
     output = tmp_path / "bounded" / "quality.json"
-    monkeypatch.setattr(release_evidence, "MAX_CAPTURE_LOG_BYTES", 32)
+    monkeypatch.setattr(release_capture, "MAX_CAPTURE_LOG_BYTES", 32)
 
     with pytest.raises(ReleaseEvidenceError, match="32-byte safety limit"):
         capture_gate(
@@ -2149,8 +2150,8 @@ def _mcp_interoperability_statement(
         "client_version": "1.28.1",
         "protocol_version": "2025-11-25",
         "query_sha256": query_digest,
-        "server_name": "Pharma Intelligence",
-        "server_version": "1.28.1",
+        "server_name": "X-Pharma",
+        "server_version": "0.1.0",
         "status": "passed",
         "target_id": target_id,
         "tool_contract_sha256": contract_digest,
@@ -2214,6 +2215,8 @@ def test_mcp_interoperability_evidence_requires_both_pinned_clients(tmp_path: Pa
         ("production_claim", "scope or status"),
         ("extra_field", "scope or status"),
         ("sdk_drift", "protocol or tool contract"),
+        ("product_version_drift", "version or settlement evidence"),
+        ("product_name_drift", "version or settlement evidence"),
         ("tool_count", "protocol or tool contract"),
         ("contract_drift", "same billed contract"),
         ("client_failed", "same billed contract"),
@@ -2240,6 +2243,10 @@ def test_mcp_interoperability_evidence_rejects_client_or_contract_drift(
         report["uncontracted"] = True
     elif mutation == "sdk_drift":
         report["python_sdk_version"] = "9.9.9"
+    elif mutation == "product_version_drift":
+        sdk["server_version"] = "1.28.1"
+    elif mutation == "product_name_drift":
+        sdk["server_name"] = "Pharma Intelligence"
     elif mutation == "tool_count":
         report["tools"] = 22
     elif mutation == "contract_drift":
