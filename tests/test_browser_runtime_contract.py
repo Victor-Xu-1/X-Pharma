@@ -25,6 +25,13 @@ def _bash_executable() -> str | None:
     return shutil.which("bash")
 
 
+def test_browser_fixture_requires_explicit_organization_before_any_runtime_setup() -> None:
+    script = (Path(__file__).parents[1] / "scripts/run-browser-acceptance.sh").read_text(encoding="utf-8")
+    assert "PHARMA_BROWSER_TENANT_SLUG must explicitly name an active test organization" in script
+    assert "SELECT id, slug FROM tenants ORDER BY created_at, id LIMIT 1" not in script
+    assert script.index("selected_tenant_slug=${PHARMA_BROWSER_TENANT_SLUG:-}") < script.index("for command in curl")
+
+
 def _bash_script_path(path: Path) -> str:
     if os.name != "nt":
         return str(path)

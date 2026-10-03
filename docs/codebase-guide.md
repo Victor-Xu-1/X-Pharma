@@ -98,7 +98,7 @@ ClinicalTrials.gov、NextPharma 与 ChEMBL 的确定性处理分别归属 `adapt
 
 普通浏览器验收只按本次运行生成的邮箱前缀清理账号及其关联记录，不清理其他运行或相似名称的账号。只有显式 `--recover-interrupted-run` 才进入历史测试账号恢复模式；实体仍按已登记的夹具标识清理，原用户和业务数据不属于验收清理范围。
 
-复用有真实数据的本地运行栈时，先通过现有 bootstrap 创建无数据、无 API key 的独立验收组织，再以 `PHARMA_BROWSER_TENANT_SLUG` 明确绑定该组织。值按 slug 白名单校验，SQL 参数绑定；指定组织缺失或停用直接失败，不回退到第一个组织。未设置时保留独立 CI 栈原有选取方式。组织的临时身份、来源和事实仍由同一夹具生命周期清理，不复制验收实现。
+浏览器验收和中断恢复都必须以 `PHARMA_BROWSER_TENANT_SLUG` 明确绑定活跃测试组织。未设置、空值或非法值在任何运行环境准备前失败；指定组织缺失或停用也直接失败，不回退到第一个组织。复用有真实数据的本地栈时，先通过现有 bootstrap 创建无数据、无 API key 的独立验收组织；CI 显式使用其已 bootstrap 的 `e2e` 组织。临时身份、来源和事实仍由同一夹具生命周期清理，不复制验收实现。
 
 真实 MCP 流式 HTTP 与 Web/MCP 事实一致性使用同一条 `verify-entry-consistency.sh` 夹具生命周期。bootstrap 只建立身份和授权数据集，不隐式加载 EGFR 等业务示例；旧无夹具的独立集成测试已删除。`mcp_streamable_contract.py` 保留原域工具清单、禁用工具及正常收费断言，工具列表分页归属 SDK 的唯一有界 `list_all_tools`；规范化事实仍由同一 probe 比较全部十一字段。两个正常收费调用都必须匹配计费类别、单条结果和正的有限收费；检索必须使用 OpenSearch 并包含精确标记的已发布实体。只允许原受限 CLI 发布本次租户/实体/marker 的合成夹具，生产 verified-only 与数据许可/权限不改变。
 

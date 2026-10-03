@@ -1,5 +1,6 @@
 import { expect, type PlaywrightTestArgs, type PlaywrightWorkerArgs, type TestInfo, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
+import type { DiseaseDossierResponse } from "../../src/lib/generated";
 
 export async function verifyResearcherReview(
   { page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">,
@@ -71,12 +72,26 @@ export async function verifyResearcherReview(
     await expect(page.getByText("正在加载研究工作区", { exact: true })).toHaveCount(0);
   }
   for (const [index, view] of ["target", "drug", "company", "disease", "entity"].entries()) {
+    const diseaseResponse =
+      view === "disease"
+        ? page.waitForResponse(
+            (response) => new URL(response.url()).pathname === `/api/v1/diseases/${ids[index]}/dossier`,
+          )
+        : null;
     await page.goto(`/workspace/research?view=${view}&entity=${ids[index]}`);
     await expect(page.locator(".page-heading h1")).toBeVisible();
     const overviewLabel =
       view === "drug" ? "药物概览" : view === "company" ? "公司概览" : view === "disease" ? "疾病概览" : "概览";
     await expect(page.getByRole("tab", { name: overviewLabel, exact: true })).toBeVisible();
     await expect(page.getByText("正在加载研究工作区", { exact: true })).toHaveCount(0);
+    if (diseaseResponse) {
+      const data = (await (await diseaseResponse).json()) as DiseaseDossierResponse;
+      const available = data.coverage.filter((item) => item.total > 0).length + Number(data.epidemiology.total > 0);
+      const disclosure = page.locator(".dossier-coverage-disclosure");
+      await expect(disclosure).toContainText(`${available} / ${data.coverage.length + 1} 个信息领域有记录`);
+      if (available) await expect(disclosure).toHaveAttribute("open", "");
+      else await expect(disclosure).not.toHaveAttribute("open", "");
+    }
     await noOverflow();
     await page.screenshot({ path: testInfo.outputPath(`researcher-${view}.png`), fullPage: true });
   }

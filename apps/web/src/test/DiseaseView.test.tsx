@@ -219,6 +219,18 @@ beforeEach(() => {
   vi.mocked(loadDiseaseDossier).mockResolvedValue(dossier);
 });
 
+it.each([0, 1])("counts the separately rendered epidemiology domain in coverage: %s records", async (total) => {
+  vi.mocked(loadDiseaseDossier).mockResolvedValueOnce({
+    ...dossier,
+    coverage: dossier.coverage.map((item) => ({ ...item, total: 0, returned: 0, status: "not_observed" as const })),
+    epidemiology: { ...dossier.epidemiology, total, items: total ? dossier.epidemiology.items : [] },
+  });
+  renderDiseaseView();
+  const summary = await screen.findByText(`${total} / ${dossier.coverage.length + 1} 个信息领域有记录`);
+  if (total) expect(summary.closest("details")).toHaveAttribute("open");
+  else expect(summary.closest("details")).not.toHaveAttribute("open");
+});
+
 it("renders a governed disease landscape and cross-domain professional sections", async () => {
   const onOpenEntity = vi.fn();
   const onOpenDrug = vi.fn();

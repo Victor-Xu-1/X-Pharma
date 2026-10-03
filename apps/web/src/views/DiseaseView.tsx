@@ -359,8 +359,8 @@ function DiseaseOverview({
       </section>
 
       <DossierCoverageDisclosure
-        available={data.coverage.filter((item) => item.total > 0).length}
-        total={data.coverage.length}
+        available={data.coverage.filter((item) => item.total > 0).length + Number(data.epidemiology.total > 0)}
+        total={data.coverage.length + 1}
       >
         <section className="company-profile-section company-profile-coverage">
           <header>
