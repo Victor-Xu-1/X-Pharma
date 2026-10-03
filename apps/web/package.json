@@ -39,7 +39,7 @@
     "@testing-library/react": "16.3.2",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "@types/node": "24.13.3",
+    "@types/node": "26.6.3",
     "@vitejs/plugin-react": "6.0.3",
     "jsdom": "29.1.1",
     "openapi-typescript-codegen": "0.31.0",
