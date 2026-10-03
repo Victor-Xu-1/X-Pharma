@@ -17,6 +17,7 @@ from mcp.server.auth.middleware.auth_context import get_access_token
 from mcp.server.auth.provider import AccessToken
 from mcp.server.auth.settings import AuthSettings
 from mcp.server.mcpserver import Context, MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import AnyHttpUrl
 from starlette.applications import Starlette
 from starlette.requests import Request
@@ -97,7 +98,7 @@ class ApiRequestOverride:
 _api_request_override: ContextVar[ApiRequestOverride | None] = ContextVar("mcp_api_request_override", default=None)
 
 
-class McpCommercialError(RuntimeError):
+class McpCommercialError(ToolError, RuntimeError):
     """Safe, machine-readable failure for a commercial MCP tool call."""
 
     def __init__(self, code: str, message: str) -> None:
