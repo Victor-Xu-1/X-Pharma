@@ -1,6 +1,7 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs } from "@playwright/test";
 import { expect } from "@playwright/test";
 import type { EnterpriseApiKeyCatalogRead } from "../../src/lib/generated";
+import { openNavigation } from "./helpers";
 
 export async function verifyEnterpriseAdministration({
   page,
@@ -299,6 +300,7 @@ export async function verifyEnterpriseAdministration({
   await page.getByRole("button", { name: "确认变更" }).click();
   await expect.poll(() => sessionRevocations.length).toBe(1);
   expect(sessionRevocations[0]).toEqual({ reason: "Browser remote session revocation" });
+  await openNavigation(page);
   await page.getByRole("button", { name: "环境管理", exact: true }).click();
   await page.getByRole("tab", { name: "运行与发布证据" }).click();
   await expect(page.getByRole("table", { name: "平台服务状态" })).toContainText("platform-operations");
