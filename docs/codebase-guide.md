@@ -98,6 +98,10 @@ ClinicalTrials.gov、NextPharma 与 ChEMBL 的确定性处理分别归属 `adapt
 
 普通浏览器验收只按本次运行生成的邮箱前缀清理账号及其关联记录，不清理其他运行或相似名称的账号。只有显式 `--recover-interrupted-run` 才进入历史测试账号恢复模式；实体仍按已登记的夹具标识清理，原用户和业务数据不属于验收清理范围。
 
+真实 MCP 流式 HTTP 与 Web/MCP 事实一致性使用同一条 `verify-entry-consistency.sh` 夹具生命周期。bootstrap 只建立身份和授权数据集，不隐式加载 EGFR 等业务示例；旧无夹具的独立集成测试已删除。`mcp_streamable_contract.py` 保留原域工具清单、禁用工具及正常收费断言，工具列表分页归属 SDK 的唯一有界 `list_all_tools`；规范化事实仍由同一 probe 比较全部十一字段。两个正常收费调用都必须匹配计费类别、单条结果和正的有限收费；检索必须使用 OpenSearch 并包含精确标记的已发布实体。只允许原受限 CLI 发布本次租户/实体/marker 的合成夹具，生产 verified-only 与数据许可/权限不改变。
+
+CI 将原独立流式检查与事实一致性合成一个完整门禁，并保留独立 Inspector/Python SDK 双客户端以及 20 请求/4 并发/p95≤10000ms 门禁，不跳过任何原行为断言。MCP HTTP 保留旧 30 秒时限，Web 60 秒不变；第一方验收客户端版本复用 `PRODUCT_VERSION`，协议日期和第三方版本独立。七个新 negative 在旧 probe 上先失败，当前三十九项直接关联回归/严格类型通过；局部真实检查覆盖工具清单、正收费及一致性、独立客户端游标/恢复和并发对账，不宣称已通过下一提交的完整 CI。
+
 公开 CI 冷启动暴露的索引创建竞争已在唯一 `OpenSearchGateway` 中处理：只有明确的 `resource_already_exists_exception` 会触发一次别名重读，保留最新的活动索引；映射、权限、其他错误与消失的竞争结果仍失败关闭。并发测试使用独立真实 OpenSearch 服务，不接触原恢复集群。
 
 SMB 协议验收将容器账户 UID 映射到创建私有夹具的非 root 主机用户，保留 `0700/0600`、SMB3 加密与只读共享，不通过开放目录权限绕过跨主机 UID 差异。

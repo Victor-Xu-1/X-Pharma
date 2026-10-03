@@ -5,6 +5,15 @@ Current tablet dense-results reference:
 It belongs to the real bounded natural-flow product layout below, not either
 of the two former transform-rendering paint phases.
 
+Automatic [run 37121282248](https://github.com/Victor-Xu-1/X-Pharma/actions/runs/37121282248)
+on `1a29a787b78bba79f035b1dda8fd8258922eb988` passed the complete original
+140-case browser matrix in 23.6 minutes and the independent account gate.
+The entire workflow nevertheless failed at the next MCP test, which assumed
+an EGFR demo entity that bootstrap never creates. Downstream MCP stages were
+skipped. The 140-case result establishes this natural-flow browser iteration,
+not whole-workflow or production acceptance. MCP fixture ownership is being
+corrected separately without changing product rendering, references or budgets.
+
 ## 2026-10-03: failed isolation and bounded natural-flow review
 
 Automatic [run 36996101760](https://github.com/Victor-Xu-1/X-Pharma/actions/runs/36996101760)

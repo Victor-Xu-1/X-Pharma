@@ -94,7 +94,7 @@ def _settlement_id(payload: dict[str, Any], operation: str) -> str:
     return settlement_id
 
 
-async def _all_tools(session: McpSession) -> list[Any]:
+async def list_all_tools(session: McpSession) -> list[Any]:
     tools: list[Any] = []
     cursor: str | None = None
     seen_cursors: set[str] = set()
@@ -128,7 +128,7 @@ async def verify_session(
             f"{initialized.protocolVersion} != {expected_protocol_version}"
         )
 
-    tools = await _all_tools(session)
+    tools = await list_all_tools(session)
     tool_contract = tool_contract_sha256(
         [
             {

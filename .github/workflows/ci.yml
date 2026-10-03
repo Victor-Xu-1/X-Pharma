@@ -312,12 +312,10 @@ jobs:
           name: X-Pharma-visual-baseline-candidates
           path: apps/web/e2e/visual-baselines/
           if-no-files-found: error
-      - name: Real MCP streamable HTTP smoke
-        run: uv run pytest tests/test_mcp_integration.py
+      - name: Real MCP HTTP and Web canonical fact consistency
+        run: ./scripts/verify-entry-consistency.sh --web-url "$E2E_BASE_URL" --mcp-url "$TEST_MCP_URL" --output /tmp/entry-consistency-report.json
       - name: Independent MCP dual-client interoperability
         run: ./scripts/verify-mcp-interoperability.sh --mcp-url "$TEST_MCP_URL" --output /tmp/mcp-interoperability-report.json
-      - name: Web and MCP canonical fact consistency
-        run: ./scripts/verify-entry-consistency.sh --web-url "$E2E_BASE_URL" --mcp-url "$TEST_MCP_URL" --output /tmp/entry-consistency-report.json
       - name: Billed MCP concurrency baseline
         run: >-
           uv run pharma-mcp-load --url "$TEST_MCP_URL" --requests 20 --concurrency 4

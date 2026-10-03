@@ -17,7 +17,9 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.types import Implementation
 
+from pharma_intel.product import PRODUCT_VERSION
 from scripts.mcp_sdk_probe import ClientSessionAdapter, McpSession, structured_tool_result
+from scripts.mcp_streamable_contract import verify_domain_inventory, verify_positive_settlement
 
 CSRF_COOKIE = "pharma_csrf"
 ENTITY_FIELDS = (
@@ -160,6 +162,7 @@ async def verify_clients(
             f"MCP consistency protocol mismatch: {initialized.protocolVersion} != {expected_protocol_version}"
         )
     settlements: list[str] = []
+    listed_tools = await verify_domain_inventory(mcp_session)
     mcp_entity_result = structured_tool_result(
         await mcp_session.call_tool(
             "get_entity",
@@ -174,6 +177,7 @@ async def verify_clients(
     mcp_usage = mcp_entity_result.get("usage")
     if not isinstance(mcp_usage, dict) or not isinstance(mcp_usage.get("settlement_id"), str):
         raise RuntimeError("MCP get_entity omitted a settlement")
+    verify_positive_settlement(mcp_usage, "entity.read")
     settlements.append(mcp_usage["settlement_id"])
     _assert_same_entity(web_entity, mcp_entity, "Web/MCP entity read")
 
@@ -196,6 +200,9 @@ async def verify_clients(
         raise RuntimeError("MCP entity search omitted data or usage")
     if not isinstance(mcp_search_usage.get("settlement_id"), str):
         raise RuntimeError("MCP entity search omitted a settlement")
+    if mcp_search_data.get("engine") != "opensearch":
+        raise RuntimeError("MCP entity search did not use OpenSearch")
+    verify_positive_settlement(mcp_search_usage, "entity.search")
     settlements.append(mcp_search_usage["settlement_id"])
     mcp_items = mcp_search_data.get("items")
     if not isinstance(mcp_items, list):
@@ -227,6 +234,8 @@ async def verify_clients(
         "web_operations": ["create_entity", "get_entity", "search_entities"],
         "mcp_tools": ["get_entity", "search_entities"],
         "mcp_protocol_version": initialized.protocolVersion,
+        "streamable_http_contract_verified": True,
+        "listed_mcp_tools": listed_tools,
         "mcp_billed_calls": 2,
         "unique_settlements": 2,
         "same_tenant_fixture": True,
@@ -277,7 +286,7 @@ async def verify(
     async with httpx.AsyncClient(base_url=web_url, timeout=timeout, trust_env=False) as web:
         async with httpx.AsyncClient(
             headers={"Authorization": f"Bearer {token}"},
-            timeout=timeout,
+            timeout=httpx.Timeout(30, connect=10),
             trust_env=False,
         ) as mcp_http:
             async with streamable_http_client(mcp_url, http_client=mcp_http) as (
@@ -285,7 +294,7 @@ async def verify(
                 write_stream,
                 _session_id,
             ):
-                client_info = Implementation(name="pharma-entry-consistency", version="1.0")
+                client_info = Implementation(name="pharma-entry-consistency", version=PRODUCT_VERSION)
                 async with ClientSession(read_stream, write_stream, client_info=client_info) as session:
                     return await verify_clients(
                         web,
