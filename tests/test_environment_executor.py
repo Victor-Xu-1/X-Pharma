@@ -76,6 +76,25 @@ def test_execution_records_failure_and_refuses_replay(source: Path, monkeypatch:
         executor.execute_install_plan(source, plan, state)
 
 
+def test_execution_reuses_the_e_drive_cache_without_inheriting_secrets(
+    source: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: dict[str, str] = {}
+
+    def successful_step(_command: list[str], _root: Path, environment: dict[str, str], *_args: object) -> int:
+        captured.update(environment)
+        return 0
+
+    monkeypatch.setenv("UNRELATED_PROVIDER_TOKEN", "not-a-real-secret-fixture")
+    monkeypatch.setattr(executor, "run_install_command", successful_step)
+    result = executor.execute_install_plan(source, plan_for(source), source / "state")
+    assert result.status == "succeeded"
+    assert captured["PNPM_HOME"] == "/srv/wsl/envs/x-pharma-tools/bin"
+    assert captured["XDG_CACHE_HOME"] == "/srv/wsl/cache/x-pharma"
+    assert captured["COREPACK_ENABLE_NETWORK"] == "0"
+    assert "UNRELATED_PROVIDER_TOKEN" not in captured
+
+
 def test_interrupted_installation_is_not_reported_as_running_forever(source: Path) -> None:
     from pharma_intel.schemas.environment import EnvironmentInstallResultRead
 

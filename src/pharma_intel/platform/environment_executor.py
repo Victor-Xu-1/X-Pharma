@@ -168,6 +168,7 @@ def execute_install_plan(
         "/srv/wsl/cache/uv",
         "/srv/wsl/cache/npm",
         "/srv/wsl/cache/x-pharma/corepack",
+        "/srv/wsl/envs/x-pharma-tools/bin",
         "/srv/wsl/envs/x-pharma-environment/bin",
         "/srv/wsl/cache/x-pharma/environment/artifacts",
     ):
@@ -204,6 +205,8 @@ def execute_install_plan(
             UV_CACHE_DIR="/srv/wsl/cache/uv",
             UV_PYTHON_DOWNLOADS="never",
             npm_config_cache="/srv/wsl/cache/npm",
+            XDG_CACHE_HOME="/srv/wsl/cache/x-pharma",
+            PNPM_HOME="/srv/wsl/envs/x-pharma-tools/bin",
             COREPACK_HOME="/srv/wsl/cache/x-pharma/corepack",
             COREPACK_ENABLE_NETWORK="0" if plan.offline else "1",
             COREPACK_ENABLE_AUTO_PIN="0",
