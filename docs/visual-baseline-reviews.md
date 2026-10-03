@@ -1,5 +1,10 @@
 # Visual baseline reviews
 
+Current tablet dense-results reference:
+`577f39c0e3ef678454f950d313c4296514bf3d5835f8ce524993622ac71898cc`.
+It belongs to the real bounded natural-flow product layout below, not either
+of the two former transform-rendering paint phases.
+
 ## 2026-10-03: failed isolation and bounded natural-flow review
 
 Automatic [run 36996101760](https://github.com/Victor-Xu-1/X-Pharma/actions/runs/36996101760)
@@ -54,12 +59,41 @@ acceptance. The natural-flow candidate's exact-image deployment and automatic CI
 still establish their own results; downstream MCP and production acceptance
 must not be inferred from this focused browser pass.
 
+### Reviewed natural-flow asset identity
+
+Clean candidate `35cdf9dac6fea53e0a9649a8a29910e6e8a2c8fb` ran on exact image
+`sha256:9b7b1f5f6a2e0a12507e76063d248afad0bdc7a5dc8f0d530a303b7a549f047f`.
+The four-viewport affected-layout check and the original ten-case tablet
+prefix both produced the same tablet PNG, SHA-256 `577f39c0e3ef678454f950d313c4296514bf3d5835f8ce524993622ac71898cc`.
+The latter retained the full original staged navigation and first passed both
+accessibility audits, keyboard reflow, branding/browser identity and logins;
+it then correctly rejected the changed product layout against the former
+reference (9/10, 55.1 seconds). The horizontal-column and middle-window
+geometry assertions passed before that pixel rejection.
+
+The actual natural-flow image was visually reviewed. Layout bounds, rows,
+columns, controls, counts and clipping are preserved; this is an intentional
+row-rendering implementation change, not a data/result correctness fix.
+Only that tablet PNG is adopted. The other nineteen PNGs remain unchanged.
+The canonical manifest-generation block in `run-browser-acceptance.sh` was
+reused for the reviewed asset identity; no full snapshot-refresh run or
+coverage bypass occurred. Its new manifest generation date is not a claim
+of twenty fresh screenshots. Pixel masks, 0.001 tolerance, all performance,
+resource and action/case budgets remain unchanged.
+
+The initial four-size layout run also exposed a new assertion's invalid
+assumption that wide desktops must overflow horizontally. Wide layouts now
+still verify column/font alignment and zero scroll, while actual overflowing
+layouts retain the horizontal-motion assertions. The canonical coverage
+guard remains mandatory; final exact-head browser and automatic-CI results
+must be reported separately from this reference maintenance.
+
 ## 2026-10-02: tablet dense results
 
 Only `research-dense-results-tablet-1024.png` is maintained in this review.
 The viewport is 1024×768 and the table-shell image is 724×646.
 
-- Current canonical SHA-256: `b871674923e9aeb30c7584db6068c81728ab6a23d032b54f942091bf7ba04693`, the restored original repository reference.
+- Historical end-of-review SHA-256: `b871674923e9aeb30c7584db6068c81728ab6a23d032b54f942091bf7ba04693`, the restored original transform-rendering reference, superseded by the natural-flow review above.
 - Withdrawn intermediate SHA-256: `94b90c8ab9e4e24dcc9167e23bef18c0c0343b04898559a1d37e79f06f456119`.
 - Intermediate source: the actual image from [automatic CI run 36963858242](https://github.com/Victor-Xu-1/X-Pharma/actions/runs/36963858242), commit `ed953406eb6e1f128f975c7c37b8de3895da63a6`. It is retained as diagnostic evidence, not the current reference.
 - Data: only the existing synthetic 205-result pagination fixture; the existing alias-match mask is unchanged. No production data or third-party brand assets are added.

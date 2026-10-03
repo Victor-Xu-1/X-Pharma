@@ -48,7 +48,11 @@ export async function verifyFixedColumnLayout(shell: Locator) {
   expect(initial.header.slice(0, 2).map((cell) => cell.width)).toEqual(
     initial.row.slice(0, 2).map((cell) => cell.width),
   );
-  expect(initial.maximumScroll).toBeGreaterThan(0);
+  expect(initial.maximumScroll).toBeGreaterThanOrEqual(0);
+  if (initial.maximumScroll === 0) {
+    expect(initial.scroll).toBe(0);
+    return;
+  }
   const viewport = shell.locator(".virtual-table-viewport");
   try {
     await viewport.evaluate((element) => {
