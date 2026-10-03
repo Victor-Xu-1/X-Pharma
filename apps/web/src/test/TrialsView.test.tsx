@@ -633,7 +633,13 @@ it("renders the trial detail deep link with design, outcomes, history and proven
 });
 
 it("renders the explicit empty state and clears active filters", async () => {
-  vi.mocked(searchTrials).mockResolvedValue({ ...trialResult, items: [], total: 0, facets: {} });
+  vi.mocked(searchTrials).mockResolvedValue({
+    ...trialResult,
+    items: [],
+    total: 0,
+    facets: {},
+    applied_filters: [{ field: "query", operator: "contains", value: "missing" }],
+  });
   const onSearchChange = vi.fn();
   renderWithQueryClient(
     <TrialsView
@@ -687,12 +693,15 @@ it("renders the explicit empty state and clears active filters", async () => {
     />,
   );
 
-  expect(await screen.findByText("未观察到匹配试验")).toBeInTheDocument();
-  expect(screen.getByText("可调整试验状态、分期、药物、靶点或申办方条件后重试。")).toBeInTheDocument();
+  expect(await screen.findByText("未找到匹配记录")).toBeInTheDocument();
+  expect(
+    screen.getByText("可调整或清除筛选条件。查询仅覆盖当前组织有权访问的已发布数据，不代表相关研究不存在。"),
+  ).toBeInTheDocument();
   expect(
     screen.getByText("聚合注册平台的试验设计、状态、分期、适应症、干预和申办方，并关联药物与靶点信息。"),
   ).toBeInTheDocument();
   expect(screen.getByRole("group", { name: "试验药物（任一）多选" })).toBeInTheDocument();
+  fireEvent.click(screen.getByText("联用药物与靶点"));
   expect(screen.getByRole("group", { name: "联用药物（任一）多选" })).toBeInTheDocument();
   expect(document.body).not.toHaveTextContent(/规范实体|规范试验|规范联用|覆盖边界/);
   const saveEmptyQuery = screen.getByRole("button", { name: "保存/订阅" });

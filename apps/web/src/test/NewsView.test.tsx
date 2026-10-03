@@ -193,7 +193,13 @@ it("renders governed news, applies server filters and opens linked records", asy
 });
 
 it("renders the explicit empty state, clears filters and recovers from errors", async () => {
-  vi.mocked(searchNewsEvents).mockResolvedValueOnce({ ...newsResult, items: [], total: 0, facets: {} });
+  vi.mocked(searchNewsEvents).mockResolvedValueOnce({
+    ...newsResult,
+    items: [],
+    total: 0,
+    facets: {},
+    applied_filters: [{ field: "publisher", operator: "contains", value: "Acme Pharma" }],
+  });
   const onSearchChange = vi.fn();
   const rendered = renderWithQueryClient(
     <NewsView
@@ -206,8 +212,10 @@ it("renders the explicit empty state, clears filters and recovers from errors", 
     />,
   );
 
-  expect(await screen.findByText("未观察到匹配动态")).toBeInTheDocument();
-  expect(screen.getByText("可调整关键词、公司、药物、靶点、事件类型或日期条件后重试。")).toBeInTheDocument();
+  expect(await screen.findByText("未找到匹配记录")).toBeInTheDocument();
+  expect(
+    screen.getByText("可调整或清除筛选条件。查询仅覆盖当前组织有权访问的已发布数据，不代表相关研究不存在。"),
+  ).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "清除" }));
   await waitFor(() =>
     expect(onSearchChange).toHaveBeenCalledWith(

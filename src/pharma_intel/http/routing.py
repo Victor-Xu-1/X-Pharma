@@ -25,6 +25,7 @@ from pharma_intel.http.enterprise import router as enterprise_router
 from pharma_intel.http.enterprise_keys import router as enterprise_keys_router
 from pharma_intel.http.enterprise_models import router as enterprise_models_router
 from pharma_intel.http.entities import router as entities_router
+from pharma_intel.http.environment import router as environment_router
 from pharma_intel.http.epidemiology import router as epidemiology_router
 from pharma_intel.http.evidence import router as evidence_router
 from pharma_intel.http.governance_review import router as governance_review_router
@@ -56,6 +57,7 @@ def install_feature_routes(app: FastAPI) -> None:
     app.include_router(authentication_router)
     app.include_router(organization_router)
     app.include_router(enterprise_router)
+    app.include_router(environment_router)
     app.include_router(enterprise_keys_router)
     app.include_router(enterprise_models_router)
     app.include_router(trials_router)

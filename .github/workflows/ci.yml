@@ -218,6 +218,7 @@ jobs:
       # complete service stack shares this runner. Keep every viewport/scenario;
       # paid MCP concurrency is exercised independently below.
       PHARMA_BROWSER_WORKERS: "1"
+      PHARMA_BROWSER_TENANT_SLUG: e2e
       COMPOSE_PROJECT_NAME: x-pharma-ci
       COMPOSE_FILE: compose.yaml:compose.dev.yaml:compose.telemetry.yaml
       DOCKER_LIBRARY_REGISTRY: docker.io/library

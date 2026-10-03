@@ -108,7 +108,8 @@ export type ViewKey =
   | "factory"
   | "governance"
   | "commercial"
-  | "enterprise";
+  | "enterprise"
+  | "environment";
 
 export interface WorkspaceLocation {
   workbench: WorkbenchKey;

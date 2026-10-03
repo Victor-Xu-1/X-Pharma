@@ -253,6 +253,10 @@ it("renders the explicit regulatory empty state and clears active filters", asyn
   vi.mocked(searchRegulatoryEvents).mockResolvedValue({
     ...regulatoryResult,
     items: [],
+    applied_filters: [
+      { field: "query", operator: "contains", value: "missing" },
+      { field: "agency", operator: "eq", value: "FDA" },
+    ],
     total: 0,
     facets: {},
     landscape: { total_events: 0, event_type: [], agency: [], decision_year: [] },
@@ -263,8 +267,10 @@ it("renders the explicit regulatory empty state and clears active filters", asyn
     onSearchChange,
   });
 
-  expect(await screen.findByText("未观察到匹配监管事件")).toBeInTheDocument();
-  expect(screen.getByText("可调整药物、适应症、监管机构、事件类型或日期条件后重试。")).toBeInTheDocument();
+  expect(await screen.findByText("未找到匹配记录")).toBeInTheDocument();
+  expect(
+    screen.getByText("可调整或清除筛选条件。查询仅覆盖当前组织有权访问的已发布数据，不代表相关研究不存在。"),
+  ).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "清除" }));
   await waitFor(() => expect(onSearchChange).toHaveBeenCalledWith(emptyRegulatorySearchFilters, 0));
 });

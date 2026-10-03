@@ -146,15 +146,16 @@ it("keeps the external workbench focused while retaining progressive access to s
     "流行病学",
     "新闻与会议",
     "结构检索",
-    "对比列表",
   ]) {
     expect(screen.getByRole("button", { name: label }).parentElement).toBe(primaryNavigation);
   }
 
   expect(screen.queryByRole("button", { name: "我的工作" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "原始证据" })).not.toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "知识专题" })).not.toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "监控与提醒" })).not.toBeInTheDocument();
+  const researchNavigation = screen.getByRole("navigation", { name: "我的研究" });
+  expect(within(researchNavigation).getByRole("button", { name: "对比列表" })).toBeInTheDocument();
+  expect(within(researchNavigation).getByRole("button", { name: "知识专题" })).toBeInTheDocument();
+  expect(within(researchNavigation).getByRole("button", { name: "监控与提醒" })).toBeInTheDocument();
   expect(screen.queryByLabelText("外部情报工作台")).not.toBeInTheDocument();
   expect(screen.queryByText("医药情报平台")).not.toBeInTheDocument();
   expect(screen.queryByLabelText("全局搜索")).not.toBeInTheDocument();
@@ -319,7 +320,9 @@ it("shows only governed operational navigation in the internal workbench", () =>
 
   expect(screen.getByRole("button", { name: "数据工厂" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "企业管理" })).toBeInTheDocument();
-  expect(screen.getByLabelText("内部管理工作台")).toHaveTextContent("内部管理平台");
+  expect(screen.getAllByText("内部管理工作台", { exact: true })).toHaveLength(1);
+  expect(screen.queryByLabelText("内部管理工作台")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "环境管理" })).toBeInTheDocument();
   expect(screen.queryByText("医药情报平台")).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "情报检索" })).not.toBeInTheDocument();
   expect(screen.queryByLabelText("全局搜索")).not.toBeInTheDocument();

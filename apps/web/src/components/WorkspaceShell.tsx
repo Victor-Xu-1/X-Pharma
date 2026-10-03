@@ -1,53 +1,13 @@
-import {
-  Activity,
-  Atom,
-  Building2,
-  ChevronLeft,
-  ChevronRight,
-  ClipboardList,
-  CreditCard,
-  Database,
-  FileBadge2,
-  FlaskConical,
-  Handshake,
-  Landmark,
-  ListChecks,
-  Menu,
-  Newspaper,
-  Search,
-  ShieldCheck,
-  X,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { OPERATIONS_NAME, PRODUCT_NAME, PRODUCT_RELEASE } from "../lib/product";
 import type { User } from "../lib/types";
 import { useModalFocus } from "../lib/useModalFocus";
-import { canAccessView, type ViewKey, type WorkbenchKey } from "../lib/workspaceRouting";
+import type { ViewKey, WorkbenchKey } from "../lib/workspaceRouting";
 import { BrandMark } from "./BrandMark";
 import { WorkspaceAccountNavigation } from "./WorkspaceAccountNavigation";
-
-type NavigationItem = { key: ViewKey; label: string; icon: typeof Search };
-
-const primaryResearchNavigation: NavigationItem[] = [
-  { key: "explorer", label: "情报检索", icon: Search },
-  { key: "pipeline", label: "药物与管线", icon: FlaskConical },
-  { key: "trials", label: "临床试验", icon: ClipboardList },
-  { key: "patents", label: "专利情报", icon: FileBadge2 },
-  { key: "deals", label: "交易与公司", icon: Handshake },
-  { key: "regulatory", label: "监管与安全", icon: Landmark },
-  { key: "epidemiology", label: "流行病学", icon: Activity },
-  { key: "news", label: "新闻与会议", icon: Newspaper },
-  { key: "chemistry", label: "结构检索", icon: Atom },
-  { key: "collections", label: "对比列表", icon: ListChecks },
-];
-
-const internalNavigation: NavigationItem[] = [
-  { key: "factory", label: "数据工厂", icon: Database },
-  { key: "governance", label: "AI 审核", icon: ShieldCheck },
-  { key: "commercial", label: "商业运营", icon: CreditCard },
-  { key: "enterprise", label: "企业管理", icon: Building2 },
-];
+import { WorkspaceNavigation } from "./WorkspaceNavigation";
 
 const titles: Record<ViewKey, string> = {
   overview: "用户中心",
@@ -73,6 +33,7 @@ const titles: Record<ViewKey, string> = {
   governance: "AI 信息审核",
   commercial: "Agent 商业运营",
   enterprise: "企业账户与审计",
+  environment: "运行环境与安装管理",
 };
 
 export function WorkspaceShell({
@@ -163,45 +124,13 @@ export function WorkspaceShell({
             <X size={19} />
           </button>
         </div>
-        <nav className="sidebar-primary-nav" aria-label="主导航">
-          {researchWorkbench
-            ? primaryResearchNavigation
-                .filter((item) => canAccessView(item.key, user.role))
-                .map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.key}
-                      className={`nav-button ${navigationView === item.key ? "active" : ""}`}
-                      type="button"
-                      onClick={() => navigate(item.key)}
-                      aria-current={navigationView === item.key ? "page" : undefined}
-                      title={collapsed ? item.label : undefined}
-                    >
-                      <Icon size={18} />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })
-            : internalNavigation
-                .filter((item) => canAccessView(item.key, user.role))
-                .map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.key}
-                      className={`nav-button ${navigationView === item.key ? "active" : ""}`}
-                      type="button"
-                      onClick={() => navigate(item.key)}
-                      aria-current={navigationView === item.key ? "page" : undefined}
-                      title={collapsed ? item.label : undefined}
-                    >
-                      <Icon size={18} />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-        </nav>
+        <WorkspaceNavigation
+          workbench={activeWorkbench}
+          role={user.role}
+          activeView={navigationView}
+          collapsed={collapsed}
+          onView={navigate}
+        />
         <WorkspaceAccountNavigation
           user={user}
           researchWorkbench={researchWorkbench}
@@ -231,13 +160,6 @@ export function WorkspaceShell({
           >
             <Menu size={20} />
           </button>
-          {!researchWorkbench ? (
-            <section className="workspace-identity" aria-label="内部管理工作台">
-              <Database size={16} />
-              <span>内部管理平台</span>
-            </section>
-          ) : null}
-          {!researchWorkbench ? <div className="topbar-spacer" /> : null}
         </header>
         <main className="workspace-content" aria-busy={pendingView ? "true" : undefined}>
           <div className="page-heading">

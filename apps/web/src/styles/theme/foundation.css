@@ -171,6 +171,24 @@ a:hover,
   color: var(--ds-nav-text);
 }
 
+.sidebar-navigation-sections {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.sidebar-research-nav {
+  margin-top: 8px;
+  border-top: 1px solid var(--ds-border-subtle);
+}
+
+.sidebar-group-label {
+  margin: 12px 12px 6px;
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-xs);
+  font-weight: 500;
+}
+
 .login-brand {
   background: var(--ds-canvas);
 }
@@ -227,18 +245,9 @@ a:hover,
 }
 
 .nav-button,
-.collapse-button,
-.workspace-identity {
+.collapse-button {
   min-height: var(--ds-control-height);
   border-radius: var(--ds-radius-control);
-}
-
-.workspace-identity {
-  border-color: var(--ds-identity-border);
-  background: var(--ds-surface-soft);
-  color: var(--ds-accent-strong);
-  font-size: var(--ds-text-xs);
-  line-height: var(--ds-leading-compact);
 }
 
 .user-copy small,
@@ -252,7 +261,6 @@ a:hover,
   line-height: var(--ds-leading-compact);
 }
 
-.workspace-identity svg,
 .login-title .eyebrow,
 .login-form > svg {
   color: var(--ds-accent-strong);

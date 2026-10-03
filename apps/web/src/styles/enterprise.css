@@ -642,3 +642,59 @@
   font-size: 10px;
   line-height: 1.5;
 }
+.environment-workbench > [role="tabpanel"] > section,
+.environment-installation {
+  margin-top: 20px;
+}
+.environment-workbench header p {
+  margin: 6px 0 14px;
+  color: var(--ds-ink-muted);
+}
+.environment-recipes {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0;
+  padding: 0;
+  border: 0;
+}
+.environment-recipes label,
+.environment-offline {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.environment-recipes .cell-subtitle {
+  font-weight: 400;
+}
+:root .environment-recipes input,
+:root .environment-offline input {
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
+  margin-top: 3px;
+  flex: none;
+}
+.environment-plan {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-panel);
+}
+.environment-workbench pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 12px;
+  background: var(--ds-surface-muted);
+}
+.environment-installation details {
+  margin-top: 20px;
+}
+.environment-status-missing,
+.environment-status-blocked {
+  color: var(--ds-danger);
+  background: var(--ds-danger-soft);
+}
+.environment-status-mismatch {
+  color: var(--ds-warning);
+  background: var(--ds-warning-soft);
+}

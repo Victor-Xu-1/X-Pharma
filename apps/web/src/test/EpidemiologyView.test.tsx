@@ -235,7 +235,16 @@ it("renders governed disease burden, opens entities, comparable trends and prove
 });
 
 it("renders the explicit empty state and clears active filters", async () => {
-  vi.mocked(searchEpidemiology).mockResolvedValue({ ...searchResult, items: [], total: 0, facets: {} });
+  vi.mocked(searchEpidemiology).mockResolvedValue({
+    ...searchResult,
+    items: [],
+    total: 0,
+    facets: {},
+    applied_filters: [
+      { field: "query", operator: "contains", value: "missing" },
+      { field: "geography", operator: "eq", value: "China" },
+    ],
+  });
   const onSearchChange = vi.fn();
   renderWithQueryClient(
     <EpidemiologyView
@@ -246,8 +255,10 @@ it("renders the explicit empty state and clears active filters", async () => {
     />,
   );
 
-  expect(await screen.findByText("未观察到匹配的流行病学数据")).toBeInTheDocument();
-  expect(screen.getByText("可调整疾病、地区、指标、年份或来源条件后重试。")).toBeInTheDocument();
+  expect(await screen.findByText("未找到匹配记录")).toBeInTheDocument();
+  expect(
+    screen.getByText("可调整或清除筛选条件。查询仅覆盖当前组织有权访问的已发布数据，不代表相关研究不存在。"),
+  ).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "清除" }));
   expect(onSearchChange).toHaveBeenCalledWith(emptyFilters, 0);
 });

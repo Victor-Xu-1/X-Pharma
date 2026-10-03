@@ -57,7 +57,12 @@ def test_review_does_not_bypass_unsafe_manifest_metadata(tmp_path: Path) -> None
 
 
 def _invoke_runner(
-    tmp_path: Path, runner: Path, browser: str, *, extra_args: tuple[str, ...] = ()
+    tmp_path: Path,
+    runner: Path,
+    browser: str,
+    *,
+    extra_args: tuple[str, ...] = (),
+    tenant_slug: str | None = "browser-profile-test",
 ) -> subprocess.CompletedProcess[str]:
     binaries = tmp_path / "bin"
     binaries.mkdir()
@@ -72,20 +77,35 @@ def _invoke_runner(
         executable.chmod(0o700)
     bash = shutil.which("bash")
     assert bash is not None
+    environment = {
+        **os.environ,
+        "PATH": f"{binaries}{os.pathsep}{os.environ['PATH']}",
+        "COMPOSE_FILE": "owned-fixture",
+        "E2E_BROWSER_EXECUTABLE": str(binaries / "test-chrome"),
+    }
+    environment.pop("PHARMA_BROWSER_TENANT_SLUG", None)
+    if tenant_slug is not None:
+        environment["PHARMA_BROWSER_TENANT_SLUG"] = tenant_slug
     return subprocess.run(  # noqa: S603 - fixed runner; controlled font/browser/Docker boundary fixtures.
         [bash, str(runner), *extra_args],
         cwd=tmp_path,
-        env={
-            **os.environ,
-            "PATH": f"{binaries}{os.pathsep}{os.environ['PATH']}",
-            "COMPOSE_FILE": "owned-fixture",
-            "E2E_BROWSER_EXECUTABLE": str(binaries / "test-chrome"),
-        },
+        env=environment,
         capture_output=True,
         text=True,
         timeout=10,
         check=False,
     )
+
+
+@pytest.mark.parametrize("tenant_slug", [None, "", "unsafe/organization"])
+def test_runner_rejects_missing_or_unsafe_test_organization_before_docker(
+    tmp_path: Path, tenant_slug: str | None
+) -> None:
+    browser = json.loads(MANIFEST.read_text(encoding="utf-8"))["browser"]
+    result = _invoke_runner(tmp_path, ROOT / "scripts/run-browser-acceptance.sh", browser, tenant_slug=tenant_slug)
+    assert result.returncode == 2, result.stderr
+    assert "PHARMA_BROWSER_TENANT_SLUG must explicitly name an active test organization" in result.stderr
+    assert "owned Docker boundary reached" not in result.stderr
 
 
 def test_real_runner_rejects_version_drift_before_any_docker_fixture(tmp_path: Path) -> None:

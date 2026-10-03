@@ -3,7 +3,7 @@
   "schema_version": 1,
   "goal_document_id": "PIP-GOAL-001",
   "goal_version": "1.9.9",
-  "reviewed_at": "2026-07-25",
+  "reviewed_at": "2026-10-04",
   "completion_rule": {
     "required_domain_count": 10,
     "required_priorities": ["P0", "P1"],
@@ -105,13 +105,14 @@
     },
     {
       "id": "platform_operations",
-      "title": "平台运营",
+      "title": "环境管理与平台运营",
       "status": "partial",
       "capabilities": [
-        {"id": "service_health_and_audit_visibility", "priority": "P0", "status": "implemented", "evidence": ["apps/web/src/views/EnterpriseView.tsx", "apps/web/src/views/DataFactoryView.tsx", "apps/web/src/lib/contracts/enterprise.ts", "src/pharma_intel/platform/operations.py", "src/pharma_intel/http/enterprise.py", "src/pharma_intel/platform/service_health.py", "tests/test_platform_operations.py", "apps/web/src/test/EnterpriseView.test.tsx", "apps/web/e2e/workspace.spec.ts"]},
-        {"id": "workflow_slo_backup_migration_release_controls", "priority": "P1", "status": "implemented", "evidence": ["apps/web/src/views/EnterpriseView.tsx", "src/pharma_intel/platform/operations.py", "src/pharma_intel/operations_contract.py", "deploy/operations/operations-contract.yaml", "scripts/verify-local-backup-restore.sh", "scripts/verify_postgres_migration_roundtrip.py", "scripts/capture_local_release_candidate.py", "scripts/capture_production_topology.py", "tests/test_platform_operations.py", "tests/test_operations_contract.py", "apps/web/src/test/EnterpriseView.test.tsx", "apps/web/e2e/workspace.spec.ts"]}
+        {"id": "service_health_and_audit_visibility", "priority": "P0", "status": "implemented", "evidence": ["apps/web/src/views/EnvironmentView.tsx", "apps/web/src/views/environment/PlatformPanel.tsx", "apps/web/src/views/DataFactoryView.tsx", "apps/web/src/lib/contracts/enterprise.ts", "src/pharma_intel/platform/operations.py", "src/pharma_intel/http/enterprise.py", "src/pharma_intel/platform/service_health.py", "tests/test_platform_operations.py", "apps/web/src/test/EnvironmentView.test.tsx", "apps/web/e2e/workspace.spec.ts"]},
+        {"id": "workflow_slo_backup_migration_release_controls", "priority": "P1", "status": "implemented", "evidence": ["apps/web/src/views/EnvironmentView.tsx", "src/pharma_intel/platform/operations.py", "src/pharma_intel/operations_contract.py", "deploy/operations/operations-contract.yaml", "scripts/verify-local-backup-restore.sh", "scripts/verify_postgres_migration_roundtrip.py", "scripts/capture_local_release_candidate.py", "scripts/capture_production_topology.py", "tests/test_platform_operations.py", "tests/test_operations_contract.py", "apps/web/src/test/EnvironmentView.test.tsx", "apps/web/e2e/workspace.spec.ts"]},
+        {"id": "host_environment_and_reviewed_offline_installation", "priority": "P1", "status": "implemented", "evidence": ["apps/web/src/views/EnvironmentView.tsx", "src/pharma_intel/http/environment.py", "src/pharma_intel/environment_cli.py", "src/pharma_intel/platform/environment_executor.py", "scripts/bootstrap-wsl-tools.sh", "tests/test_environment_http.py", "tests/test_environment_plans.py", "tests/test_environment_executor.py", "docs/environment-management.md"]}
       ],
-      "remaining_gaps": ["统一控制面已区分真实租户队列、Temporal、模型预算、迁移状态、SLO 目标与外部部署探针，并安全读取机器生成的备份恢复、发布候选和生产拓扑证据；目标环境仍需集中遥测、真实证据挂载和值班运维 UAT"]
+      "remaining_gaps": ["环境模块区分网关版本、真实主机报告与运行证据；安装默认离线、限定配方与锁定源码，网页只生成计划，明确主机 CLI 执行。统一控制面安全读取备份恢复、发布与拓扑证据；目标环境仍需集中遥测、值班运维 UAT，以及客户环境完整离线介质验证，不能把本地缓存安装等同完整迁移包"]
     }
   ]
 }

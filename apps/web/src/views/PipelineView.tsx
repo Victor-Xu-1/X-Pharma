@@ -3,13 +3,16 @@ import { BarChart3, BookmarkPlus, ExternalLink, List, Search } from "lucide-reac
 import { type FormEvent, useCallback, useDeferredValue, useMemo, useState } from "react";
 import { AddToComparisonControl } from "../components/AddToComparisonControl";
 import { AppliedFiltersBar } from "../components/AppliedFiltersBar";
-import { EmptyState, formatDate, ProfessionalQueryState, QueryRefreshButton, StatusBadge } from "../components/common";
+import { formatDate, ProfessionalQueryState, QueryRefreshButton, StatusBadge } from "../components/common";
 import { DomainExportControl } from "../components/DomainExportControl";
+import { EmptyQueryResult } from "../components/EmptyQueryResult";
 import { EntityFilterSelect } from "../components/EntityFilterSelect";
 import { FacetMultiSelect } from "../components/FacetMultiSelect";
 import { PipelineLandscape, type PipelineLandscapeFilterField } from "../components/PipelineLandscape";
+import { QueryResultSummary } from "../components/QueryResultSummary";
 import { ResultPagination } from "../components/ResultPagination";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
+import { SecondaryFilters } from "../components/SecondaryFilters";
 import { type ColumnDef, type SortingState, VirtualDataTable } from "../components/VirtualDataTable";
 import {
   emptyPipelineSearchFilters,
@@ -525,8 +528,6 @@ export function PipelineView({
     "organization_country_region",
     filters.organizationCountryRegion,
   );
-  const pageStart = data?.total ? data.offset + 1 : 0;
-  const pageEnd = data ? Math.min(data.offset + data.items.length, data.total) : 0;
   const hasFilters = Object.entries(initialFilters).some(
     ([key, value]) =>
       !["offset", "sortBy", "sortDirection", "sort"].includes(key) &&
@@ -615,36 +616,6 @@ export function PipelineView({
             selected={filters.modalities}
             onChange={(values) => updateFilter("modalities", values)}
           />
-          <FacetMultiSelect
-            label="创新类型"
-            options={innovationTypes.map((value) => ({
-              value,
-              label: value,
-              count: data?.facets?.innovation_type?.[value] ?? 0,
-            }))}
-            selected={filters.innovationTypes}
-            onChange={(values) => updateFilter("innovationTypes", values)}
-          />
-          <FacetMultiSelect
-            label="适应症领域"
-            options={therapeuticAreas.map((value) => ({
-              value,
-              label: value,
-              count: data?.facets?.therapeutic_area?.[value] ?? 0,
-            }))}
-            selected={filters.therapeuticAreas}
-            onChange={(values) => updateFilter("therapeuticAreas", values)}
-          />
-          <FacetMultiSelect
-            label="药品类别"
-            options={drugCategories.map((value) => ({
-              value,
-              label: value,
-              count: data?.facets?.drug_category?.[value] ?? 0,
-            }))}
-            selected={filters.drugCategories}
-            onChange={(values) => updateFilter("drugCategories", values)}
-          />
           <label>
             <span>项目状态</span>
             <select
@@ -674,17 +645,6 @@ export function PipelineView({
               {phases.map((value) => (
                 <option value={value} key={value}>
                   {phaseLabels[value] ?? value} ({data?.facets?.phase?.[value] ?? 0})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>记录地区</span>
-            <select value={filters.geography} onChange={(event) => updateFilter("geography", event.target.value)}>
-              <option value="">全部</option>
-              {geographies.map((value) => (
-                <option value={value} key={value}>
-                  {value} ({data?.facets?.geography?.[value] ?? 0})
                 </option>
               ))}
             </select>
@@ -737,6 +697,60 @@ export function PipelineView({
             onResolved={(entityId, name) => rememberEntity("organization_entity_id", entityId, name)}
           />
         </fieldset>
+
+        <SecondaryFilters
+          label="药物分类与记录地区"
+          activeCount={
+            [
+              filters.innovationTypes.length,
+              filters.therapeuticAreas.length,
+              filters.drugCategories.length,
+              filters.geography,
+            ].filter(Boolean).length
+          }
+        >
+          <FacetMultiSelect
+            label="创新类型"
+            options={innovationTypes.map((value) => ({
+              value,
+              label: value,
+              count: data?.facets?.innovation_type?.[value] ?? 0,
+            }))}
+            selected={filters.innovationTypes}
+            onChange={(values) => updateFilter("innovationTypes", values)}
+          />
+          <FacetMultiSelect
+            label="适应症领域"
+            options={therapeuticAreas.map((value) => ({
+              value,
+              label: value,
+              count: data?.facets?.therapeutic_area?.[value] ?? 0,
+            }))}
+            selected={filters.therapeuticAreas}
+            onChange={(values) => updateFilter("therapeuticAreas", values)}
+          />
+          <FacetMultiSelect
+            label="药品类别"
+            options={drugCategories.map((value) => ({
+              value,
+              label: value,
+              count: data?.facets?.drug_category?.[value] ?? 0,
+            }))}
+            selected={filters.drugCategories}
+            onChange={(values) => updateFilter("drugCategories", values)}
+          />
+          <label>
+            <span>记录地区</span>
+            <select value={filters.geography} onChange={(event) => updateFilter("geography", event.target.value)}>
+              <option value="">全部</option>
+              {geographies.map((value) => (
+                <option value={value} key={value}>
+                  {value} ({data?.facets?.geography?.[value] ?? 0})
+                </option>
+              ))}
+            </select>
+          </label>
+        </SecondaryFilters>
 
         <details className="advanced-filter-panel pipeline-advanced-filters" open={advancedCount > 0 || undefined}>
           <summary>
@@ -1092,16 +1106,19 @@ export function PipelineView({
         {data ? (
           <div className="domain-results">
             <div className="pipeline-result-toolbar">
-              <div className="result-summary">
-                <strong>{data.total}</strong>
-                <span>{resultGrain === "drug" ? "个药物" : "条研发项目"}</span>
-                <small>
-                  {resultGrain === "drug" && data.project_total !== undefined
-                    ? `覆盖 ${data.project_total} 条研发项目 · `
-                    : ""}
-                  {displayMode === "list" ? `${pageStart}-${pageEnd} · ` : ""}截止 {formatDate(data.as_of, true)}
-                </small>
-              </div>
+              <QueryResultSummary
+                total={data.total}
+                offset={data.offset}
+                count={data.items.length}
+                unit={resultGrain === "drug" ? "个药物" : "条研发项目"}
+                queriedAt={data.as_of}
+                showRange={displayMode === "list"}
+                note={
+                  resultGrain === "drug" && data.project_total !== undefined
+                    ? `覆盖 ${data.project_total} 条研发项目`
+                    : undefined
+                }
+              />
               <div className="pipeline-result-actions">
                 <QueryRefreshButton refreshing={result.isFetching} onRefresh={retryResult} />
                 <fieldset className="segmented-control">
@@ -1202,7 +1219,11 @@ export function PipelineView({
                 }}
               />
             ) : (
-              <EmptyState title="未观察到匹配管线" detail="可调整药品、靶点、适应症、研发机构或阶段条件后重试。" />
+              <EmptyQueryResult
+                domain="管线数据"
+                filtered={Boolean(data.applied_filters?.length)}
+                onClear={clearFilters}
+              />
             )}
             {displayMode === "list" ? (
               <ResultPagination

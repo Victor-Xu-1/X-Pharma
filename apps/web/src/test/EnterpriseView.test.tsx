@@ -15,6 +15,7 @@ import {
 } from "../lib/contracts/enterprise";
 import type { User } from "../lib/types";
 import { EnterpriseView } from "../views/EnterpriseView";
+import { PlatformOperationsPanel } from "../views/environment/PlatformPanel";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/enterprise", () => ({
@@ -59,10 +60,10 @@ it("keeps registration invitations usable when unrelated platform data is unavai
 it("keeps user management usable when platform operations are unavailable", async () => {
   vi.mocked(loadEnterprisePlatform).mockRejectedValue(new Error("Platform status is unavailable"));
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
-  await selectEnterpriseTab("平台运营");
-  await screen.findByText("Platform status is unavailable");
   await selectEnterpriseTab("用户与角色");
   await screen.findByText("Research Analyst");
+  expect(screen.queryByRole("tab", { name: "平台运营" })).not.toBeInTheDocument();
+  expect(loadEnterprisePlatform).not.toHaveBeenCalled();
   expect(screen.getByRole("button", { name: "新建用户" })).toBeEnabled();
 });
 
@@ -624,8 +625,7 @@ it("requires an explicit reason before revoking an active API key", async () => 
 });
 
 it("separates live platform signals from external release evidence", async () => {
-  renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
-  await selectEnterpriseTab("平台运营");
+  renderWithQueryClient(<PlatformOperationsPanel platform={workspace.platform} />);
   expect(screen.getByRole("table", { name: "平台服务状态" })).toHaveTextContent("platform-operations");
   expect(screen.getByText("pharma-data-factory", { exact: true })).toBeInTheDocument();
   expect(screen.getByRole("table", { name: "平台 SLO" })).toHaveTextContent("web-availability");

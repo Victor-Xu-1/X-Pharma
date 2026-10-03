@@ -114,6 +114,12 @@ docker compose -f compose.yaml -f compose.dev.yaml run --rm api pharma-bootstrap
 
 安装本机 Google Chrome 后，`make account-browser-acceptance` 为每个视口启动仅绑定回环地址的临时网关与独立 SQLite 数据库，以随机测试账号验证注册、登录、刷新、权限拒绝、邀请确认、组织切换、多标签会话一致性、私人研究隔离和退出，然后关闭进程并清理自己的临时环境。它不读取业务数据库，不依赖私有开发账号，不记录邀请码截图或浏览器 trace，也不关闭注册滥用预算。自定义 Chrome 可执行文件可通过 `E2E_BROWSER_EXECUTABLE` 指定；PostgreSQL 的迁移、强制 RLS 和并发领取另由数据库门禁验证。
 
+## 环境检测与安装管理
+
+内部管理员通过“环境管理”查看网关依赖、只读主机报告及运行/发布证据，生成锁定且默认离线的安装计划。实际安装由本地 `pharma-environment` 明确确认后执行，只覆盖当前项目的 Python/前端依赖及固定摘要部署工具；不向 Web 开放系统命令、Docker socket 或 WSL 重启。步骤、故障与边界见 [环境管理](docs/environment-management.md)。
+
+页面信息取舍、逐页改进和真实数据边界见 [研发人员视角界面审查](docs/researcher-experience-review.md)。
+
 ## 数据接入与 AI
 
 管理员注册来源后，数据经不可变快照、ClamAV、隔离解析、治理审核和投影进入平台。只有实际获授权的数据才能接入或交付。连接器、来源许可与注册操作见 [来源接入](runbooks/source-onboarding.md)，数据工厂调用关系见 [架构说明](docs/architecture.md)。

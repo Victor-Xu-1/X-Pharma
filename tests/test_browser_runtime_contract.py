@@ -25,6 +25,13 @@ def _bash_executable() -> str | None:
     return shutil.which("bash")
 
 
+def test_browser_fixture_requires_explicit_organization_before_any_runtime_setup() -> None:
+    script = (Path(__file__).parents[1] / "scripts/run-browser-acceptance.sh").read_text(encoding="utf-8")
+    assert "PHARMA_BROWSER_TENANT_SLUG must explicitly name an active test organization" in script
+    assert "SELECT id, slug FROM tenants ORDER BY created_at, id LIMIT 1" not in script
+    assert script.index("selected_tenant_slug=${PHARMA_BROWSER_TENANT_SLUG:-}") < script.index("for command in curl")
+
+
 def _bash_script_path(path: Path) -> str:
     if os.name != "nt":
         return str(path)
@@ -85,6 +92,11 @@ def test_google_chrome_acceptance_uses_a_signed_user_level_distribution() -> Non
     assert '"--workers=$browser_workers"' in acceptance_text
     assert "E2E_CHROME_EXECUTABLE" in runtime_text
     assert "browser_projects=(desktop-1440 desktop-1920 tablet-1024 mobile-390)" in acceptance_text
+    assert "selected_tenant_slug=${PHARMA_BROWSER_TENANT_SLUG:-}" in acceptance_text
+    assert '[[ "$selected_tenant_slug" =~ ^[a-z0-9][a-z0-9-]{0,79}$ ]]' in acceptance_text
+    assert "WHERE slug = :'selected_tenant_slug' AND active" in acceptance_text
+    assert "-v selected_tenant_slug=\"$selected_tenant_slug\" -F '|' <<'SQL'" in acceptance_text
+    assert "no fallback is permitted" in acceptance_text
     assert 'E2E_EMAIL_PREFIX="$email_prefix"' in acceptance_text
     assert 'E2E_REGULATORY_SUBJECT_ID="$regulatory_subject_id"' in acceptance_text
     assert "OR entity.id IN (" in acceptance_text
@@ -112,6 +124,8 @@ def test_google_chrome_acceptance_uses_a_signed_user_level_distribution() -> Non
     assert 'E2E_EMAIL="$email"' not in acceptance_text
     assert 'browser_product="Google Chrome"' in runtime_text
     assert '"research_workbench": "[research-workbench]"' in acceptance_text
+    assert '"researcher_review": "[researcher-review]"' in acceptance_text
+    assert '"environment_management": "[environment-management]"' in acceptance_text
     assert '"internal_workbench": "[internal-workbench]"' in acceptance_text
     assert '"ingestion_replay": "[ingestion-replay]"' in acceptance_text
     assert '"external_login": "[external-login]"' in acceptance_text

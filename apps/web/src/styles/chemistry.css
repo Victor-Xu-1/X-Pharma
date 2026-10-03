@@ -557,17 +557,9 @@
     display: inline-flex;
   }
   .topbar {
+    display: flex;
     gap: 9px;
     padding: 10px 14px;
-  }
-  .workspace-identity {
-    width: 36px;
-    min-width: 36px;
-    justify-content: center;
-    padding: 0;
-  }
-  .workspace-identity span {
-    display: none;
   }
   .research-workbench .public-topbar {
     display: flex;

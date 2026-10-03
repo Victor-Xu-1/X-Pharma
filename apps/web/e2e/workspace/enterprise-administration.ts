@@ -74,6 +74,20 @@ export async function verifyEnterpriseAdministration({
         },
       });
     }
+    if (path === "/api/v1/enterprise/environment") {
+      return route.fulfill({
+        json: {
+          generated_at: "2026-07-25T12:00:00Z",
+          product_version: "0.1.0",
+          environment: "test",
+          runtime: [],
+          host_status: "not_configured",
+          host: null,
+          host_detail: "UI-only fixture: host is not connected",
+          recipes: [],
+        },
+      });
+    }
     if (path === "/api/v1/enterprise/platform") {
       return route.fulfill({
         json: {
@@ -285,7 +299,8 @@ export async function verifyEnterpriseAdministration({
   await page.getByRole("button", { name: "确认变更" }).click();
   await expect.poll(() => sessionRevocations.length).toBe(1);
   expect(sessionRevocations[0]).toEqual({ reason: "Browser remote session revocation" });
-  await page.getByRole("tab", { name: "平台运营" }).click();
+  await page.getByRole("button", { name: "环境管理", exact: true }).click();
+  await page.getByRole("tab", { name: "运行与发布证据" }).click();
   await expect(page.getByRole("table", { name: "平台服务状态" })).toContainText("platform-operations");
   await expect(page.getByRole("table", { name: "平台 SLO" })).toContainText("web-availability");
   await expect(page.getByRole("table", { name: "平台发布证据" })).toContainText("backup_restore");

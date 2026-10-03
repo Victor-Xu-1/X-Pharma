@@ -191,8 +191,8 @@ export function TargetView({
             <dd>{data.profile.program_count}</dd>
           </div>
           <div>
-            <dt>数据截至</dt>
-            <dd>{formatDate(data.profile.as_of)}</dd>
+            <dt>查询时间</dt>
+            <dd title="本次档案查询时间，不代表所有来源的最后更新时间">{formatDate(data.profile.as_of, true)}</dd>
           </div>
         </dl>
         <ResearchTabList

@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "../components/common";
+import { DossierCoverageDisclosure } from "../components/DossierCoverageDisclosure";
 import { MoleculeDepiction } from "../components/MoleculeDepiction";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
@@ -986,42 +987,49 @@ function DrugOverview({
         </section>
       </div>
 
-      <section className="drug-profile-section drug-profile-coverage">
-        <header>
-          <div>
-            <span>数据概览</span>
-            <h3>各类信息收录情况</h3>
-          </div>
-          <span>数据截至 {formatDate(data.as_of)}</span>
-        </header>
-        <ScrollableTableRegion ariaLabel="药物档案领域数据覆盖">
-          <table aria-label="药物档案领域数据覆盖">
-            <thead>
-              <tr>
-                <th>信息类型</th>
-                <th>收录数量</th>
-                <th>状态</th>
-              </tr>
-            </thead>
-            <tbody>
-              {publicDrugCoverage(data).map((item) => (
-                <tr key={item.domain}>
-                  <td>{coverageLabel(item.domain)}</td>
-                  <td>{item.total}</td>
-                  <td>
-                    <StatusBadge value={item.status} />
-                  </td>
+      <DossierCoverageDisclosure
+        available={publicDrugCoverage(data).filter((item) => item.total > 0).length}
+        total={data.coverage.length}
+      >
+        <section className="drug-profile-section drug-profile-coverage">
+          <header>
+            <div>
+              <span>数据概览</span>
+              <h3>各类信息收录情况</h3>
+            </div>
+            <time dateTime={data.as_of} title="本次档案查询时间，不代表所有来源的最后更新时间">
+              查询时间 {formatDate(data.as_of, true)}
+            </time>
+          </header>
+          <ScrollableTableRegion ariaLabel="药物档案领域数据覆盖">
+            <table aria-label="药物档案领域数据覆盖">
+              <thead>
+                <tr>
+                  <th>信息类型</th>
+                  <th>收录数量</th>
+                  <th>状态</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </ScrollableTableRegion>
-        {coverageNotice ? (
-          <p className="inline-alert">
-            <ShieldCheck size={15} /> {coverageNotice}
-          </p>
-        ) : null}
-      </section>
+              </thead>
+              <tbody>
+                {publicDrugCoverage(data).map((item) => (
+                  <tr key={item.domain}>
+                    <td>{coverageLabel(item.domain)}</td>
+                    <td>{item.total}</td>
+                    <td>
+                      <StatusBadge value={item.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ScrollableTableRegion>
+          {coverageNotice ? (
+            <p className="inline-alert">
+              <ShieldCheck size={15} /> {coverageNotice}
+            </p>
+          ) : null}
+        </section>
+      </DossierCoverageDisclosure>
     </div>
   );
 }

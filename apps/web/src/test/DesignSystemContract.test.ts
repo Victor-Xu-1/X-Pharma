@@ -101,6 +101,24 @@ function workspaceWhereRule(css: string, selector: string) {
 }
 
 describe("unified OpenAI-inspired minimal light design system", () => {
+  it("wraps full entity identifiers without hiding or clipping mobile dossier content", () => {
+    const layout = source("../styles.css");
+    const identity = ruleBody(layout, ".target-title-row > div > div:last-child");
+    expect(identity).toContain("min-width: 0;");
+    expect(identity).toContain("overflow-wrap: anywhere;");
+    expect(identity).not.toContain("overflow: hidden");
+    expect(ruleBody(layout, ".target-symbol")).toContain("flex-shrink: 0;");
+    for (const selector of [
+      ".drug-profile-identity",
+      ".company-profile-identity",
+      ".entity-dossier-title > div:last-child",
+    ]) {
+      const body = ruleBody(layout, selector);
+      expect(body).toContain("min-width: 0;");
+      expect(body).toContain("overflow-wrap: anywhere;");
+      expect(body).not.toContain("overflow: hidden");
+    }
+  });
   it("lets composed candidate controls own a single input border", () => {
     const layout = source("../styles.css");
     expect(ruleBody(layout, ".professional-query-fields :where(input, select)")).toContain("width: 100%;");
@@ -263,7 +281,7 @@ describe("unified OpenAI-inspired minimal light design system", () => {
     expect(designSystem).toContain("--ds-leading-compact: 1.4;");
     expect(designSystem).toContain("--ds-leading-body: 1.5;");
     expect(ruleBody(designSystem, "body")).toContain("font-size: var(--ds-text-md);");
-    expect(ruleBody(designSystem, ".workspace-identity")).toContain("font-size: var(--ds-text-xs);");
+    expect(designSystem).not.toContain(".workspace-identity");
     expect(loginMicrocopyRule).not.toBeNull();
     expect(loginMicrocopyRule?.[1]).toContain("font-size: var(--ds-text-xs);");
     expect(loginMicrocopyRule?.[1]).toContain("line-height: var(--ds-leading-compact);");
@@ -444,9 +462,7 @@ describe("unified OpenAI-inspired minimal light design system", () => {
     expect(iconButton).toContain("width: var(--ds-icon-control-size);");
     expect(iconButton).toContain("height: var(--ds-icon-control-size);");
 
-    const shellNavigation = designSystem.match(
-      /\.nav-button,\s*\.collapse-button,\s*\.workspace-identity\s*\{([^}]*)\}/,
-    )?.[1];
+    const shellNavigation = designSystem.match(/\.nav-button,\s*\.collapse-button\s*\{([^}]*)\}/)?.[1];
     expect(shellNavigation).toContain("min-height: var(--ds-control-height);");
     expect(shellNavigation).toContain("border-radius: var(--ds-radius-control);");
 

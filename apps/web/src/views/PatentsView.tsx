@@ -3,7 +3,6 @@ import { ArrowLeft, BookmarkPlus, ExternalLink, FileText, Search } from "lucide-
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { AddToComparisonControl } from "../components/AddToComparisonControl";
 import {
-  EmptyState,
   ErrorState,
   formatDate,
   ProfessionalQueryState,
@@ -12,9 +11,11 @@ import {
   StatusBadge,
 } from "../components/common";
 import { DomainExportControl } from "../components/DomainExportControl";
+import { EmptyQueryResult } from "../components/EmptyQueryResult";
 import { EntityFilterSelect } from "../components/EntityFilterSelect";
 import { PatentLandscape } from "../components/PatentLandscape";
 import { PatentTimeline } from "../components/PatentTimeline";
+import { QueryResultSummary } from "../components/QueryResultSummary";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
 import { ResultPagination } from "../components/ResultPagination";
@@ -415,8 +416,6 @@ export function PatentsView({
   const sorting: SortingState = tableSortingFromCriteria(initialSort, initialSortBy, initialSortDirection);
   const applicants = facetOptions(data?.facets, "applicant", applicant);
   const legalStatuses = facetOptions(data?.facets, "legal_status", legalStatus);
-  const pageStart = data?.total ? data.offset + 1 : 0;
-  const pageEnd = data ? Math.min(data.offset + data.items.length, data.total) : 0;
   const hasFilters = Boolean(initialQuery || initialApplicant || initialLegalStatus);
 
   function retryResult() {
@@ -557,13 +556,13 @@ export function PatentsView({
           {data ? (
             <div className="domain-results">
               <div className="pipeline-result-toolbar">
-                <div className="result-summary">
-                  <strong>{data.total}</strong>
-                  <span>项专利族</span>
-                  <small>
-                    {pageStart}-{pageEnd} · 截止 {formatDate(data.as_of, true)}
-                  </small>
-                </div>
+                <QueryResultSummary
+                  total={data.total}
+                  offset={data.offset}
+                  count={data.items.length}
+                  unit="项专利族"
+                  queriedAt={data.as_of}
+                />
                 <div className="pipeline-result-actions">
                   <QueryRefreshButton refreshing={result.isFetching} onRefresh={retryResult} />
                   <fieldset className="segmented-control">
@@ -649,9 +648,10 @@ export function PatentsView({
                   }}
                 />
               ) : (
-                <EmptyState
-                  title="未观察到匹配专利族"
-                  detail="可调整关键词、申请人、辖区、法律状态或日期条件后重试。"
+                <EmptyQueryResult
+                  domain="专利族"
+                  filtered={Boolean(data.applied_filters?.length)}
+                  onClear={clearFilters}
                 />
               )}
               <ResultPagination
