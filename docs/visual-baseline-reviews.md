@@ -34,8 +34,10 @@ not successful test claims.
 
 The canonical full-coverage guard rejects these focused registrations as
 expected. The existing manifest generator was reused after inspecting the
-final inventory. Read-only comparison and the mandatory current PR CI are
-separate gates; only actual results may establish the new 144-case automatic
+final inventory. The original 28-owner scoped read-only comparison then passed
+28/28 in 8.0 minutes without updating snapshots; its complete-coverage claim
+was still rejected as intended. Mandatory current PR CI remains a separate
+gate; only actual results may establish the new 144-case automatic
 matrix or exact-main deployment. These fixtures and screenshots are not
 scientific results, customer data coverage or production acceptance.
 

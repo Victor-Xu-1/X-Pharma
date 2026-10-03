@@ -1100,7 +1100,9 @@ class CommercialUsageService:
             UsageReservation.subject_id == self.principal.actor_id,
         )
         if lock:
-            statement = statement.with_for_update()
+            # The pre-lock lookup may already have cached this row. Re-read committed
+            # state after acquiring the lock instead of authorizing that old snapshot.
+            statement = statement.with_for_update().execution_options(populate_existing=True)
         reservation = self.session.scalar(statement)
         if reservation is None:
             raise CommercialAccessDenied("Usage reservation is unavailable for this Agent subject")
