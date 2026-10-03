@@ -101,6 +101,13 @@ function workspaceWhereRule(css: string, selector: string) {
 }
 
 describe("unified OpenAI-inspired minimal light design system", () => {
+  it("lets composed candidate controls own a single input border", () => {
+    const layout = source("../styles.css");
+    expect(ruleBody(layout, ".professional-query-fields :where(input, select)")).toContain("width: 100%;");
+    expect(ruleBody(layout, ".entity-filter-combobox input")).toContain("border: 0;");
+    expect(layout).not.toMatch(/\.professional-query-fields input,\s*\.professional-query-fields select/);
+  });
+
   it("uses white canvas, neutral navigation and one sans-serif hierarchy in both entrances", () => {
     const designSystem = source("../design-system.css");
     const baseStyles = source("../styles.css");

@@ -46,6 +46,8 @@ from pharma_intel.security import Principal, require_principal
 from pharma_intel.sorting import SortClause
 from tests.support.commercial import seed_commercial_contract
 
+type QueryArgument = str | int | float | bool | None | list[str]
+
 
 def test_agent_entity_dossier_requires_matching_paid_reservation_and_scope(
     session: Session,
@@ -330,7 +332,7 @@ def test_agent_entity_domain_uses_reserved_opaque_cursor_without_offset_enumerat
     app.dependency_overrides[require_principal] = lambda: contract.principal
     try:
         with TestClient(app) as client:
-            first_arguments = {
+            first_arguments: dict[str, QueryArgument] = {
                 "q": "Target",
                 "entity_type": "target",
                 "review_status": "verified",
@@ -1041,7 +1043,7 @@ def test_agent_page_routes_bind_commercial_arguments_and_fetch_one_extra_row(
     def session_override() -> Generator[Session]:
         yield session
 
-    cases: list[tuple[str, str, dict[str, object], dict[str, object]]] = [
+    cases: list[tuple[str, str, dict[str, QueryArgument], dict[str, object]]] = [
         (
             "target.evidence.search",
             "/internal/v1/domain/targets/target-1/evidence",

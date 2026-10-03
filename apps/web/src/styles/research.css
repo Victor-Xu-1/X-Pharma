@@ -1834,8 +1834,7 @@
   color: var(--ds-ink-muted);
   font-size: 10px;
 }
-.professional-query-fields input,
-.professional-query-fields select {
+.professional-query-fields :where(input, select) {
   width: 100%;
   min-height: 32px;
   border: 1px solid var(--ds-border);
