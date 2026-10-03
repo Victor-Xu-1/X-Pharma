@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { LockKeyhole, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
 
 import { ApiError } from "../lib/api";
@@ -111,7 +111,6 @@ export function LoginScreen({
           </span>
         </div>
         <div className="login-title">
-          <p className="eyebrow">{internal ? "内部管理" : "研发情报平台"}</p>
           <h1>{internal ? "内部管理工作台" : "医药情报工作台"}</h1>
           <p>{internal ? "数据接入、AI 治理、商业运营与企业审计" : "药物、靶点、临床、专利与交易数据"}</p>
         </div>
@@ -135,9 +134,7 @@ export function LoginScreen({
         ) : (
           <form className="login-form" onSubmit={submit}>
             {entryControls}
-            <LockKeyhole size={24} aria-hidden="true" />
             <div>
-              <p className="eyebrow">{internal ? "管理员登录" : "账号登录"}</p>
               <h2>{mode === "oidc" ? "企业身份登录" : "账户登录"}</h2>
             </div>
             {registeredNotice ? (

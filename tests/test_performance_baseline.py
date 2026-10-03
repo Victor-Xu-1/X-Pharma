@@ -68,13 +68,13 @@ async def test_concurrent_idempotency_collapses_racing_calls(monkeypatch: pytest
         result_index += 1
         if result_index == 1:
             return SimpleNamespace(
-                isError=False,
-                structuredContent={"usage": {"settlement_id": "settlement-one"}},
+                is_error=False,
+                structured_content={"usage": {"settlement_id": "settlement-one"}},
                 content=[],
             )
         return SimpleNamespace(
-            isError=True,
-            structuredContent=None,
+            is_error=True,
+            structured_content=None,
             content=[TextContent(type="text", text="commercial request is already reserved")],
         )
 

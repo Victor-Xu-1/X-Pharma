@@ -3,7 +3,14 @@ from __future__ import annotations
 import enum
 
 
-class EntityType(str, enum.Enum):
+class _PersistedStringEnum(enum.StrEnum):
+    """Keep established symbolic formatting while modernizing the string enum type."""
+
+    __str__ = enum.Enum.__str__
+    __format__ = enum.Enum.__format__
+
+
+class EntityType(_PersistedStringEnum):
     DRUG = "drug"
     TARGET = "target"
     DISEASE = "disease"
@@ -16,27 +23,27 @@ class EntityType(str, enum.Enum):
     PERSON = "person"
 
 
-class ReviewStatus(str, enum.Enum):
+class ReviewStatus(_PersistedStringEnum):
     DRAFT = "draft"
     VERIFIED = "verified"
     REJECTED = "rejected"
     SUPERSEDED = "superseded"
 
 
-class ResolutionStatus(str, enum.Enum):
+class ResolutionStatus(_PersistedStringEnum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
     REVERTED = "reverted"
 
 
-class UserRole(str, enum.Enum):
+class UserRole(_PersistedStringEnum):
     ADMIN = "admin"
     ANALYST = "analyst"
     VIEWER = "viewer"
 
 
-class AssetStatus(str, enum.Enum):
+class AssetStatus(_PersistedStringEnum):
     DISCOVERED = "discovered"
     REGISTERED = "registered"
     UPLOADED = "uploaded"
@@ -47,7 +54,7 @@ class AssetStatus(str, enum.Enum):
     EXCLUDED = "excluded"
 
 
-class DevelopmentPhase(str, enum.Enum):
+class DevelopmentPhase(_PersistedStringEnum):
     DISCOVERY = "discovery"
     PRECLINICAL = "preclinical"
     IND = "ind"
@@ -61,7 +68,7 @@ class DevelopmentPhase(str, enum.Enum):
     DISCONTINUED = "discontinued"
 
 
-class ProgramOrganizationRole(str, enum.Enum):
+class ProgramOrganizationRole(_PersistedStringEnum):
     ORIGINATOR = "originator"
     COLLABORATOR = "collaborator"
     LICENSEE = "licensee"
@@ -70,12 +77,12 @@ class ProgramOrganizationRole(str, enum.Enum):
     OTHER = "other"
 
 
-class ProgramTargetRole(str, enum.Enum):
+class ProgramTargetRole(_PersistedStringEnum):
     PRIMARY = "primary"
     COMBINATION = "combination"
 
 
-class TrialResultEvaluation(str, enum.Enum):
+class TrialResultEvaluation(_PersistedStringEnum):
     UNFAVORABLE = "unfavorable"
     NOT_SUPERIOR = "not_superior"
     NON_INFERIOR = "non_inferior"
@@ -85,14 +92,14 @@ class TrialResultEvaluation(str, enum.Enum):
     TERMINATED = "terminated"
 
 
-class TrialEntityRole(str, enum.Enum):
+class TrialEntityRole(_PersistedStringEnum):
     INVESTIGATIONAL_DRUG = "investigational_drug"
     COMBINATION_DRUG = "combination_drug"
     INVESTIGATIONAL_TARGET = "investigational_target"
     COMBINATION_TARGET = "combination_target"
 
 
-class TrialResultDisclosureType(str, enum.Enum):
+class TrialResultDisclosureType(_PersistedStringEnum):
     JOURNAL_ARTICLE = "journal_article"
     CONFERENCE_ABSTRACT = "conference_abstract"
     CONFERENCE_PRESENTATION = "conference_presentation"
@@ -102,7 +109,7 @@ class TrialResultDisclosureType(str, enum.Enum):
     OTHER = "other"
 
 
-class DealStatus(str, enum.Enum):
+class DealStatus(_PersistedStringEnum):
     ANNOUNCED = "announced"
     ACTIVE = "active"
     COMPLETED = "completed"
@@ -112,7 +119,7 @@ class DealStatus(str, enum.Enum):
     UNKNOWN = "unknown"
 
 
-class DealDirection(str, enum.Enum):
+class DealDirection(_PersistedStringEnum):
     DOMESTIC = "domestic"
     INBOUND = "inbound"
     OUTBOUND = "outbound"
@@ -121,7 +128,7 @@ class DealDirection(str, enum.Enum):
     UNDISCLOSED = "undisclosed"
 
 
-class DealPartyRole(str, enum.Enum):
+class DealPartyRole(_PersistedStringEnum):
     LICENSOR = "licensor"
     LICENSEE = "licensee"
     SELLER = "seller"
@@ -134,7 +141,7 @@ class DealPartyRole(str, enum.Enum):
     OTHER = "other"
 
 
-class DealRightType(str, enum.Enum):
+class DealRightType(_PersistedStringEnum):
     RESEARCH = "research"
     DEVELOPMENT = "development"
     MANUFACTURING = "manufacturing"
@@ -146,7 +153,7 @@ class DealRightType(str, enum.Enum):
     OTHER = "other"
 
 
-class RegulatoryDesignationType(str, enum.Enum):
+class RegulatoryDesignationType(_PersistedStringEnum):
     BREAKTHROUGH_THERAPY = "breakthrough_therapy"
     FAST_TRACK = "fast_track"
     PRIORITY_REVIEW = "priority_review"
@@ -158,7 +165,7 @@ class RegulatoryDesignationType(str, enum.Enum):
     OTHER = "other"
 
 
-class RegulatoryLabelChangeType(str, enum.Enum):
+class RegulatoryLabelChangeType(_PersistedStringEnum):
     INITIAL_LABEL = "initial_label"
     INDICATION_EXPANSION = "indication_expansion"
     POPULATION_EXPANSION = "population_expansion"
@@ -171,7 +178,7 @@ class RegulatoryLabelChangeType(str, enum.Enum):
     OTHER = "other"
 
 
-class RegulatorySafetySignalType(str, enum.Enum):
+class RegulatorySafetySignalType(_PersistedStringEnum):
     ADVERSE_EVENT = "adverse_event"
     BOXED_WARNING = "boxed_warning"
     CONTRAINDICATION = "contraindication"
@@ -182,7 +189,7 @@ class RegulatorySafetySignalType(str, enum.Enum):
     OTHER = "other"
 
 
-class RegulatorySafetySeverity(str, enum.Enum):
+class RegulatorySafetySeverity(_PersistedStringEnum):
     INFORMATIONAL = "informational"
     MODERATE = "moderate"
     SERIOUS = "serious"
@@ -192,7 +199,7 @@ class RegulatorySafetySeverity(str, enum.Enum):
     UNKNOWN = "unknown"
 
 
-class RegulatorySafetyStatus(str, enum.Enum):
+class RegulatorySafetyStatus(_PersistedStringEnum):
     DETECTED = "detected"
     UNDER_EVALUATION = "under_evaluation"
     CONFIRMED = "confirmed"
@@ -202,7 +209,7 @@ class RegulatorySafetyStatus(str, enum.Enum):
     UNKNOWN = "unknown"
 
 
-class MeasurementRelation(str, enum.Enum):
+class MeasurementRelation(_PersistedStringEnum):
     EQUAL = "="
     LESS_THAN = "<"
     LESS_OR_EQUAL = "<="
@@ -211,7 +218,7 @@ class MeasurementRelation(str, enum.Enum):
     APPROXIMATE = "~"
 
 
-class DataSourceType(str, enum.Enum):
+class DataSourceType(_PersistedStringEnum):
     FOLDER = "folder"
     HTTP_MANIFEST = "http_manifest"
     CLINICALTRIALS_GOV = "clinicaltrials_gov"
@@ -222,21 +229,21 @@ class DataSourceType(str, enum.Enum):
     SMB_SNAPSHOT = "smb_snapshot"
 
 
-class DataSourceState(str, enum.Enum):
+class DataSourceState(_PersistedStringEnum):
     ACTIVE = "active"
     PAUSED = "paused"
     UNAVAILABLE = "unavailable"
     DISABLED = "disabled"
 
 
-class SourceAssetState(str, enum.Enum):
+class SourceAssetState(_PersistedStringEnum):
     ACTIVE = "active"
     MISSING = "missing"
     SOURCE_UNAVAILABLE = "source_unavailable"
     DELETED = "deleted"
 
 
-class SourceVersionState(str, enum.Enum):
+class SourceVersionState(_PersistedStringEnum):
     DISCOVERED = "discovered"
     SNAPSHOTTED = "snapshotted"
     PARSED = "parsed"
@@ -248,7 +255,7 @@ class SourceVersionState(str, enum.Enum):
     FAILED = "failed"
 
 
-class QuarantineStatus(str, enum.Enum):
+class QuarantineStatus(_PersistedStringEnum):
     NOT_APPLICABLE = "not_applicable"
     PENDING_REVIEW = "pending_review"
     HELD = "held"
@@ -257,7 +264,7 @@ class QuarantineStatus(str, enum.Enum):
     CLEARED = "cleared"
 
 
-class RunState(str, enum.Enum):
+class RunState(_PersistedStringEnum):
     PENDING = "pending"
     RUNNING = "running"
     SUCCEEDED = "succeeded"
@@ -266,7 +273,7 @@ class RunState(str, enum.Enum):
     PARTIAL = "partial"
 
 
-class StageStatus(str, enum.Enum):
+class StageStatus(_PersistedStringEnum):
     NOT_STARTED = "not_started"
     RUNNING = "running"
     SUCCEEDED = "succeeded"
@@ -274,7 +281,7 @@ class StageStatus(str, enum.Enum):
     SKIPPED = "skipped"
 
 
-class GovernanceStatus(str, enum.Enum):
+class GovernanceStatus(_PersistedStringEnum):
     PROPOSED = "proposed"
     VALIDATED = "validated"
     CONFLICT = "conflict"
@@ -285,51 +292,51 @@ class GovernanceStatus(str, enum.Enum):
     WITHDRAWN = "withdrawn"
 
 
-class KnowledgePageStatus(str, enum.Enum):
+class KnowledgePageStatus(_PersistedStringEnum):
     DRAFT = "draft"
     PUBLISHED = "published"
     ARCHIVED = "archived"
 
 
-class OutboxState(str, enum.Enum):
+class OutboxState(_PersistedStringEnum):
     PENDING = "pending"
     PUBLISHED = "published"
     FAILED = "failed"
 
 
-class ProjectionDeliveryState(str, enum.Enum):
+class ProjectionDeliveryState(_PersistedStringEnum):
     PROCESSING = "processing"
     RETRY = "retry"
     SUCCEEDED = "succeeded"
     DEAD = "dead"
 
 
-class SavedSearchVisibility(str, enum.Enum):
+class SavedSearchVisibility(_PersistedStringEnum):
     PRIVATE = "private"
     TENANT = "tenant"
 
 
-class BillingAccountStatus(str, enum.Enum):
+class BillingAccountStatus(_PersistedStringEnum):
     ACTIVE = "active"
     SUSPENDED = "suspended"
     CLOSED = "closed"
 
 
-class SubscriptionStatus(str, enum.Enum):
+class SubscriptionStatus(_PersistedStringEnum):
     ACTIVE = "active"
     SUSPENDED = "suspended"
     CANCELED = "canceled"
     EXPIRED = "expired"
 
 
-class UsageReservationState(str, enum.Enum):
+class UsageReservationState(_PersistedStringEnum):
     RESERVED = "reserved"
     SETTLED = "settled"
     RELEASED = "released"
     EXPIRED = "expired"
 
 
-class CommercialLedgerEventType(str, enum.Enum):
+class CommercialLedgerEventType(_PersistedStringEnum):
     CREDIT_GRANTED = "credit_granted"
     USAGE_RESERVED = "usage_reserved"
     USAGE_SETTLED = "usage_settled"

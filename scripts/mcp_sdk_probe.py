@@ -9,10 +9,10 @@ import uuid
 from importlib.metadata import version
 from typing import Any, Protocol, cast
 
-import httpx
+import httpx2
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
-from mcp.types import CallToolResult, Implementation, InitializeResult, ListToolsResult
+from mcp.types import CallToolResult, Implementation, InitializeResult, ListToolsResult, PaginatedRequestParams
 
 from pharma_intel.product import PRODUCT_NAME, PRODUCT_VERSION
 from scripts.mcp_contract_fingerprint import tool_contract_sha256
@@ -36,10 +36,13 @@ class ClientSessionAdapter:
         return await self._session.initialize()
 
     async def list_tools(self, cursor: str | None = None) -> ListToolsResult:
-        return await self._session.list_tools(cursor)
+        return await self._session.list_tools(params=PaginatedRequestParams(cursor=cursor) if cursor else None)
 
     async def call_tool(self, name: str, arguments: dict[str, Any] | None = None) -> CallToolResult:
-        return await self._session.call_tool(name, arguments)
+        result = await self._session.call_tool(name, arguments)
+        if not isinstance(result, CallToolResult):
+            raise RuntimeError("Acceptance tools must return a final non-interactive result")
+        return result
 
 
 def _validate_query(query: str) -> str:
@@ -49,13 +52,13 @@ def _validate_query(query: str) -> str:
 
 
 def structured_tool_result(result: CallToolResult) -> dict[str, Any]:
-    if result.isError:
+    if result.is_error:
         detail = "unknown tool error"
         if result.content and hasattr(result.content[0], "text"):
             detail = str(result.content[0].text)[:1000]
         raise RuntimeError(f"Python SDK tool returned an error: {detail}")
-    if isinstance(result.structuredContent, dict):
-        return result.structuredContent
+    if isinstance(result.structured_content, dict):
+        return result.structured_content
     if not result.content or not hasattr(result.content[0], "text"):
         raise RuntimeError("Python SDK response has no structured or text content")
     decoded = json.loads(str(result.content[0].text))
@@ -65,7 +68,7 @@ def structured_tool_result(result: CallToolResult) -> dict[str, Any]:
 
 
 def expected_tool_error(result: CallToolResult, operation: str) -> str:
-    if result.isError is not True:
+    if result.is_error is not True:
         raise RuntimeError(f"Python SDK {operation} unexpectedly succeeded")
     detail = "unknown tool error"
     if result.content and hasattr(result.content[0], "text"):
@@ -101,7 +104,7 @@ async def list_all_tools(session: McpSession) -> list[Any]:
     for _ in range(20):
         page = await session.list_tools(cursor=cursor)
         tools.extend(page.tools)
-        cursor = page.nextCursor
+        cursor = page.next_cursor
         if cursor is None:
             return tools
         if cursor in seen_cursors:
@@ -117,15 +120,15 @@ async def verify_session(
 ) -> dict[str, Any]:
     query = _validate_query(query)
     initialized = await session.initialize()
-    server_info = initialized.serverInfo
-    if not server_info.name or not initialized.protocolVersion:
+    server_info = initialized.server_info
+    if not server_info.name or not initialized.protocol_version:
         raise RuntimeError("Python SDK initialize response omitted server or protocol metadata")
     if server_info.name != PRODUCT_NAME or server_info.version != PRODUCT_VERSION:
         raise RuntimeError("Python SDK initialized an unexpected X-Pharma product identity")
-    if initialized.protocolVersion != expected_protocol_version:
+    if initialized.protocol_version != expected_protocol_version:
         raise RuntimeError(
             "Python SDK negotiated an unexpected protocol version: "
-            f"{initialized.protocolVersion} != {expected_protocol_version}"
+            f"{initialized.protocol_version} != {expected_protocol_version}"
         )
 
     tools = await list_all_tools(session)
@@ -133,8 +136,8 @@ async def verify_session(
         [
             {
                 "name": tool.name,
-                "inputSchema": tool.inputSchema,
-                "outputSchema": tool.outputSchema,
+                "inputSchema": tool.input_schema,
+                "outputSchema": tool.output_schema,
             }
             for tool in tools
         ]
@@ -159,7 +162,7 @@ async def verify_session(
     if missing:
         raise RuntimeError(f"Python SDK tools/list omitted: {sorted(missing)}")
     search_tool = next(tool for tool in tools if tool.name == "search_entities")
-    properties = search_tool.inputSchema.get("properties")
+    properties = search_tool.input_schema.get("properties")
     if not isinstance(properties, dict) or not {"query", "limit", "cursor"} <= properties.keys():
         raise RuntimeError("Python SDK search_entities schema is incomplete")
 
@@ -312,7 +315,7 @@ async def verify_session(
         "client_version": version("mcp"),
         "server_name": server_info.name,
         "server_version": server_info.version,
-        "protocol_version": initialized.protocolVersion,
+        "protocol_version": initialized.protocol_version,
         "tools": len(names),
         "tool_contract_sha256": tool_contract,
         "billed_calls": 5,
@@ -387,9 +390,9 @@ async def verify(
     if installed_sdk_version != expected_sdk_version:
         raise RuntimeError(f"Python MCP SDK version mismatch: {installed_sdk_version} != {expected_sdk_version}")
     headers = {"Authorization": f"Bearer {token}"}
-    timeout = httpx.Timeout(60, connect=10)
-    async with httpx.AsyncClient(headers=headers, timeout=timeout, trust_env=False) as http_client:
-        async with streamable_http_client(url, http_client=http_client) as (read_stream, write_stream, _session_id):
+    timeout = httpx2.Timeout(60, connect=10)
+    async with httpx2.AsyncClient(headers=headers, timeout=timeout, trust_env=False) as http_client:
+        async with streamable_http_client(url, http_client=http_client) as (read_stream, write_stream):
             client_info = Implementation(name="pharma-python-sdk-acceptance", version=version("mcp"))
             async with ClientSession(read_stream, write_stream, client_info=client_info) as session:
                 return await verify_session(

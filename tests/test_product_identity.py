@@ -3,12 +3,11 @@ from __future__ import annotations
 import asyncio
 import json
 import tomllib
-from datetime import timedelta
 from importlib.metadata import metadata
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-from mcp.shared.memory import create_connected_server_and_client_session
+from mcp import Client
 
 from pharma_intel import __version__
 from pharma_intel.api import app
@@ -50,10 +49,10 @@ def test_liveness_exposes_product_identity_without_changing_readiness_or_authori
 
 def test_real_mcp_initialization_reports_product_version_not_sdk_version() -> None:
     async def initialize() -> None:
-        async with create_connected_server_and_client_session(mcp, read_timeout_seconds=timedelta(seconds=5)) as client:
-            result = await client.initialize()
-            assert result.serverInfo.name == PRODUCT_NAME
-            assert result.serverInfo.version == __version__
-            assert result.protocolVersion == "2025-11-25"
+        async with Client(mcp, mode="legacy", read_timeout_seconds=5) as client:
+            assert client.server_info is not None
+            assert client.server_info.name == PRODUCT_NAME
+            assert client.server_info.version == __version__
+            assert client.protocol_version == "2025-11-25"
 
     asyncio.run(initialize())

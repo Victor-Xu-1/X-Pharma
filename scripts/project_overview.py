@@ -17,11 +17,11 @@ MATRICES = (
 STATUS = {"implemented": "代码已实现", "partial": "部分实现 / 待验收", "planned": "计划中", "not_started": "未实现"}
 STYLE = """
 :root{color-scheme:light;
---paper:#faf9f5;
---ink:#292824;
---muted:#66655e;
---line:#dedbd2;
---accent:#a65135}
+--paper:#ffffff;
+--ink:#0d0d0d;
+--muted:#5d5d5d;
+--line:#e5e5e5;
+--accent:#303030}
 
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -42,8 +42,8 @@ gap:12px;
 font-size:19px}
 .brand img{width:46px;
 height:46px}
-h1,h2,h3{font-family:Georgia,'Songti SC',serif;
-font-weight:500;
+h1,h2,h3{font-family:system-ui,sans-serif;
+font-weight:600;
 line-height:1.3}
 
 h1{font-size:clamp(32px,5vw,54px);
@@ -73,7 +73,7 @@ gap:16px}
 .card,.node{border:1px solid var(--line);
 border-radius:14px;
 padding:21px;
-background:#fffefa}
+background:#ffffff}
 
 .card p:last-child{margin:0}
 .flow{display:grid;
@@ -89,7 +89,7 @@ color:var(--muted);
 font-size:14px}
 .note{border-left:3px solid var(--accent);
 padding:12px 18px;
-background:#f2ede4}
+background:#f7f7f7}
 
 .muted,small{color:var(--muted)}
 .pill{display:inline-block;
@@ -102,7 +102,7 @@ white-space:nowrap}
 details{margin:12px 0;
 border:1px solid var(--line);
 border-radius:12px;
-background:#fffefa}
+background:#ffffff}
 summary{cursor:pointer;
 padding:17px 20px;
 font-weight:550}

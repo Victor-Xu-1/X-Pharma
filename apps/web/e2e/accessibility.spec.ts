@@ -46,12 +46,12 @@ async function findWcagViolations(page: Page, context: string) {
 }
 
 async function expectSharedLightTheme(page: Page) {
-  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(250, 249, 245)");
-  await expect(page.locator("h1").first()).toHaveCSS("font-family", /Georgia/);
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(page.locator("h1").first()).toHaveCSS("font-family", /sans-serif/);
   const sidebar = page.locator(".workspace-sidebar");
   if (await sidebar.count()) {
-    await expect(sidebar).toHaveCSS("background-color", "rgb(240, 238, 230)");
-    await expect(sidebar).toHaveCSS("color", "rgb(61, 61, 58)");
+    await expect(sidebar).toHaveCSS("background-color", "rgb(249, 249, 249)");
+    await expect(sidebar).toHaveCSS("color", "rgb(48, 48, 48)");
   }
 }
 

@@ -17,6 +17,7 @@ import { EntityFilterSelect } from "../components/EntityFilterSelect";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResultPagination } from "../components/ResultPagination";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
+import { SecondaryFilters } from "../components/SecondaryFilters";
 import { type ColumnDef, type SortingState, VirtualDataTable } from "../components/VirtualDataTable";
 import {
   hasNewsSearchFilter,
@@ -488,44 +489,50 @@ export function NewsView({
               ))}
             </select>
           </label>
-          <label>
-            <span>语言</span>
-            <select value={filters.language} onChange={(event) => updateFilter("language", event.target.value)}>
-              <option value="">全部</option>
-              {languages.map((value) => (
-                <option value={value} key={value}>
-                  {value} ({data?.facets?.language?.[value] ?? 0})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>会议 / 场景</span>
-            <select value={filters.venue} onChange={(event) => updateFilter("venue", event.target.value)}>
-              <option value="">全部</option>
-              {venues.map((value) => (
-                <option value={value} key={value}>
-                  {value} ({data?.facets?.venue?.[value] ?? 0})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>发布起始</span>
-            <input
-              type="date"
-              value={filters.publishedFrom}
-              onChange={(event) => updateFilter("publishedFrom", event.target.value)}
-            />
-          </label>
-          <label>
-            <span>发布截止</span>
-            <input
-              type="date"
-              value={filters.publishedTo}
-              onChange={(event) => updateFilter("publishedTo", event.target.value)}
-            />
-          </label>
+          <SecondaryFilters
+            activeCount={
+              [filters.language, filters.venue, filters.publishedFrom, filters.publishedTo].filter(Boolean).length
+            }
+          >
+            <label>
+              <span>语言</span>
+              <select value={filters.language} onChange={(event) => updateFilter("language", event.target.value)}>
+                <option value="">全部</option>
+                {languages.map((value) => (
+                  <option value={value} key={value}>
+                    {value} ({data?.facets?.language?.[value] ?? 0})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>会议 / 场景</span>
+              <select value={filters.venue} onChange={(event) => updateFilter("venue", event.target.value)}>
+                <option value="">全部</option>
+                {venues.map((value) => (
+                  <option value={value} key={value}>
+                    {value} ({data?.facets?.venue?.[value] ?? 0})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>发布起始</span>
+              <input
+                type="date"
+                value={filters.publishedFrom}
+                onChange={(event) => updateFilter("publishedFrom", event.target.value)}
+              />
+            </label>
+            <label>
+              <span>发布截止</span>
+              <input
+                type="date"
+                value={filters.publishedTo}
+                onChange={(event) => updateFilter("publishedTo", event.target.value)}
+              />
+            </label>
+          </SecondaryFilters>
           <div className="domain-filter-actions">
             <button className="primary-button" type="submit" disabled={result.isFetching}>
               <Search size={16} />

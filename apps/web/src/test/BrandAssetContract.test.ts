@@ -20,7 +20,7 @@ describe("maintainer-supplied X-Pharma brand", () => {
     const html = webFile(`../../${entry}`).toString("utf8");
     const document = new DOMParser().parseFromString(html, "text/html");
     expect(document.title).toMatch(/^X-Pharma(?: Operations)?$/);
-    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute("content")).toBe("#faf9f5");
+    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute("content")).toBe("#ffffff");
     const links = Array.from(document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]'));
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       "/src/assets/brand/X-Pharma-favicon-32.png",

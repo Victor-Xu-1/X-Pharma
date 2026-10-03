@@ -23,9 +23,9 @@ class FakeSession:
 
     async def initialize(self) -> InitializeResult:
         return InitializeResult(
-            protocolVersion="2025-11-25",
+            protocol_version="2025-11-25",
             capabilities=ServerCapabilities(),
-            serverInfo=self.server_info,
+            server_info=self.server_info,
         )
 
     async def list_tools(self, cursor: str | None = None) -> ListToolsResult:
@@ -47,7 +47,7 @@ class FakeSession:
             tools=[
                 Tool(
                     name=name,
-                    inputSchema={
+                    input_schema={
                         "type": "object",
                         "properties": ({"query": {}, "limit": {}, "cursor": {}} if name == "search_entities" else {}),
                     },
@@ -67,7 +67,7 @@ class FakeSession:
             if cursor not in {None, "valid-cursor-Z"}:
                 return CallToolResult(
                     content=[TextContent(type="text", text="invalid cursor signature")],
-                    isError=True,
+                    is_error=True,
                 )
             entity_id = "target-1" if cursor is None else "target-2"
             payload = {
@@ -102,7 +102,7 @@ class FakeSession:
             payload = {"settlement_count": 5}
         else:
             raise AssertionError(f"unexpected tool: {name}")
-        return CallToolResult(content=[], structuredContent=payload)
+        return CallToolResult(content=[], structured_content=payload)
 
 
 @pytest.mark.asyncio
@@ -242,7 +242,7 @@ async def test_python_sdk_rejects_installed_version_drift(monkeypatch: pytest.Mo
 def test_python_sdk_tool_errors_are_bounded_and_explicit() -> None:
     result = CallToolResult(
         content=[TextContent(type="text", text="denied")],
-        isError=True,
+        is_error=True,
     )
 
     with pytest.raises(RuntimeError, match="denied"):

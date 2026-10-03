@@ -16,7 +16,8 @@ import structlog
 from mcp.server.auth.middleware.auth_context import get_access_token
 from mcp.server.auth.provider import AccessToken
 from mcp.server.auth.settings import AuthSettings
-from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.mcpserver import Context, MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import AnyHttpUrl
 from starlette.applications import Starlette
 from starlette.requests import Request
@@ -83,8 +84,8 @@ class McpRuntime:
     api_client: httpx.AsyncClient
 
 
-class McpContext(Context[Any, McpRuntime, Any]):
-    """Concrete annotation required by FastMCP 1.x context injection."""
+class McpContext(Context[McpRuntime, Request]):
+    """Concrete SDK context for the shared runtime and authenticated HTTP request."""
 
 
 @dataclass(frozen=True)
@@ -97,7 +98,7 @@ class ApiRequestOverride:
 _api_request_override: ContextVar[ApiRequestOverride | None] = ContextVar("mcp_api_request_override", default=None)
 
 
-class McpCommercialError(RuntimeError):
+class McpCommercialError(ToolError, RuntimeError):
     """Safe, machine-readable failure for a commercial MCP tool call."""
 
     def __init__(self, code: str, message: str) -> None:
@@ -182,7 +183,7 @@ def _validate_internal_api_path(path: str) -> None:
 
 
 @asynccontextmanager
-async def lifespan(_: FastMCP[Any]) -> AsyncIterator[McpRuntime]:
+async def lifespan(_: MCPServer[McpRuntime]) -> AsyncIterator[McpRuntime]:
     async with _internal_api_client() as client:
         yield McpRuntime(api_client=client)
 
@@ -194,22 +195,17 @@ if settings.mcp_auth_enabled:
         issuer_url=AnyHttpUrl(settings.mcp_auth_issuer_url),
         resource_server_url=AnyHttpUrl(settings.mcp_resource_server_url),
         required_scopes=[settings.mcp_required_scope],
+        validate_token_resource=True,
     )
     token_verifier = build_token_verifier(settings)
 
-mcp = FastMCP(
+mcp = MCPServer(
     PRODUCT_NAME,
-    host=settings.mcp_host,
-    port=settings.mcp_port,
-    stateless_http=True,
+    version=PRODUCT_VERSION,
     lifespan=lifespan,
     auth=auth,
     token_verifier=token_verifier,
 )
-# Pinned FastMCP does not forward a product-version constructor argument. Bind
-# its existing low-level server once; the real initialize regression protects
-# this SDK boundary without replacing handlers or creating another runtime.
-mcp._mcp_server.version = PRODUCT_VERSION
 
 
 async def api_request(ctx: McpContext, method: str, path: str, **kwargs: Any) -> Any:
@@ -518,7 +514,11 @@ async def _commercial_api_request(
     if reservation.get("state") == "settled" and isinstance(settlement, dict):
         return {"data": settlement["result"], "usage": _usage_metadata(reservation, settlement)}
     if reservation.get("replayed"):
-        raise RuntimeError(f"Commercial request is already {reservation.get('state', 'in progress')}")
+        state = reservation.get("state")
+        if state in {"reserved", "released", "expired"}:
+            code = "REQUEST_IN_PROGRESS" if state == "reserved" else "REQUEST_TERMINAL"
+            raise McpCommercialError(code, f"Commercial request is already {state}")
+        raise RuntimeError("Commercial replay returned an invalid reservation state")
     if reservation.get("state") != "reserved":
         raise RuntimeError("Commercial usage reservation was not granted")
     if cancellation_requested is not None and cancellation_requested.is_set():
@@ -1961,7 +1961,7 @@ async def read_data_export(
 
 
 def build_http_app_components() -> tuple[ASGIApp, Starlette]:
-    lifespan_app = mcp.streamable_http_app()
+    lifespan_app = mcp.streamable_http_app(stateless_http=True, host=settings.mcp_host)
     if not isinstance(lifespan_app, Starlette):
         raise RuntimeError("MCP SDK returned an unsupported HTTP application")
     app: ASGIApp = lifespan_app

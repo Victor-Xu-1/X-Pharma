@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+import httpx2
 import psycopg
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
@@ -460,14 +461,14 @@ def _stop_process(process: subprocess.Popen[bytes] | None) -> bool:
 
 
 def _structured(result: Any) -> dict[str, Any]:
-    if result.isError:
+    if result.is_error:
         messages = [item.text for item in result.content if isinstance(item, TextContent)]
         summary = " ".join(messages)
         summary = re.sub(r"(?i)bearer\s+\S+", "Bearer [redacted]", summary)
         summary = " ".join(summary.split())[:500]
         suffix = f": {summary}" if summary else ""
         raise ProbeRejected(f"MCP tool rejected the request{suffix}")
-    payload = result.structuredContent
+    payload = result.structured_content
     if payload is None:
         if not result.content or not isinstance(result.content[0], TextContent):
             raise RuntimeError("MCP tool returned no structured content")
@@ -485,19 +486,19 @@ async def _call_tool(
     *,
     network_address: str = "198.51.100.10",
 ) -> dict[str, Any]:
-    async with httpx.AsyncClient(
+    async with httpx2.AsyncClient(
         headers={
             "Authorization": f"Bearer {token}",
             "X-Forwarded-For": network_address,
         },
-        timeout=httpx.Timeout(20),
+        timeout=httpx2.Timeout(20),
         follow_redirects=False,
         trust_env=False,
     ) as http_client:
-        async with streamable_http_client(url, http_client=http_client) as (read_stream, write_stream, _):
+        async with streamable_http_client(url, http_client=http_client) as (read_stream, write_stream):
             async with ClientSession(read_stream, write_stream) as session:
                 initialization = await session.initialize()
-                if str(initialization.protocolVersion) != MCP_PROTOCOL_BASELINE:
+                if str(initialization.protocol_version) != MCP_PROTOCOL_BASELINE:
                     raise RuntimeError("MCP protocol baseline was not negotiated")
                 return _structured(await session.call_tool(tool, arguments))
 
@@ -521,7 +522,7 @@ async def _expect_rejected(
     try:
         await _call_tool(url, token, tool, arguments, network_address=network_address)
     except BaseException as exc:
-        if _exception_tree_matches(exc, (ProbeRejected, httpx.HTTPError)):
+        if _exception_tree_matches(exc, (ProbeRejected, httpx2.HTTPError)):
             return
         raise
     raise RuntimeError(f"MCP anti-extraction scenario was not rejected: {tool}")
@@ -536,7 +537,7 @@ def _wait_for_mcp(url: str, token: str, process: subprocess.Popen[bytes], timeou
             asyncio.run(_call_tool(url, token, "get_commercial_access", {}))
             return
         except BaseException as exc:
-            if not _exception_tree_matches(exc, (httpx.HTTPError,)):
+            if not _exception_tree_matches(exc, (httpx2.HTTPError,)):
                 raise
             time.sleep(0.25)
     raise RuntimeError("Isolated MCP readiness timed out")

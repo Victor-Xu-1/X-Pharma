@@ -4,7 +4,6 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
-  CircleUserRound,
   ClipboardList,
   CreditCard,
   Database,
@@ -13,7 +12,6 @@ import {
   Handshake,
   Landmark,
   ListChecks,
-  LogOut,
   Menu,
   Newspaper,
   Search,
@@ -27,7 +25,7 @@ import type { User } from "../lib/types";
 import { useModalFocus } from "../lib/useModalFocus";
 import { canAccessView, type ViewKey, type WorkbenchKey } from "../lib/workspaceRouting";
 import { BrandMark } from "./BrandMark";
-import { OrganizationPanel } from "./OrganizationPanel";
+import { WorkspaceAccountNavigation } from "./WorkspaceAccountNavigation";
 
 type NavigationItem = { key: ViewKey; label: string; icon: typeof Search };
 
@@ -51,30 +49,30 @@ const internalNavigation: NavigationItem[] = [
   { key: "enterprise", label: "企业管理", icon: Building2 },
 ];
 
-const titles: Record<ViewKey, { eyebrow: string; title: string }> = {
-  overview: { eyebrow: "ACCOUNT", title: "用户中心" },
-  explorer: { eyebrow: "INTELLIGENCE SEARCH", title: "全局情报检索" },
-  chemistry: { eyebrow: "CHEMICAL SEARCH", title: "化学结构检索" },
-  pipeline: { eyebrow: "DRUG AND PIPELINE", title: "药物与研发管线" },
-  trials: { eyebrow: "CLINICAL TRIALS", title: "临床试验与结果" },
-  patents: { eyebrow: "PATENT INTELLIGENCE", title: "专利族与资产关联" },
-  deals: { eyebrow: "DEALS AND COMPANIES", title: "交易、参与方与资产关联" },
-  regulatory: { eyebrow: "REGULATORY AND SAFETY", title: "监管事件与安全时间线" },
-  epidemiology: { eyebrow: "EPIDEMIOLOGY AND BURDEN", title: "流行病学与疾病负担" },
-  news: { eyebrow: "NEWS AND CONFERENCE", title: "新闻、公告与会议动态" },
-  target: { eyebrow: "TARGET LANDSCAPE", title: "靶点全景档案" },
-  drug: { eyebrow: "DRUG DOSSIER", title: "药物专业档案" },
-  company: { eyebrow: "COMPANY DOSSIER", title: "公司专业档案" },
-  disease: { eyebrow: "DISEASE DOSSIER", title: "疾病专业档案" },
-  entity: { eyebrow: "ENTITY DOSSIER", title: "多领域情报档案" },
-  evidence: { eyebrow: "SOURCE EVIDENCE", title: "原始资料查证" },
-  knowledge: { eyebrow: "COMPILED KNOWLEDGE", title: "版本化知识专题" },
-  monitoring: { eyebrow: "MONITORING", title: "情报监控与变更提醒" },
-  collections: { eyebrow: "项目对比", title: "对比列表" },
-  factory: { eyebrow: "DATA OPERATIONS", title: "自动数据工厂" },
-  governance: { eyebrow: "GOVERNANCE", title: "AI 信息审核" },
-  commercial: { eyebrow: "COMMERCIAL OPERATIONS", title: "Agent 商业运营" },
-  enterprise: { eyebrow: "ENTERPRISE ADMINISTRATION", title: "企业账户与审计" },
+const titles: Record<ViewKey, string> = {
+  overview: "用户中心",
+  explorer: "全局情报检索",
+  chemistry: "化学结构检索",
+  pipeline: "药物与研发管线",
+  trials: "临床试验与结果",
+  patents: "专利族与资产关联",
+  deals: "交易、参与方与资产关联",
+  regulatory: "监管事件与安全时间线",
+  epidemiology: "流行病学与疾病负担",
+  news: "新闻、公告与会议动态",
+  target: "靶点全景档案",
+  drug: "药物专业档案",
+  company: "公司专业档案",
+  disease: "疾病专业档案",
+  entity: "多领域情报档案",
+  evidence: "原始资料查证",
+  knowledge: "版本化知识专题",
+  monitoring: "情报监控与变更提醒",
+  collections: "对比列表",
+  factory: "自动数据工厂",
+  governance: "AI 信息审核",
+  commercial: "Agent 商业运营",
+  enterprise: "企业账户与审计",
 };
 
 export function WorkspaceShell({
@@ -131,26 +129,6 @@ export function WorkspaceShell({
     >
       {collapsed ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
     </button>
-  );
-  const logoutControl = (
-    <>
-      <button
-        className="nav-button"
-        type="button"
-        onClick={onLogout}
-        disabled={logoutPending}
-        title="退出账号"
-        aria-label="退出账号"
-      >
-        <LogOut size={18} />
-        <span>{logoutPending ? "退出中…" : "退出账号"}</span>
-      </button>
-      {logoutError ? (
-        <p className="form-error" role="alert">
-          {logoutError}
-        </p>
-      ) : null}
-    </>
   );
 
   return (
@@ -224,43 +202,17 @@ export function WorkspaceShell({
                   );
                 })}
         </nav>
-        {researchWorkbench ? (
-          <nav className="sidebar-account-nav" aria-label="账户导航">
-            <div className="sidebar-account-row">
-              <button
-                className={`nav-button sidebar-account-button ${navigationView === "overview" ? "active" : ""}`}
-                type="button"
-                onClick={() => navigate("overview")}
-                aria-current={navigationView === "overview" ? "page" : undefined}
-                aria-label="用户中心"
-                title={collapsed ? "用户中心" : undefined}
-              >
-                <CircleUserRound size={19} />
-                <span className="sidebar-account-copy">
-                  <strong>用户中心</strong>
-                  <small>{user.display_name}</small>
-                </span>
-              </button>
-              {collapseControl}
-            </div>
-            <OrganizationPanel />
-            {logoutControl}
-          </nav>
-        ) : (
-          <>
-            {collapseControl}
-            <div className="sidebar-agent-status">
-              <ShieldCheck size={17} />
-              <span>
-                <strong>Governed Operations</strong>
-                <small>{user.display_name} · 全链路审计</small>
-              </span>
-              <i role="status" aria-label="在线" />
-            </div>
-            <OrganizationPanel />
-            {logoutControl}
-          </>
-        )}
+        <WorkspaceAccountNavigation
+          user={user}
+          researchWorkbench={researchWorkbench}
+          navigationView={navigationView}
+          collapsed={collapsed}
+          collapseControl={collapseControl}
+          onView={navigate}
+          onLogout={onLogout}
+          logoutPending={logoutPending}
+          logoutError={logoutError}
+        />
       </aside>
       {mobileOpen ? (
         <button type="button" className="sidebar-scrim" aria-label="关闭导航" onClick={() => setMobileOpen(false)} />
@@ -289,9 +241,8 @@ export function WorkspaceShell({
         </header>
         <main className="workspace-content" aria-busy={pendingView ? "true" : undefined}>
           <div className="page-heading">
-            {!researchWorkbench ? <p className="eyebrow">{heading.eyebrow}</p> : null}
             <h1 ref={pageHeadingRef} tabIndex={-1} style={{ outline: "none" }}>
-              {heading.title}
+              {heading}
             </h1>
           </div>
           {children}

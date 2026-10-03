@@ -29,8 +29,8 @@ h1,
 .login-form h2,
 .brand-lockup strong {
   font-family: var(--ds-font-display);
-  font-weight: 400;
-  letter-spacing: -0.025em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 a,
@@ -138,7 +138,7 @@ a:hover,
 .table-result-action:hover:not(:disabled),
 .table-view-reset:hover:not(:disabled),
 .state-message .text-button:hover:not(:disabled) {
-  border-color: var(--ds-accent);
+  border-color: var(--ds-border-strong);
   background: var(--ds-surface-soft);
   color: var(--ds-accent-strong);
 }
@@ -215,17 +215,7 @@ a:hover,
   box-shadow: none;
 }
 
-.sidebar-agent-status {
-  border-top-color: var(--ds-border-subtle);
-  border-bottom-color: var(--ds-border-subtle);
-}
-
-.sidebar-agent-status i {
-  background: var(--ds-success-indicator);
-}
-
-.sidebar-account-copy strong,
-.sidebar-agent-status strong {
+.sidebar-account-copy strong {
   font-size: var(--ds-text-sm);
   line-height: var(--ds-leading-compact);
 }
@@ -234,7 +224,6 @@ a:hover,
   border-bottom-color: var(--ds-border-subtle);
   background: var(--ds-topbar);
   box-shadow: none;
-  backdrop-filter: blur(10px);
 }
 
 .nav-button,
@@ -337,7 +326,7 @@ a:hover,
 .virtual-table-toolbar,
 .comparison-selection-toolbar {
   border-color: var(--ds-border);
-  background: var(--ds-surface-muted);
+  background: var(--ds-surface);
 }
 
 th,

@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import httpx
+import httpx2
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.types import Implementation
@@ -157,9 +158,9 @@ async def verify_clients(
     _assert_same_entity(web_entity, web_search_item, "Web read/search")
 
     initialized = await mcp_session.initialize()
-    if initialized.protocolVersion != expected_protocol_version:
+    if initialized.protocol_version != expected_protocol_version:
         raise RuntimeError(
-            f"MCP consistency protocol mismatch: {initialized.protocolVersion} != {expected_protocol_version}"
+            f"MCP consistency protocol mismatch: {initialized.protocol_version} != {expected_protocol_version}"
         )
     settlements: list[str] = []
     listed_tools = await verify_domain_inventory(mcp_session)
@@ -233,7 +234,7 @@ async def verify_clients(
         "fields_compared": list(ENTITY_FIELDS),
         "web_operations": ["create_entity", "get_entity", "search_entities"],
         "mcp_tools": ["get_entity", "search_entities"],
-        "mcp_protocol_version": initialized.protocolVersion,
+        "mcp_protocol_version": initialized.protocol_version,
         "streamable_http_contract_verified": True,
         "listed_mcp_tools": listed_tools,
         "mcp_billed_calls": 2,
@@ -284,15 +285,14 @@ async def verify(
 
     timeout = httpx.Timeout(60, connect=10)
     async with httpx.AsyncClient(base_url=web_url, timeout=timeout, trust_env=False) as web:
-        async with httpx.AsyncClient(
+        async with httpx2.AsyncClient(
             headers={"Authorization": f"Bearer {token}"},
-            timeout=httpx.Timeout(30, connect=10),
+            timeout=httpx2.Timeout(30, connect=10),
             trust_env=False,
         ) as mcp_http:
             async with streamable_http_client(mcp_url, http_client=mcp_http) as (
                 read_stream,
                 write_stream,
-                _session_id,
             ):
                 client_info = Implementation(name="pharma-entry-consistency", version=PRODUCT_VERSION)
                 async with ClientSession(read_stream, write_stream, client_info=client_info) as session:

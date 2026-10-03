@@ -51,9 +51,13 @@
 
 标准商业错误至少包括 `ENTITLEMENT_REQUIRED`、`DATA_LICENSE_DENIED`、`BUDGET_GUARD_EXCEEDED`、`INSUFFICIENT_CREDIT`、`RATE_LIMITED`、`COVERAGE_LIMITED`、`EXPORT_APPROVAL_REQUIRED` 和 `RISK_POLICY_BLOCKED`。这些拒绝不产生收费 settlement，但计入安全速率与风险审计。
 
-MCP 工具拒绝以 `isError=true` 返回，文本以稳定错误码和安全提示开头（例如 `ENTITLEMENT_REQUIRED: ...`）。网关不得把内部 API URL、原始 HTTP 响应体、内部 scope 名称或堆栈回传给 Agent；request ID 只通过审计和服务端日志关联。
+MCP 工具拒绝以 `isError=true` 返回，文本包含稳定错误码和安全提示（例如 `ENTITLEMENT_REQUIRED: ...`）；SDK 可以保留工具名的错误前缀。网关不得把内部 API URL、原始 HTTP 响应体、内部 scope 名称或堆栈回传给 Agent；request ID 只通过审计和服务端日志关联。
+
+MCP 2.2 的预期工具错误必须通过公开 `ToolError` 边界表达。唯一的 `McpCommercialError` 同时保留原 `RuntimeError` 类型兼容性和有界、白名单化的 HTTP 错误映射，防止 `INVALID_CURSOR`、授权、额度、速率和上游不可用等安全错误码被 SDK 误判为内部崩溃后隐藏。没有关闭 SDK 的意外异常遮蔽，也不透传上游消息。真实 SDK 内存传输回归分别验证六类安全错误和意外异常不泄露；双客户端门禁继续严格验证篡改游标的明确拒绝及随后合法分页恢复。
 
 计费规则：
+
+幂等重放遇到仍在执行的 `reserved` 状态，返回 `REQUEST_IN_PROGRESS`；已释放或过期的 `released/expired` 返回 `REQUEST_TERMINAL`，安全文本保留具体账本状态，供有界恢复判断。已结算请求继续直接返回持久化结果，不再次读取或计费。未知状态属于内部不一致，仍由 SDK 遮蔽，不透传任意上游状态字符串；取消/超时门禁仍须验证终态、恢复期限和账本对账。
 
 - 每次成功交付至少产生 invocation settlement；result、compute 和 export 单位按版本化 rate card 追加。
 - 初始化、能力发现、权益/报价读取和异步状态轮询默认使用 zero-rated billing class，但仍产生审计计量并受速率/滥用限制；不得在这些工具中夹带领域数据。

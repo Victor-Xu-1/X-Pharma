@@ -121,10 +121,10 @@ async def _mcp_worker(
     try:
         http_client, transport = await _open_session(url, token)
         async with http_client:
-            async with transport as (read_stream, write_stream, _):
+            async with transport as (read_stream, write_stream):
                 async with ClientSession(read_stream, write_stream) as session:
                     initialization = await session.initialize()
-                    if str(initialization.protocolVersion) != MCP_PROTOCOL_BASELINE:
+                    if str(initialization.protocol_version) != MCP_PROTOCOL_BASELINE:
                         raise RuntimeError("MCP protocol mismatch during mixed load")
                     ready.put_nowait(None)
                     announced = True
@@ -280,7 +280,7 @@ async def execute_concurrent_idempotency(url: str, token: str, concurrency: int 
     settlement_ids: list[str] = []
     rejected_messages: list[str] = []
     for result in results:
-        if result.isError:
+        if result.is_error:
             rejected_messages.append(_tool_error_message(result))
             continue
         payload = _structured(result)

@@ -292,14 +292,16 @@ def compare_target_sar_for_agent(
         arguments=arguments,
         page_size=limit,
         visible_entity_ids=[target_id],
-        fetch=lambda offset, fetch_limit: intelligence.sar_comparison(
-            target_id,
-            standard_type=standard_type,
-            assay_type=assay_type,
-            assay_format=assay_format,
-            organism=organism,
-            cell_line=cell_line,
-            limit=fetch_limit,
-            offset=offset,
-        ).items,
+        fetch=lambda offset, fetch_limit: (
+            intelligence.sar_comparison(
+                target_id,
+                standard_type=standard_type,
+                assay_type=assay_type,
+                assay_format=assay_format,
+                organism=organism,
+                cell_line=cell_line,
+                limit=fetch_limit,
+                offset=offset,
+            ).items
+        ),
     )

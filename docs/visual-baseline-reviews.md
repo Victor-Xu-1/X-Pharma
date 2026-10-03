@@ -1,9 +1,51 @@
 # Visual baseline reviews
 
-Current tablet dense-results reference:
-`577f39c0e3ef678454f950d313c4296514bf3d5835f8ce524993622ac71898cc`.
-It belongs to the real bounded natural-flow product layout below, not either
-of the two former transform-rendering paint phases.
+The current reference inventory is the 20-image OpenAI-style review below.
+The tablet dense-results SHA-256 is
+`2a1efe8dbcb1dd8296fa6704a88a3e7c30e017fd958e27af0b70574a0f0d57e2`.
+It retains the bounded natural-flow table implementation, not either former
+transform-rendering paint phase. The manifest owns all current image hashes.
+
+## 2026-10-03: neutral workbenches and progressive disclosure
+
+The maintainer replaced the earlier Claude-style direction with simpler
+OpenAI-like presentation. All 20 repository-owned references are intentionally
+updated: no-result workbench, dense results, trial outcomes, patent timeline
+and deal rights at 1440×900, 1920×1080, 1024×768 and 390×844. The supplied
+orange X-Pharma logo and v0.1.0 identity remain. No OpenAI branding, proprietary
+font, reference-product image or production data is added.
+
+Source `74cb65d3210977d8193a43e5d688515ad3f37ff3` was built from a clean
+E-drive clone and deployed through the canonical Dockerfile. Google Chrome
+154.0.8037.97 captured the original full staged workbench flow, preceded by
+the original keyboard reflow and both login flows. A private focused launcher
+reused those unchanged owners plus the directly affected secondary-filter,
+saved-query and RDKit checks: 28/28 passed in 8.4 minutes. All 20 final images
+were visually inspected; desktop/tablet/mobile input borders, headings,
+navigation, table clipping and dossier readability were checked. Login
+captures remain external engineering evidence, not extra committed snapshots.
+
+The first 4d62 capture finished at 27/28 with a desktop pipeline query
+click/response timeout; its three later dossier images were not produced
+or accepted. The initial 74 capture exceeded the original clinical reload
+and case budgets during local memory/I/O pressure, then was interrupted by
+an environment restart. This task did not restart WSL. Canonical interrupted
+fixture recovery removed only temporary browser accounts/entities and
+restored the runtime projection before the successful fresh capture.
+These observed failures are retained, not reclassified as coverage rejection
+or claimed to establish a specific browser-engine defect.
+
+The original mask, `maxDiffPixelRatio: 0.001`, action/navigation/case budgets,
+LCP ≤ 2,500 ms, INP ≤ 200 ms, CLS ≤ 0.1 and production asset limits are unchanged.
+No forced clicks, retry allowance, worker fork or screenshot-only renderer is
+introduced. The canonical complete-coverage guard rejected the focused run's
+full-suite claim as intended. Its original manifest generator was reused only
+after the 20 inspected image hashes matched the approved private inventory.
+This is reference maintenance and focused behavior evidence; the complete
+140-scenario matrix, billed MCP contracts, current CI and exact-main deployment
+must be established separately for the final integrated revision.
+
+## Historical natural-flow acceptance
 
 Automatic [run 37121282248](https://github.com/Victor-Xu-1/X-Pharma/actions/runs/37121282248)
 on `1a29a787b78bba79f035b1dda8fd8258922eb988` passed the complete original
@@ -13,6 +55,8 @@ an EGFR demo entity that bootstrap never creates. Downstream MCP stages were
 skipped. The 140-case result establishes this natural-flow browser iteration,
 not whole-workflow or production acceptance. MCP fixture ownership is being
 corrected separately without changing product rendering, references or budgets.
+That subsequent fixture correction passed in automatic run 37125592302 and
+was included in merged PR #16; it is not current new-theme acceptance evidence.
 
 ## 2026-10-03: failed isolation and bounded natural-flow review
 
