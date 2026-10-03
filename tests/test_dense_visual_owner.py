@@ -36,3 +36,15 @@ def test_reflow_reproduction_and_official_suite_use_the_same_owned_flow_and_budg
     assert "width: 320" in reflow
     assert "width: 720" in reflow
     assert "width: 360" in reflow
+
+
+def test_visual_acceptance_has_one_framework_owned_worker_boundary() -> None:
+    fixture = (ROOT / "apps/web/e2e/fixtures/workbench-visual.ts").read_text(encoding="utf-8")
+    registration = (ROOT / "apps/web/e2e/workspace.spec.ts").read_text(encoding="utf-8")
+    assert 'workbenchVisualWorker: ["workbench-visual", { scope: "worker", auto: true }]' in fixture
+    assert "workbenchVisualTest(\n" in registration
+    assert registration.count("[workspace-navigation][workspace-isolation]") == 1
+    assert ".launch(" not in fixture
+    assert ".newContext(" not in fixture
+    assert ".newPage(" not in fixture
+    assert "maxDiffPixelRatio" not in fixture

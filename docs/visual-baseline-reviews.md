@@ -1,5 +1,40 @@
 # Visual baseline reviews
 
+## 2026-10-03: isolate the official visual worker, retain the original reference
+
+Automatic [run 36996101760](https://github.com/Victor-Xu-1/X-Pharma/actions/runs/36996101760)
+for `46ad22e16beec681668d36bce74f652245b88742` ended at 139/140, not a
+successful acceptance. Its tablet dense-results actual byte-matched the
+withdrawn 94b90 intermediate; the canonical b871 original remained unchanged.
+The previous 16-case focused run omitted the two preceding official
+accessibility audits, so it did not reproduce the complete CI prefix.
+
+The narrower reproduction now uses the original official registrations:
+both accessibility audits, keyboard reflow, three branding cases, browser
+identity, both login entries and the complete staged workbench navigation.
+With the same Chrome 154.0.8037.97, real PostgreSQL, application image and
+original reference, these ten tablet cases first produced 9/10 in 56.2
+seconds, with the same 5,811-pixel rejection. Adding an automatic worker
+fixture only to the workbench navigation registration then passed 10/10 in
+2.4 minutes. No helper-only replacement or shortened workbench flow was used.
+
+`e2e/fixtures/workbench-visual.ts` provides the one worker boundary.
+Playwright still owns browser launch, context/page/device options, tracing
+and teardown; preceding audits/reflow do not reuse that visual worker.
+This isolates the observed ordering sensitivity, without claiming a proven
+Chromium compositor mechanism. The earlier isolation experiment used the
+withdrawn intermediate reference and was insufficient for the full staged
+flow; that failed evidence is retained below rather than relabeled as green.
+
+Product rendering, all twenty PNGs, masks, pixel/performance thresholds,
+case/action budgets and all 140 registered scenarios are unchanged in this
+iteration. Twelve related engineering guards, strict application/E2E types
+and scoped formatting pass. Listing 140 scenarios does not execute them.
+The canonical coverage guard correctly rejects the ten-case run as full
+acceptance. The next commit's exact-image deployment and automatic CI must
+still establish their own results; downstream MCP and production acceptance
+must not be inferred from this focused browser pass.
+
 ## 2026-10-02: tablet dense results
 
 Only `research-dense-results-tablet-1024.png` is maintained in this review.
