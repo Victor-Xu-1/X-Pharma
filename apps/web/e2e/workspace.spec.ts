@@ -24,12 +24,17 @@ import { verifyRealPermissionBoundary } from "./workspace/real-permission-bounda
 import { verifyRealTargetDossier } from "./workspace/real-target-dossier";
 import { verifyRecentResearchContinuity } from "./workspace/recent-research-continuity";
 import { verifyResearchPublicationTimeline } from "./workspace/research-publication-timeline";
+import { verifyResearcherReview } from "./workspace/researcher-review";
 import { verifySessionRecovery } from "./workspace/session-recovery";
 import { verifyWorkspaceNavigation } from "./workspace/workspace-navigation";
 import { verifyWorkspaceStates } from "./workspace/workspace-states";
 
 test("[public-login][external-login] renders the external research login entry without overflow", verifyPublicLogin);
 test("[internal-login] renders a distinct internal management entry", verifyInternalLogin);
+test(
+  "[researcher-review][environment-management] reviews researcher navigation, governed dossiers and safe installation controls",
+  verifyResearcherReview,
+);
 test(
   "[workspace-navigation][workspace-isolation][research-workbench][internal-workbench][ingestion-replay][quarantine-governance][master-data-rollback][publication-governance][quality-operations][stable-deep-link][explorer-quick-detail-continuity][global-search-landscape][data-lifecycle][domain-export][result-pagination][result-to-comparison][cross-page-comparison][pipeline-intelligence][pipeline-cross-domain-signals][pipeline-cross-domain-navigation][pipeline-dense-results][pipeline-relationship-correctness][professional-patent-query][professional-deal-query][professional-regulatory-query][professional-epidemiology-query][professional-news-query][clinical-full-result-landscape][clinical-result-dense-fields][regulatory-intelligence][regulatory-result-correctness][regulatory-subscription][saved-search-maintenance][browser-quality][web-vitals-rum][initial-load-boundary][table-preference-server-continuity][query-cancellation][professional-query-state-matrix] authenticates and navigates both governed workbenches",
   verifyWorkspaceNavigation,

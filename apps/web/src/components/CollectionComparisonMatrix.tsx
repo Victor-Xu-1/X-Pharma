@@ -188,7 +188,7 @@ function DrugComparisonMatrix({
             profiles={profiles}
             render={(profile) => externalIdentifiers(profile.entity)}
           />
-          <DrugProfileRow label="数据时点" profiles={profiles} render={(profile) => formatDate(profile.as_of)} />
+          <DrugProfileRow label="查询时间" profiles={profiles} render={(profile) => formatDate(profile.as_of, true)} />
           <tr className="comparison-group-row">
             <th colSpan={profiles.length + 1}>研发格局</th>
           </tr>
@@ -404,7 +404,7 @@ export function CollectionComparisonMatrix({
             dossiers={dossiers}
             render={(dossier) => externalIdentifiers(dossier.entity)}
           />
-          <ComparisonRow label="数据时点" dossiers={dossiers} render={(dossier) => formatDate(dossier.as_of)} />
+          <ComparisonRow label="查询时间" dossiers={dossiers} render={(dossier) => formatDate(dossier.as_of, true)} />
           <tr className="comparison-group-row">
             <th colSpan={dossiers.length + 1}>信息收录</th>
           </tr>

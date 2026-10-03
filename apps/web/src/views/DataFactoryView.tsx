@@ -508,7 +508,7 @@ export function DataFactoryView({ user }: { user: User }) {
             >
               <RefreshCw size={17} />
             </button>
-            {user.role === "admin" ? (
+            {user.role === "admin" && (sources?.length ?? 0) > 0 ? (
               <button className="primary-button" type="button" onClick={() => setShowCreate(true)}>
                 <Plus size={16} />
                 接入自动数据源
@@ -658,7 +658,7 @@ export function DataFactoryView({ user }: { user: User }) {
             {user.role === "admin" ? (
               <button className="secondary-button" type="button" onClick={() => setShowCreate(true)}>
                 <Plus size={16} />
-                接入数据源
+                接入自动数据源
               </button>
             ) : null}
           </div>
@@ -1718,7 +1718,7 @@ function PipelineStage({
         <strong>{title}</strong>
         <small>{detail}</small>
       </span>
-      {ready ? <CheckCircle2 size={15} aria-label="已就绪" /> : <span className="pipeline-pending">待配置</span>}
+      {ready ? <CheckCircle2 size={15} aria-label="已配置" /> : <span className="pipeline-pending">待配置</span>}
     </div>
   );
 }

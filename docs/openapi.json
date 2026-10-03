@@ -13691,6 +13691,358 @@
         "title": "EntityType",
         "type": "string"
       },
+      "EnvironmentInstallPlanRead": {
+        "additionalProperties": false,
+        "properties": {
+          "commands": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "maxItems": 5,
+            "title": "Commands",
+            "type": "array"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "manifest_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Manifest Sha256",
+            "type": "string"
+          },
+          "offline": {
+            "title": "Offline",
+            "type": "boolean"
+          },
+          "plan_id": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "product_version": {
+            "title": "Product Version",
+            "type": "string"
+          },
+          "recipe_id": {
+            "enum": [
+              "python-dependencies",
+              "frontend-dependencies",
+              "deployment-tools"
+            ],
+            "title": "Recipe Id",
+            "type": "string"
+          },
+          "revision": {
+            "pattern": "^[0-9a-f]{40}$",
+            "title": "Revision",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "pharma.environment.install-plan.v1",
+            "default": "pharma.environment.install-plan.v1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "generated_at",
+          "expires_at",
+          "product_version",
+          "revision",
+          "manifest_sha256",
+          "recipe_id",
+          "offline",
+          "commands",
+          "plan_id"
+        ],
+        "title": "EnvironmentInstallPlanRead",
+        "type": "object"
+      },
+      "EnvironmentInstallResultRead": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "maxLength": 500,
+            "title": "Detail",
+            "type": "string"
+          },
+          "exit_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit Code"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "plan_id": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "recipe_id": {
+            "enum": [
+              "python-dependencies",
+              "frontend-dependencies",
+              "deployment-tools"
+            ],
+            "title": "Recipe Id",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "succeeded",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "recipe_id",
+          "plan_id",
+          "status",
+          "started_at",
+          "detail"
+        ],
+        "title": "EnvironmentInstallResultRead",
+        "type": "object"
+      },
+      "EnvironmentPlanCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "offline": {
+            "default": true,
+            "title": "Offline",
+            "type": "boolean"
+          },
+          "recipe_id": {
+            "enum": [
+              "python-dependencies",
+              "frontend-dependencies",
+              "deployment-tools"
+            ],
+            "title": "Recipe Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "recipe_id"
+        ],
+        "title": "EnvironmentPlanCreate",
+        "type": "object"
+      },
+      "EnvironmentProbeRead": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "maxLength": 500,
+            "title": "Detail",
+            "type": "string"
+          },
+          "expected": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected"
+          },
+          "id": {
+            "maxLength": 80,
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 120,
+            "title": "Label",
+            "type": "string"
+          },
+          "observed": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed"
+          },
+          "scope": {
+            "enum": [
+              "gateway",
+              "host"
+            ],
+            "title": "Scope",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "present",
+              "missing",
+              "mismatch",
+              "blocked",
+              "unverified"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "scope",
+          "status",
+          "detail"
+        ],
+        "title": "EnvironmentProbeRead",
+        "type": "object"
+      },
+      "EnvironmentRead": {
+        "properties": {
+          "environment": {
+            "title": "Environment",
+            "type": "string"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "host": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HostEnvironmentRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "host_detail": {
+            "title": "Host Detail",
+            "type": "string"
+          },
+          "host_status": {
+            "enum": [
+              "current",
+              "stale",
+              "missing",
+              "invalid",
+              "not_configured"
+            ],
+            "title": "Host Status",
+            "type": "string"
+          },
+          "product_version": {
+            "title": "Product Version",
+            "type": "string"
+          },
+          "recipes": {
+            "items": {
+              "$ref": "#/components/schemas/EnvironmentRecipeRead"
+            },
+            "title": "Recipes",
+            "type": "array"
+          },
+          "runtime": {
+            "items": {
+              "$ref": "#/components/schemas/EnvironmentProbeRead"
+            },
+            "title": "Runtime",
+            "type": "array"
+          }
+        },
+        "required": [
+          "generated_at",
+          "product_version",
+          "environment",
+          "runtime",
+          "host_status",
+          "host",
+          "host_detail",
+          "recipes"
+        ],
+        "title": "EnvironmentRead",
+        "type": "object"
+      },
+      "EnvironmentRecipeRead": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "enum": [
+              "python-dependencies",
+              "frontend-dependencies",
+              "deployment-tools"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "offline_supported": {
+            "title": "Offline Supported",
+            "type": "boolean"
+          },
+          "prerequisites": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Prerequisites",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "description",
+          "offline_supported",
+          "prerequisites"
+        ],
+        "title": "EnvironmentRecipeRead",
+        "type": "object"
+      },
       "EpidemiologyLandscapeBucketRead": {
         "properties": {
           "count": {
@@ -14819,6 +15171,81 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HostEnvironmentRead": {
+        "additionalProperties": false,
+        "properties": {
+          "clean_source": {
+            "title": "Clean Source",
+            "type": "boolean"
+          },
+          "disk_free_bytes": {
+            "minimum": 0.0,
+            "title": "Disk Free Bytes",
+            "type": "integer"
+          },
+          "disk_total_bytes": {
+            "exclusiveMinimum": 0.0,
+            "title": "Disk Total Bytes",
+            "type": "integer"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "latest_install": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnvironmentInstallResultRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "manifest_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Manifest Sha256",
+            "type": "string"
+          },
+          "probes": {
+            "items": {
+              "$ref": "#/components/schemas/EnvironmentProbeRead"
+            },
+            "maxItems": 30,
+            "title": "Probes",
+            "type": "array"
+          },
+          "product_version": {
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "title": "Product Version",
+            "type": "string"
+          },
+          "revision": {
+            "pattern": "^[0-9a-f]{40}$",
+            "title": "Revision",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "pharma.environment.host.v1",
+            "default": "pharma.environment.host.v1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "generated_at",
+          "product_version",
+          "revision",
+          "clean_source",
+          "manifest_sha256",
+          "probes",
+          "disk_free_bytes",
+          "disk_total_bytes"
+        ],
+        "title": "HostEnvironmentRead",
         "type": "object"
       },
       "IngestionCapabilitiesRead": {
@@ -30499,6 +30926,68 @@
         "summary": "Update Enterprise Dataset Status",
         "tags": [
           "enterprise"
+        ]
+      }
+    },
+    "/api/v1/enterprise/environment": {
+      "get": {
+        "operationId": "read_environment_api_v1_enterprise_environment_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvironmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Environment",
+        "tags": [
+          "environment"
+        ]
+      }
+    },
+    "/api/v1/enterprise/environment/plans": {
+      "post": {
+        "operationId": "prepare_environment_installation_api_v1_enterprise_environment_plans_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnvironmentPlanCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvironmentInstallPlanRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Prepare Environment Installation",
+        "tags": [
+          "environment"
         ]
       }
     },

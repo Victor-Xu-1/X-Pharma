@@ -3,6 +3,7 @@ import { Activity, Dna, ShieldCheck, Stethoscope } from "lucide-react";
 import { useState } from "react";
 
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "../components/common";
+import { DossierCoverageDisclosure } from "../components/DossierCoverageDisclosure";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
 import { ScrollableTableRegion } from "../components/ScrollableTableRegion";
@@ -357,55 +358,62 @@ function DiseaseOverview({
         <EpidemiologyTable items={data.epidemiology.items.slice(0, 5)} onOpen={() => undefined} compact />
       </section>
 
-      <section className="company-profile-section company-profile-coverage">
-        <header>
-          <div>
-            <span>COVERAGE</span>
-            <h3>领域数据覆盖</h3>
-          </div>
-          <span>数据截至 {formatDate(data.as_of, true)}</span>
-        </header>
-        <ScrollableTableRegion ariaLabel="疾病档案领域数据覆盖">
-          <table aria-label="疾病档案领域数据覆盖">
-            <thead>
-              <tr>
-                <th>领域</th>
-                <th>总量</th>
-                <th>本次返回</th>
-                <th>状态</th>
-                <th>说明</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>流行病学</td>
-                <td>{data.epidemiology.total}</td>
-                <td>{data.epidemiology.items.length}</td>
-                <td>
-                  <StatusBadge value={data.epidemiology.total ? "available" : "empty"} />
-                </td>
-                <td>疾病、人群、地区和统计口径下的观测数据</td>
-              </tr>
-              {data.coverage.map((item) => (
-                <tr key={item.domain}>
-                  <td>{coverageLabel(item.domain)}</td>
-                  <td>{item.total}</td>
-                  <td>{item.returned}</td>
-                  <td>
-                    <StatusBadge value={item.status} />
-                  </td>
-                  <td>{item.note}</td>
+      <DossierCoverageDisclosure
+        available={data.coverage.filter((item) => item.total > 0).length}
+        total={data.coverage.length}
+      >
+        <section className="company-profile-section company-profile-coverage">
+          <header>
+            <div>
+              <span>COVERAGE</span>
+              <h3>领域数据覆盖</h3>
+            </div>
+            <time dateTime={data.as_of} title="本次档案查询时间，不代表所有来源的最后更新时间">
+              查询时间 {formatDate(data.as_of, true)}
+            </time>
+          </header>
+          <ScrollableTableRegion ariaLabel="疾病档案领域数据覆盖">
+            <table aria-label="疾病档案领域数据覆盖">
+              <thead>
+                <tr>
+                  <th>领域</th>
+                  <th>总量</th>
+                  <th>本次返回</th>
+                  <th>状态</th>
+                  <th>说明</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </ScrollableTableRegion>
-        {data.warnings?.map((warning) => (
-          <p className="inline-alert" key={warning}>
-            <ShieldCheck size={15} /> {warning}
-          </p>
-        ))}
-      </section>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>流行病学</td>
+                  <td>{data.epidemiology.total}</td>
+                  <td>{data.epidemiology.items.length}</td>
+                  <td>
+                    <StatusBadge value={data.epidemiology.total ? "available" : "empty"} />
+                  </td>
+                  <td>疾病、人群、地区和统计口径下的观测数据</td>
+                </tr>
+                {data.coverage.map((item) => (
+                  <tr key={item.domain}>
+                    <td>{coverageLabel(item.domain)}</td>
+                    <td>{item.total}</td>
+                    <td>{item.returned}</td>
+                    <td>
+                      <StatusBadge value={item.status} />
+                    </td>
+                    <td>{item.note}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ScrollableTableRegion>
+          {data.warnings?.map((warning) => (
+            <p className="inline-alert" key={warning}>
+              <ShieldCheck size={15} /> {warning}
+            </p>
+          ))}
+        </section>
+      </DossierCoverageDisclosure>
     </div>
   );
 }

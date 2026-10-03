@@ -94,7 +94,7 @@ export async function verifyExportsAndComparison(
   await expect(dossierMatrix).toBeVisible();
   await expect(dossierMatrix.getByRole("columnheader", { name: new RegExp(fixtureName) })).toBeVisible();
   await expect(dossierMatrix.getByRole("columnheader", { name: new RegExp(companyName) })).toBeVisible();
-  await expect(dossierMatrix.getByRole("rowheader", { name: "数据时点" })).toBeVisible();
+  await expect(dossierMatrix.getByRole("rowheader", { name: "查询时间" })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("checkbox", { name: `纳入情报对比：${fixtureName}` })).toBeChecked();
   await expect(page.getByRole("checkbox", { name: `纳入情报对比：${companyName}` })).toBeChecked();

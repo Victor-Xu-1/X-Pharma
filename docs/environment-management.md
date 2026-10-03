@@ -1,0 +1,65 @@
+# 环境检测与安装管理
+
+环境管理位于唯一内部工作台的“环境管理”入口，只允许当前组织的有效人员管理员访问。研究账号、内部分析员和 Agent 均被服务端拒绝；页面不是第三个公开产品入口。
+
+## 三个职责边界
+
+- 网关检测：读取当前进程解释器和实际安装的发行包版本。安装状态不等于数据库、检索或其他容器已经健康。
+- 主机检测：`pharma-environment inspect` 在维护者的 E 盘 WSL 工作区运行固定的只读探针，输出源码身份、公开锁文件摘要、依赖版本及可用空间。Corepack 关闭联网和自动修改包管理器声明，不能因“检测”下载工具。
+- 安装执行：Web 只生成有期限的计划并写组织审计；明确执行只发生在本地主机 CLI。网关不持有 Docker socket，不接受 shell、命令文本、安装目录或服务名称，也不能重启 WSL、删除卷或停止其他项目。
+
+平台运行、SLO、迁移、发布与恢复证据统一移至此模块；企业管理只保留组织、人员、邀请、组、访问、模型和审计，避免第二套平台界面。现有 `/api/v1/enterprise/platform` 仍由同一个领域服务提供。
+
+## 检测与连接
+
+当前维护者执行路径固定在 `/srv/wsl`，其物理存储必须按 `E:\WSL\AGENTS.md` 核对。路径不能穿过符号链接，不能指向 `/mnt/c`、用户主目录或工作区根。模块不安装 Windows 原生组件、WSL 本身或系统级 Docker 引擎。
+
+```bash
+pharma-environment inspect \
+  --repository /srv/wsl/projects/x-pharma \
+  --output /srv/wsl/data/x-pharma-environment/evidence/environment/host.json
+```
+
+必须使用当前实际源码目录，而不是把示例目录当作所有本机部署的固定路径。尚未更新本地 Python entry point 时，可从已安装的项目环境运行 `python -m pharma_intel.environment_cli`；这与管理命令使用同一实现。
+
+将 `evidence` 目录只读挂载到网关，并将私有部署配置的 `PLATFORM_EVIDENCE_ROOT` 指向该挂载目录。JSON 报告不含密码、连接 URL、机器地址、环境变量或安装原始日志。网关只读取 `environment/host.json`，拒绝符号链接、非普通文件、超限/损坏报告、未来时间和产品版本不符的报告。超过24小时会标为过期并禁止生成安装计划，不能以旧报告冒充当前探测。
+
+页面“刷新状态”重新读取网关信号及已连接主机报告，不会偷偷在主机执行诊断。主机需要重新检测时，由本地运维再次运行以上只读命令；主机报告时间和页面读取时间分别展示。
+
+## 锁定配方
+
+| 配方 | 执行范围 | 离线行为 |
+| --- | --- | --- |
+| Python 依赖 | `uv sync --locked --no-dev`，只修改当前项目 `.venv` | 增加 `--offline`，缓存缺失失败；不下载解释器、不修改系统 Python |
+| 前端依赖 | 从 `apps/web/package.json` 读取明确的 `pnpm@版本`，冻结安装 `pnpm-lock.yaml` | Corepack不联网，pnpm增加 `--offline`；不会使用主机无版本约束的默认pnpm |
+| 部署工具 | 复用唯一 `bootstrap-wsl-tools.sh`，安装固定版本和摘要的 kubectl | 只使用已核对的本地制品；缺失或损坏直接失败，不回退联网 |
+
+维护者的部署工具安装目标为 `/srv/wsl/envs/x-pharma-environment/bin`；缓存位于 `/srv/wsl/cache/x-pharma/environment/artifacts`，不覆盖其他项目的工具目录。已知有效目标会先复查摘要和版本；在线明确许可时才从固定官方地址下载并校验。缓存不是版本权威，版本和摘要仍消费仓库已有 platform contract。
+
+## 生成与执行计划
+
+```bash
+pharma-environment plan \
+  --repository /srv/wsl/projects/x-pharma \
+  --recipe frontend-dependencies \
+  --output /srv/wsl/data/x-pharma-environment/plan.json
+
+pharma-environment install \
+  --repository /srv/wsl/projects/x-pharma \
+  --plan /srv/wsl/data/x-pharma-environment/plan.json \
+  --execute
+```
+
+默认离线；生成计划时显式加 `--online` 才许可相应配方的网络下载。网页选项同样默认离线。生成计划不等于安装成功，页面不会直接执行计划或代替运维确认。
+
+计划绑定完整源码commit、公开锁文件及安装器摘要、产品版本、24小时有效期和完整允许argv。执行前重新确认干净源码与相同摘要，并重新生成允许命令；即使攻击者重算计划checksum，也不能运行不同命令。checksum不是授权签名或新的主机访问凭据。本地OS用户权限和明确 `--execute` 才是执行边界。
+
+安装串行持锁，子进程继承锁，防止父进程意外退出后启动竞争安装。单步最多600秒、原始日志最多1MiB，超限/超时会终止本次进程组。每次执行记录开始、结束、状态和退出码，原始日志仅在私有主机目录保留。再次检测时若旧记录仍为运行中但已无进程持锁，报告会明确标为中断失败，保留原始日志，不伪造完成时间。相同计划不能再次执行；失败后应查看自身步骤日志、修复具体问题、重新检测并生成新计划，不能无限重试或放宽摘要/权限校验。检测报告中的“最近安装”是报告时的状态，不是持续生产遥测。
+
+安装不删除业务数据、不更改数据库schema、不备份或恢复旧卷、不重启服务，也不处理未知安装目录。Python依赖的生产安装会去除当前 `.venv` 的开发依赖，因此开发/验收环境应采用独立源码目录和环境，不能在其他人正在使用的共享环境中执行。
+
+## 源码与验证
+
+传输属于 `http/environment.py`；契约属于 `schemas/environment.py`；报告读取、配方、主机探针和执行器分别属于 `platform/environment*.py`；CLI属于 `environment_cli.py`。前端消费生成的OpenAPI client，不存在第二套HTTP实现或网页端执行器。
+
+定向测试为 `tests/test_environment_{plans,http,executor}.py` 和 `apps/web/src/test/EnvironmentView.test.tsx`。它们分别验证权限、报告状态、路径/命令拒绝、计划身份、缓存、坏缓存保护、错误呈现和网页不执行。真实本地检测、离线安装、发布后页面与日志需要针对实际版本另行验证；通过这些检查不表示生产HA、系统引擎自动安装或客户环境已验收。

@@ -2323,6 +2323,8 @@ scenario_markers = {
     "evidence_research_continuity": "[evidence-research-continuity]",
     "data_lifecycle": "[data-lifecycle]",
     "enterprise_administration": "[enterprise-administration]",
+    "researcher_review": "[researcher-review]",
+    "environment_management": "[environment-management]",
     "billing_dispute": "[billing-dispute]",
     "monitoring": "[monitoring]",
     "comparison_export": "[comparison-export]",

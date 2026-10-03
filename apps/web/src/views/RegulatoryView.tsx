@@ -3,7 +3,6 @@ import { BookmarkPlus, Columns3, ExternalLink, FileText, Search, SlidersHorizont
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { AppliedFiltersBar } from "../components/AppliedFiltersBar";
 import {
-  EmptyState,
   ErrorState,
   formatDate,
   ProfessionalQueryState,
@@ -13,6 +12,8 @@ import {
 } from "../components/common";
 import { DomainExportControl } from "../components/DomainExportControl";
 import { DomainLandscape } from "../components/DomainLandscape";
+import { EmptyQueryResult } from "../components/EmptyQueryResult";
+import { QueryResultSummary } from "../components/QueryResultSummary";
 import { ResultPagination } from "../components/ResultPagination";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
 import { type ColumnDef, type SortingState, VirtualDataTable } from "../components/VirtualDataTable";
@@ -380,8 +381,6 @@ export function RegulatoryView({
   const jurisdictions = facetOptions(data?.facets, "jurisdiction", filters.jurisdiction);
   const eventTypes = facetOptions(data?.facets, "event_type", filters.eventType);
   const statuses = facetOptions(data?.facets, "status", filters.status);
-  const pageStart = data?.total ? data.offset + 1 : 0;
-  const pageEnd = data ? Math.min(data.offset + data.items.length, data.total) : 0;
   const hasFilters = Object.values(initialFilters).some(Boolean);
   const comparedEvents = comparisonQueries.flatMap((query) => (query.data ? [query.data] : []));
   const comparisonLoading = comparisonQueries.some((query) => query.isFetching);
@@ -612,13 +611,14 @@ export function RegulatoryView({
           {data ? (
             <div className="domain-results">
               <div className="pipeline-result-toolbar">
-                <div className="result-summary">
-                  <strong>{data.total}</strong>
-                  <span>项监管事件</span>
-                  <small>
-                    {pageStart}-{pageEnd} · 截止 {formatDate(data.as_of, true)} · 最多对比 4 项
-                  </small>
-                </div>
+                <QueryResultSummary
+                  total={data.total}
+                  offset={data.offset}
+                  count={data.items.length}
+                  unit="项监管事件"
+                  queriedAt={data.as_of}
+                  note="最多对比 4 项"
+                />
                 <div className="pipeline-result-actions">
                   <QueryRefreshButton refreshing={result.isFetching} onRefresh={retryResult} />
                   <fieldset className="segmented-control">
@@ -720,9 +720,10 @@ export function RegulatoryView({
                   }}
                 />
               ) : (
-                <EmptyState
-                  title="未观察到匹配监管事件"
-                  detail="可调整药物、适应症、监管机构、事件类型或日期条件后重试。"
+                <EmptyQueryResult
+                  domain="监管事件"
+                  filtered={Boolean(data.applied_filters?.length)}
+                  onClear={clearFilters}
                 />
               )}
               <ResultPagination

@@ -433,3 +433,7 @@
 .publication-preview-items {
   background: var(--ds-border);
 }
+.drug-profile-overview .state-message,
+.company-profile-overview .state-message {
+  min-height: 110px;
+}

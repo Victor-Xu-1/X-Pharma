@@ -497,7 +497,13 @@ it("uses clear Chinese copy when linked disease or organization data is not disc
 });
 
 it("renders the explicit empty state and clears active filters", async () => {
-  vi.mocked(searchPipelines).mockResolvedValue({ ...pipelineResult, items: [], total: 0, facets: {} });
+  vi.mocked(searchPipelines).mockResolvedValue({
+    ...pipelineResult,
+    items: [],
+    total: 0,
+    facets: {},
+    applied_filters: [{ field: "query", operator: "contains", value: "missing" }],
+  });
   const onSearchChange = vi.fn();
   renderWithQueryClient(
     <PipelineView
@@ -511,8 +517,10 @@ it("renders the explicit empty state and clears active filters", async () => {
     />,
   );
 
-  expect(await screen.findByText("未观察到匹配管线")).toBeInTheDocument();
-  expect(screen.getByText("可调整药品、靶点、适应症、研发机构或阶段条件后重试。")).toBeInTheDocument();
+  expect(await screen.findByText("未找到匹配记录")).toBeInTheDocument();
+  expect(
+    screen.getByText("可调整或清除筛选条件。查询仅覆盖当前组织有权访问的已发布数据，不代表相关研究不存在。"),
+  ).toBeInTheDocument();
   expect(screen.getByRole("group", { name: "药品、靶点、适应症与研发机构" })).toBeInTheDocument();
   expect(
     screen.getByText("按药品、靶点、适应症、研发机构、全球与中国阶段、权益地区及里程碑组合查询。"),

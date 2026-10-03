@@ -225,6 +225,7 @@ it("renders the explicit patent empty state and clears active filters", async ()
   vi.mocked(searchPatentFamilies).mockResolvedValue({
     ...patentResult,
     items: [],
+    applied_filters: [{ field: "query", operator: "contains", value: "missing" }],
     total: 0,
     facets: {},
     landscape: { total_families: 0, legal_status: [], top_applicants: [], priority_year: [] },
@@ -256,8 +257,10 @@ it("renders the explicit patent empty state and clears active filters", async ()
     />,
   );
 
-  expect(await screen.findByText("未观察到匹配专利族")).toBeInTheDocument();
-  expect(screen.getByText("可调整关键词、申请人、辖区、法律状态或日期条件后重试。")).toBeInTheDocument();
+  expect(await screen.findByText("未找到匹配记录")).toBeInTheDocument();
+  expect(
+    screen.getByText("可调整或清除筛选条件。查询仅覆盖当前组织有权访问的已发布数据，不代表相关研究不存在。"),
+  ).toBeInTheDocument();
   expect(screen.getByPlaceholderText("输入药品、靶点、适应症或机构")).toBeInTheDocument();
   expect(document.body).not.toHaveTextContent(/规范药物|输入规范实体/);
   fireEvent.click(screen.getByRole("button", { name: "保存/订阅" }));

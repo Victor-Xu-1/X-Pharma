@@ -33,6 +33,7 @@ const expectedViews = {
     "src/views/CommercialView.tsx",
     "src/views/DataFactoryView.tsx",
     "src/views/EnterpriseView.tsx",
+    "src/views/EnvironmentView.tsx",
     "src/views/GovernanceView.tsx",
   ],
 };

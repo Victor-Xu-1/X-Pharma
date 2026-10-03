@@ -28,6 +28,9 @@ const EnterpriseView = lazy(() =>
 const GovernanceView = lazy(() =>
   import("./views/GovernanceView").then((module) => ({ default: module.GovernanceView })),
 );
+const EnvironmentView = lazy(() =>
+  import("./views/EnvironmentView").then((module) => ({ default: module.EnvironmentView })),
+);
 
 export function InternalApp() {
   return (
@@ -122,6 +125,7 @@ function InternalWorkspace({
         {allowed && location.view === "governance" ? <GovernanceView /> : null}
         {allowed && location.view === "commercial" ? <CommercialView /> : null}
         {allowed && location.view === "enterprise" ? <EnterpriseView user={user} authMode={authMode} /> : null}
+        {allowed && location.view === "environment" ? <EnvironmentView /> : null}
       </Suspense>
     </WorkspaceShell>
   );

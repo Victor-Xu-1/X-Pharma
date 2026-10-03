@@ -391,8 +391,8 @@ export function ChemistryView({
                   </dd>
                 </div>
                 <div>
-                  <dt>数据截至</dt>
-                  <dd>{formatDate(result.as_of, true)}</dd>
+                  <dt>查询时间</dt>
+                  <dd title="本次结构查询时间，不代表来源数据的最后更新时间">{formatDate(result.as_of, true)}</dd>
                 </div>
               </dl>
             </header>

@@ -112,6 +112,8 @@ def test_google_chrome_acceptance_uses_a_signed_user_level_distribution() -> Non
     assert 'E2E_EMAIL="$email"' not in acceptance_text
     assert 'browser_product="Google Chrome"' in runtime_text
     assert '"research_workbench": "[research-workbench]"' in acceptance_text
+    assert '"researcher_review": "[researcher-review]"' in acceptance_text
+    assert '"environment_management": "[environment-management]"' in acceptance_text
     assert '"internal_workbench": "[internal-workbench]"' in acceptance_text
     assert '"ingestion_replay": "[ingestion-replay]"' in acceptance_text
     assert '"external_login": "[external-login]"' in acceptance_text
