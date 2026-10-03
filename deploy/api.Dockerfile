@@ -5,7 +5,9 @@ ENV COREPACK_HOME=/opt/corepack
 WORKDIR /web
 RUN mkdir -p "$COREPACK_HOME" && corepack enable && corepack prepare pnpm@11.7.0 --activate
 COPY apps/web/package.json apps/web/pnpm-lock.yaml apps/web/pnpm-workspace.yaml ./
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    --mount=type=cache,target=/root/.cache/pnpm \
+    pnpm install --frozen-lockfile
 COPY apps/web ./
 COPY docs/openapi.json /docs/openapi.json
 RUN pnpm build
