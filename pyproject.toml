@@ -45,7 +45,7 @@ dependencies = [
   "rdkit==2026.3.3",
   "sqlalchemy==2.0.42",
   "starlette==1.7.0",
-  "structlog==25.4.0",
+  "structlog==26.1.0",
   "temporalio==1.30.0",
   "uvicorn[standard]==0.35.0",
   "paramiko==5.0.0",
