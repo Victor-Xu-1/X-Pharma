@@ -17,8 +17,8 @@ importers:
   .:
     dependencies:
       '@rdkit/rdkit':
-        specifier: 2025.3.4-1.0.0
-        version: 2025.3.4-1.0.0
+        specifier: 2026.3.6
+        version: 2026.3.6
       '@tanstack/react-query':
         specifier: 5.101.2
         version: 5.101.2(react@19.2.7)
@@ -545,8 +545,8 @@ packages:
   '@preact/signals-core@1.14.4':
     resolution: {integrity: sha512-HNB6HYeYKhQbJ1aKl+YRjrS4+QWHLKX6qKoUsfS/m0vqzsVaEBiZiaKbG/e+NKk2ch5ALQr/ihWaMHxiCuuWHA==}
 
-  '@rdkit/rdkit@2025.3.4-1.0.0':
-    resolution: {integrity: sha512-MJzNoeW2SWt2KCdIibfY213uLWyHZjFfS2ntJ/HuYNHdu6dEiim7jb6ZMU9wnt9Oovkc85BHMuupxkufIMvftQ==}
+  '@rdkit/rdkit@2026.3.6':
+    resolution: {integrity: sha512-JkMi2PfVjRFuy3ZCDAoTUJeTGyNsgtmq4hDUduLnnbobxsOfSydfpa6lhZGYYaisfMSEAgE1iAT95W4ZsUCMrA==}
 
   '@rolldown/binding-android-arm64@1.1.5':
     resolution: {integrity: sha512-lZg8fqIv2v7FF237bwMgzGZEJvGL79/s5knJ/i6FmsGF4XXlzccZ4jb+TrFIxtSSxFtIpdsgrPZeMk1I9AFcyQ==}
@@ -2858,7 +2858,7 @@ snapshots:
 
   '@preact/signals-core@1.14.4': {}
 
-  '@rdkit/rdkit@2025.3.4-1.0.0': {}
+  '@rdkit/rdkit@2026.3.6': {}
 
   '@rolldown/binding-android-arm64@1.1.5':
     optional: true
