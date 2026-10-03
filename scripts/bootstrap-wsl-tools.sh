@@ -61,6 +61,34 @@ if [[ -f "$target" ]] && verify_binary "$target"; then
   exit 0
 fi
 
+artifact_cache=${PHARMA_WSL_ARTIFACT_CACHE:-"${XDG_CACHE_HOME:-$HOME/.cache}/pharma-intelligence/tools"}
+mkdir -p "$artifact_cache"
+[[ ! -L "$artifact_cache" ]] || { echo "refusing symbolic-link artifact cache" >&2; exit 1; }
+artifact_cache=$(realpath "$artifact_cache")
+cached_binary="$artifact_cache/$expected_sha256.kubectl"
+[[ ! -L "$cached_binary" ]] || { echo "refusing symbolic-link cached tool" >&2; exit 1; }
+
+install_verified_binary() {
+  local binary=$1
+  local partial="$target.partial.$$"
+  [[ ! -e "$partial" && ! -L "$partial" ]] || { echo "existing partial target preserved" >&2; return 1; }
+  verify_binary "$binary" || return 1
+  install -m 0755 "$binary" "$partial"
+  mv -f -- "$partial" "$target"
+  verify_binary "$target"
+}
+
+if [[ -f "$cached_binary" ]]; then
+  verify_binary "$cached_binary" || { echo "cached kubectl failed pinned digest or version verification" >&2; exit 1; }
+  install_verified_binary "$cached_binary"
+  printf '[wsl-tools] installed verified cached kubectl v%s at %s\n' "$version" "$target"
+  exit 0
+fi
+if [[ "${PHARMA_WSL_OFFLINE:-false}" == "true" ]]; then
+  echo "offline kubectl artifact is unavailable; no network download was attempted" >&2
+  exit 1
+fi
+
 workspace=$(mktemp -d -t pharma-wsl-tools.XXXXXX)
 partial_target="$target.partial.$$"
 cleanup() {
@@ -90,9 +118,11 @@ verify_binary "$workspace/kubectl" || {
   echo "downloaded kubectl binary failed digest or version verification" >&2
   exit 1
 }
-install -m 0755 "$workspace/kubectl" "$partial_target"
-mv -f -- "$partial_target" "$target"
-verify_binary "$target" || {
+cache_partial="$cached_binary.partial.$$"
+[[ ! -e "$cache_partial" && ! -L "$cache_partial" ]] || { echo "existing cache partial preserved" >&2; exit 1; }
+install -m 0755 "$workspace/kubectl" "$cache_partial"
+mv -f -- "$cache_partial" "$cached_binary"
+install_verified_binary "$cached_binary" || {
   echo "installed kubectl binary failed post-install verification" >&2
   exit 1
 }

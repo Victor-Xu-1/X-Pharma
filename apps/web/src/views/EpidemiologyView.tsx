@@ -14,7 +14,9 @@ import {
 } from "../components/common";
 import { DomainExportControl } from "../components/DomainExportControl";
 import { DomainLandscape } from "../components/DomainLandscape";
+import { EmptyQueryResult } from "../components/EmptyQueryResult";
 import { EntityFilterSelect } from "../components/EntityFilterSelect";
+import { QueryResultSummary } from "../components/QueryResultSummary";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResultPagination } from "../components/ResultPagination";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
@@ -447,8 +449,6 @@ export function EpidemiologyView({
   const populationOptions = facetOptions(data?.facets, "population_scope", filters.populationScope);
   const ageOptions = facetOptions(data?.facets, "age_group", filters.ageGroup);
   const sexOptions = facetOptions(data?.facets, "sex", filters.sex);
-  const pageStart = data?.total ? data.offset + 1 : 0;
-  const pageEnd = data ? Math.min(data.offset + data.items.length, data.total) : 0;
   const hasFilters = Object.values(initialFilters).some(Boolean);
 
   function retryResult() {
@@ -623,13 +623,13 @@ export function EpidemiologyView({
         {data ? (
           <div className="domain-results">
             <div className="pipeline-result-toolbar">
-              <div className="result-summary">
-                <strong>{data.total}</strong>
-                <span>项疾病负担观测</span>
-                <small>
-                  {pageStart}-{pageEnd} · 截止 {formatDate(data.as_of, true)}
-                </small>
-              </div>
+              <QueryResultSummary
+                total={data.total}
+                offset={data.offset}
+                count={data.items.length}
+                unit="项疾病负担观测"
+                queriedAt={data.as_of}
+              />
               <div className="pipeline-result-actions">
                 <QueryRefreshButton refreshing={result.isFetching} onRefresh={retryResult} />
                 <fieldset className="segmented-control">
@@ -725,7 +725,11 @@ export function EpidemiologyView({
                 toolbarActions={<DomainExportControl dataset="epidemiology" totalRows={data.total} />}
               />
             ) : (
-              <EmptyState title="未观察到匹配的流行病学数据" detail="可调整疾病、地区、指标、年份或来源条件后重试。" />
+              <EmptyQueryResult
+                domain="流行病学数据"
+                filtered={Boolean(data.applied_filters?.length)}
+                onClear={clearFilters}
+              />
             )}
             <ResultPagination
               totalRows={data.total}

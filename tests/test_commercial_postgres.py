@@ -82,6 +82,7 @@ from pharma_intel.models import (
     SourceAssetState,
     SourceVersion,
     Tenant,
+    UsageReservation,
     UserRole,
 )
 from pharma_intel.object_store import FileSystemObjectStore
@@ -781,6 +782,8 @@ def test_postgres_allows_only_one_data_execution_claim_per_reservation() -> None
     def claim(_: int) -> str:
         with Session(engine, expire_on_commit=False) as worker_session:
             set_tenant_context(worker_session, tenant_id)
+            cached = worker_session.get(UsageReservation, reservation_id)
+            assert cached is not None and cached.execution_started_at is None
             barrier.wait(timeout=10)
             try:
                 CommercialUsageService(worker_session, principal).authorize_paginated_query(

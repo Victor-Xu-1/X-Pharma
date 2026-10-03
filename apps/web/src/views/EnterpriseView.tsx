@@ -19,7 +19,6 @@ import {
   loadEnterpriseGroups,
   loadEnterpriseModels,
   loadEnterpriseOverview,
-  loadEnterprisePlatform,
   loadEnterpriseUsers,
 } from "../lib/contracts/enterprise";
 import type { AuthMode } from "../lib/contracts/session";
@@ -32,7 +31,6 @@ import { CreateGroupModal, GroupActionModal, GroupsPanel } from "./enterprise/Gr
 import { ModalShell } from "./enterprise/ModalShell";
 import { LLMProviderModal, LLMProvidersPanel } from "./enterprise/ModelsPanel";
 import { EnterpriseOverview } from "./enterprise/OverviewPanel";
-import { PlatformOperationsPanel } from "./enterprise/PlatformPanel";
 import type { AccessAction, ApiKeyAction, EnterpriseTab, GroupAction, LLMAction, UserAction } from "./enterprise/types";
 import { CreateUserModal, UserActionModal, UsersPanel } from "./enterprise/UsersPanel";
 
@@ -43,7 +41,6 @@ const enterpriseTabs: Array<ResearchTabOption<EnterpriseTab>> = [
   { key: "groups", label: "用户组" },
   { key: "access", label: "访问与生命周期" },
   { key: "models", label: "模型设置" },
-  { key: "platform", label: "平台运营" },
   { key: "audit", label: "审计日志" },
 ];
 
@@ -86,11 +83,6 @@ export function EnterpriseView({ user, authMode }: { user: User; authMode: AuthM
     queryKey: enterpriseKeys.models,
     queryFn: ({ signal }) => loadEnterpriseModels(signal),
     enabled: tab === "models",
-  });
-  const platformQuery = useQuery({
-    queryKey: enterpriseKeys.platform,
-    queryFn: ({ signal }) => loadEnterprisePlatform(signal),
-    enabled: tab === "platform",
   });
   const auditQuery = useQuery({
     queryKey: enterpriseKeys.audit(auditFilters),
@@ -171,7 +163,6 @@ export function EnterpriseView({ user, authMode }: { user: User; authMode: AuthM
     groups: groupsQuery,
     access: accessQuery,
     models: modelsQuery,
-    platform: platformQuery,
     audit: auditQuery,
     invites: null,
   }[tab];
@@ -263,11 +254,6 @@ export function EnterpriseView({ user, authMode }: { user: User; authMode: AuthM
                 }
               />
             )}
-          </FeatureQuery>
-        ) : null}
-        {tab === "platform" ? (
-          <FeatureQuery query={platformQuery}>
-            {(platform) => <PlatformOperationsPanel platform={platform} />}
           </FeatureQuery>
         ) : null}
         {tab === "audit" ? (

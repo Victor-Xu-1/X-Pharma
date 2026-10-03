@@ -99,7 +99,7 @@ export function TargetPipeline(props: TargetPipelineProps) {
         </span>
       </section>
       <p className="muted-text">
-        当前显示 {rangeStart}-{rangeEnd} · 数据截至 {formatDate(data.as_of)}
+        {data.total > 0 ? `当前显示 ${rangeStart}-${rangeEnd} · ` : ""}查询时间 {formatDate(data.as_of, true)}
         {data.result_grain === "drug"
           ? "。默认按药物汇总全部匹配适应症；可切换项目明细查看每条研发记录。"
           : "。项目明细按药物-适应症展示，加入比较时按药物去重。"}

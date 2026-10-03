@@ -3,7 +3,6 @@ import { BookmarkPlus, CalendarDays, ExternalLink, FileText, List, Search, X } f
 import { type FormEvent, useCallback, useMemo, useState } from "react";
 import { AppliedFiltersBar } from "../components/AppliedFiltersBar";
 import {
-  EmptyState,
   ErrorState,
   formatDate,
   ProfessionalQueryState,
@@ -13,7 +12,9 @@ import {
 } from "../components/common";
 import { DomainExportControl } from "../components/DomainExportControl";
 import { DomainLandscape } from "../components/DomainLandscape";
+import { EmptyQueryResult } from "../components/EmptyQueryResult";
 import { EntityFilterSelect } from "../components/EntityFilterSelect";
+import { QueryResultSummary } from "../components/QueryResultSummary";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResultPagination } from "../components/ResultPagination";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
@@ -408,8 +409,6 @@ export function NewsView({
   const publishers = facetOptions(data?.facets, "publisher", filters.publisher);
   const languages = facetOptions(data?.facets, "language", filters.language);
   const venues = facetOptions(data?.facets, "venue", filters.venue);
-  const pageStart = data?.total ? data.offset + 1 : 0;
-  const pageEnd = data ? Math.min(data.offset + data.items.length, data.total) : 0;
   const hasFilters = Object.values(initialFilters).some(Boolean);
 
   function retryResult() {
@@ -565,13 +564,13 @@ export function NewsView({
           {data ? (
             <div className="domain-results">
               <div className="pipeline-result-toolbar">
-                <div className="result-summary">
-                  <strong>{data.total}</strong>
-                  <span>{initialFilters.displayMode === "timeline" ? "项研究发布" : "项最新动态"}</span>
-                  <small>
-                    {pageStart}-{pageEnd} · 截止 {formatDate(data.as_of, true)}
-                  </small>
-                </div>
+                <QueryResultSummary
+                  total={data.total}
+                  offset={data.offset}
+                  count={data.items.length}
+                  unit={initialFilters.displayMode === "timeline" ? "项研究发布" : "项最新动态"}
+                  queriedAt={data.as_of}
+                />
                 <div className="pipeline-result-actions">
                   <QueryRefreshButton refreshing={result.isFetching} onRefresh={retryResult} />
                   <button
@@ -657,9 +656,10 @@ export function NewsView({
                   />
                 )
               ) : (
-                <EmptyState
-                  title="未观察到匹配动态"
-                  detail="可调整关键词、公司、药物、靶点、事件类型或日期条件后重试。"
+                <EmptyQueryResult
+                  domain="研究动态"
+                  filtered={Boolean(data.applied_filters?.length)}
+                  onClear={clearFilters}
                 />
               )}
               <ResultPagination

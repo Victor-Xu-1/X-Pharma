@@ -58,6 +58,7 @@ export const viewWorkbenches: Record<ViewKey, WorkbenchKey> = {
   governance: "internal",
   commercial: "internal",
   enterprise: "internal",
+  environment: "internal",
 };
 
 export const views = new Set<ViewKey>([
@@ -84,6 +85,7 @@ export const views = new Set<ViewKey>([
   "governance",
   "commercial",
   "enterprise",
+  "environment",
 ]);
 
 export const restrictedViews: Partial<Record<ViewKey, ReadonlySet<UserRole>>> = {
@@ -91,6 +93,7 @@ export const restrictedViews: Partial<Record<ViewKey, ReadonlySet<UserRole>>> = 
   governance: new Set(["admin", "analyst"]),
   commercial: new Set(["admin"]),
   enterprise: new Set(["admin"]),
+  environment: new Set(["admin"]),
 };
 export const entityIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export const entityTypeValues = [

@@ -1,6 +1,7 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs } from "@playwright/test";
 import { expect } from "@playwright/test";
 import type { EnterpriseApiKeyCatalogRead } from "../../src/lib/generated";
+import { openNavigation } from "./helpers";
 
 export async function verifyEnterpriseAdministration({
   page,
@@ -71,6 +72,20 @@ export async function verifyEnterpriseAdministration({
           dataset_count: 5,
           active_source_count: 3,
           audit_event_count_24h: 8,
+        },
+      });
+    }
+    if (path === "/api/v1/enterprise/environment") {
+      return route.fulfill({
+        json: {
+          generated_at: "2026-07-25T12:00:00Z",
+          product_version: "0.1.0",
+          environment: "test",
+          runtime: [],
+          host_status: "not_configured",
+          host: null,
+          host_detail: "UI-only fixture: host is not connected",
+          recipes: [],
         },
       });
     }
@@ -285,7 +300,9 @@ export async function verifyEnterpriseAdministration({
   await page.getByRole("button", { name: "确认变更" }).click();
   await expect.poll(() => sessionRevocations.length).toBe(1);
   expect(sessionRevocations[0]).toEqual({ reason: "Browser remote session revocation" });
-  await page.getByRole("tab", { name: "平台运营" }).click();
+  await openNavigation(page);
+  await page.getByRole("button", { name: "环境管理", exact: true }).click();
+  await page.getByRole("tab", { name: "运行与发布证据" }).click();
   await expect(page.getByRole("table", { name: "平台服务状态" })).toContainText("platform-operations");
   await expect(page.getByRole("table", { name: "平台 SLO" })).toContainText("web-availability");
   await expect(page.getByRole("table", { name: "平台发布证据" })).toContainText("backup_restore");

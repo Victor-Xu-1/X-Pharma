@@ -11,6 +11,11 @@
 }
 .target-title-row > div {
   justify-content: flex-start;
+  min-width: 0;
+}
+.target-title-row > div > div:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .target-title-row h2 {
   font-size: 23px;
@@ -21,6 +26,7 @@
   font-size: 12px;
 }
 .target-symbol {
+  flex-shrink: 0;
   width: 46px;
   height: 46px;
   display: grid;

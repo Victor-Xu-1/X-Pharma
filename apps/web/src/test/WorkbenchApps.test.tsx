@@ -68,6 +68,9 @@ function mockAuthenticated(
 ) {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const path = String(input);
+    const appliedFilters = [...new URL(path, "http://localhost").searchParams.entries()]
+      .filter(([field]) => !["limit", "offset", "sort"].includes(field))
+      .map(([field, value]) => ({ field, operator: "eq", value }));
     if (path.endsWith("/api/v1/auth/config")) {
       return new Response(JSON.stringify({ mode: "local" }), {
         status: 200,
@@ -126,6 +129,7 @@ function mockAuthenticated(
           offset: 0,
           facets: {},
           as_of: "2026-07-22T10:00:00Z",
+          applied_filters: appliedFilters,
           warnings: [],
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
@@ -140,6 +144,7 @@ function mockAuthenticated(
           offset: 0,
           facets: {},
           as_of: "2026-07-22T10:00:00Z",
+          applied_filters: appliedFilters,
           warnings: [],
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
@@ -154,6 +159,7 @@ function mockAuthenticated(
           offset: 0,
           facets: {},
           as_of: "2026-07-22T10:00:00Z",
+          applied_filters: appliedFilters,
           warnings: [],
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
@@ -168,6 +174,7 @@ function mockAuthenticated(
           offset: 0,
           facets: {},
           as_of: "2026-07-22T10:00:00Z",
+          applied_filters: appliedFilters,
           warnings: [],
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
@@ -182,6 +189,7 @@ function mockAuthenticated(
           offset: 0,
           facets: {},
           as_of: "2026-07-22T10:00:00Z",
+          applied_filters: appliedFilters,
           warnings: [],
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
@@ -196,6 +204,7 @@ function mockAuthenticated(
           offset: 0,
           facets: {},
           as_of: "2026-07-22T10:00:00Z",
+          applied_filters: appliedFilters,
           warnings: [],
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
@@ -432,7 +441,7 @@ it("loads the clinical-trial workbench directly from its stable research URL", a
   renderWithQueryClient(<ResearchApp />);
 
   expect(await screen.findByRole("heading", { name: "临床试验与结果", level: 1 })).toBeInTheDocument();
-  expect(await screen.findByText("未观察到匹配试验")).toBeInTheDocument();
+  expect(await screen.findByText("未找到匹配记录")).toBeInTheDocument();
   expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/api/v1/trials"))).toBe(true);
   expect(window.location.search).toBe("?view=trials&q=EGFR&phase=PHASE2");
 });
@@ -447,7 +456,7 @@ it("loads the patent workbench directly from its stable research URL", async () 
   renderWithQueryClient(<ResearchApp />);
 
   expect(await screen.findByRole("heading", { name: "专利族与资产关联", level: 1 })).toBeInTheDocument();
-  expect(await screen.findByText("未观察到匹配专利族")).toBeInTheDocument();
+  expect(await screen.findByText("未找到匹配记录")).toBeInTheDocument();
   expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/api/v1/patent-families"))).toBe(true);
   expect(window.location.search).toBe("?view=patents&q=EGFR&applicant=Victor+Therapeutics&legal_status=ACTIVE");
 });
@@ -462,7 +471,7 @@ it("loads the deals workbench directly from its stable research URL", async () =
   renderWithQueryClient(<ResearchApp />);
 
   expect(await screen.findByRole("heading", { name: "交易、参与方与资产关联", level: 1 })).toBeInTheDocument();
-  expect(await screen.findByText("未观察到匹配交易")).toBeInTheDocument();
+  expect(await screen.findByText("未找到匹配记录")).toBeInTheDocument();
   expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/api/v1/deal-transactions"))).toBe(true);
   expect(window.location.search).toBe("?view=deals&q=VX-101&deal_type=license&territory=global&party=Acme+Pharma");
 });
@@ -477,7 +486,7 @@ it("loads the regulatory workbench directly from its stable research URL", async
   renderWithQueryClient(<ResearchApp />);
 
   expect(await screen.findByRole("heading", { name: "监管事件与安全时间线", level: 1 })).toBeInTheDocument();
-  expect(await screen.findByText("未观察到匹配监管事件")).toBeInTheDocument();
+  expect(await screen.findByText("未找到匹配记录")).toBeInTheDocument();
   expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/api/v1/regulatory-event-timeline"))).toBe(
     true,
   );
@@ -498,7 +507,7 @@ it("loads the epidemiology workbench directly from its stable research URL", asy
   renderWithQueryClient(<ResearchApp />);
 
   expect(await screen.findByRole("heading", { name: "流行病学与疾病负担", level: 1 })).toBeInTheDocument();
-  expect(await screen.findByText("未观察到匹配的流行病学数据")).toBeInTheDocument();
+  expect(await screen.findByText("未找到匹配记录")).toBeInTheDocument();
   expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/api/v1/epidemiology-observations"))).toBe(
     true,
   );
@@ -520,7 +529,7 @@ it("loads the news workbench directly from its stable research URL", async () =>
   renderWithQueryClient(<ResearchApp />);
 
   expect(await screen.findByRole("heading", { name: "新闻、公告与会议动态", level: 1 })).toBeInTheDocument();
-  expect(await screen.findByText("未观察到匹配动态")).toBeInTheDocument();
+  expect(await screen.findByText("未找到匹配记录")).toBeInTheDocument();
   expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/api/v1/news-events"))).toBe(true);
   expect(window.location.search).toBe(
     "?view=news&q=Compound+A&event_type=corporate_announcement&publisher=Acme+Pharma" +

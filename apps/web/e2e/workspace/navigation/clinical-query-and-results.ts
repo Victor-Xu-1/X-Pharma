@@ -258,6 +258,11 @@ export async function verifyClinicalQueryAndResults(context: Awaited<ReturnType<
   await trialDisplay.getByRole("button", { name: "列表" }).click();
   await expect(page).not.toHaveURL(/display=landscape/);
   await expect(page.getByRole("table", { name: "临床试验结果" })).toContainText(trialTitle);
+  for (const label of ["试验设计与注册信息", "试验结果、日期与发表"]) {
+    const disclosure = trialFilters.locator("details").filter({ has: page.getByText(label, { exact: true }) });
+    if ((await disclosure.getAttribute("open")) === null) await disclosure.locator(":scope > summary").click();
+    await expect(disclosure).toHaveAttribute("open", "");
+  }
   await trialFilters.getByLabel("结果最优评价").selectOption("positive");
   await trialFilters.getByLabel("试验简称").fill(`BRIDGE-${trialKeyword}`);
   await trialFilters.getByLabel("发起类型").selectOption("ist");

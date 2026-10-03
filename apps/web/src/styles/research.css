@@ -4,9 +4,8 @@
 }
 .explorer-intro {
   display: flex;
-  justify-content: flex-end;
-  border-bottom: 1px solid var(--ds-border);
-  padding: 0 0 14px;
+  justify-content: flex-start;
+  padding: 0 0 12px;
 }
 .entity-detail-drawer header span {
   display: block;
@@ -22,12 +21,12 @@
   letter-spacing: 0;
 }
 .explorer-intro p {
-  max-width: 680px;
+  max-width: 840px;
   margin: 0;
   color: var(--ds-ink-muted);
   font-size: 12px;
   line-height: 1.7;
-  text-align: right;
+  text-align: left;
 }
 .domain-filter-bar {
   display: grid;

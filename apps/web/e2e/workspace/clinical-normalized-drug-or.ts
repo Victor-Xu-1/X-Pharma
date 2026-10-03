@@ -166,5 +166,6 @@ export async function verifyClinicalNormalizedDrugOr(
   };
   expect(linkedNegativePayload.total).toBe(0);
   expect(linkedNegativePayload.items).toEqual([]);
-  await expect(page.getByText("未观察到匹配试验")).toBeVisible();
+  await expect(page.getByText("未找到匹配记录", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "清除筛选条件", exact: true })).toBeVisible();
 }

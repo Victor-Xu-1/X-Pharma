@@ -25,13 +25,16 @@ import {
   StatusBadge,
 } from "../components/common";
 import { DomainExportControl } from "../components/DomainExportControl";
+import { EmptyQueryResult } from "../components/EmptyQueryResult";
 import { EntityMultiFilterSelect } from "../components/EntityMultiFilterSelect";
 import { FacetMultiSelect } from "../components/FacetMultiSelect";
+import { QueryResultSummary } from "../components/QueryResultSummary";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
 import { ResultPagination } from "../components/ResultPagination";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
 import { ScrollableTableRegion } from "../components/ScrollableTableRegion";
+import { SecondaryFilters } from "../components/SecondaryFilters";
 import { type ColumnDef, type SortingState, VirtualDataTable } from "../components/VirtualDataTable";
 import type { ProvenanceSelection } from "../lib/contracts/provenance";
 import { type SortCriterion, sortCriteriaFromTable, tableSortingFromCriteria } from "../lib/contracts/sorting";
@@ -1033,8 +1036,6 @@ export function TrialsView({
     "linked_drug_organization_country_region",
     linkedDrugOrganizationCountryRegion,
   );
-  const pageStart = data?.total ? data.offset + 1 : 0;
-  const pageEnd = data ? Math.min(data.offset + data.items.length, data.total) : 0;
   const hasFilters = Boolean(
     initialQuery ||
       initialRegistry ||
@@ -1120,17 +1121,6 @@ export function TrialsView({
             </span>
           </label>
           <label>
-            <span>注册平台</span>
-            <select value={registry} onChange={(event) => setRegistry(event.target.value)}>
-              <option value="">全部</option>
-              {registries.map((value) => (
-                <option value={value} key={value}>
-                  {value} ({data?.facets?.registry?.[value] ?? 0})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
             <span>招募状态</span>
             <select value={status} onChange={(event) => setStatus(event.target.value)}>
               <option value="">全部</option>
@@ -1152,97 +1142,6 @@ export function TrialsView({
               ))}
             </select>
           </label>
-          <label>
-            <span>研究类型</span>
-            <select value={studyType} onChange={(event) => setStudyType(event.target.value)}>
-              <option value="">全部</option>
-              {studyTypes.map((value) => (
-                <option value={value} key={value}>
-                  {clinicalTrialStudyTypeLabel(value)} ({data?.facets?.study_type?.[value] ?? 0})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>试验简称</span>
-            <input
-              value={acronym}
-              onChange={(event) => setAcronym(event.target.value)}
-              placeholder="如 KEYNOTE、CheckMate"
-              maxLength={240}
-            />
-          </label>
-          <label>
-            <span>发起类型</span>
-            <select value={initiationType} onChange={(event) => setInitiationType(event.target.value)}>
-              <option value="">全部</option>
-              {Object.entries(initiationTypeLabels).map(([value, label]) => (
-                <option value={value} key={value}>
-                  {label} ({data?.facets?.initiation_type?.[value] ?? 0})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>治疗线次</span>
-            <select value={therapyLine} onChange={(event) => setTherapyLine(event.target.value)}>
-              <option value="">全部</option>
-              {Object.entries(therapyLineLabels).map(([value, label]) => (
-                <option value={value} key={value}>
-                  {label} ({data?.facets?.therapy_line?.[value] ?? 0})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>结果发布</span>
-            <select
-              aria-label="结果发布"
-              value={hasResults}
-              onChange={(event) => {
-                const value = event.target.value;
-                setHasResults(value);
-                if (value === "false") setResultEvaluation("");
-              }}
-            >
-              <option value="">全部</option>
-              <option value="true">已发布结果 ({data?.facets?.has_results?.true ?? 0})</option>
-              <option value="false">尚未发布 ({data?.facets?.has_results?.false ?? 0})</option>
-            </select>
-          </label>
-          <label>
-            <span>结果最优评价</span>
-            <select
-              value={resultEvaluation}
-              disabled={hasResults === "false"}
-              onChange={(event) => setResultEvaluation(event.target.value)}
-            >
-              <option value="">全部</option>
-              {Object.entries(resultEvaluationLabels).map(([value, label]) => (
-                <option value={value} key={value}>
-                  {label} ({data?.facets?.result_evaluation?.[value] ?? 0})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>结果发布日期起</span>
-            <input
-              type="date"
-              value={resultsPostedFrom}
-              max={resultsPostedTo || undefined}
-              onChange={(event) => setResultsPostedFrom(event.target.value)}
-            />
-          </label>
-          <label>
-            <span>结果发布日期止</span>
-            <input
-              type="date"
-              value={resultsPostedTo}
-              min={resultsPostedFrom || undefined}
-              onChange={(event) => setResultsPostedTo(event.target.value)}
-            />
-          </label>
           <EntityMultiFilterSelect
             label="试验药物（任一）"
             entityType="drug"
@@ -1251,20 +1150,6 @@ export function TrialsView({
             onResolved={rememberRoleEntity}
             onChange={(entityIds, selectedId, displayName) => {
               setInvestigationalDrugEntityIds(entityIds);
-              setRoleEntityId("");
-              setRoleEntityIds([]);
-              setRoleEntityRole("");
-              if (selectedId) rememberRoleEntity(selectedId, displayName);
-            }}
-          />
-          <EntityMultiFilterSelect
-            label="联用药物（任一）"
-            entityType="drug"
-            values={combinationDrugEntityIds}
-            placeholder="输入至少 2 个字符添加联用药物"
-            onResolved={rememberRoleEntity}
-            onChange={(entityIds, selectedId, displayName) => {
-              setCombinationDrugEntityIds(entityIds);
               setRoleEntityId("");
               setRoleEntityIds([]);
               setRoleEntityRole("");
@@ -1285,20 +1170,97 @@ export function TrialsView({
               if (selectedId) rememberRoleEntity(selectedId, displayName);
             }}
           />
-          <EntityMultiFilterSelect
-            label="联用靶点（任一）"
-            entityType="target"
-            values={combinationTargetEntityIds}
-            placeholder="输入至少 2 个字符添加联用靶点"
-            onResolved={rememberRoleEntity}
-            onChange={(entityIds, selectedId, displayName) => {
-              setCombinationTargetEntityIds(entityIds);
-              setRoleEntityId("");
-              setRoleEntityIds([]);
-              setRoleEntityRole("");
-              if (selectedId) rememberRoleEntity(selectedId, displayName);
-            }}
-          />
+          <SecondaryFilters
+            label="试验设计与注册信息"
+            activeCount={[registry, studyType, acronym, initiationType, therapyLine].filter(Boolean).length}
+          >
+            <label>
+              <span>注册平台</span>
+              <select value={registry} onChange={(event) => setRegistry(event.target.value)}>
+                <option value="">全部</option>
+                {registries.map((value) => (
+                  <option value={value} key={value}>
+                    {value} ({data?.facets?.registry?.[value] ?? 0})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>研究类型</span>
+              <select value={studyType} onChange={(event) => setStudyType(event.target.value)}>
+                <option value="">全部</option>
+                {studyTypes.map((value) => (
+                  <option value={value} key={value}>
+                    {clinicalTrialStudyTypeLabel(value)} ({data?.facets?.study_type?.[value] ?? 0})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>试验简称</span>
+              <input
+                value={acronym}
+                onChange={(event) => setAcronym(event.target.value)}
+                placeholder="如 KEYNOTE、CheckMate"
+                maxLength={240}
+              />
+            </label>
+            <label>
+              <span>发起类型</span>
+              <select value={initiationType} onChange={(event) => setInitiationType(event.target.value)}>
+                <option value="">全部</option>
+                {Object.entries(initiationTypeLabels).map(([value, label]) => (
+                  <option value={value} key={value}>
+                    {label} ({data?.facets?.initiation_type?.[value] ?? 0})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>治疗线次</span>
+              <select value={therapyLine} onChange={(event) => setTherapyLine(event.target.value)}>
+                <option value="">全部</option>
+                {Object.entries(therapyLineLabels).map(([value, label]) => (
+                  <option value={value} key={value}>
+                    {label} ({data?.facets?.therapy_line?.[value] ?? 0})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </SecondaryFilters>
+          <SecondaryFilters
+            label="联用药物与靶点"
+            activeCount={[combinationDrugEntityIds.length, combinationTargetEntityIds.length].filter(Boolean).length}
+          >
+            <EntityMultiFilterSelect
+              label="联用药物（任一）"
+              entityType="drug"
+              values={combinationDrugEntityIds}
+              placeholder="输入至少 2 个字符添加联用药物"
+              onResolved={rememberRoleEntity}
+              onChange={(entityIds, selectedId, displayName) => {
+                setCombinationDrugEntityIds(entityIds);
+                setRoleEntityId("");
+                setRoleEntityIds([]);
+                setRoleEntityRole("");
+                if (selectedId) rememberRoleEntity(selectedId, displayName);
+              }}
+            />
+            <EntityMultiFilterSelect
+              label="联用靶点（任一）"
+              entityType="target"
+              values={combinationTargetEntityIds}
+              placeholder="输入至少 2 个字符添加联用靶点"
+              onResolved={rememberRoleEntity}
+              onChange={(entityIds, selectedId, displayName) => {
+                setCombinationTargetEntityIds(entityIds);
+                setRoleEntityId("");
+                setRoleEntityIds([]);
+                setRoleEntityRole("");
+                if (selectedId) rememberRoleEntity(selectedId, displayName);
+              }}
+            />
+          </SecondaryFilters>
           <details
             className="advanced-filters trial-linked-program-filters"
             open={linkedProgramFiltersOpen}
@@ -1379,48 +1341,114 @@ export function TrialsView({
               </label>
             </div>
           </details>
-          <label>
-            <span>关键结果</span>
-            <select value={hasKeyResult} onChange={(event) => setHasKeyResult(event.target.value)}>
-              <option value="">全部</option>
-              {Object.entries(keyResultLabels).map(([value, label]) => (
-                <option value={value} key={value}>
-                  {label} ({data?.facets?.has_key_result?.[value] ?? 0})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>发表编号</span>
-            <input
-              value={publicationId}
-              onChange={(event) => setPublicationId(event.target.value)}
-              placeholder="PMID、DOI 或会议摘要编号"
-              maxLength={240}
-            />
-          </label>
-          <label>
-            <span>会议</span>
-            <input value={conference} onChange={(event) => setConference(event.target.value)} maxLength={500} />
-          </label>
-          <label>
-            <span>披露日期起</span>
-            <input
-              type="date"
-              value={disclosedFrom}
-              max={disclosedTo || undefined}
-              onChange={(event) => setDisclosedFrom(event.target.value)}
-            />
-          </label>
-          <label>
-            <span>披露日期止</span>
-            <input
-              type="date"
-              value={disclosedTo}
-              min={disclosedFrom || undefined}
-              onChange={(event) => setDisclosedTo(event.target.value)}
-            />
-          </label>
+          <SecondaryFilters
+            label="试验结果、日期与发表"
+            activeCount={
+              [
+                hasResults,
+                resultEvaluation,
+                resultsPostedFrom,
+                resultsPostedTo,
+                hasKeyResult,
+                publicationId,
+                conference,
+                disclosedFrom,
+                disclosedTo,
+              ].filter(Boolean).length
+            }
+          >
+            <label>
+              <span>结果发布</span>
+              <select
+                aria-label="结果发布"
+                value={hasResults}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setHasResults(value);
+                  if (value === "false") setResultEvaluation("");
+                }}
+              >
+                <option value="">全部</option>
+                <option value="true">已发布结果 ({data?.facets?.has_results?.true ?? 0})</option>
+                <option value="false">尚未发布 ({data?.facets?.has_results?.false ?? 0})</option>
+              </select>
+            </label>
+            <label>
+              <span>结果最优评价</span>
+              <select
+                value={resultEvaluation}
+                disabled={hasResults === "false"}
+                onChange={(event) => setResultEvaluation(event.target.value)}
+              >
+                <option value="">全部</option>
+                {Object.entries(resultEvaluationLabels).map(([value, label]) => (
+                  <option value={value} key={value}>
+                    {label} ({data?.facets?.result_evaluation?.[value] ?? 0})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>结果发布日期起</span>
+              <input
+                type="date"
+                value={resultsPostedFrom}
+                max={resultsPostedTo || undefined}
+                onChange={(event) => setResultsPostedFrom(event.target.value)}
+              />
+            </label>
+            <label>
+              <span>结果发布日期止</span>
+              <input
+                type="date"
+                value={resultsPostedTo}
+                min={resultsPostedFrom || undefined}
+                onChange={(event) => setResultsPostedTo(event.target.value)}
+              />
+            </label>
+            <label>
+              <span>关键结果</span>
+              <select value={hasKeyResult} onChange={(event) => setHasKeyResult(event.target.value)}>
+                <option value="">全部</option>
+                {Object.entries(keyResultLabels).map(([value, label]) => (
+                  <option value={value} key={value}>
+                    {label} ({data?.facets?.has_key_result?.[value] ?? 0})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>发表编号</span>
+              <input
+                value={publicationId}
+                onChange={(event) => setPublicationId(event.target.value)}
+                placeholder="PMID、DOI 或会议摘要编号"
+                maxLength={240}
+              />
+            </label>
+            <label>
+              <span>会议</span>
+              <input value={conference} onChange={(event) => setConference(event.target.value)} maxLength={500} />
+            </label>
+            <label>
+              <span>披露日期起</span>
+              <input
+                type="date"
+                value={disclosedFrom}
+                max={disclosedTo || undefined}
+                onChange={(event) => setDisclosedFrom(event.target.value)}
+              />
+            </label>
+            <label>
+              <span>披露日期止</span>
+              <input
+                type="date"
+                value={disclosedTo}
+                min={disclosedFrom || undefined}
+                onChange={(event) => setDisclosedTo(event.target.value)}
+              />
+            </label>
+          </SecondaryFilters>
           <div className="domain-filter-actions">
             <button className="primary-button" type="submit" disabled={result.isFetching}>
               <Search size={16} />
@@ -1453,13 +1481,13 @@ export function TrialsView({
           {data ? (
             <div className="domain-results">
               <div className="pipeline-result-toolbar">
-                <div className="result-summary">
-                  <strong>{data.total}</strong>
-                  <span>项临床试验</span>
-                  <small>
-                    {pageStart}-{pageEnd} · 截止 {formatDate(data.as_of, true)}
-                  </small>
-                </div>
+                <QueryResultSummary
+                  total={data.total}
+                  offset={data.offset}
+                  count={data.items.length}
+                  unit="项临床试验"
+                  queriedAt={data.as_of}
+                />
                 <div className="pipeline-result-actions">
                   <QueryRefreshButton refreshing={result.isFetching} onRefresh={retryResult} />
                   <fieldset className="segmented-control">
@@ -1537,7 +1565,11 @@ export function TrialsView({
                   }}
                 />
               ) : (
-                <EmptyState title="未观察到匹配试验" detail="可调整试验状态、分期、药物、靶点或申办方条件后重试。" />
+                <EmptyQueryResult
+                  domain="临床试验"
+                  filtered={Boolean(data.applied_filters?.length)}
+                  onClear={clearFilters}
+                />
               )}
               {displayMode === "list" ? (
                 <ResultPagination

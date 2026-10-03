@@ -5,13 +5,13 @@
   "files": {
     "research-deal-rights-desktop-1440.png": {
       "capture": "dossier-section",
-      "sha256": "b006b78f0fc29aaf5ded7700d72696fa8c3294e30a248e5fa8ab31b98fef6978",
+      "sha256": "30ac0fecb4b68041cc9e7dd69c6a6550d5fbb0e8c77fa3a2d77b21f6863c1374",
       "state": "controlled-deal-rights",
       "viewport": "1440x900"
     },
     "research-deal-rights-desktop-1920.png": {
       "capture": "dossier-section",
-      "sha256": "75ff3ee3d5016810894b280a48699bdb2b592cf8db77646cfeda84717a0c22f6",
+      "sha256": "fc61076a2dda18f94182d39c4463122bbd957bc2c309c2a6448906a7221e51d7",
       "state": "controlled-deal-rights",
       "viewport": "1920x1080"
     },
@@ -29,13 +29,13 @@
     },
     "research-dense-results-desktop-1440.png": {
       "capture": "table-shell",
-      "sha256": "f483a7ee6a90db8d3a4288c7e47e888f9fbcb308bee5df1dfac2856a18e36739",
+      "sha256": "ac875fbfb98b2a16d9bfcefa7989847fe8d8d06da6b608871c79c70e30ffee65",
       "state": "controlled-dense-results",
       "viewport": "1440x900"
     },
     "research-dense-results-desktop-1920.png": {
       "capture": "table-shell",
-      "sha256": "e3c2dd276c9495dd00575ea8ea6630144e559e47960e60143d707b3eb02d2505",
+      "sha256": "7fe22dc2038827b5b9b9f8af032d45940e0ad24a6a79688ab100e8863e490cc3",
       "state": "controlled-dense-results",
       "viewport": "1920x1080"
     },
@@ -47,7 +47,7 @@
     },
     "research-dense-results-tablet-1024.png": {
       "capture": "table-shell",
-      "sha256": "2a1efe8dbcb1dd8296fa6704a88a3e7c30e017fd958e27af0b70574a0f0d57e2",
+      "sha256": "45db7e953c8b126d1c7e07fcdfa2c21174124372b17821e001e81ec6bc01e20c",
       "state": "controlled-dense-results",
       "viewport": "1024x768"
     },
@@ -101,25 +101,25 @@
     },
     "research-workbench-desktop-1440.png": {
       "capture": "full-page",
-      "sha256": "4f8c83382385c0e5aacda24d7908c1f301e29e32e22981b2b01fc889f90ee95a",
+      "sha256": "db9b113fef8f2a65a92b79a039a76db8a256d602c65380f3b4d5089fea9e52a1",
       "state": "controlled-no-result",
       "viewport": "1440x900"
     },
     "research-workbench-desktop-1920.png": {
       "capture": "full-page",
-      "sha256": "4940a468a7f430226f782d68ef97081411121819052e1bb4d8e21e9a4bfd5d10",
+      "sha256": "2d42665536752da92b36fea0f52130a40f23e953bc3cbd442d00c70713ff7a85",
       "state": "controlled-no-result",
       "viewport": "1920x1080"
     },
     "research-workbench-mobile-390.png": {
       "capture": "full-page",
-      "sha256": "afc36a3cf20abb62be6453bfcfe65713ff5298cff302ac94b014381184ac5e17",
+      "sha256": "09ce9176a150e9f6aafd521011606d0d9a63611a49f77802290dd5ba111fb12d",
       "state": "controlled-no-result",
       "viewport": "390x844"
     },
     "research-workbench-tablet-1024.png": {
       "capture": "full-page",
-      "sha256": "d6141ad12f89f1e013b72cad647839a956260146c777f76ba87f449826f60101",
+      "sha256": "3efe570beb2b1c15df31df3ed108c8693e3f47c6740ed754b8cfb0a0a49417f5",
       "state": "controlled-no-result",
       "viewport": "1024x768"
     }

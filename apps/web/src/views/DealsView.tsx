@@ -13,7 +13,6 @@ import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react
 import { AddToComparisonControl } from "../components/AddToComparisonControl";
 import { AppliedFiltersBar } from "../components/AppliedFiltersBar";
 import {
-  EmptyState,
   ErrorState,
   formatDate,
   ProfessionalQueryState,
@@ -23,8 +22,10 @@ import {
 } from "../components/common";
 import { DealLandscape, type DealLandscapeFilterField } from "../components/DealLandscape";
 import { DomainExportControl } from "../components/DomainExportControl";
+import { EmptyQueryResult } from "../components/EmptyQueryResult";
 import { EntityFilterSelect } from "../components/EntityFilterSelect";
 import { FacetMultiSelect } from "../components/FacetMultiSelect";
+import { QueryResultSummary } from "../components/QueryResultSummary";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
 import { ResultPagination } from "../components/ResultPagination";
@@ -482,8 +483,6 @@ export function DealsView({
   const assetProgramTags = publicProgramTags(facetOptions(data?.facets, "asset_program_tag", filters.assetProgramTags));
   const rightsTerritories = facetOptions(data?.facets, "rights_territory", filters.rightsTerritory);
   const currencies = facetOptions(data?.facets, "currency", filters.currency);
-  const pageStart = data?.total ? data.offset + 1 : 0;
-  const pageEnd = data ? Math.min(data.offset + data.items.length, data.total) : 0;
   const hasFilters = hasDealSearchFilter(initialFilters);
 
   function retryResult() {
@@ -852,13 +851,14 @@ export function DealsView({
         {data ? (
           <div className="domain-results">
             <div className="pipeline-result-toolbar">
-              <div className="result-summary">
-                <strong>{data.total}</strong>
-                <span>项交易</span>
-                <small>
-                  {displayMode === "list" ? `${pageStart}-${pageEnd} · ` : ""}截止 {formatDate(data.as_of, true)}
-                </small>
-              </div>
+              <QueryResultSummary
+                total={data.total}
+                offset={data.offset}
+                count={data.items.length}
+                unit="项交易"
+                queriedAt={data.as_of}
+                showRange={displayMode === "list"}
+              />
               <div className="pipeline-result-actions">
                 <QueryRefreshButton refreshing={result.isFetching} onRefresh={retryResult} />
                 <fieldset className="segmented-control">
@@ -936,10 +936,7 @@ export function DealsView({
                 defaultSorting={[{ id: "announced_at", desc: true }]}
               />
             ) : (
-              <EmptyState
-                title="未观察到匹配交易"
-                detail="可调整交易类型、药物、靶点、适应症、机构或日期条件后重试。"
-              />
+              <EmptyQueryResult domain="交易" filtered={Boolean(data.applied_filters?.length)} onClear={clearFilters} />
             )}
             {displayMode === "list" ? (
               <ResultPagination

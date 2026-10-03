@@ -8,7 +8,7 @@ import type {
   EnterpriseUser,
 } from "../../lib/contracts/enterprise";
 
-export type EnterpriseTab = "overview" | "users" | "groups" | "access" | "models" | "platform" | "audit" | "invites";
+export type EnterpriseTab = "overview" | "users" | "groups" | "access" | "models" | "audit" | "invites";
 
 export type UserAction = { user: EnterpriseUser; kind: "role" | "status" };
 

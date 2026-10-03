@@ -74,6 +74,8 @@ BROWSER_ACCEPTANCE_SCENARIOS = frozenset(
         "deal_asset_correctness",
         "patent_result_correctness",
         "enterprise_administration",
+        "researcher_review",
+        "environment_management",
         "external_login",
         "internal_login",
         "internal_workbench",

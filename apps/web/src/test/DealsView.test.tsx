@@ -423,13 +423,16 @@ it("renders an explicit empty state", async () => {
   vi.mocked(searchDeals).mockResolvedValue({
     ...dealResult,
     items: [],
+    applied_filters: [{ field: "deal_type", operator: "eq", value: "license" }],
     total: 0,
     facets: {},
     landscape: { ...dealResult.landscape, total_deals: 0, deal_type: [], status: [], direction: [] },
   });
   renderDeals({ initialFilters: { ...initialFilters, dealType: "license" } });
-  expect(await screen.findByText("未观察到匹配交易")).toBeInTheDocument();
-  expect(screen.getByText("可调整交易类型、药物、靶点、适应症、机构或日期条件后重试。")).toBeInTheDocument();
+  expect(await screen.findByText("未找到匹配记录")).toBeInTheDocument();
+  expect(
+    screen.getByText("可调整或清除筛选条件。查询仅覆盖当前组织有权访问的已发布数据，不代表相关研究不存在。"),
+  ).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "保存/订阅" }));
   expect(screen.getByRole("dialog", { name: "保存当前交易检索" })).toBeVisible();
 });
