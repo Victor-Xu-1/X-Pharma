@@ -1,10 +1,43 @@
 # Visual baseline reviews
 
-The current reference inventory is the 20-image OpenAI-style review below.
-The tablet dense-results SHA-256 is
-`2a1efe8dbcb1dd8296fa6704a88a3e7c30e017fd958e27af0b70574a0f0d57e2`.
+The current reference inventory is the 20-image researcher review below.
 It retains the bounded natural-flow table implementation, not either former
 transform-rendering paint phase. The manifest owns all current image hashes.
+
+## 2026-10-04: researcher navigation and compact workbenches
+
+Clean E-drive source `396bcc3845650667ed7d8d634dd4b5fdffe4d250` was built and
+deployed through the canonical Dockerfile. Google Chrome 154.0.8037.97 ran
+only the affected original reflow, login, staged 17-step workbench,
+secondary-filter, saved-query and RDKit owners: 28/28 passed in 7.7 minutes.
+The local fixtures used a separate organization, not the restored business
+organization or the preview account. Explicit organization selection is
+validated and parameter-bound; absent selection never falls back.
+
+All 20 controlled images were captured and visually inspected. Nine PNGs
+changed (four workbench, three dense-table, two desktop deal sections);
+the other eleven retain their prior byte identity. The separate QA
+organization's display name was normalized to the actual CI bootstrap
+name, `E2E Tenant`, without changing its ID, membership or data scope.
+The original appearance owner then passed four additional viewport checks
+in 13.4 seconds and generated the four final workbench references. No mask
+was added and no pixel tolerance or performance/case budget was increased.
+
+The first explicit-organization attempt failed before business tests because
+psql `-c` did not substitute its bound variable; standard-input substitution
+was corrected and verified against real PostgreSQL. The empty QA organization
+then correctly failed the existing governed-dataset precondition; a synthetic
+authorized test dataset was registered. A private appearance registration
+initially failed Playwright's destructuring check; the registration was fixed
+and listed before running. These preparation failures remain external evidence,
+not successful test claims.
+
+The canonical full-coverage guard rejects these focused registrations as
+expected. The existing manifest generator was reused after inspecting the
+final inventory. Read-only comparison and the mandatory current PR CI are
+separate gates; only actual results may establish the new 144-case automatic
+matrix or exact-main deployment. These fixtures and screenshots are not
+scientific results, customer data coverage or production acceptance.
 
 ## 2026-10-03: neutral workbenches and progressive disclosure
 

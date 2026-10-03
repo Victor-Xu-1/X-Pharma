@@ -880,6 +880,8 @@ def test_browser_acceptance_semantics_require_every_viewport_quality_scenario(tm
         "deal_asset_correctness": True,
         "patent_result_correctness": True,
         "enterprise_administration": True,
+        "researcher_review": True,
+        "environment_management": True,
         "external_login": True,
         "internal_login": True,
         "internal_workbench": True,
@@ -1021,6 +1023,14 @@ def test_browser_acceptance_semantics_require_every_viewport_quality_scenario(tm
     statement = {"generated_at": now, "attachments": [{"path": "report.json"}]}
 
     _validate_specialized_evidence(statement_path, "browser", statement)
+
+    for required_scenario in ("researcher_review", "environment_management"):
+        report["scenarios"] = {name: value for name, value in scenarios.items() if name != required_scenario}
+        report_path.write_text(json.dumps(report), encoding="utf-8")
+        with pytest.raises(ReleaseEvidenceError, match="every contracted scenario"):
+            _validate_specialized_evidence(statement_path, "browser", statement)
+    report["scenarios"] = scenarios
+    report_path.write_text(json.dumps(report), encoding="utf-8")
 
     report["browser"] = {"channel": "msedge", "product": "Microsoft Edge", "version": "140.0.3485.54"}
     report_path.write_text(json.dumps(report), encoding="utf-8")
