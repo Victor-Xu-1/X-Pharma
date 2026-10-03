@@ -112,6 +112,7 @@ def test_real_browser_entry_loads_helpers_before_crossing_the_docker_boundary(tm
             "PATH": f"{binaries}{os.pathsep}{os.environ['PATH']}",
             "COMPOSE_FILE": "owned-fixture",
             "E2E_BROWSER_EXECUTABLE": str(binaries / "test-chrome"),
+            "PHARMA_BROWSER_TENANT_SLUG": "browser-environment-test",
         },
         capture_output=True,
         text=True,
