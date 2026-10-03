@@ -195,7 +195,7 @@ jobs:
         run: ./scripts/validate-kubernetes.sh --uv-path uv --output /tmp/kubernetes-api-validation.json
       - name: Archive Kubernetes API validation evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: kubernetes-api-validation
           path: /tmp/kubernetes-api-validation.json
@@ -307,7 +307,7 @@ jobs:
           if-no-files-found: warn
       - name: Archive visual baseline candidates for review
         if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: X-Pharma-visual-baseline-candidates
           path: apps/web/e2e/visual-baselines/
@@ -322,7 +322,7 @@ jobs:
           --max-p95-ms 10000 --output /tmp/mcp-load-report.json
       - name: Archive MCP protocol and concurrency evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: two-entry-protocol-and-load-evidence
           path: |
@@ -388,7 +388,7 @@ jobs:
         run: ./scripts/run-security-gates.sh
       - name: Archive security evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: security-supply-chain-evidence
           path: manifests/runtime/security/
