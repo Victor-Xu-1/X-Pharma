@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import httpx
 import pytest
 from mcp.client import Client
 from mcp.server.mcpserver import MCPServer
 
+from pharma_intel import mcp_server
 from pharma_intel.mcp_server import _safe_commercial_http_error
 
 
@@ -58,3 +61,44 @@ async def test_unexpected_tool_failure_stays_masked_by_sdk() -> None:
     assert result.is_error is True
     assert "Error executing tool crash" in text
     assert "private" not in text
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("state", ["reserved", "released", "expired", "private-invalid-state"])
+async def test_replayed_reservation_retains_only_safe_recovery_state(
+    monkeypatch: pytest.MonkeyPatch, state: str
+) -> None:
+    async def reservation(_ctx: mcp_server.McpContext, **_kwargs: Any) -> dict[str, Any]:
+        return {"replayed": True, "state": state}
+
+    async def forbidden_domain_read(*_args: Any, **_kwargs: Any) -> Any:
+        raise AssertionError("Replay must never read or charge the domain again")
+
+    monkeypatch.setattr(mcp_server, "_create_commercial_reservation", reservation)
+    monkeypatch.setattr(mcp_server, "api_request", forbidden_domain_read)
+    server: MCPServer[None] = MCPServer("replay-error-contract")
+
+    @server.tool()
+    async def replay() -> dict[str, Any]:
+        return await mcp_server._commercial_api_request(
+            cast(mcp_server.McpContext, object()),
+            billing_class="entity.search",
+            idempotency_key="safe-replay-contract",
+            max_billable_units="100",
+            requested_result_limit=1,
+            request_arguments={},
+            method="GET",
+            path="/internal/v1/domain/entities",
+        )
+
+    async with Client(server, mode="legacy", read_timeout_seconds=5) as client:
+        result = await client.call_tool("replay")
+
+    text = " ".join(block.text for block in result.content if block.type == "text")
+    assert result.is_error is True
+    assert "private" not in text
+    if state == "private-invalid-state":
+        assert text == "Error executing tool replay"
+    else:
+        assert f"already {state}" in text
+        assert ("REQUEST_IN_PROGRESS" if state == "reserved" else "REQUEST_TERMINAL") in text

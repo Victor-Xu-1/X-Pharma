@@ -514,7 +514,11 @@ async def _commercial_api_request(
     if reservation.get("state") == "settled" and isinstance(settlement, dict):
         return {"data": settlement["result"], "usage": _usage_metadata(reservation, settlement)}
     if reservation.get("replayed"):
-        raise RuntimeError(f"Commercial request is already {reservation.get('state', 'in progress')}")
+        state = reservation.get("state")
+        if state in {"reserved", "released", "expired"}:
+            code = "REQUEST_IN_PROGRESS" if state == "reserved" else "REQUEST_TERMINAL"
+            raise McpCommercialError(code, f"Commercial request is already {state}")
+        raise RuntimeError("Commercial replay returned an invalid reservation state")
     if reservation.get("state") != "reserved":
         raise RuntimeError("Commercial usage reservation was not granted")
     if cancellation_requested is not None and cancellation_requested.is_set():
