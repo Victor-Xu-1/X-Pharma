@@ -11,6 +11,7 @@ import pytest
 
 from pharma_intel.platform import environment_executor as executor
 from pharma_intel.platform.environment_recipes import create_plan, manifest_digest, plan_digest
+from pharma_intel.schemas.environment import EnvironmentInstallPlanRead
 from tests.test_environment_plans import host_report
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,7 +37,7 @@ def source(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 
 
-def plan_for(root: Path):
+def plan_for(root: Path) -> EnvironmentInstallPlanRead:
     host = host_report().model_copy(update={"manifest_sha256": manifest_digest(root)})
     return create_plan(host, recipe_id="frontend-dependencies", offline=True, package_manager="pnpm@11.7.0")
 
@@ -89,6 +90,8 @@ def test_execution_reuses_the_e_drive_cache_without_inheriting_secrets(
     monkeypatch.setattr(executor, "run_install_command", successful_step)
     result = executor.execute_install_plan(source, plan_for(source), source / "state")
     assert result.status == "succeeded"
+    assert result.revision == plan_for(source).revision
+    assert result.manifest_sha256 == manifest_digest(source)
     assert captured["PNPM_HOME"] == "/srv/wsl/envs/x-pharma-tools/bin"
     assert captured["XDG_CACHE_HOME"] == "/srv/wsl/cache/x-pharma"
     assert captured["COREPACK_ENABLE_NETWORK"] == "0"
@@ -125,7 +128,7 @@ def test_installer_inherits_lock_until_its_process_exits(source: Path, monkeypat
         observed.update(kwargs)
         raise OSError("process fixture")
 
-    monkeypatch.setattr(executor.subprocess, "Popen", capture_process)
+    monkeypatch.setattr(subprocess, "Popen", capture_process)
     with (source / "installation.lock").open("wb") as lock:
         with pytest.raises(OSError, match="process fixture"):
             executor.run_install_command(

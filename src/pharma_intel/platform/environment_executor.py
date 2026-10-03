@@ -189,6 +189,8 @@ def execute_install_plan(
         result = EnvironmentInstallResultRead(
             recipe_id=plan.recipe_id,
             plan_id=plan.plan_id,
+            revision=plan.revision,
+            manifest_sha256=plan.manifest_sha256,
             status="running",
             started_at=datetime.now(UTC),
             detail="Host-side allowlisted installation started",

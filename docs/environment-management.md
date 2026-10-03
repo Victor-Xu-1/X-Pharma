@@ -58,6 +58,8 @@ pharma-environment install \
 
 安装不删除业务数据、不更改数据库schema、不备份或恢复旧卷、不重启服务，也不处理未知安装目录。Python依赖的生产安装会去除当前 `.venv` 的开发依赖，因此开发/验收环境应采用独立源码目录和环境，不能在其他人正在使用的共享环境中执行。
 
+新安装结果记录执行时源码 commit 和清单摘要，页面明确显示“安装时源码”。主机检测和最近安装是不同观察，不能把另一个提交的安装结果当作当前提交已安装。旧检测记录若缺少该绑定，会明确提示不能作为当前源码证明，不补写假身份。
+
 ## 源码与验证
 
 传输属于 `http/environment.py`；契约属于 `schemas/environment.py`；报告读取、配方、主机探针和执行器分别属于 `platform/environment*.py`；CLI属于 `environment_cli.py`。前端消费生成的OpenAPI client，不存在第二套HTTP实现或网页端执行器。

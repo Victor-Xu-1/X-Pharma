@@ -43,6 +43,39 @@ beforeEach(() => {
   vi.mocked(loadEnvironment).mockResolvedValue(environment);
 });
 
+it.each([null, "d".repeat(40)])(
+  "shows the installation source separately from host detection: %s",
+  async (revision) => {
+    vi.mocked(loadEnvironment).mockResolvedValue({
+      ...environment,
+      host_status: "current",
+      host: {
+        generated_at: "2026-10-04T00:00:00Z",
+        product_version: "0.1.0",
+        revision: "a".repeat(40),
+        clean_source: true,
+        manifest_sha256: "b".repeat(64),
+        probes: [],
+        disk_free_bytes: 4 * 1024 ** 3,
+        disk_total_bytes: 8 * 1024 ** 3,
+        latest_install: {
+          recipe_id: "frontend-dependencies",
+          plan_id: "c".repeat(64),
+          revision,
+          status: "succeeded",
+          started_at: "2026-10-03T00:00:00Z",
+          detail: "Installation observed",
+        },
+      },
+    });
+    renderWithQueryClient(<EnvironmentView />);
+    await screen.findByRole("table", { name: "主机依赖版本" });
+    expect(screen.getByText(/最近安装/)).toHaveTextContent(
+      revision ? "安装时源码 dddddddddddd" : "旧记录未绑定源码，不能作为当前源码的安装证明",
+    );
+  },
+);
+
 it("distinguishes gateway versions from absent host evidence and disables installation", async () => {
   renderWithQueryClient(<EnvironmentView />);
   await waitFor(() => expect(screen.getByRole("table", { name: "网关依赖版本" })).toHaveTextContent("3.13.14"));

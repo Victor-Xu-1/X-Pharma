@@ -81,6 +81,10 @@ export function EnvironmentView() {
                           ? "执行中"
                           : "失败"}{" "}
                       · {environment.host.latest_install.detail}
+                      {" · "}
+                      {environment.host.latest_install.revision
+                        ? `安装时源码 ${environment.host.latest_install.revision.slice(0, 12)}`
+                        : "旧记录未绑定源码，不能作为当前源码的安装证明"}
                     </p>
                   ) : null}
                 </>

@@ -25,6 +25,8 @@ class EnvironmentInstallResultRead(BaseModel):
     model_config = ConfigDict(extra="forbid")
     recipe_id: RecipeId
     plan_id: str = Field(pattern=r"^[0-9a-f]{64}$")
+    revision: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
+    manifest_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     status: Literal["running", "succeeded", "failed"]
     started_at: datetime
     finished_at: datetime | None = None
