@@ -129,13 +129,26 @@ fi
 
 pg_user=$(docker compose exec -T postgres printenv POSTGRES_USER | tr -d '\r')
 pg_db=$(docker compose exec -T postgres printenv POSTGRES_DB | tr -d '\r')
-tenant_record=$(
-  docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -At -v ON_ERROR_STOP=1 \
-    -F '|' -c "SELECT id, slug FROM tenants ORDER BY created_at, id LIMIT 1"
-)
+selected_tenant_slug=${PHARMA_BROWSER_TENANT_SLUG:-}
+if [[ -n "$selected_tenant_slug" ]]; then
+  [[ "$selected_tenant_slug" =~ ^[a-z0-9][a-z0-9-]{0,79}$ ]] || {
+    echo "PHARMA_BROWSER_TENANT_SLUG is invalid" >&2
+    exit 2
+  }
+  tenant_record=$(
+    docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -At -v ON_ERROR_STOP=1 \
+      -v selected_tenant_slug="$selected_tenant_slug" -F '|' \
+      -c "SELECT id, slug FROM tenants WHERE slug = :'selected_tenant_slug' AND active"
+  )
+else
+  tenant_record=$(
+    docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -At -v ON_ERROR_STOP=1 \
+      -F '|' -c "SELECT id, slug FROM tenants ORDER BY created_at, id LIMIT 1"
+  )
+fi
 IFS='|' read -r tenant_id tenant_slug <<< "$tenant_record"
 if [[ ! "$tenant_id" =~ ^[0-9a-f-]{36}$ || -z "$tenant_slug" ]]; then
-  echo "No tenant exists for browser acceptance" >&2
+  echo "No selected active tenant exists for browser acceptance; no fallback is permitted" >&2
   exit 1
 fi
 opensearch_index_prefix=$(
