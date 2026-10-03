@@ -17,13 +17,20 @@ def test_dense_visual_has_one_owner_and_preserves_original_quality_thresholds() 
     assert 'maskColor: "#dce4e7"' in owner
 
 
-def test_dense_capture_preserves_virtual_offsets_without_scroll_workarounds() -> None:
+def test_dense_capture_uses_one_bounded_natural_flow_without_scroll_workarounds() -> None:
     owner = (NAVIGATION / "dense-results-visual.ts").read_text(encoding="utf-8")
     table = (ROOT / "apps/web/src/components/VirtualDataTable.tsx").read_text(encoding="utf-8")
-    assert "height: virtualRow.size, transform: `translateY(${virtualRow.start}px)`" in table
+    assert "height: totalHeight, paddingTop: visibleItems[0]?.start ?? 0" in table
+    assert "style={{ height: virtualRow.size }}" in table
+    assert "translateY(${virtualRow.start}px)" not in table
     assert "height: virtualRow.size, top: virtualRow.start" not in table
     assert "scrollIntoViewIfNeeded" not in owner
     assert "window.scrollTo" not in owner
+    assert "await verifyVirtualRowLayout(denseTableShell)" in owner
+    layout = (NAVIGATION / "virtual-row-layout.ts").read_text(encoding="utf-8")
+    assert "expect(state.firstOffset).toBe(state.padding)" in layout
+    assert "expect(state.count).toBeLessThanOrEqual(state.maximumRows)" in layout
+    assert "finally" in layout and "initial.scroll" in layout
 
 
 def test_reflow_reproduction_and_official_suite_use_the_same_owned_flow_and_budgets() -> None:
@@ -38,13 +45,18 @@ def test_reflow_reproduction_and_official_suite_use_the_same_owned_flow_and_budg
     assert "width: 360" in reflow
 
 
-def test_visual_acceptance_has_one_framework_owned_worker_boundary() -> None:
-    fixture = (ROOT / "apps/web/e2e/fixtures/workbench-visual.ts").read_text(encoding="utf-8")
+def test_fixed_column_layout_is_verified_by_the_one_visual_owner() -> None:
+    owner = (NAVIGATION / "dense-results-visual.ts").read_text(encoding="utf-8")
+    layout = (NAVIGATION / "fixed-column-layout.ts").read_text(encoding="utf-8")
     registration = (ROOT / "apps/web/e2e/workspace.spec.ts").read_text(encoding="utf-8")
-    assert 'workbenchVisualWorker: ["workbench-visual", { scope: "worker", auto: true }]' in fixture
-    assert "workbenchVisualTest(\n" in registration
+    assert "await verifyFixedColumnLayout(denseTableShell)" in owner
+    assert owner.index("verifyFixedColumnLayout(denseTableShell)") < owner.index("toHaveScreenshot(")
+    assert "document.fonts.ready" in layout
+    assert 'expect(cell.position).toBe("sticky")' in layout
+    assert "initial.scroll" in layout and "finally" in layout
     assert registration.count("[workspace-navigation][workspace-isolation]") == 1
-    assert ".launch(" not in fixture
-    assert ".newContext(" not in fixture
-    assert ".newPage(" not in fixture
-    assert "maxDiffPixelRatio" not in fixture
+    assert "workbenchVisualTest" not in registration
+    assert ".launch(" not in layout
+    assert ".newContext(" not in layout
+    assert ".newPage(" not in layout
+    assert "maxDiffPixelRatio" not in layout

@@ -44,7 +44,7 @@ it("renders a keyboard-scrollable table and exposes deterministic sorting state"
   const rows = within(table).getAllByRole("row").slice(1);
   expect(rows.map((row) => row.textContent)).toEqual(["AAA2", "ZZZ1"]);
   for (const row of rows) {
-    expect(row.style.transform).toMatch(/^translateY\(\d+(?:\.\d+)?px\)$/);
+    expect(row.style.transform).toBe("");
     expect(row.style.height).toMatch(/^\d+(?:\.\d+)?px$/);
   }
 
@@ -64,6 +64,36 @@ it("renders a keyboard-scrollable table and exposes deterministic sorting state"
   expect(within(table).getByRole("columnheader", { name: /评分/ })).toBeVisible();
   expect(screen.getByRole("button", { name: "标准" })).toHaveAttribute("aria-pressed", "true");
   expect(nameHeader).toHaveAttribute("aria-sort", "none");
+});
+
+it("renders a bounded window in one natural-flow canvas for both densities", () => {
+  renderWithQueryClient(
+    <VirtualDataTable
+      ariaLabel="有界结果"
+      columns={columns}
+      data={Array.from({ length: 200 }, (_, index) => ({ id: String(index), name: `Row ${index}`, score: index }))}
+      getRowId={(row) => row.id}
+      maxHeight={320}
+      preferenceKey="entity-search"
+    />,
+  );
+  const table = screen.getByRole("table", { name: "有界结果" });
+  const body = table.querySelector("tbody");
+  expect(body).toHaveStyle({ height: "13600px", paddingTop: "0px" });
+  const rendered = () => [...table.querySelectorAll<HTMLElement>(".virtual-table-data-row")];
+  expect(rendered().length).toBeGreaterThan(0);
+  expect(rendered().length).toBeLessThanOrEqual(Math.ceil(320 / 68) + 8);
+  for (const row of rendered()) {
+    expect(row).toHaveStyle({ height: "68px" });
+    expect(row.style.transform).toBe("");
+  }
+  fireEvent.click(screen.getByRole("button", { name: "紧凑" }));
+  expect(body).toHaveStyle({ height: "9200px", paddingTop: "0px" });
+  expect(rendered().length).toBeLessThanOrEqual(Math.ceil(320 / 46) + 8);
+  for (const row of rendered()) {
+    expect(row).toHaveStyle({ height: "46px" });
+    expect(row.style.transform).toBe("");
+  }
 });
 
 it("hydrates validated presentation preferences from the authenticated user workspace", async () => {

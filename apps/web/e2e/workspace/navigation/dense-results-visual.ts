@@ -1,6 +1,8 @@
 import { expect } from "@playwright/test";
 import { readBrowserQualityMetrics } from "../helpers";
+import { verifyFixedColumnLayout } from "./fixed-column-layout";
 import type { verifyQueryCancellationAndPagination } from "./query-cancellation-and-pagination";
+import { verifyVirtualRowLayout } from "./virtual-row-layout";
 
 type DenseVisualContext = Pick<
   Awaited<ReturnType<typeof verifyQueryCancellationAndPagination>>,
@@ -24,6 +26,8 @@ export async function verifyDenseResultsVisual({ page, testInfo, paginationQuery
   expect(denseQuality.cls).toBeLessThanOrEqual(0.1);
   const denseTableShell = page.locator(".virtual-table-shell").filter({ has: denseTable });
   await expect(denseTableShell).toHaveCount(1);
+  await verifyFixedColumnLayout(denseTableShell);
+  await verifyVirtualRowLayout(denseTableShell);
   // Keep the pointer outside the viewport so row hover styling cannot make the
   // repository-owned visual baseline depend on the previous interaction target.
   await page.mouse.move(-10, -10);

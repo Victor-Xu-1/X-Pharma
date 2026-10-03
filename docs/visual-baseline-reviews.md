@@ -1,6 +1,6 @@
 # Visual baseline reviews
 
-## 2026-10-03: isolate the official visual worker, retain the original reference
+## 2026-10-03: failed isolation and bounded natural-flow review
 
 Automatic [run 36996101760](https://github.com/Victor-Xu-1/X-Pharma/actions/runs/36996101760)
 for `46ad22e16beec681668d36bce74f652245b88742` ended at 139/140, not a
@@ -18,20 +18,39 @@ seconds, with the same 5,811-pixel rejection. Adding an automatic worker
 fixture only to the workbench navigation registration then passed 10/10 in
 2.4 minutes. No helper-only replacement or shortened workbench flow was used.
 
-`e2e/fixtures/workbench-visual.ts` provides the one worker boundary.
-Playwright still owns browser launch, context/page/device options, tracing
-and teardown; preceding audits/reflow do not reuse that visual worker.
-This isolates the observed ordering sensitivity, without claiming a proven
-Chromium compositor mechanism. The earlier isolation experiment used the
-withdrawn intermediate reference and was insufficient for the full staged
-flow; that failed evidence is retained below rather than relabeled as green.
+The worker boundary did not establish stability. After clean image build
+and exact deployment of the local `8be8f53` candidate, the same official
+ten-case prefix again produced 9/10 in 1.2 minutes with 5,811 different
+pixels. The worker fixture is withdrawn; the original registration and all
+framework-owned browser/context/page/device/tracing/teardown behavior remain.
+No isolation experiment is reported as a complete fix.
 
-Product rendering, all twenty PNGs, masks, pixel/performance thresholds,
-case/action budgets and all 140 registered scenarios are unchanged in this
-iteration. Twelve related engineering guards, strict application/E2E types
-and scoped formatting pass. Listing 140 scenarios does not execute them.
+Private geometry diagnostics retained both outcomes: recording before the
+first capture passed 10/10, while recording only afterward produced 9/10.
+The after-capture geometry JSONs were identical. Small document-scroll
+changes affected only the bottom crop edge, not the fixed-column rejection.
+Pixel analysis showed approximately one vertical pixel of displacement in
+fixed-column text, with ordinary row columns unchanged. Fixed-column/font
+assertions alone also produced 9/10. These observations do not prove a
+Chromium internal mechanism, and all private diagnostic imports are removed.
+
+The product layout now uses one bounded natural-flow canvas: the existing
+virtualizer owns the visible window and total height; the body uses the
+first visible offset as top padding and rows retain their fixed height.
+Per-row absolute positioning and transforms are removed, not retained as a
+fallback. Shared layout checks verify fonts, fixed header/body columns,
+horizontal scrolling, bounded rows and the middle-window offset, then
+restore both original scroll offsets before the existing pixel assertion.
+This is a product layout change, not screenshot-only CSS.
+
+The two directly affected unit regressions first failed on the old layout;
+all eight table tests then passed, including both densities, bounded DOM,
+sorting, preferences and row selection. Twelve related engineering guards,
+strict application/E2E types and scoped formatting pass. All twenty PNGs,
+masks, pixel/performance thresholds and case/action budgets are still
+unchanged at this point in the review. Listing 140 scenarios does not execute them.
 The canonical coverage guard correctly rejects the ten-case run as full
-acceptance. The next commit's exact-image deployment and automatic CI must
+acceptance. The natural-flow candidate's exact-image deployment and automatic CI must
 still establish their own results; downstream MCP and production acceptance
 must not be inferred from this focused browser pass.
 

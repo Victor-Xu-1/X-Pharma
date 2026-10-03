@@ -790,7 +790,10 @@ export function VirtualDataTable<T>({
               </tr>
             ))}
           </thead>
-          <tbody className="virtual-table-body" style={{ height: totalHeight }}>
+          <tbody
+            className="virtual-table-body"
+            style={{ height: totalHeight, paddingTop: visibleItems[0]?.start ?? 0 }}
+          >
             {visibleItems.map((virtualRow) => {
               const row = rows[virtualRow.index];
               const rowSelected = selectedRowIdSet.has(row.id);
@@ -801,7 +804,7 @@ export function VirtualDataTable<T>({
                 <tr
                   className={`virtual-table-row virtual-table-data-row${rowSelected ? " is-selected" : ""}`}
                   key={row.id}
-                  style={{ height: virtualRow.size, transform: `translateY(${virtualRow.start}px)` }}
+                  style={{ height: virtualRow.size }}
                 >
                   {rowSelection ? (
                     <td className="virtual-table-cell virtual-table-selection-cell">
