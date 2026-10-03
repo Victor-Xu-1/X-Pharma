@@ -88,6 +88,7 @@ def test_google_chrome_acceptance_uses_a_signed_user_level_distribution() -> Non
     assert "selected_tenant_slug=${PHARMA_BROWSER_TENANT_SLUG:-}" in acceptance_text
     assert '[[ "$selected_tenant_slug" =~ ^[a-z0-9][a-z0-9-]{0,79}$ ]]' in acceptance_text
     assert "WHERE slug = :'selected_tenant_slug' AND active" in acceptance_text
+    assert "-v selected_tenant_slug=\"$selected_tenant_slug\" -F '|' <<'SQL'" in acceptance_text
     assert "no fallback is permitted" in acceptance_text
     assert 'E2E_EMAIL_PREFIX="$email_prefix"' in acceptance_text
     assert 'E2E_REGULATORY_SUBJECT_ID="$regulatory_subject_id"' in acceptance_text

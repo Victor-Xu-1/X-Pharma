@@ -137,8 +137,9 @@ if [[ -n "$selected_tenant_slug" ]]; then
   }
   tenant_record=$(
     docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -At -v ON_ERROR_STOP=1 \
-      -v selected_tenant_slug="$selected_tenant_slug" -F '|' \
-      -c "SELECT id, slug FROM tenants WHERE slug = :'selected_tenant_slug' AND active"
+      -v selected_tenant_slug="$selected_tenant_slug" -F '|' <<'SQL'
+SELECT id, slug FROM tenants WHERE slug = :'selected_tenant_slug' AND active;
+SQL
   )
 else
   tenant_record=$(
