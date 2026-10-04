@@ -33,4 +33,4 @@ DATABASE_URL=$admin_url "$uv_bin" run alembic upgrade head >/dev/null
 DATABASE_URL=$admin_url POSTGRES_RUNTIME_USER=$POSTGRES_RUNTIME_USER POSTGRES_RUNTIME_PASSWORD=$POSTGRES_RUNTIME_PASSWORD \
   "$uv_bin" run pharma-db-provision >/dev/null
 DATABASE_URL=$runtime_url TEST_GOVERNANCE_PUBLICATION_DATABASE_URL=$runtime_url \
-  "$uv_bin" run pytest -q tests/test_governance_publication_postgres.py --no-cov
+  "$uv_bin" run pytest -q tests/test_governance_publication_postgres.py tests/test_official_source_updates_postgres.py --no-cov

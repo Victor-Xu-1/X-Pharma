@@ -19,7 +19,7 @@ from pharma_intel.governance.nextpharma import (
     parse_nextpharma_workbook,
 )
 from pharma_intel.governance.nextpharma import adapter_policy_manifest as nextpharma_policy_manifest
-from pharma_intel.governance.policy import governance_policy_sha256
+from pharma_intel.governance.source_policy import deterministic_policy_sha256
 from pharma_intel.identity import IdentityError
 from pharma_intel.models import (
     DataSource,
@@ -60,11 +60,7 @@ def govern_nextpharma(context: AdapterContext, version: SourceVersion) -> dict[s
     input_sha256 = hashlib.sha256(raw).hexdigest()
     if input_sha256 != version.content_sha256:
         raise GovernanceError("NextPharma immutable workbook checksum does not match its source version")
-    adapter_policy = {
-        "base_policy_sha256": governance_policy_sha256(context.settings),
-        "source_profile": nextpharma_policy_manifest(),
-    }
-    policy_sha256 = _hash_json(adapter_policy)
+    policy_sha256 = deterministic_policy_sha256(NEXTPHARMA_ADAPTER_NAME, context.settings)
     prompt_sha256 = _hash_json(nextpharma_policy_manifest())
     existing = context.session.scalar(
         select(ExtractionRun).where(

@@ -6,7 +6,7 @@ import json
 import logging
 import time
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import select
@@ -16,9 +16,17 @@ from pharma_intel.config import Settings, get_settings
 from pharma_intel.db import get_session_factory, set_tenant_context
 from pharma_intel.ingest.connectors import SourceConnectorRegistry
 from pharma_intel.ingest.data_factory import DataFactoryService
+from pharma_intel.ingest.public_sources import (
+    register_chembl_source as register_chembl_source,
+)
+from pharma_intel.ingest.public_sources import (
+    register_clinicaltrials_gov_source as register_clinicaltrials_gov_source,
+)
+from pharma_intel.ingest.public_sources import (
+    register_pubmed_source as register_pubmed_source,
+)
 from pharma_intel.ingest.readiness import SourceReadinessService
-from pharma_intel.licensing import EvidenceLicensePolicy
-from pharma_intel.models import DataSource, DataSourceState, DataSourceType, Tenant, TenantDataset
+from pharma_intel.models import DataSource, DataSourceState, DataSourceType, Tenant
 from pharma_intel.object_store import build_object_store
 
 logger = logging.getLogger(__name__)
@@ -203,358 +211,6 @@ def inspect_registered_source(source_id: str) -> dict[str, object]:
     return inspect_source(matches[0], settings)
 
 
-def register_clinicaltrials_gov_source(
-    *,
-    tenant_slug: str,
-    query_term: str,
-    max_records: int,
-    page_size: int,
-    scan_interval_seconds: int = 86_400,
-) -> DataSource:
-    if not 1 <= max_records <= 1000:
-        raise ValueError("max_records must be between 1 and 1000")
-    if not 1 <= page_size <= 1000:
-        raise ValueError("page_size must be between 1 and 1000")
-    if not 60 <= scan_interval_seconds <= 31_536_000:
-        raise ValueError("scan_interval_seconds must be between 60 and 31536000")
-    normalized_query = " ".join(query_term.split())
-    if not normalized_query:
-        raise ValueError("query_term cannot be empty")
-    settings = get_settings()
-    registry = SourceConnectorRegistry(settings)
-    with get_session_factory()() as identity_session:
-        tenant = identity_session.scalar(select(Tenant).where(Tenant.slug == tenant_slug, Tenant.active.is_(True)))
-    if tenant is None:
-        raise ValueError("Active tenant was not found")
-    with get_session_factory()() as session:
-        set_tenant_context(session, tenant.id)
-        dataset = session.scalar(
-            select(TenantDataset).where(
-                TenantDataset.tenant_id == tenant.id,
-                TenantDataset.dataset_key == "clinical_trials",
-            )
-        )
-        if dataset is None:
-            dataset = TenantDataset(
-                tenant_id=tenant.id,
-                dataset_key="clinical_trials",
-                display_name="ClinicalTrials.gov",
-                license_policy=EvidenceLicensePolicy(
-                    license_id="clinicaltrials-gov-public-data",
-                    policy_version="terms-2023-01-31",
-                    permitted_channels=["web", "mcp"],
-                    allowed_fields=[
-                        "content",
-                        "content_sha256",
-                        "document_name",
-                        "evidence_claim_id",
-                        "locator",
-                        "review_status",
-                        "source_document_id",
-                        "source_uri",
-                        "source_version_id",
-                        "subject_entity_id",
-                    ],
-                    max_content_chars=5000,
-                    attribution="ClinicalTrials.gov, U.S. National Library of Medicine",
-                    metadata={
-                        "source": "https://clinicaltrials.gov/",
-                        "terms": "https://clinicaltrials.gov/about-site/terms-conditions",
-                    },
-                ).document(),
-            )
-            session.add(dataset)
-        source = session.scalar(
-            select(DataSource).where(
-                DataSource.tenant_id == tenant.id,
-                DataSource.root_uri == "https://clinicaltrials.gov/api/v2/studies",
-            )
-        )
-        routing_rules = [
-            {
-                "query_term": normalized_query,
-                "max_records": max_records,
-                "page_size": min(page_size, max_records),
-                "sort": "LastUpdatePostDate:desc",
-            }
-        ]
-        if source is None:
-            source = DataSource(
-                tenant_id=tenant.id,
-                name="ClinicalTrials.gov official API",
-                source_type=DataSourceType.CLINICALTRIALS_GOV,
-                root_uri="https://clinicaltrials.gov/api/v2/studies",
-                owner="Clinical Data Operations",
-                data_classification="public",
-                authorization_scopes=["public:clinicaltrials-gov"],
-                dataset_key=dataset.dataset_key,
-                include_globs=["studies/*.json"],
-                exclude_globs=[],
-                routing_rules=routing_rules,
-                stable_seconds=0,
-                max_file_bytes=10_000_000,
-                scan_interval_seconds=scan_interval_seconds,
-                expected_freshness_seconds=172_800,
-                rate_limit_per_minute=60,
-            )
-            session.add(source)
-        else:
-            if source.source_type != DataSourceType.CLINICALTRIALS_GOV:
-                raise ValueError("ClinicalTrials.gov root URI is already assigned to another connector type")
-            if source.routing_rules != routing_rules or source.scan_interval_seconds != scan_interval_seconds:
-                source.routing_rules = routing_rules
-                source.scan_interval_seconds = scan_interval_seconds
-                source.config_version += 1
-            source.state = DataSourceState.ACTIVE
-        configuration_errors = registry.get(source.source_type).validate_configuration(source)
-        if configuration_errors:
-            raise ValueError("; ".join(configuration_errors))
-        session.commit()
-        session.refresh(source)
-        return source
-
-
-def register_pubmed_source(
-    *,
-    tenant_slug: str,
-    query_term: str,
-    max_records: int,
-    page_size: int,
-    include_abstract: bool,
-    scan_interval_seconds: int = 86_400,
-) -> DataSource:
-    from pharma_intel.ingest.pubmed import PUBMED_EUTILITIES_ROOT
-
-    if not 1 <= max_records <= 1000:
-        raise ValueError("max_records must be between 1 and 1000")
-    if not 1 <= page_size <= 200:
-        raise ValueError("page_size must be between 1 and 200")
-    if not 60 <= scan_interval_seconds <= 31_536_000:
-        raise ValueError("scan_interval_seconds must be between 60 and 31536000")
-    normalized_query = " ".join(query_term.split())
-    if not normalized_query:
-        raise ValueError("query_term cannot be empty")
-    settings = get_settings()
-    registry = SourceConnectorRegistry(settings)
-    with get_session_factory()() as identity_session:
-        tenant = identity_session.scalar(select(Tenant).where(Tenant.slug == tenant_slug, Tenant.active.is_(True)))
-    if tenant is None:
-        raise ValueError("Active tenant was not found")
-    with get_session_factory()() as session:
-        set_tenant_context(session, tenant.id)
-        dataset = session.scalar(
-            select(TenantDataset).where(
-                TenantDataset.tenant_id == tenant.id,
-                TenantDataset.dataset_key == "literature",
-            )
-        )
-        if dataset is None:
-            dataset = TenantDataset(
-                tenant_id=tenant.id,
-                dataset_key="literature",
-                display_name="NCBI PubMed literature metadata",
-                license_policy=EvidenceLicensePolicy(
-                    license_id="ncbi-pubmed-public-metadata",
-                    policy_version="pilot-2026-07-30",
-                    permitted_channels=["web", "mcp"],
-                    allowed_fields=[
-                        "content",
-                        "content_sha256",
-                        "document_name",
-                        "evidence_claim_id",
-                        "locator",
-                        "review_status",
-                        "source_document_id",
-                        "source_uri",
-                        "source_version_id",
-                        "subject_entity_id",
-                    ],
-                    max_content_chars=5000,
-                    attribution="NCBI PubMed, U.S. National Library of Medicine",
-                    metadata={
-                        "source": "https://pubmed.ncbi.nlm.nih.gov/",
-                        "policy": "https://www.ncbi.nlm.nih.gov/home/about/policies/",
-                        "abstracts_included": str(include_abstract).lower(),
-                    },
-                ).document(),
-            )
-            session.add(dataset)
-        source = session.scalar(
-            select(DataSource).where(
-                DataSource.tenant_id == tenant.id,
-                DataSource.root_uri == PUBMED_EUTILITIES_ROOT,
-            )
-        )
-        routing_rules = [
-            {
-                "query_term": normalized_query,
-                "max_records": max_records,
-                "page_size": min(page_size, max_records),
-                "include_abstract": include_abstract,
-            }
-        ]
-        scopes = ["public:ncbi-pubmed-metadata"]
-        if include_abstract:
-            scopes.append("public:ncbi-pubmed-abstracts")
-        if source is None:
-            source = DataSource(
-                tenant_id=tenant.id,
-                name="NCBI PubMed official E-utilities",
-                source_type=DataSourceType.PUBMED,
-                root_uri=PUBMED_EUTILITIES_ROOT,
-                owner="Literature Data Operations",
-                data_classification="public",
-                authorization_scopes=scopes,
-                dataset_key=dataset.dataset_key,
-                include_globs=["articles/*.md"],
-                exclude_globs=[],
-                routing_rules=routing_rules,
-                stable_seconds=0,
-                max_file_bytes=2_000_000,
-                scan_interval_seconds=scan_interval_seconds,
-                expected_freshness_seconds=172_800,
-                rate_limit_per_minute=120,
-            )
-            session.add(source)
-        else:
-            if source.source_type != DataSourceType.PUBMED:
-                raise ValueError("PubMed E-utilities root is already assigned to another connector type")
-            if (
-                source.routing_rules != routing_rules
-                or source.authorization_scopes != scopes
-                or source.scan_interval_seconds != scan_interval_seconds
-            ):
-                source.routing_rules = routing_rules
-                source.authorization_scopes = scopes
-                source.scan_interval_seconds = scan_interval_seconds
-                source.config_version += 1
-            source.state = DataSourceState.ACTIVE
-        configuration_errors = registry.get(source.source_type).validate_configuration(source)
-        if configuration_errors:
-            raise ValueError("; ".join(configuration_errors))
-        session.commit()
-        session.refresh(source)
-        return source
-
-
-def register_chembl_source(
-    *,
-    tenant_slug: str,
-    target_chembl_id: str,
-    max_records: int,
-    page_size: int,
-    scan_interval_seconds: int = 86_400,
-) -> DataSource:
-    from pharma_intel.ingest.chembl import CHEMBL_API_ROOT, ChemblRoutingRule
-
-    if not 1 <= max_records <= 1000:
-        raise ValueError("max_records must be between 1 and 1000")
-    if not 1 <= page_size <= 100:
-        raise ValueError("page_size must be between 1 and 100")
-    if not 60 <= scan_interval_seconds <= 31_536_000:
-        raise ValueError("scan_interval_seconds must be between 60 and 31536000")
-    try:
-        rule = ChemblRoutingRule(
-            target_chembl_id=target_chembl_id,
-            max_records=max_records,
-            page_size=page_size,
-        )
-    except ValueError as exc:
-        raise ValueError(str(exc)) from exc
-    settings = get_settings()
-    registry = SourceConnectorRegistry(settings)
-    with get_session_factory()() as identity_session:
-        tenant = identity_session.scalar(select(Tenant).where(Tenant.slug == tenant_slug, Tenant.active.is_(True)))
-    if tenant is None:
-        raise ValueError("Active tenant was not found")
-    with get_session_factory()() as session:
-        set_tenant_context(session, tenant.id)
-        dataset = session.scalar(
-            select(TenantDataset).where(
-                TenantDataset.tenant_id == tenant.id,
-                TenantDataset.dataset_key == "chembl",
-            )
-        )
-        if dataset is None:
-            dataset = TenantDataset(
-                tenant_id=tenant.id,
-                dataset_key="chembl",
-                display_name="ChEMBL public target mechanism records",
-                license_policy=EvidenceLicensePolicy(
-                    license_id="chembl-cc-by-sa-3.0",
-                    policy_version="chembl-rest-2026-08",
-                    permitted_channels=["web", "mcp"],
-                    allowed_fields=[
-                        "content",
-                        "content_sha256",
-                        "document_name",
-                        "evidence_claim_id",
-                        "locator",
-                        "review_status",
-                        "source_document_id",
-                        "source_uri",
-                        "source_version_id",
-                        "subject_entity_id",
-                    ],
-                    max_content_chars=5000,
-                    attribution="ChEMBL, EMBL-EBI, CC BY-SA 3.0",
-                    metadata={
-                        "source": CHEMBL_API_ROOT,
-                        "license": "https://creativecommons.org/licenses/by-sa/3.0/",
-                        "access": "https://www.ebi.ac.uk/training/online/courses/chembl-quick-tour/accessing-chembl-data/programmatic-access-via-web-services/",
-                    },
-                ).document(),
-            )
-            session.add(dataset)
-        source = session.scalar(
-            select(DataSource).where(
-                DataSource.tenant_id == tenant.id,
-                DataSource.root_uri == CHEMBL_API_ROOT,
-            )
-        )
-        routing_rules = [rule.model_dump(mode="json")]
-        scopes = ["public:chembl"]
-        if source is None:
-            source = DataSource(
-                tenant_id=tenant.id,
-                name=f"ChEMBL official API ({rule.target_chembl_id})",
-                source_type=DataSourceType.CHEMBL,
-                root_uri=CHEMBL_API_ROOT,
-                owner="Public Biomedical Data Operations",
-                data_classification="public",
-                authorization_scopes=scopes,
-                dataset_key=dataset.dataset_key,
-                include_globs=["mechanisms/*.json"],
-                exclude_globs=[],
-                routing_rules=routing_rules,
-                stable_seconds=0,
-                max_file_bytes=1_000_000,
-                scan_interval_seconds=scan_interval_seconds,
-                expected_freshness_seconds=604_800,
-                rate_limit_per_minute=30,
-            )
-            session.add(source)
-        else:
-            if source.source_type != DataSourceType.CHEMBL:
-                raise ValueError("ChEMBL API root is already assigned to another connector type")
-            if (
-                source.routing_rules != routing_rules
-                or source.authorization_scopes != scopes
-                or source.scan_interval_seconds != scan_interval_seconds
-            ):
-                source.routing_rules = routing_rules
-                source.authorization_scopes = scopes
-                source.scan_interval_seconds = scan_interval_seconds
-                source.config_version += 1
-            source.state = DataSourceState.ACTIVE
-        configuration_errors = registry.get(source.source_type).validate_configuration(source)
-        if configuration_errors:
-            raise ValueError("; ".join(configuration_errors))
-        session.commit()
-        session.refresh(source)
-        return source
-
-
 def scan_registered_sources(source_id: str | None = None, *, process_versions: bool = True) -> dict[str, int]:
     settings = get_settings()
     totals = {"sources": 0, "versions": 0, "failed_sources": 0, "failed_versions": 0}
@@ -623,8 +279,10 @@ def run() -> None:
     )
     parser.add_argument("--source-id")
     parser.add_argument("--tenant-slug", default="default")
-    parser.add_argument("--query-term", default="EGFR")
-    parser.add_argument("--target-chembl-id", default="CHEMBL203")
+    parser.add_argument("--query-term")
+    parser.add_argument("--target-chembl-id")
+    parser.add_argument("--sync-mode", choices=["snapshot", "continuous"], default="snapshot")
+    parser.add_argument("--start-date", type=date.fromisoformat)
     parser.add_argument("--max-records", type=int, default=100)
     parser.add_argument("--page-size", type=int, default=100)
     parser.add_argument("--scan-interval-seconds", type=int, default=86_400)
@@ -652,6 +310,8 @@ def run() -> None:
             raise SystemExit(1)
         return
     if args.mode == "register-clinicaltrials-gov":
+        if not args.query_term:
+            parser.error("register-clinicaltrials-gov requires --query-term")
         if args.source_id:
             parser.error("register-clinicaltrials-gov does not accept --source-id")
         try:
@@ -661,12 +321,18 @@ def run() -> None:
                 max_records=args.max_records,
                 page_size=args.page_size,
                 scan_interval_seconds=args.scan_interval_seconds,
+                sync_mode=args.sync_mode,
+                start_date=args.start_date,
             )
         except ValueError as exc:
             parser.error(str(exc))
         print(json.dumps({"source_id": source.id, "source_type": source.source_type.value}, sort_keys=True))
         return
     if args.mode == "register-pubmed":
+        if not args.query_term:
+            parser.error("register-pubmed requires --query-term")
+        if args.sync_mode != "snapshot" or args.start_date is not None:
+            parser.error("PubMed supports bounded metadata snapshots, not the continuous date-window contract")
         if args.source_id:
             parser.error("register-pubmed does not accept --source-id")
         try:
@@ -683,6 +349,10 @@ def run() -> None:
         print(json.dumps({"source_id": source.id, "source_type": source.source_type.value}, sort_keys=True))
         return
     if args.mode == "register-chembl":
+        if not args.target_chembl_id:
+            parser.error("register-chembl requires --target-chembl-id")
+        if args.start_date is not None:
+            parser.error("ChEMBL mechanism synchronization does not use --start-date")
         if args.source_id:
             parser.error("register-chembl does not accept --source-id")
         try:
@@ -692,6 +362,7 @@ def run() -> None:
                 max_records=args.max_records,
                 page_size=args.page_size,
                 scan_interval_seconds=args.scan_interval_seconds,
+                sync_mode=args.sync_mode,
             )
         except ValueError as exc:
             parser.error(str(exc))

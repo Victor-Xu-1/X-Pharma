@@ -7,9 +7,11 @@ import httpx
 import pytest
 
 from pharma_intel.config import Settings
-from pharma_intel.ingest.connectors import (
+from pharma_intel.ingest.clinicaltrials import (
     CLINICALTRIALS_GOV_STUDIES_URL,
     ClinicalTrialsGovSourceConnector,
+)
+from pharma_intel.ingest.connectors import (
     ConnectorConfigurationError,
     ConnectorTransportError,
 )

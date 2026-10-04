@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from pharma_intel.governance.contracts import OFFICIAL_SOURCE_UPDATE_POLICY
 from pharma_intel.governance.schemas import (
     Citation,
     EntityReference,
@@ -213,6 +214,7 @@ def reconcile_chembl_target_links(
 def adapter_policy_manifest() -> dict[str, object]:
     return {
         "adapter": ADAPTER_NAME,
+        "automatic_source_updates": OFFICIAL_SOURCE_UPDATE_POLICY,
         "version": ADAPTER_VERSION,
         "snapshot_schema": SNAPSHOT_SCHEMA,
         "fact_kind": "program",

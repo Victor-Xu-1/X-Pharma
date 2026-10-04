@@ -17,6 +17,7 @@ from pharma_intel.governance.clinicaltrials_gov import (
 from pharma_intel.governance.contracts import SCHEMA_NAME, SCHEMA_VERSION, GovernanceError, PreparedSegmentFact
 from pharma_intel.governance.fact_identity import _hash_json, _prepared_fact_key
 from pharma_intel.governance.model_audit import _extraction_audit
+from pharma_intel.governance.source_policy import deterministic_policy_sha256
 from pharma_intel.identity import IdentityError
 from pharma_intel.models import (
     DataSource,
@@ -64,7 +65,7 @@ def govern_clinicaltrials_gov(context: AdapterContext, version: SourceVersion) -
     if input_sha256 != version.content_sha256:
         raise GovernanceError("ClinicalTrials.gov immutable snapshot checksum does not match its source version")
     policy_manifest = clinicaltrials_gov_policy_manifest()
-    policy_sha256 = _hash_json(policy_manifest)
+    policy_sha256 = deterministic_policy_sha256(CLINICALTRIALS_GOV_ADAPTER_NAME, context.settings)
     prompt_sha256 = _hash_json(policy_manifest)
     existing = context.session.scalar(
         select(ExtractionRun).where(

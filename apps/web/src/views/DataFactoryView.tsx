@@ -37,7 +37,6 @@ import {
 } from "../components/common";
 import type {
   DataSource,
-  DataSourceDataset,
   IngestionFinding,
   IngestionRun,
   QuarantineAction,
@@ -47,7 +46,6 @@ import type {
 } from "../lib/contracts/dataFactory";
 import {
   cancelIngestionRun,
-  createDataSource,
   dataFactoryKeys,
   decideQuarantineCase,
   loadDataFactory,
@@ -60,12 +58,11 @@ import {
   replayIngestionRun,
   replaySourceVersion,
   triggerDataSourceScan,
-  updateDataSource,
   updateDataSourceState,
 } from "../lib/contracts/dataFactory";
-import type { DataSourceCreate } from "../lib/generated/models/DataSourceCreate";
 import type { User } from "../lib/types";
-import { useModalFocus } from "../lib/useModalFocus";
+import { SourceEditorDialog } from "./dataFactory/SourceEditorDialog";
+import { SourceSyncStatus } from "./dataFactory/SourceSyncStatus";
 
 const RUNS_PER_PAGE = 25;
 const ASSETS_PER_PAGE = 50;
@@ -90,54 +87,6 @@ const QUARANTINE_DECISION_LABELS: Record<string, string> = {
   scan_clean: "复扫结果清洁",
   rescan_failed: "复扫启动失败",
 };
-
-const PUBLIC_RESEARCH_SOURCES = {
-  pubmed: {
-    rootUri: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/",
-    authorizationScope: "public:ncbi-pubmed-metadata",
-  },
-  clinicaltrials_gov: {
-    rootUri: "https://clinicaltrials.gov/api/v2/studies",
-    authorizationScope: "public:clinicaltrials-gov",
-  },
-} as const;
-
-type PublicResearchSourceType = keyof typeof PUBLIC_RESEARCH_SOURCES;
-type ClinicalTrialsSort =
-  | "LastUpdatePostDate:asc"
-  | "LastUpdatePostDate:desc"
-  | "StudyFirstPostDate:asc"
-  | "StudyFirstPostDate:desc";
-
-function clinicalTrialsSort(value: unknown): ClinicalTrialsSort {
-  if (
-    value === "LastUpdatePostDate:asc" ||
-    value === "LastUpdatePostDate:desc" ||
-    value === "StudyFirstPostDate:asc" ||
-    value === "StudyFirstPostDate:desc"
-  ) {
-    return value;
-  }
-  return "LastUpdatePostDate:desc";
-}
-
-function isPublicResearchSource(sourceType: DataSource["source_type"]): sourceType is PublicResearchSourceType {
-  return sourceType in PUBLIC_RESEARCH_SOURCES;
-}
-
-function sourceRequiresCredential(sourceType: DataSource["source_type"]): boolean {
-  return ["http_manifest", "s3_snapshot", "sftp_snapshot", "smb_snapshot"].includes(sourceType);
-}
-
-function sourceRootLabel(sourceType: DataSource["source_type"]): string {
-  if (sourceType === "folder") return "服务端只读目录";
-  if (sourceType === "http_manifest") return "Manifest API 地址";
-  if (sourceType === "pubmed") return "PubMed API 地址";
-  if (sourceType === "clinicaltrials_gov") return "ClinicalTrials.gov API 地址";
-  if (sourceType === "s3_snapshot") return "S3 Bucket / Prefix";
-  if (sourceType === "sftp_snapshot") return "SFTP 目录地址";
-  return "SMB 共享目录地址";
-}
 
 const DATA_FACTORY_STATUS_LABELS: Record<string, string> = {
   "projection ready": "检索投影正常",
@@ -171,12 +120,6 @@ function sourceReadinessGuidance(check: { code: string; message: string }): stri
     return check.message.includes("first scan") ? "尚未完成首次扫描" : "数据源已超过更新时效目标";
   }
   return SOURCE_READINESS_GUIDANCE[check.code] ?? "数据源治理检查未通过，请检查配置";
-}
-
-function toLocalDateTimeInput(value?: string | null): string {
-  const date = value ? new Date(value) : new Date();
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 16);
 }
 
 export function DataFactoryView({ user }: { user: User }) {
@@ -331,7 +274,7 @@ export function DataFactoryView({ user }: { user: User }) {
               <header>
                 <div>
                   <h2 id="pipeline-title">自动入库治理链路</h2>
-                  <p>文件发现后自动执行版本快照、解析、AI 结构化治理、审核分流和检索发布</p>
+                  <p>自动采集、不可变快照、安全解析、确定性或模型治理，以及受控发布</p>
                 </div>
                 <StatusBadge
                   value={capabilities.automatic_scheduling_enabled ? "scheduler active" : "scheduler disabled"}
@@ -343,8 +286,8 @@ export function DataFactoryView({ user }: { user: User }) {
               <div className="pipeline-stages">
                 <PipelineStage
                   icon={FolderCog}
-                  title="目录发现"
-                  detail={`${capabilities.allowed_folder_roots.length} 个允许根目录`}
+                  title="来源发现"
+                  detail="官方接口与获授权只读来源"
                   ready={capabilities.automatic_scheduling_enabled}
                 />
                 <PipelineStage
@@ -355,9 +298,18 @@ export function DataFactoryView({ user }: { user: User }) {
                 />
                 <PipelineStage
                   icon={BrainCircuit}
-                  title="远程 API 治理"
-                  detail={capabilities.ai_model ? `第三方 API · ${capabilities.ai_model}` : "第三方 API 未配置"}
-                  ready={capabilities.ai_governance_enabled && capabilities.ai_model_configured}
+                  title="结构化治理"
+                  detail={
+                    capabilities.deterministic_governance_enabled
+                      ? "官方结构化来源可直接校验"
+                      : capabilities.ai_governance_enabled && capabilities.ai_model_configured
+                        ? `第三方 API · ${capabilities.ai_model ?? "已配置"}`
+                        : "未启用可用治理链路"
+                  }
+                  ready={
+                    capabilities.deterministic_governance_enabled ||
+                    (capabilities.ai_governance_enabled && capabilities.ai_model_configured)
+                  }
                 />
                 <PipelineStage icon={ShieldCheck} title="质量审核" detail="低置信度进入审核队列" ready />
                 <PipelineStage icon={ScanSearch} title="发布检索" detail="Web 与 MCP 同源引用" ready />
@@ -415,7 +367,8 @@ export function DataFactoryView({ user }: { user: User }) {
                 <BrainCircuit size={17} />
                 <span>
                   <strong>第三方 LLM API 尚未启用</strong>
-                  当前文件可自动发现并解析，但结构化事实抽取会跳过；生产环境需绑定获批准的远程 HTTPS API 后启用。
+                  非结构化文档的模型事实抽取未启用；已授权的 ClinicalTrials.gov 与 ChEMBL 可走独立确定性治理。全文、OCR
+                  和语义模型仍需各自配置与授权。
                 </span>
               </div>
             ) : null}
@@ -542,6 +495,7 @@ export function DataFactoryView({ user }: { user: User }) {
                       <StatusBadge value={sourceReadiness?.operational_status ?? source.state} />
                     </div>
                     <p className="mono-cell">{source.root_uri}</p>
+                    <SourceSyncStatus readiness={sourceReadiness} />
                     <dl>
                       <div>
                         <dt>数据集</dt>
@@ -867,7 +821,7 @@ export function DataFactoryView({ user }: { user: User }) {
         )}
       </div>
       {showCreate ? (
-        <CreateSource
+        <SourceEditorDialog
           datasets={datasets}
           allowedFolderRoots={capabilities?.allowed_folder_roots ?? []}
           durableWorkflowsEnabled={capabilities?.durable_workflows_enabled === true}
@@ -879,7 +833,7 @@ export function DataFactoryView({ user }: { user: User }) {
         />
       ) : null}
       {editingSource ? (
-        <CreateSource
+        <SourceEditorDialog
           datasets={datasets}
           allowedFolderRoots={capabilities?.allowed_folder_roots ?? []}
           durableWorkflowsEnabled={capabilities?.durable_workflows_enabled === true}
@@ -1719,461 +1673,6 @@ function PipelineStage({
         <small>{detail}</small>
       </span>
       {ready ? <CheckCircle2 size={15} aria-label="已配置" /> : <span className="pipeline-pending">待配置</span>}
-    </div>
-  );
-}
-
-function CreateSource({
-  datasets,
-  allowedFolderRoots,
-  durableWorkflowsEnabled,
-  source,
-  onClose,
-  onCreated,
-}: {
-  datasets: DataSourceDataset[];
-  allowedFolderRoots: string[];
-  durableWorkflowsEnabled: boolean;
-  source?: DataSource;
-  onClose: () => void;
-  onCreated: () => Promise<void>;
-}) {
-  const eligibleDatasets = datasets.filter((dataset) => dataset.active && dataset.license_current);
-  const existingRoutingRule = source?.routing_rules[0] as Record<string, unknown> | undefined;
-  const [sourceType, setSourceType] = useState<DataSource["source_type"]>(source?.source_type ?? "folder");
-  const [name, setName] = useState(source?.name ?? "");
-  const [rootUri, setRootUri] = useState(source?.root_uri ?? allowedFolderRoots[0] ?? "/sources/knowledge");
-  const [credentialRef, setCredentialRef] = useState("");
-  const [owner, setOwner] = useState(source?.owner ?? "");
-  const [authorizationScopes, setAuthorizationScopes] = useState(source?.authorization_scopes.join("\n") ?? "");
-  const [authorizationValidFrom, setAuthorizationValidFrom] = useState(
-    toLocalDateTimeInput(source?.authorization_valid_from),
-  );
-  const [authorizationValidUntil, setAuthorizationValidUntil] = useState(
-    source?.authorization_valid_until ? toLocalDateTimeInput(source.authorization_valid_until) : "",
-  );
-  const [classification, setClassification] = useState<"public" | "internal" | "confidential" | "restricted">(
-    source?.data_classification ?? "internal",
-  );
-  const [datasetKey, setDatasetKey] = useState(source?.dataset_key ?? eligibleDatasets[0]?.dataset_key ?? "");
-  const [interval, setInterval] = useState(source?.scan_interval_seconds ?? 300);
-  const [freshness, setFreshness] = useState(source?.expected_freshness_seconds ?? 86400);
-  const [queryTerm, setQueryTerm] = useState(
-    typeof existingRoutingRule?.query_term === "string" ? existingRoutingRule.query_term : "",
-  );
-  const [maxRecords, setMaxRecords] = useState(
-    typeof existingRoutingRule?.max_records === "number" ? existingRoutingRule.max_records : 100,
-  );
-  const [pageSize, setPageSize] = useState(
-    typeof existingRoutingRule?.page_size === "number" ? existingRoutingRule.page_size : 100,
-  );
-  const [includeAbstract, setIncludeAbstract] = useState(existingRoutingRule?.include_abstract === true);
-  const [clinicalSort, setClinicalSort] = useState<ClinicalTrialsSort>(clinicalTrialsSort(existingRoutingRule?.sort));
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const dialogRef = useModalFocus<HTMLElement>(true, onClose);
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    setSubmitting(true);
-    setError("");
-    try {
-      const validFrom = new Date(authorizationValidFrom);
-      const validUntil = authorizationValidUntil ? new Date(authorizationValidUntil) : null;
-      if (Number.isNaN(validFrom.getTime())) throw new Error("授权生效时间无效");
-      if (validUntil && (Number.isNaN(validUntil.getTime()) || validUntil <= validFrom)) {
-        throw new Error("授权结束时间必须晚于生效时间");
-      }
-      const routingRules: NonNullable<DataSourceCreate["routing_rules"]> = isPublicResearchSource(sourceType)
-        ? [
-            sourceType === "pubmed"
-              ? {
-                  query_term: queryTerm.trim(),
-                  max_records: maxRecords,
-                  page_size: pageSize,
-                  include_abstract: includeAbstract,
-                }
-              : {
-                  query_term: queryTerm.trim(),
-                  max_records: maxRecords,
-                  page_size: pageSize,
-                  sort: clinicalSort,
-                },
-          ]
-        : [];
-      if (isPublicResearchSource(sourceType) && !queryTerm.trim()) throw new Error("检索主题不能为空");
-      const governance = {
-        name: name.trim(),
-        owner: owner.trim(),
-        data_classification: classification,
-        authorization_scopes: authorizationScopes
-          .split(/\r?\n|,/)
-          .map((scope) => scope.trim())
-          .filter(Boolean),
-        authorization_valid_from: validFrom.toISOString(),
-        authorization_valid_until: validUntil?.toISOString() ?? null,
-        scan_interval_seconds: interval,
-        expected_freshness_seconds: freshness,
-      };
-      if (source) {
-        await updateDataSource(source.id, {
-          ...governance,
-          ...(isPublicResearchSource(source.source_type) ? { routing_rules: routingRules } : {}),
-          ...(sourceRequiresCredential(source.source_type) && credentialRef.trim()
-            ? { credential_ref: credentialRef.trim() }
-            : {}),
-        });
-      } else
-        await createDataSource({
-          ...governance,
-          source_type: sourceType,
-          root_uri: rootUri.trim(),
-          ...(isPublicResearchSource(sourceType) ? { routing_rules: routingRules } : {}),
-          ...(sourceRequiresCredential(sourceType) && credentialRef.trim()
-            ? { credential_ref: credentialRef.trim() }
-            : {}),
-          dataset_key: datasetKey,
-          include_globs: ["*", "**/*"],
-          exclude_globs: [],
-          stable_seconds: sourceType === "folder" ? 30 : 0,
-          max_file_bytes: 1073741824,
-          rate_limit_per_minute: 60,
-        });
-      await onCreated();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "注册失败");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-  return (
-    <div className="modal-backdrop" role="presentation">
-      <section
-        ref={dialogRef}
-        className="modal-panel source-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-source-title"
-        tabIndex={-1}
-      >
-        <header>
-          <div>
-            <p className="eyebrow">DATA SOURCE</p>
-            <h2 id="create-source-title">{source ? "编辑数据源治理配置" : "接入自动数据源"}</h2>
-          </div>
-          <button className="icon-button" type="button" onClick={onClose} title="关闭" aria-label="关闭">
-            <X size={18} />
-          </button>
-        </header>
-        <form onSubmit={submit}>
-          <div className="source-form-section">
-            <header>
-              <strong>连接配置</strong>
-              <small>
-                {durableWorkflowsEnabled
-                  ? "数据源注册后立即进入自动调度"
-                  : "数据源登记后将在工作流服务启用时进入自动调度"}
-              </small>
-            </header>
-            <div className="source-form-grid">
-              <label>
-                <span>数据源名称</span>
-                <input
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  required
-                  maxLength={200}
-                  data-modal-autofocus="true"
-                />
-              </label>
-              {!source ? (
-                <label>
-                  <span>数据源类型</span>
-                  <select
-                    value={sourceType}
-                    onChange={(event) => {
-                      const nextType = event.target.value as DataSource["source_type"];
-                      setSourceType(nextType);
-                      if (isPublicResearchSource(nextType)) {
-                        const publicSource = PUBLIC_RESEARCH_SOURCES[nextType];
-                        const preferredDatasetKey = nextType === "pubmed" ? "literature" : "clinical_trials";
-                        setRootUri(publicSource.rootUri);
-                        setClassification("public");
-                        setAuthorizationScopes(publicSource.authorizationScope);
-                        if (eligibleDatasets.some((dataset) => dataset.dataset_key === preferredDatasetKey)) {
-                          setDatasetKey(preferredDatasetKey);
-                        }
-                        setQueryTerm("");
-                        setMaxRecords(100);
-                        setPageSize(100);
-                      } else {
-                        setRootUri(
-                          nextType === "folder"
-                            ? (allowedFolderRoots[0] ?? "/sources/knowledge")
-                            : nextType === "http_manifest"
-                              ? "https://supplier.example/v1/manifest"
-                              : nextType === "s3_snapshot"
-                                ? "s3://licensed-supplier/research/"
-                                : nextType === "sftp_snapshot"
-                                  ? "sftp://supplier.example:22/delivery/"
-                                  : "smb://fileserver.example:445/research/delivery/",
-                        );
-                      }
-                      setCredentialRef("");
-                    }}
-                  >
-                    <option value="folder">服务端固定只读目录</option>
-                    <option value="pubmed">PubMed（NCBI，自动增量）</option>
-                    <option value="clinicaltrials_gov">ClinicalTrials.gov（自动增量）</option>
-                    <option value="http_manifest">HTTP Manifest API</option>
-                    <option value="s3_snapshot">S3 只读快照</option>
-                    <option value="sftp_snapshot">SFTP 只读快照</option>
-                    <option value="smb_snapshot">SMB / NAS 只读快照</option>
-                  </select>
-                </label>
-              ) : null}
-              <div className="source-path-field">
-                <label htmlFor="source-root-uri">{sourceRootLabel(sourceType)}</label>
-                <input
-                  id="source-root-uri"
-                  value={rootUri}
-                  onChange={(event) => setRootUri(event.target.value)}
-                  required
-                  disabled={Boolean(source) || isPublicResearchSource(sourceType)}
-                  list={sourceType === "folder" ? "allowed-folder-roots" : undefined}
-                />
-                {sourceType === "folder" && allowedFolderRoots.length ? (
-                  <datalist id="allowed-folder-roots">
-                    {allowedFolderRoots.map((root) => (
-                      <option key={root} value={root} />
-                    ))}
-                  </datalist>
-                ) : null}
-                {sourceType === "folder" ? (
-                  <small className="field-help">
-                    允许根目录：{allowedFolderRoots.join("、") || "部署环境尚未配置"}
-                  </small>
-                ) : null}
-              </div>
-              {isPublicResearchSource(sourceType) ? (
-                <>
-                  <label className="source-path-field">
-                    <span>{sourceType === "pubmed" ? "PubMed 检索主题" : "ClinicalTrials.gov 检索主题"}</span>
-                    <input
-                      value={queryTerm}
-                      onChange={(event) => setQueryTerm(event.target.value)}
-                      required
-                      maxLength={sourceType === "pubmed" ? 2000 : 1000}
-                      placeholder={sourceType === "pubmed" ? "EGFR AND lung cancer" : "EGFR AND lung cancer"}
-                    />
-                  </label>
-                  <label>
-                    <span>单次最多抓取记录</span>
-                    <input
-                      type="number"
-                      min={1}
-                      max={1000}
-                      value={maxRecords}
-                      onChange={(event) => setMaxRecords(Number(event.target.value))}
-                      required
-                    />
-                  </label>
-                  <label>
-                    <span>每页请求数量</span>
-                    <input
-                      type="number"
-                      min={1}
-                      max={sourceType === "pubmed" ? 200 : 1000}
-                      value={pageSize}
-                      onChange={(event) => setPageSize(Number(event.target.value))}
-                      required
-                    />
-                  </label>
-                  {sourceType === "pubmed" ? (
-                    <label className="source-checkbox-field">
-                      <input
-                        type="checkbox"
-                        checked={includeAbstract}
-                        onChange={(event) => {
-                          const checked = event.target.checked;
-                          setIncludeAbstract(checked);
-                          setAuthorizationScopes((current) => {
-                            const abstractScope = "public:ncbi-pubmed-abstracts";
-                            const scopes = current
-                              .split(/\r?\n|,/)
-                              .map((scope) => scope.trim())
-                              .filter(Boolean)
-                              .filter((scope) => scope !== abstractScope);
-                            if (checked) scopes.push(abstractScope);
-                            return scopes.join("\n");
-                          });
-                        }}
-                      />
-                      <span>同时入库摘要</span>
-                    </label>
-                  ) : (
-                    <label>
-                      <span>结果排序</span>
-                      <select
-                        value={clinicalSort}
-                        onChange={(event) => setClinicalSort(event.target.value as ClinicalTrialsSort)}
-                      >
-                        <option value="LastUpdatePostDate:desc">最近更新优先</option>
-                        <option value="LastUpdatePostDate:asc">最早更新优先</option>
-                        <option value="StudyFirstPostDate:desc">最近首次发布优先</option>
-                        <option value="StudyFirstPostDate:asc">最早首次发布优先</option>
-                      </select>
-                    </label>
-                  )}
-                </>
-              ) : null}
-              {sourceRequiresCredential(sourceType) ? (
-                <label>
-                  <span>{source ? "新凭据引用" : "凭据引用"}</span>
-                  <input
-                    value={credentialRef}
-                    onChange={(event) => setCredentialRef(event.target.value)}
-                    required={!source && sourceType !== "s3_snapshot"}
-                    placeholder={
-                      sourceType === "http_manifest"
-                        ? "env://SUPPLIER_API_TOKEN"
-                        : sourceType === "s3_snapshot"
-                          ? "env://SUPPLIER_S3_CREDENTIALS_JSON"
-                          : sourceType === "sftp_snapshot"
-                            ? "env://SUPPLIER_SFTP_CREDENTIALS_JSON"
-                            : "env://ENTERPRISE_SMB_CREDENTIALS_JSON"
-                    }
-                    maxLength={500}
-                    autoComplete="off"
-                  />
-                </label>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="source-form-section">
-            <header>
-              <strong>数据治理</strong>
-              <small>负责人、授权和用途决定数据是否允许发布</small>
-            </header>
-            <div className="source-form-grid">
-              <label>
-                <span>数据负责人</span>
-                <input value={owner} onChange={(event) => setOwner(event.target.value)} required maxLength={200} />
-              </label>
-              <label>
-                <span>数据分级</span>
-                <select
-                  value={classification}
-                  onChange={(event) => setClassification(event.target.value as typeof classification)}
-                >
-                  <option value="public">公开</option>
-                  <option value="internal">内部</option>
-                  <option value="confidential">机密</option>
-                  <option value="restricted">受限</option>
-                </select>
-              </label>
-              <label className="source-path-field">
-                <span>授权范围编号（每行一个）</span>
-                <textarea
-                  value={authorizationScopes}
-                  onChange={(event) => setAuthorizationScopes(event.target.value)}
-                  required
-                  maxLength={12000}
-                />
-              </label>
-              <label>
-                <span>授权生效时间</span>
-                <input
-                  type="datetime-local"
-                  value={authorizationValidFrom}
-                  onChange={(event) => setAuthorizationValidFrom(event.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                <span>授权结束时间（留空表示长期有效）</span>
-                <input
-                  type="datetime-local"
-                  value={authorizationValidUntil}
-                  min={authorizationValidFrom}
-                  onChange={(event) => setAuthorizationValidUntil(event.target.value)}
-                />
-              </label>
-              <label>
-                <span>目标数据集</span>
-                <select
-                  value={datasetKey}
-                  onChange={(event) => setDatasetKey(event.target.value)}
-                  required
-                  disabled={Boolean(source)}
-                >
-                  {source && !eligibleDatasets.some((dataset) => dataset.dataset_key === source.dataset_key) ? (
-                    <option value={source.dataset_key}>{source.dataset_key}</option>
-                  ) : null}
-                  {eligibleDatasets.map((dataset) => (
-                    <option key={dataset.dataset_key} value={dataset.dataset_key}>
-                      {dataset.display_name} · {dataset.license_id}/{dataset.license_policy_version}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          </div>
-
-          <div className="source-form-section">
-            <header>
-              <strong>自动化策略</strong>
-              <small>持续增量扫描，不移动或修改源文件</small>
-            </header>
-            <div className="source-form-grid compact">
-              <label>
-                <span>扫描周期（秒）</span>
-                <input
-                  type="number"
-                  min={10}
-                  max={86400}
-                  value={interval}
-                  onChange={(event) => setInterval(Number(event.target.value))}
-                  required
-                />
-              </label>
-              <label>
-                <span>Freshness 目标（秒）</span>
-                <input
-                  type="number"
-                  min={60}
-                  max={31536000}
-                  value={freshness}
-                  onChange={(event) => setFreshness(Number(event.target.value))}
-                  required
-                />
-              </label>
-            </div>
-          </div>
-          {!source && !eligibleDatasets.length ? (
-            <p className="form-error" role="alert">
-              当前没有已启用且许可有效的数据集
-            </p>
-          ) : null}
-          {error ? (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
-          ) : null}
-          <div className="form-actions">
-            <button className="text-button" type="button" onClick={onClose}>
-              取消
-            </button>
-            <button
-              className="primary-button"
-              type="submit"
-              disabled={submitting || (!source && !eligibleDatasets.length)}
-            >
-              {submitting ? "保存中" : source ? "保存" : "注册"}
-            </button>
-          </div>
-        </form>
-      </section>
     </div>
   );
 }

@@ -124,6 +124,8 @@ docker compose -f compose.yaml -f compose.dev.yaml run --rm api pharma-bootstrap
 
 管理员注册来源后，数据经不可变快照、ClamAV、隔离解析、治理审核和投影进入平台。只有实际获授权的数据才能接入或交付。连接器、来源许可与注册操作见 [来源接入](runbooks/source-onboarding.md)，数据工厂调用关系见 [架构说明](docs/architecture.md)。
 
+ClinicalTrials.gov 与 ChEMBL 目标/机制支持不依赖 LLM 的确定性治理及有界持续同步。日期分区、检查点、完整周期水位、更新与异常边界见 [真实公开来源自动入库](docs/automatic-public-source-ingestion.md)。单批完成不等于全库完成，PubMed 元数据窗口也不等于全文抽取。
+
 AI 使用批准的第三方 HTTPS API。启用前在私有配置中设置 `AI_BASE_URL`、`AI_API_KEY`、`AI_MODEL` 与明确的响应模型 allowlist，确认费用、usage、输出 schema 和资料外发权限。模型不能直接写入权威事实。OCR 是独立可选组件，见 [OCR 服务](docs/ocr-service.md)。
 
 ## 验证与构建

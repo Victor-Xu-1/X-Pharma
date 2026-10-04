@@ -8,6 +8,7 @@ from pharma_intel.governance.normalization import PreparedFact
 SCHEMA_NAME = "pharma_document_facts"
 SCHEMA_VERSION = "2.13.0"
 POLICY_SCHEMA = "pharma.governance-policy.v1"
+OFFICIAL_SOURCE_UPDATE_POLICY = "same-asset-monotonic-v1"
 HIGH_RISK_FACT_KINDS = frozenset(
     {
         "activity",

@@ -24,6 +24,7 @@ from pharma_intel.ingest.activities import (
     scan_source_activity,
 )
 from pharma_intel.ingest.contracts import ScanInput
+from pharma_intel.ingest.public_sync import public_sync_pending
 from pharma_intel.ingest.readiness import SourceReadinessService
 from pharma_intel.ingest.run_reconciliation import reconcile_stale_ingestion_runs
 from pharma_intel.ingest.workflows import DataSourceIngestionWorkflow, SourceVersionReprocessWorkflow
@@ -89,6 +90,8 @@ def _source_scan_interval(settings: Settings, source: DataSource) -> int:
     scan_interval = int(source.scan_interval_seconds)
     failure_count = int(source.consecutive_failures)
     if source.state != DataSourceState.UNAVAILABLE or failure_count <= 0:
+        if public_sync_pending(source):
+            return min(scan_interval, settings.public_sync_catchup_interval_seconds)
         return scan_interval
     exponent = min(failure_count - 1, 20)
     backoff_seconds = int(settings.source_retry_base_seconds) * (2**exponent)

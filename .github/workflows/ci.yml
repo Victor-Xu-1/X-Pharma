@@ -152,6 +152,10 @@ jobs:
           DATABASE_URL: postgresql+psycopg://pharma_runtime:ci-runtime-password@127.0.0.1:5432/pharma_migration
           TEST_COMMERCIAL_DATABASE_URL: postgresql+psycopg://pharma_runtime:ci-runtime-password@127.0.0.1:5432/pharma_migration
         run: uv run pytest tests/test_commercial_postgres.py
+      - name: Official source revision ordering and publication lock
+        env:
+          TEST_GOVERNANCE_PUBLICATION_DATABASE_URL: postgresql+psycopg://pharma_runtime:ci-runtime-password@127.0.0.1:5432/pharma_migration
+        run: uv run pytest -m integration tests/test_official_source_updates_postgres.py
 
   frontend:
     runs-on: ubuntu-24.04

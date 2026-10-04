@@ -103,6 +103,7 @@ beforeEach(() => {
       isolated_parser_enabled: true,
       malware_scanning_enabled: true,
       ai_governance_enabled: true,
+      deterministic_governance_enabled: true,
       ai_model_configured: true,
       ai_model: "governed-extractor",
       ai_auto_publish_threshold: 0.95,
@@ -204,8 +205,8 @@ it("identifies governed inference as a third-party remote API", async () => {
   expect(await screen.findByText("第三方 LLM API")).toBeInTheDocument();
   expect(screen.getByText("远程 API 已启用")).toBeInTheDocument();
   expect(screen.getByText("远程 API · governed-extractor")).toBeInTheDocument();
-  expect(screen.getByText("远程 API 治理")).toBeInTheDocument();
-  expect(screen.getByText("第三方 API · governed-extractor")).toBeInTheDocument();
+  expect(screen.getByText("结构化治理")).toBeInTheDocument();
+  expect(screen.getByText("官方结构化来源可直接校验")).toBeInTheDocument();
 });
 
 it("disables scans and localizes readiness guidance when durable workflows are unavailable", async () => {
@@ -921,6 +922,7 @@ it("registers a governed ClinicalTrials.gov query without asking for credentials
   fireEvent.change(screen.getByLabelText("单次最多抓取记录"), { target: { value: "200" } });
   fireEvent.change(screen.getByLabelText("每页请求数量"), { target: { value: "100" } });
   fireEvent.change(screen.getByLabelText("结果排序"), { target: { value: "StudyFirstPostDate:desc" } });
+  fireEvent.change(screen.getByLabelText("历史起始日期"), { target: { value: "2026-07-01" } });
   fireEvent.change(screen.getByLabelText("数据负责人"), { target: { value: "Clinical Intelligence" } });
 
   expect(screen.queryByLabelText("凭据引用")).not.toBeInTheDocument();
@@ -942,6 +944,11 @@ it("registers a governed ClinicalTrials.gov query without asking for credentials
           max_records: 200,
           page_size: 100,
           sort: "StudyFirstPostDate:desc",
+          sync_mode: "continuous",
+          start_date: "2026-07-01",
+          window_days: 31,
+          overlap_days: 2,
+          reconcile_interval_days: 30,
         },
       ],
       stable_seconds: 0,

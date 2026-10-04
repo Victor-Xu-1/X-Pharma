@@ -78,9 +78,6 @@ from pharma_intel.governance.model_gateway import (
 from pharma_intel.governance.nextpharma import (
     ADAPTER_NAME as NEXTPHARMA_ADAPTER_NAME,
 )
-from pharma_intel.governance.nextpharma import (
-    is_authorized_nextpharma_asset,
-)
 from pharma_intel.governance.normalization import FactNormalizer, PreparedFact
 from pharma_intel.governance.policy import (
     governance_policy_manifest as governance_policy_manifest,
@@ -95,10 +92,16 @@ from pharma_intel.governance.schemas import (
     TargetProfileFact,
     TrialFact,
 )
+from pharma_intel.governance.source_policy import source_profile as resolve_source_profile
 from pharma_intel.governance.source_profiles import (
     _enforce_profiled_identity,
     _profiled_model_text,
     _validate_profiled_response,
+)
+from pharma_intel.governance.source_updates import (
+    OfficialSourceUpdate,
+    lock_official_source_record,
+    official_source_update,
 )
 from pharma_intel.identity import EntityIdentityService, IdentityError
 from pharma_intel.models import (
@@ -211,7 +214,7 @@ class GovernanceService:
             raise LookupError("Source version not found")
         if version.parse_status != StageStatus.SUCCEEDED or not version.extracted_text_object_uri:
             raise GovernanceError("Source version has not completed deterministic text extraction")
-        source_profile = self._source_profile(version)
+        source_profile = resolve_source_profile(self.session, version)
         if source_profile == NEXTPHARMA_ADAPTER_NAME:
             return govern_nextpharma(self, version)
         if source_profile == CHEMBL_ADAPTER_NAME:
@@ -464,34 +467,6 @@ class GovernanceService:
         self.session.commit()
         return {"run_id": run.id, "fact_count": len(facts), **counts}
 
-    def _source_profile(self, version: SourceVersion) -> str | None:
-        source_context = self.session.execute(
-            select(DataSource, SourceAsset)
-            .join(SourceAsset, SourceAsset.data_source_id == DataSource.id)
-            .where(
-                DataSource.tenant_id == self.tenant_id,
-                SourceAsset.tenant_id == self.tenant_id,
-                SourceAsset.id == version.source_asset_id,
-            )
-        ).one_or_none()
-        if source_context is None:
-            return None
-        source, asset = source_context
-        source_type = source.source_type
-        if source_type == DataSourceType.CLINICALTRIALS_GOV:
-            return CLINICALTRIALS_GOV_ADAPTER_NAME
-        if source_type == DataSourceType.PUBMED:
-            return "pubmed"
-        if source_type == DataSourceType.CHEMBL:
-            return CHEMBL_ADAPTER_NAME
-        if is_authorized_nextpharma_asset(
-            file_name=asset.file_name,
-            extension=asset.extension,
-            authorization_scopes=list(source.authorization_scopes or []),
-        ):
-            return NEXTPHARMA_ADAPTER_NAME
-        return None
-
     @staticmethod
     def _apply_successful_version_state(
         version: SourceVersion,
@@ -552,6 +527,8 @@ class GovernanceService:
         fact = prepared.fact
         payload = prepared.payload
         fact_key = _prepared_fact_key(prepared)
+        if trusted_structured:
+            lock_official_source_record(self.session, version)
         existing = self.session.scalar(
             select(StagedFact).where(
                 StagedFact.tenant_id == self.tenant_id,
@@ -574,7 +551,9 @@ class GovernanceService:
             )
         prior = list(
             self.session.scalars(
-                select(StagedFact).where(
+                select(StagedFact)
+                .execution_options(populate_existing=True)
+                .where(
                     StagedFact.tenant_id == self.tenant_id,
                     StagedFact.fact_key == fact_key,
                     StagedFact.status.in_(
@@ -594,10 +573,18 @@ class GovernanceService:
             and fact.citation.confidence == 1
             and self._source_type_for_document(version.source_document_id) == DataSourceType.CLINICALTRIALS_GOV
         )
+        official_update = (
+            official_source_update(self.session, version, prior)
+            if trusted_structured and fact.citation.confidence == 1
+            else OfficialSourceUpdate()
+        )
         superseded_prior = (
             [item for item in prior if item.status in {GovernanceStatus.REVIEW_PENDING, GovernanceStatus.CONFLICT}]
             if authoritative_trial
             else []
+        )
+        superseded_prior.extend(
+            item for item in prior if item.id in official_update.superseded_ids and item not in superseded_prior
         )
         superseded_ids = {item.id for item in superseded_prior}
         conflicts = [
@@ -606,6 +593,15 @@ class GovernanceService:
             if item.id not in superseded_ids
             and _payload_without_citation(item.payload) != _payload_without_citation(payload)
         ]
+        if official_update.stale:
+            quality_findings.append(
+                {
+                    "code": "stale_official_source_version",
+                    "severity": "error",
+                    "message": "A newer deterministic revision of this source record is already accepted",
+                }
+            )
+            conflicts = []
         if conflicts:
             quality_findings.append(
                 {"code": "conflicting_fact", "severity": "warning", "message": "A prior fact has different values"}
@@ -613,7 +609,7 @@ class GovernanceService:
 
         canonical_conflict = self._structure_entity_conflict(prepared, quality_findings)
 
-        if prepared.hard_reject or not segment_fact.quote_verified:
+        if prepared.hard_reject or not segment_fact.quote_verified or official_update.stale:
             status = GovernanceStatus.REJECTED
         elif prepared.normalization_conflict or canonical_conflict or conflicts:
             status = GovernanceStatus.CONFLICT
@@ -647,7 +643,7 @@ class GovernanceService:
         )
         self.session.add(staged)
         self.session.flush()
-        if superseded_prior:
+        if superseded_prior and status == GovernanceStatus.VALIDATED:
             self._withdraw_superseded_facts(superseded_prior)
         if status == GovernanceStatus.VALIDATED:
             self._publish(staged)
@@ -678,7 +674,7 @@ class GovernanceService:
             if task is None:
                 continue
             task.status = GovernanceStatus.WITHDRAWN
-            task.decision_notes = "Superseded by an authoritative ClinicalTrials.gov deterministic snapshot"
+            task.decision_notes = "Superseded by a validated authoritative source revision"
             task.decided_at = decided_at
 
     def _structure_entity_conflict(

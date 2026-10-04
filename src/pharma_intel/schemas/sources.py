@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-import re
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from pharma_intel.ingest.chembl import ChemblRoutingRule
+from pharma_intel.ingest.clinicaltrials import ClinicalTrialsGovRoutingRule, ClinicalTrialsGovSort
+from pharma_intel.ingest.pubmed import PubMedRoutingRule
 from pharma_intel.ingest.readiness import AUTHORIZATION_SCOPE_PATTERN
 from pharma_intel.models.enums import (
     DataSourceState,
@@ -16,54 +18,24 @@ from pharma_intel.sorting import (
 )
 
 
-class _DataSourceRoutingRuleBase(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    query_term: str = Field(min_length=1, max_length=2000)
-    max_records: int = Field(default=100, ge=1, le=1000)
-    page_size: int = Field(default=100, ge=1, le=1000)
-
-    def document(self) -> dict[str, Any]:
-        return self.model_dump()
-
-
-class PubMedDataSourceRoutingRule(_DataSourceRoutingRuleBase):
+class PubMedDataSourceRoutingRule(PubMedRoutingRule):
     include_abstract: bool
 
-
-class ClinicalTrialsGovDataSourceRoutingRule(_DataSourceRoutingRuleBase):
-    sort: Literal[
-        "LastUpdatePostDate:asc",
-        "LastUpdatePostDate:desc",
-        "StudyFirstPostDate:asc",
-        "StudyFirstPostDate:desc",
-    ]
+    def document(self) -> dict[str, Any]:
+        return self.model_dump(mode="json")
 
 
-class ChemblDataSourceRoutingRule(BaseModel):
+class ClinicalTrialsGovDataSourceRoutingRule(ClinicalTrialsGovRoutingRule):
+    sort: ClinicalTrialsGovSort
+
+
+class ChemblDataSourceRoutingRule(ChemblRoutingRule):
     """Routing rule retained for the public ChEMBL connector.
 
     ChEMBL sources were registered before PubMed and ClinicalTrials.gov routing
     rules became a tagged union. Keep the persisted target identifier explicit so
     existing sources remain readable and new registrations use the same contract.
     """
-
-    model_config = ConfigDict(extra="forbid")
-
-    target_chembl_id: str = Field(min_length=7, max_length=32)
-    max_records: int = Field(default=100, ge=1, le=1000)
-    page_size: int = Field(default=100, ge=1, le=100)
-
-    def document(self) -> dict[str, Any]:
-        return self.model_dump()
-
-    @field_validator("target_chembl_id")
-    @classmethod
-    def normalize_target_chembl_id(cls, value: str) -> str:
-        normalized = value.strip().upper()
-        if re.fullmatch(r"CHEMBL[0-9]+", normalized) is None:
-            raise ValueError("target_chembl_id must be a valid ChEMBL identifier")
-        return normalized
 
 
 DataSourceRoutingRule = (
@@ -252,11 +224,23 @@ class DataSourceReadinessCheckRead(BaseModel):
     message: str
 
 
+class PublicSourceSyncRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    phase: Literal["backfill", "incremental", "reconcile", "full_scan"]
+    pending: bool
+    processed_records: int = Field(ge=0)
+    cycle_started_at: datetime
+    last_completed_at: datetime | None
+    window_start: date | None
+    window_end: date | None
+    completed_through: date | None
+
+
 class DataSourceReadinessRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     source_id: str
     configuration_ready: bool
-    operational_status: Literal["blocked", "disabled", "paused", "unavailable", "pending", "stale", "ready"]
+    operational_status: Literal["blocked", "disabled", "paused", "unavailable", "pending", "syncing", "stale", "ready"]
     connector_id: str | None
     incremental: bool
     replayable: bool
@@ -265,6 +249,7 @@ class DataSourceReadinessRead(BaseModel):
     last_cursor_at: datetime | None
     freshness_age_seconds: int | None
     checks: list[DataSourceReadinessCheckRead]
+    sync_status: PublicSourceSyncRead | None = None
 
 
 class DataSourceStateUpdate(BaseModel):

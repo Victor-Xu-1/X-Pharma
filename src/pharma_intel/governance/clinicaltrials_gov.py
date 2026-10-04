@@ -8,6 +8,7 @@ from typing import Any, Literal
 
 from pydantic import ValidationError
 
+from pharma_intel.governance.contracts import OFFICIAL_SOURCE_UPDATE_POLICY
 from pharma_intel.governance.schemas import (
     Citation,
     EntityReference,
@@ -44,6 +45,7 @@ class ClinicalTrialsGovRecord:
 def adapter_policy_manifest() -> dict[str, object]:
     return {
         "adapter": ADAPTER_NAME,
+        "automatic_source_updates": OFFICIAL_SOURCE_UPDATE_POLICY,
         "version": ADAPTER_VERSION,
         "source_schema": "ClinicalTrials.gov API v2 study JSON",
         "fact_kind": "trial",

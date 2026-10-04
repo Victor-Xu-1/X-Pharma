@@ -14,6 +14,7 @@ from pharma_intel.governance.chembl import is_authorized_chembl_asset, parse_che
 from pharma_intel.governance.contracts import SCHEMA_NAME, SCHEMA_VERSION, GovernanceError, PreparedSegmentFact
 from pharma_intel.governance.fact_identity import _hash_json, _prepared_fact_key
 from pharma_intel.governance.model_audit import _extraction_audit
+from pharma_intel.governance.source_policy import deterministic_policy_sha256
 from pharma_intel.identity import IdentityError
 from pharma_intel.models import (
     DataSource,
@@ -55,17 +56,7 @@ def govern_chembl(context: AdapterContext, version: SourceVersion) -> dict[str, 
     input_sha256 = hashlib.sha256(raw).hexdigest()
     if input_sha256 != version.content_sha256:
         raise GovernanceError("ChEMBL immutable snapshot checksum does not match its source version")
-    adapter_policy = {
-        "base_policy_sha256": _hash_json(
-            {
-                "governance_schema": SCHEMA_VERSION,
-                "source_type": DataSourceType.CHEMBL.value,
-                "deterministic_policy": chembl_policy_manifest(),
-            }
-        ),
-        "source_profile": chembl_policy_manifest(),
-    }
-    policy_sha256 = _hash_json(adapter_policy)
+    policy_sha256 = deterministic_policy_sha256(CHEMBL_ADAPTER_NAME, context.settings)
     prompt_sha256 = _hash_json(chembl_policy_manifest())
     existing = context.session.scalar(
         select(ExtractionRun).where(

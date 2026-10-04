@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from pharma_intel.config import Settings
 from pharma_intel.ingest.commands.errors import IngestionCommandError
 from pharma_intel.ingest.connectors import SourceConnectorRegistry
+from pharma_intel.ingest.source_routing import canonical_routing_rules, routing_scope_identity
 from pharma_intel.licensing import EvidenceLicensePolicy
 from pharma_intel.models import AuditEvent, DataSource, DataSourceState, DataSourceType, SourceAsset, TenantDataset
 from pharma_intel.schemas import DataSourceCreate, DataSourceRead, DataSourceStateUpdate, DataSourceUpdate
@@ -196,6 +197,10 @@ def update_data_source(
     values = payload.model_dump(exclude_unset=True)
     if "routing_rules" in payload.model_fields_set:
         values["routing_rules"] = [rule.document() for rule in payload.routing_rules or []]
+        if canonical_routing_rules(source.source_type, source.routing_rules) == canonical_routing_rules(
+            source.source_type, values["routing_rules"]
+        ):
+            values.pop("routing_rules")
     if "root_uri" in values and values["root_uri"] is not None:
         values["root_uri"] = _normalized_source_root(source.source_type, str(values["root_uri"]), settings=settings)
     if "dataset_key" in values and values["dataset_key"] is not None:
@@ -208,7 +213,11 @@ def update_data_source(
     _validate_source_authorization_window(prospective_source)
 
     identity_changed = any(
-        key in values and values[key] != getattr(source, key) for key in ("root_uri", "dataset_key", "routing_rules")
+        key in values and values[key] != getattr(source, key) for key in ("root_uri", "dataset_key")
+    ) or (
+        "routing_rules" in values
+        and routing_scope_identity(source.source_type, source.routing_rules)
+        != routing_scope_identity(source.source_type, values["routing_rules"])
     )
     if identity_changed:
         asset_exists = session.scalar(

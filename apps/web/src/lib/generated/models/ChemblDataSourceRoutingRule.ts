@@ -12,5 +12,6 @@
 export type ChemblDataSourceRoutingRule = {
   max_records?: number;
   page_size?: number;
+  sync_mode?: 'snapshot' | 'continuous';
   target_chembl_id: string;
 };

@@ -8,6 +8,7 @@ from temporalio.common import WorkflowIDReusePolicy
 from temporalio.exceptions import WorkflowAlreadyStartedError
 
 from pharma_intel.config import Settings
+from pharma_intel.governance.source_policy import source_governance_policy
 from pharma_intel.ingest.commands.errors import IngestionCommandError
 from pharma_intel.ingest.contracts import ProcessInput
 from pharma_intel.ingest.replay import replayable_source_version_stages
@@ -89,7 +90,7 @@ async def replay_source_version(
         )
     replayable_stages = replayable_source_version_stages(
         version,
-        ai_governance_enabled=settings.ai_governance_enabled,
+        governance_enabled=source_governance_policy(session, settings, version) is not None,
     )
     if payload.from_stage not in replayable_stages:
         raise IngestionCommandError(

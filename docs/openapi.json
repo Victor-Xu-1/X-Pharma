@@ -1861,6 +1861,15 @@
             "title": "Page Size",
             "type": "integer"
           },
+          "sync_mode": {
+            "default": "snapshot",
+            "enum": [
+              "snapshot",
+              "continuous"
+            ],
+            "title": "Sync Mode",
+            "type": "string"
+          },
           "target_chembl_id": {
             "maxLength": 32,
             "minLength": 7,
@@ -4648,6 +4657,13 @@
             "title": "Max Records",
             "type": "integer"
           },
+          "overlap_days": {
+            "default": 2,
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Overlap Days",
+            "type": "integer"
+          },
           "page_size": {
             "default": 100,
             "maximum": 1000.0,
@@ -4656,10 +4672,17 @@
             "type": "integer"
           },
           "query_term": {
-            "maxLength": 2000,
+            "maxLength": 1000,
             "minLength": 1,
             "title": "Query Term",
             "type": "string"
+          },
+          "reconcile_interval_days": {
+            "default": 30,
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Reconcile Interval Days",
+            "type": "integer"
           },
           "sort": {
             "enum": [
@@ -4670,6 +4693,34 @@
             ],
             "title": "Sort",
             "type": "string"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "sync_mode": {
+            "default": "snapshot",
+            "enum": [
+              "snapshot",
+              "continuous"
+            ],
+            "title": "Sync Mode",
+            "type": "string"
+          },
+          "window_days": {
+            "default": 31,
+            "maximum": 366.0,
+            "minimum": 1.0,
+            "title": "Window Days",
+            "type": "integer"
           }
         },
         "required": [
@@ -9044,6 +9095,7 @@
               "paused",
               "unavailable",
               "pending",
+              "syncing",
               "stale",
               "ready"
             ],
@@ -9057,6 +9109,16 @@
           "source_id": {
             "title": "Source Id",
             "type": "string"
+          },
+          "sync_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicSourceSyncRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -15346,6 +15408,10 @@
             "title": "Automatic Scheduling Enabled",
             "type": "boolean"
           },
+          "deterministic_governance_enabled": {
+            "title": "Deterministic Governance Enabled",
+            "type": "boolean"
+          },
           "durable_workflows_enabled": {
             "title": "Durable Workflows Enabled",
             "type": "boolean"
@@ -15372,6 +15438,7 @@
           "isolated_parser_enabled",
           "malware_scanning_enabled",
           "ai_governance_enabled",
+          "deterministic_governance_enabled",
           "ai_model_configured",
           "ai_model",
           "ai_auto_publish_threshold",
@@ -20060,7 +20127,7 @@
           },
           "page_size": {
             "default": 100,
-            "maximum": 1000.0,
+            "maximum": 200.0,
             "minimum": 1.0,
             "title": "Page Size",
             "type": "integer"
@@ -20424,6 +20491,94 @@
           "removed_source_count"
         ],
         "title": "PublicKnowledgeVersionSummaryRead",
+        "type": "object"
+      },
+      "PublicSourceSyncRead": {
+        "properties": {
+          "completed_through": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed Through"
+          },
+          "cycle_started_at": {
+            "format": "date-time",
+            "title": "Cycle Started At",
+            "type": "string"
+          },
+          "last_completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Completed At"
+          },
+          "pending": {
+            "title": "Pending",
+            "type": "boolean"
+          },
+          "phase": {
+            "enum": [
+              "backfill",
+              "incremental",
+              "reconcile",
+              "full_scan"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
+          "processed_records": {
+            "minimum": 0.0,
+            "title": "Processed Records",
+            "type": "integer"
+          },
+          "window_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window End"
+          },
+          "window_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Start"
+          }
+        },
+        "required": [
+          "phase",
+          "pending",
+          "processed_records",
+          "cycle_started_at",
+          "last_completed_at",
+          "window_start",
+          "window_end",
+          "completed_through"
+        ],
+        "title": "PublicSourceSyncRead",
         "type": "object"
       },
       "PublicationBatchCommitRequest": {

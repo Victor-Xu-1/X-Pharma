@@ -196,6 +196,7 @@ class Settings(BaseSettings):
     source_smb_max_depth: int = Field(default=64, ge=1, le=256)
     ingest_scan_interval_seconds: int = 60
     ingest_stable_seconds: int = 30
+    public_sync_catchup_interval_seconds: int = Field(default=30, ge=10, le=3600)
     ingest_max_file_bytes: int = 1_073_741_824
     parser_max_text_chars: int = 50_000_000
     document_processing_credentials_required: bool = True
@@ -246,6 +247,7 @@ class Settings(BaseSettings):
     temporal_max_concurrent_activities: int = Field(default=20, ge=1, le=1000)
     platform_operations_contract_path: Path = Path("deploy/operations/operations-contract.yaml")
     platform_evidence_root: Path | None = None
+    deterministic_governance_enabled: bool = True
     ai_governance_enabled: bool = False
     llm_credentials_encryption_key: str = ""
     ai_base_url: str = ""
