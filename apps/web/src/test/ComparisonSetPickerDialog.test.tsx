@@ -22,9 +22,7 @@ it("lets a user create a comparison list without losing selected entities", () =
     />,
   );
 
-  expect(
-    screen.getByText("当前没有可编辑的对比列表。直接创建一个新列表，已选择的实体会继续加入其中。"),
-  ).toBeInTheDocument();
+  expect(screen.getByText("当前目录没有可选择的列表。可调整搜索，或创建新列表后加入已选实体。")).toBeInTheDocument();
   const createButton = screen.getByRole("button", { name: "创建并加入" });
   expect(createButton).toBeDisabled();
 
