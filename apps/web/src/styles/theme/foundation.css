@@ -177,16 +177,8 @@ a:hover,
   overflow-y: auto;
 }
 
-.sidebar-research-nav {
-  margin-top: 8px;
-  border-top: 1px solid var(--ds-border-subtle);
-}
-
-.sidebar-group-label {
-  margin: 12px 12px 6px;
-  color: var(--ds-ink-muted);
-  font-size: var(--ds-text-xs);
-  font-weight: 500;
+.research-view-navigation {
+  flex-wrap: wrap;
 }
 
 .login-brand {

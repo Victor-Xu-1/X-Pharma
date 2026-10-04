@@ -1,4 +1,6 @@
 import { expect, type Locator, type Page, type Route } from "@playwright/test";
+import { researchWorkflows } from "../../src/lib/workspace/researchNavigation";
+import type { ViewKey } from "../../src/lib/workspaceRouting";
 
 export type BrowserQualityMetrics = {
   cls: number;
@@ -93,6 +95,24 @@ export async function openNavigation(page: Page) {
     await openButton.click();
     await expect(sidebar).toHaveClass(/mobile-open/);
   }
+}
+
+export async function navigateResearchView(page: Page, view: ViewKey) {
+  const workflow = researchWorkflows.find((item) => item.destinations.some((destination) => destination.view === view));
+  if (!workflow) throw new Error(`No research navigation destination: ${view}`);
+  await openNavigation(page);
+  await page
+    .getByRole("navigation", { name: "主导航" })
+    .getByRole("button", { name: workflow.label, exact: true })
+    .click();
+  if (workflow.destinations[0].view !== view) {
+    const destination = workflow.destinations.find((item) => item.view === view);
+    await page
+      .getByRole("navigation", { name: `${workflow.label}分类`, exact: true })
+      .getByRole("button", { name: destination?.label, exact: true })
+      .click();
+  }
+  await expect.poll(() => new URL(page.url()).searchParams.get("view")).toBe(view);
 }
 
 export async function findDataFactoryRunRow(page: Page, workflowId: string): Promise<Locator> {

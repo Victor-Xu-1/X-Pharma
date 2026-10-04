@@ -2,6 +2,7 @@ import { expect } from "@playwright/test";
 import {
   expandProfessionalQuery,
   installBrowserQualityProbe,
+  navigateResearchView,
   openNavigation,
   readBrowserQualityMetrics,
 } from "../helpers";
@@ -62,19 +63,11 @@ export async function verifyResearchAppearance(context: AppearanceContext) {
   }
   await openNavigation(page);
   const professionalLauncher = page.getByRole("navigation", { name: "主导航" });
-  for (const domain of [
-    "药物与管线",
-    "临床试验",
-    "专利情报",
-    "交易与公司",
-    "监管与安全",
-    "流行病学",
-    "新闻与会议",
-    "结构检索",
-  ]) {
+  for (const domain of ["情报检索", "研发数据", "竞争情报", "研究动态", "我的研究"]) {
     await expect(professionalLauncher.getByRole("button", { name: domain, exact: true })).toBeVisible();
   }
-  await professionalLauncher.getByRole("button", { name: "专利情报", exact: true }).click();
+  await expect(professionalLauncher.getByRole("button")).toHaveCount(5);
+  await navigateResearchView(page, "patents");
   await expect(page).toHaveURL(/view=patents/);
   await expect(page.getByRole("heading", { name: "专利族与资产关联", level: 1 })).toBeVisible();
   await page.goBack();

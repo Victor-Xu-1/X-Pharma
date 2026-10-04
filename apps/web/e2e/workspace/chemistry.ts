@@ -1,7 +1,7 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs, TestInfo } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
-import { openNavigation } from "./helpers";
+import { navigateResearchView } from "./helpers";
 
 export async function verifyChemistry(
   { page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">,
@@ -23,8 +23,7 @@ export async function verifyChemistry(
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
   await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeVisible();
-  await openNavigation(page);
-  await page.getByRole("navigation", { name: "主导航" }).getByRole("button", { name: "结构检索", exact: true }).click();
+  await navigateResearchView(page, "chemistry");
   const deferredResourcePattern = /(?:\.wasm$|rdkit|indigo|ketcher|structureeditor)/i;
   const chemistryResourcesBeforeEditor = await page.evaluate(() =>
     (performance.getEntriesByType("resource") as PerformanceResourceTiming[]).map(

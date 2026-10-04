@@ -3,6 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { expect, type Page, test } from "@playwright/test";
 
 import { resolveBrowserCredentials } from "../src/lib/browserAcceptanceCredentials";
+import { navigateResearchView } from "./workspace/helpers";
 
 // These flows display a one-time secret; never retain a trace or screenshot of it.
 test.use({ trace: "off", screenshot: "off" });
@@ -166,8 +167,7 @@ test("[multi-organization][organization-isolation][session-context] joins an exi
   ).toBe(401);
   await page.reload();
   await expect(page.getByRole("heading", { name: "全局情报检索", exact: true })).toBeVisible();
-  await openNavigation(page);
-  await page.getByRole("button", { name: "对比列表", exact: true }).click();
+  await navigateResearchView(page, "collections");
   await expect(page.getByRole("heading", { name: "对比列表", level: 1 })).toBeVisible();
   await expect(page.getByText(privateName)).toHaveCount(0);
   const otherCollections = await (await page.request.get("/api/v1/comparison-sets")).json();
@@ -185,8 +185,7 @@ test("[multi-organization][organization-isolation][session-context] joins an exi
     tenant_id: original.tenant_id,
     role: "viewer",
   });
-  await openNavigation(page);
-  await page.getByRole("button", { name: "对比列表", exact: true }).click();
+  await navigateResearchView(page, "collections");
   await expect(page.getByRole("button").filter({ has: page.getByText(privateName, { exact: true }) })).toBeVisible();
   await otherTab.close();
   await logout(page, "research");
