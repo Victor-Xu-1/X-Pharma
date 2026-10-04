@@ -157,6 +157,7 @@ class Settings(BaseSettings):
     source_http_connect_timeout_seconds: float = Field(default=10, ge=1, le=30)
     source_http_read_timeout_seconds: float = Field(default=60, ge=1, le=300)
     source_http_max_manifest_bytes: int = Field(default=1_048_576, ge=1024, le=16_777_216)
+    source_http_max_api_response_bytes: int = Field(default=33_554_432, ge=1024, le=67_108_864)
     source_http_max_pages: int = Field(default=100, ge=1, le=1000)
     source_retry_base_seconds: int = Field(default=60, ge=1, le=86_400)
     source_retry_max_seconds: int = Field(default=3_600, ge=1, le=604_800)

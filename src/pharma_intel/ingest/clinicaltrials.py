@@ -28,9 +28,9 @@ from pharma_intel.ingest.connectors import (
     _inventory_sha256,
     _is_non_negative_integer,
     _is_sha256,
-    _require_success,
     _SourceRateLimiter,
 )
+from pharma_intel.ingest.public_http import request_public_api_bytes
 from pharma_intel.ingest.public_sync import DateWindowSyncRule, PublicSyncState, read_sync_state
 from pharma_intel.models import DataSource, DataSourceType
 from pharma_intel.product import SOURCE_USER_AGENT
@@ -300,14 +300,15 @@ class ClinicalTrialsGovSourceConnector:
         self.rate_limiter.wait(source.id, source.rate_limit_per_minute)
         try:
             with self._client() as client:
-                response = client.get(CLINICALTRIALS_GOV_STUDIES_URL, params=params)
-                _require_success(response, "ClinicalTrials.gov studies API")
-                content_type = response.headers.get("content-type", "").partition(";")[0].strip().casefold()
-                if content_type != "application/json":
-                    raise ConnectorTransportError("ClinicalTrials.gov response must use application/json")
-                if len(response.content) > max(source.max_file_bytes * page_size, 1_048_576):
-                    raise ConnectorTransportError("ClinicalTrials.gov response exceeded the configured safety limit")
-                return ClinicalTrialsGovPage.model_validate_json(response.content)
+                payload = request_public_api_bytes(
+                    self.settings,
+                    client,
+                    CLINICALTRIALS_GOV_STUDIES_URL,
+                    params,
+                    "ClinicalTrials.gov studies API",
+                    maximum_bytes=max(source.max_file_bytes * page_size, 1_048_576),
+                )
+                return ClinicalTrialsGovPage.model_validate_json(payload)
         except httpx.HTTPError as exc:
             raise _http_transport_error("ClinicalTrials.gov", exc) from exc
         except ValidationError as exc:

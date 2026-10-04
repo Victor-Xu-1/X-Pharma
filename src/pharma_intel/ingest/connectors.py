@@ -2232,13 +2232,18 @@ def _validate_content_length(response: httpx.Response, maximum: int) -> None:
         raise ConnectorTransportError("HTTP response Content-Length exceeds the declared limit")
 
 
-def _read_bounded(response: httpx.Response, maximum: int) -> bytes:
+def _read_bounded(
+    response: httpx.Response,
+    maximum: int,
+    *,
+    error_message: str = "HTTP manifest response exceeded SOURCE_HTTP_MAX_MANIFEST_BYTES",
+) -> bytes:
     _validate_content_length(response, maximum)
     payload = bytearray()
     for chunk in response.iter_bytes(chunk_size=min(64 * 1024, maximum + 1)):
         payload.extend(chunk)
         if len(payload) > maximum:
-            raise ConnectorTransportError("HTTP manifest response exceeded SOURCE_HTTP_MAX_MANIFEST_BYTES")
+            raise ConnectorTransportError(error_message)
     return bytes(payload)
 
 

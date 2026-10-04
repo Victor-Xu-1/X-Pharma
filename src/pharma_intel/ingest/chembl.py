@@ -31,6 +31,7 @@ from pharma_intel.ingest.connectors import (
     _is_non_negative_integer,
     _is_sha256,
 )
+from pharma_intel.ingest.public_http import request_public_api_bytes
 from pharma_intel.ingest.public_sync import ContinuousSyncRule, PublicSyncState, read_sync_state
 from pharma_intel.models import DataSource, DataSourceType
 from pharma_intel.product import SOURCE_USER_AGENT
@@ -390,17 +391,19 @@ class ChEMBLSourceConnector:
                     "User-Agent": SOURCE_USER_AGENT,
                 },
             ) as client:
-                response = client.get(url, params=params)
-                response.raise_for_status()
+                content = request_public_api_bytes(
+                    self.settings,
+                    client,
+                    url,
+                    params,
+                    resource_name,
+                    maximum_bytes=maximum_bytes,
+                    media_types=frozenset({"application/json", "application/vnd.api+json"}),
+                )
         except httpx.HTTPError as exc:
             raise _http_transport_error(resource_name, exc) from exc
-        content_type = response.headers.get("content-type", "").partition(";")[0].strip().casefold()
-        if content_type not in {"application/json", "application/vnd.api+json"}:
-            raise ConnectorTransportError(f"{resource_name} response must use application/json")
-        if len(response.content) > maximum_bytes:
-            raise ConnectorTransportError(f"{resource_name} response exceeded the configured safety limit")
         try:
-            payload = response.json()
+            payload = json.loads(content)
         except (ValueError, json.JSONDecodeError) as exc:
             raise ConnectorTransportError(f"{resource_name} returned invalid JSON") from exc
         if not isinstance(payload, dict):
