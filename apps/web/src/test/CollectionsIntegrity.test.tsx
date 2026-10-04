@@ -228,3 +228,20 @@ it("searches and pages the catalog without changing the open detail", async () =
   await waitFor(() => expect(loadCollectionCatalog).toHaveBeenCalledWith("Clinical", 0, expect.any(AbortSignal)));
   expect(result.navigate).not.toHaveBeenCalled();
 });
+
+it("returns an out-of-range directory page to the last valid page without replacing the detail", async () => {
+  let total = 70;
+  vi.mocked(loadCollectionCatalog).mockImplementation(async (_q, offset) => ({
+    items: [first],
+    total,
+    limit: 25,
+    offset,
+  }));
+  const result = setup(first.id);
+  await screen.findByRole("button", { name: "列表目录下一页" });
+  total = 25;
+  fireEvent.click(screen.getByRole("button", { name: "列表目录下一页" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "列表目录上一页" })).toBeDisabled());
+  expect(loadCollectionCatalog).toHaveBeenLastCalledWith("", 0, expect.any(AbortSignal));
+  expect(result.navigate).not.toHaveBeenCalled();
+});
