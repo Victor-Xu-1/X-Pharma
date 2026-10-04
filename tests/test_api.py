@@ -104,7 +104,7 @@ def test_data_source_catalog_reads_chembl_routing_rules(
 
     assert response.status_code == 200
     assert response.json()[0]["routing_rules"] == [
-        {"target_chembl_id": "CHEMBL203", "max_records": 25, "page_size": 25}
+        {"sync_mode": "snapshot", "target_chembl_id": "CHEMBL203", "max_records": 25, "page_size": 25}
     ]
 
 
@@ -155,7 +155,12 @@ def test_chembl_source_registration_and_update_preserve_routing_rules(
             )
             assert changed.status_code == 200, changed.text
             session.refresh(source)
-            assert source.routing_rules[0] == {"target_chembl_id": "CHEMBL204", "max_records": 10, "page_size": 10}
+            assert source.routing_rules[0] == {
+                "sync_mode": "snapshot",
+                "target_chembl_id": "CHEMBL204",
+                "max_records": 10,
+                "page_size": 10,
+            }
     finally:
         app.dependency_overrides.clear()
 
@@ -1041,6 +1046,7 @@ def test_domain_and_data_factory_api_contracts_cover_empty_error_and_state_paths
                 "isolated_parser_enabled": False,
                 "malware_scanning_enabled": False,
                 "ai_governance_enabled": False,
+                "deterministic_governance_enabled": True,
                 "ai_model_configured": False,
                 "ai_model": None,
                 "ai_auto_publish_threshold": 0.95,
@@ -1741,7 +1747,19 @@ def test_public_research_source_registration_preserves_governed_routing_rules(
 
             trials = client.post("/api/v1/admin/data-sources", json=trials_payload)
             assert trials.status_code == 201, trials.text
-            assert trials.json()["routing_rules"] == trials_payload["routing_rules"]
+            assert trials.json()["routing_rules"] == [
+                {
+                    "sync_mode": "snapshot",
+                    "start_date": None,
+                    "window_days": 31,
+                    "overlap_days": 2,
+                    "reconcile_interval_days": 30,
+                    "query_term": "AREA[ConditionSearch]lung cancer AND AREA[InterventionSearch]EGFR",
+                    "max_records": 200,
+                    "page_size": 100,
+                    "sort": "LastUpdatePostDate:desc",
+                }
+            ]
             assert trials.json()["credential_configured"] is False
 
             pubmed_source = session.get(DataSource, pubmed.json()["id"])
