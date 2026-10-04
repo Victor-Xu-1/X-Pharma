@@ -36,6 +36,10 @@ export function ResearchWorkspace(props: WorkspaceSessionProps) {
       activeWorkbench="research"
       activeView={location.view}
       pendingView={pendingNavigationView}
+      sourceView={navigation.activeReturnLocation?.view}
+      researchDetail={Boolean(
+        location.trialId || location.patentId || location.dealId || location.regulatoryEventId || location.newsEventId,
+      )}
       onLogout={onLogout}
       logoutPending={logoutPending}
       logoutError={logoutError}

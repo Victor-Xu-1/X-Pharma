@@ -37,7 +37,7 @@ export async function verifyKeyboardReflow({ page }: Pick<PlaywrightTestArgs, "p
   await expect(openNavigation).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.locator(".workspace-sidebar")).toHaveClass(/mobile-open/);
-  const pipelineButton = page.getByRole("button", { name: "药物与管线", exact: true });
+  const pipelineButton = page.getByRole("button", { name: "研发数据", exact: true });
   await pipelineButton.focus();
   await expect(pipelineButton).toBeFocused();
   await page.keyboard.press("Enter");

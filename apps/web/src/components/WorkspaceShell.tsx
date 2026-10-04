@@ -6,6 +6,7 @@ import type { User } from "../lib/types";
 import { useModalFocus } from "../lib/useModalFocus";
 import type { ViewKey, WorkbenchKey } from "../lib/workspaceRouting";
 import { BrandMark } from "./BrandMark";
+import { ResearchViewNavigation } from "./ResearchViewNavigation";
 import { WorkspaceAccountNavigation } from "./WorkspaceAccountNavigation";
 import { WorkspaceNavigation } from "./WorkspaceNavigation";
 
@@ -41,6 +42,8 @@ export function WorkspaceShell({
   activeWorkbench,
   activeView,
   pendingView = null,
+  sourceView = null,
+  researchDetail = false,
   onView,
   onLogout,
   logoutPending = false,
@@ -51,6 +54,8 @@ export function WorkspaceShell({
   activeWorkbench: WorkbenchKey;
   activeView: ViewKey;
   pendingView?: ViewKey | null;
+  sourceView?: ViewKey | null;
+  researchDetail?: boolean;
   onView: (view: ViewKey) => void;
   onLogout: () => void;
   logoutPending?: boolean;
@@ -128,6 +133,7 @@ export function WorkspaceShell({
           workbench={activeWorkbench}
           role={user.role}
           activeView={navigationView}
+          sourceView={sourceView}
           collapsed={collapsed}
           onView={navigate}
         />
@@ -167,6 +173,9 @@ export function WorkspaceShell({
               {heading}
             </h1>
           </div>
+          {researchWorkbench && !researchDetail ? (
+            <ResearchViewNavigation activeView={navigationView} onView={navigate} />
+          ) : null}
           {children}
         </main>
       </div>

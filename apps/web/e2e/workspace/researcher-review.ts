@@ -1,6 +1,7 @@
 import { expect, type PlaywrightTestArgs, type PlaywrightWorkerArgs, type TestInfo, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
 import type { DiseaseDossierResponse } from "../../src/lib/generated";
+import { verifyResearchNavigationHierarchy } from "./research-navigation";
 
 export async function verifyResearcherReview(
   { page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">,
@@ -46,31 +47,7 @@ export async function verifyResearcherReview(
     });
     expect(layout.scrollWidth, JSON.stringify(layout)).toBeLessThanOrEqual(layout.width);
   }
-  async function openNavigation(label: string) {
-    const opener = page.getByRole("button", { name: "打开导航", exact: true });
-    if (await opener.isVisible()) await opener.click();
-    await page.getByRole("button", { name: label, exact: true }).click();
-    await expect(page.locator(".page-heading h1")).toBeVisible();
-    await noOverflow();
-  }
-  for (const label of [
-    "药物与管线",
-    "临床试验",
-    "专利情报",
-    "交易与公司",
-    "监管与安全",
-    "流行病学",
-    "新闻与会议",
-    "结构检索",
-    "对比列表",
-    "监控与提醒",
-    "知识专题",
-    "证据查证",
-    "用户中心",
-  ]) {
-    await openNavigation(label);
-    await expect(page.getByText("正在加载研究工作区", { exact: true })).toHaveCount(0);
-  }
+  await verifyResearchNavigationHierarchy(page);
   for (const [index, view] of ["target", "drug", "company", "disease", "entity"].entries()) {
     const diseaseResponse =
       view === "disease"

@@ -58,7 +58,7 @@ it("does not let a closing mobile navigation drawer steal focus from the destina
     const opener = screen.getByRole("button", { name: "打开导航" });
     opener.focus();
     fireEvent.click(opener);
-    fireEvent.click(screen.getByRole("button", { name: "药物与管线" }));
+    fireEvent.click(screen.getByRole("button", { name: "研发数据" }));
     rerender(
       <WorkspaceShell {...props} activeView="pipeline">
         workspace
@@ -116,7 +116,7 @@ it("keeps the external workbench focused while retaining progressive access to s
   );
 
   expect(screen.getByRole("button", { name: "情报检索" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "临床试验" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "研发数据" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "情报总览" })).not.toBeInTheDocument();
   const accountNavigation = screen.getByRole("navigation", { name: "账户导航" });
   expect(within(accountNavigation).getByRole("button", { name: "用户中心" })).toHaveAttribute("aria-current", "page");
@@ -127,35 +127,19 @@ it("keeps the external workbench focused while retaining progressive access to s
   expect(
     within(screen.getByRole("navigation", { name: "主导航" })).queryByRole("button", { name: "用户中心" }),
   ).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "专利情报" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "交易与公司" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "监管与安全" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "流行病学" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "新闻与会议" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "结构检索" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "结构检索" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "专利情报" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "专业数据库" })).not.toBeInTheDocument();
   expect(screen.queryByText("核心查询")).not.toBeInTheDocument();
   const primaryNavigation = screen.getByRole("navigation", { name: "主导航" });
-  for (const label of [
-    "情报检索",
-    "药物与管线",
-    "临床试验",
-    "专利情报",
-    "交易与公司",
-    "监管与安全",
-    "流行病学",
-    "新闻与会议",
-    "结构检索",
-  ]) {
+  for (const label of ["情报检索", "研发数据", "竞争情报", "研究动态", "我的研究"]) {
     expect(screen.getByRole("button", { name: label }).parentElement).toBe(primaryNavigation);
   }
 
   expect(screen.queryByRole("button", { name: "我的工作" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "原始证据" })).not.toBeInTheDocument();
-  const researchNavigation = screen.getByRole("navigation", { name: "我的研究" });
-  expect(within(researchNavigation).getByRole("button", { name: "对比列表" })).toBeInTheDocument();
-  expect(within(researchNavigation).getByRole("button", { name: "知识专题" })).toBeInTheDocument();
-  expect(within(researchNavigation).getByRole("button", { name: "监控与提醒" })).toBeInTheDocument();
+  expect(screen.queryByRole("navigation", { name: "我的研究" })).not.toBeInTheDocument();
+  expect(document.querySelector(".research-view-navigation")).toBeNull();
   expect(screen.queryByLabelText("外部情报工作台")).not.toBeInTheDocument();
   expect(screen.queryByText("医药情报平台")).not.toBeInTheDocument();
   expect(screen.queryByLabelText("全局搜索")).not.toBeInTheDocument();
@@ -177,7 +161,7 @@ it("keeps the external workbench focused while retaining progressive access to s
   expect(document.querySelector(".workspace-shell")).toHaveClass("sidebar-collapsed");
 });
 
-it("keeps the active specialist database at the primary navigation level", () => {
+it("marks the active specialist category and its parent workflow separately", () => {
   render(
     <WorkspaceShell
       user={{
@@ -199,6 +183,7 @@ it("keeps the active specialist database at the primary navigation level", () =>
   expect(screen.queryByRole("button", { name: "专业数据库" })).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "结构检索" })).toHaveClass("active");
   expect(screen.getByRole("button", { name: "结构检索" })).toHaveAttribute("aria-current", "page");
+  expect(screen.getByRole("button", { name: "情报检索" })).toHaveAttribute("aria-current", "page");
 });
 
 it("uses novice-facing copy for the comparison workspace", () => {
