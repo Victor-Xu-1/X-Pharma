@@ -16,9 +16,10 @@ from typing import Any
 from urllib.parse import urlencode
 
 import httpx
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import ConfigDict, Field, ValidationError, field_validator
 
 from pharma_intel.config import Settings
+from pharma_intel.ingest.chembl_sync import normalize_mechanism, prepare_mechanism_cycle
 from pharma_intel.ingest.connectors import (
     ConnectorCapabilities,
     ConnectorConfigurationError,
@@ -30,6 +31,8 @@ from pharma_intel.ingest.connectors import (
     _is_non_negative_integer,
     _is_sha256,
 )
+from pharma_intel.ingest.public_http import request_public_api_bytes
+from pharma_intel.ingest.public_sync import ContinuousSyncRule, PublicSyncState, read_sync_state
 from pharma_intel.models import DataSource, DataSourceType
 from pharma_intel.product import SOURCE_USER_AGENT
 
@@ -43,7 +46,7 @@ CHEMBL_SNAPSHOT_SCHEMA = "pharma.chembl.mechanism.v1"
 CHEMBL_SNAPSHOT_TIME = datetime(1970, 1, 1, tzinfo=UTC)
 
 
-class ChemblRoutingRule(BaseModel):
+class ChemblRoutingRule(ContinuousSyncRule):
     model_config = ConfigDict(extra="forbid")
 
     target_chembl_id: str = Field(min_length=7, max_length=32)
@@ -117,7 +120,9 @@ class ChEMBLSourceConnector:
         if source.rate_limit_per_minute > 60:
             errors.append("ChEMBL sources cannot exceed 60 requests per minute")
         try:
-            self._routing_rule(source)
+            rule = self._routing_rule(source)
+            if rule.sync_mode == "continuous":
+                read_sync_state(_cursor_payload(source.connector_cursor) or {}, rule, "chembl_mechanism")
         except ConnectorConfigurationError as exc:
             errors.append(str(exc))
         cursor = _cursor_payload(source.connector_cursor)
@@ -147,7 +152,11 @@ class ChEMBLSourceConnector:
             maximum_bytes=1_048_576,
         )
         target_summary = _target_summary(target, rule.target_chembl_id)
-        mechanisms, reported_total = self._discover_mechanisms(source, rule)
+        sync_state: PublicSyncState | None = None
+        if rule.sync_mode == "continuous":
+            mechanisms, reported_total, sync_state = self._discover_continuous_mechanisms(source, rule)
+        else:
+            mechanisms, reported_total = self._discover_mechanisms(source, rule)
         molecule_ids = list(dict.fromkeys(str(item["molecule_chembl_id"]) for item in mechanisms))
         molecules = self._discover_molecules(source, molecule_ids)
 
@@ -205,6 +214,7 @@ class ChEMBLSourceConnector:
                 "reported_total_count": reported_total,
                 "inventory_sha256": _inventory_sha256(inventory),
                 "fetched_at": datetime.now(UTC).isoformat(),
+                **({"sync_state": sync_state.model_dump(mode="json")} if sync_state is not None else {}),
             },
             authoritative_inventory=False,
             deleted_paths=[],
@@ -235,7 +245,7 @@ class ChEMBLSourceConnector:
             CHEMBL_MECHANISM_URL,
             {
                 "target_chembl_id": rule.target_chembl_id,
-                "limit": str(rule.page_size),
+                "limit": str(min(rule.page_size, rule.max_records)),
                 "offset": "0",
             },
             "ChEMBL mechanism",
@@ -268,27 +278,65 @@ class ChEMBLSourceConnector:
             if len(records) != expected:
                 raise ConnectorTransportError("ChEMBL mechanism record count did not match the requested page")
             for record in records:
-                if not isinstance(record, dict):
-                    raise ConnectorTransportError("ChEMBL mechanism record is not an object")
-                mechanism_id = record.get("mec_id")
-                molecule_id = str(record.get("molecule_chembl_id") or "").upper()
-                target_id = str(record.get("target_chembl_id") or "").upper()
-                if not isinstance(mechanism_id, int) or mechanism_id <= 0:
-                    raise ConnectorTransportError("ChEMBL mechanism record has an invalid mec_id")
+                normalized = normalize_mechanism(record, rule.target_chembl_id)
+                mechanism_id = int(normalized["mec_id"])
                 if mechanism_id in seen_ids:
                     raise ConnectorTransportError("ChEMBL mechanism response contains a duplicate mec_id")
-                if target_id != rule.target_chembl_id or CHEMBL_ID_PATTERN.fullmatch(molecule_id) is None:
-                    raise ConnectorTransportError("ChEMBL mechanism record has an invalid target or molecule ID")
-                if not str(record.get("mechanism_of_action") or "").strip():
-                    raise ConnectorTransportError("ChEMBL mechanism record is missing mechanism_of_action")
-                if record.get("max_phase") is None:
-                    raise ConnectorTransportError("ChEMBL mechanism record is missing max_phase")
                 seen_ids.add(mechanism_id)
-                normalized = dict(record)
-                normalized["molecule_chembl_id"] = molecule_id
-                normalized["target_chembl_id"] = target_id
                 mechanisms.append(normalized)
         return mechanisms, reported_total
+
+    def _discover_continuous_mechanisms(
+        self, source: DataSource, rule: ChemblRoutingRule
+    ) -> tuple[list[dict[str, Any]], int, PublicSyncState]:
+        now = datetime.now(UTC)
+        previous = read_sync_state(source.connector_cursor or {}, rule, "chembl_mechanism")
+        state = prepare_mechanism_cycle(rule, previous, now)
+        after_id = state.after_id
+        mechanisms: list[dict[str, Any]] = []
+        reported_total = 0
+        pending = True
+        for _ in range(self.settings.source_http_max_pages):
+            limit = min(rule.page_size, rule.max_records - len(mechanisms))
+            page = self._request_json(
+                source,
+                CHEMBL_MECHANISM_URL,
+                {
+                    "target_chembl_id": rule.target_chembl_id,
+                    "mec_id__gt": str(after_id),
+                    "order_by": "mec_id",
+                    "limit": str(limit),
+                    "offset": "0",
+                },
+                "ChEMBL mechanism",
+                maximum_bytes=max(1_048_576, source.max_file_bytes * limit),
+            )
+            remaining = _page_total(page, "ChEMBL mechanism")
+            reported_total = max(reported_total, state.cycle_processed + len(mechanisms) + remaining)
+            records = page.get("mechanisms")
+            if not isinstance(records, list) or len(records) != min(limit, remaining):
+                raise ConnectorTransportError("ChEMBL mechanism record count did not match the requested page")
+            for record in records:
+                normalized = normalize_mechanism(record, rule.target_chembl_id)
+                mechanism_id = int(normalized["mec_id"])
+                if mechanism_id <= after_id:
+                    raise ConnectorTransportError("ChEMBL mechanism keyset did not advance monotonically")
+                after_id = mechanism_id
+                mechanisms.append(normalized)
+            pending = remaining > len(records)
+            if not pending or len(mechanisms) >= rule.max_records:
+                break
+        state = PublicSyncState.model_validate(
+            {
+                **state.model_dump(),
+                "after_id": after_id,
+                "cycle_processed": state.cycle_processed + len(mechanisms),
+                "pending": pending,
+                "last_completed_at": state.last_completed_at if pending else now,
+                "last_reconciled_at": state.last_reconciled_at if pending else now,
+            }
+        )
+        return mechanisms, reported_total, state
 
     def _discover_molecules(self, source: DataSource, molecule_ids: list[str]) -> dict[str, dict[str, Any]]:
         result: dict[str, dict[str, Any]] = {}
@@ -343,17 +391,19 @@ class ChEMBLSourceConnector:
                     "User-Agent": SOURCE_USER_AGENT,
                 },
             ) as client:
-                response = client.get(url, params=params)
-                response.raise_for_status()
+                content = request_public_api_bytes(
+                    self.settings,
+                    client,
+                    url,
+                    params,
+                    resource_name,
+                    maximum_bytes=maximum_bytes,
+                    media_types=frozenset({"application/json", "application/vnd.api+json"}),
+                )
         except httpx.HTTPError as exc:
             raise _http_transport_error(resource_name, exc) from exc
-        content_type = response.headers.get("content-type", "").partition(";")[0].strip().casefold()
-        if content_type not in {"application/json", "application/vnd.api+json"}:
-            raise ConnectorTransportError(f"{resource_name} response must use application/json")
-        if len(response.content) > maximum_bytes:
-            raise ConnectorTransportError(f"{resource_name} response exceeded the configured safety limit")
         try:
-            payload = response.json()
+            payload = json.loads(content)
         except (ValueError, json.JSONDecodeError) as exc:
             raise ConnectorTransportError(f"{resource_name} returned invalid JSON") from exc
         if not isinstance(payload, dict):

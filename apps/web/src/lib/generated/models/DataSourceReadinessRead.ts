@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { DataSourceReadinessCheckRead } from './DataSourceReadinessCheckRead';
+import type { PublicSourceSyncRead } from './PublicSourceSyncRead';
 export type DataSourceReadinessRead = {
   checks: Array<DataSourceReadinessCheckRead>;
   configuration_ready: boolean;
@@ -12,7 +13,8 @@ export type DataSourceReadinessRead = {
   freshness_age_seconds: (number | null);
   incremental: boolean;
   last_cursor_at: (string | null);
-  operational_status: 'blocked' | 'disabled' | 'paused' | 'unavailable' | 'pending' | 'stale' | 'ready';
+  operational_status: 'blocked' | 'disabled' | 'paused' | 'unavailable' | 'pending' | 'syncing' | 'stale' | 'ready';
   replayable: boolean;
   source_id: string;
+  sync_status?: (PublicSourceSyncRead | null);
 };

@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
 
+from pharma_intel.governance.source_policy import source_governance_policy
 from pharma_intel.http import runtime
 from pharma_intel.http.dependencies import PrincipalDep, SessionDep
 from pharma_intel.ingest.replay import replayable_source_version_stages
@@ -79,7 +80,7 @@ def get_source_asset_detail(
                 **SourceVersionRead.model_validate(version).model_dump(exclude={"replayable_stages"}),
                 replayable_stages=replayable_source_version_stages(
                     version,
-                    ai_governance_enabled=settings.ai_governance_enabled,
+                    governance_enabled=source_governance_policy(session, settings, version) is not None,
                 ),
             )
             for version in versions

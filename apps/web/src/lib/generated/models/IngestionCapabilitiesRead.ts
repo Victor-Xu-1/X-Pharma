@@ -10,6 +10,7 @@ export type IngestionCapabilitiesRead = {
   allowed_folder_roots: Array<string>;
   asset_only_extensions: Array<string>;
   automatic_scheduling_enabled: boolean;
+  deterministic_governance_enabled: boolean;
   durable_workflows_enabled: boolean;
   isolated_parser_enabled: boolean;
   malware_scanning_enabled: boolean;

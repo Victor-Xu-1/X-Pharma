@@ -52,6 +52,7 @@ def get_ingestion_capabilities(principal: PrincipalDep) -> IngestionCapabilities
         isolated_parser_enabled=settings.parser_backend == "service",
         malware_scanning_enabled=settings.malware_scan_enabled,
         ai_governance_enabled=settings.ai_governance_enabled,
+        deterministic_governance_enabled=settings.deterministic_governance_enabled,
         ai_model_configured=bool(settings.ai_base_url and settings.ai_api_key and settings.ai_model),
         ai_model=settings.ai_model or None,
         ai_auto_publish_threshold=settings.ai_auto_publish_threshold,

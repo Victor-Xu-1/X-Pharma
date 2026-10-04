@@ -46,12 +46,15 @@ flowchart TB
     end
 
     subgraph Ingestion["全自动数据工厂"]
-        Sources["只读目录 / HTTP Manifest<br/>S3 / SFTP / SMB"] --> Scheduler["幂等扫描调度器"]
+        Sources["只读目录 / HTTP Manifest<br/>S3 / SFTP / SMB / 官方 API"] --> Scheduler["幂等扫描调度器"]
         Scheduler --> Temporal["Temporal 工作流"]
         Temporal --> Worker["入库 Worker"]
         Worker --> AV["ClamAV 门禁"]
         AV --> Parser["隔离 Parser Service<br/>格式专用解析器"]
-        Parser --> Staging["AI 暂存<br/>Schema / 引用 / 冲突验证"]
+        Parser --> Deterministic["官方结构化确定性适配器"]
+        Parser --> Model["获批准模型抽取"]
+        Deterministic --> Staging["统一治理暂存<br/>Schema / 引用 / 冲突验证"]
+        Model --> Staging
         Staging --> Review["自动发布策略 / 人工例外审核"]
     end
 
@@ -128,6 +131,8 @@ FastAPI 当前采用模块化单体：身份、来源控制、治理、主数据
 
 ## 自动数据工厂
 
+官方结构化来源现由独立确定性治理处理，不依赖 AI 开关或模型凭据；ClinicalTrials.gov 日期分区与 ChEMBL 机制 keyset 通过受查询约束的持久检查点持续同步。批次、完整周期、水位、同记录版本推进、异常与真实验收边界见 [公开来源自动入库](automatic-public-source-ingestion.md)。
+
 ### 状态链路
 
 ```mermaid
@@ -169,7 +174,9 @@ stateDiagram-v2
 - `pharma-parser`：独立的不可信文件解析边界，不持有平台业务凭据；OCR 和 ClamAV 是该数据处理边界的受限依赖。
 - `pharma-parser`：3 到 50 副本，只执行不可信文档解析；每 Pod 默认一个解析子进程，不持有业务凭据。
 
-## AI 入库治理
+## 统一入库治理
+
+已识别且获授权的官方结构化数据经确定性适配器进入同一暂存与发布服务，不依赖模型开关。需要自然语言模型抽取的材料受下列独立网关门禁约束；官方确定性入库不伪造模型 token、费用或 provider 证据。
 
 模型调用只允许版本化 JSON Schema 输出。schema 2.12 将模型网关视为不可信外部边界，发布前检查：
 
@@ -292,13 +299,15 @@ flowchart TB
         MCPControl --> Metering["PostgreSQL 用量账本<br/>预留 / 结算 / 冲正 / 对账"]
     end
 
-    subgraph Factory["无人逐文件操作的 AI 数据工厂"]
+    subgraph Factory["无人逐文件操作的受治理数据工厂"]
         LicensedSources["获授权目录 / NAS / SMB / SFTP<br/>S3 / API / Feed / 事件"] --> Connectors["Connector Gateway"]
         Connectors --> Workflow["Temporal Durable Workflows"]
         Workflow --> SecurityGate["恶意文件检查与解析沙箱"]
         SecurityGate --> Understanding["Tika / Office / PDF / OCR<br/>RDKit / Gemmi 专用解析"]
-        Understanding --> AIStage["Model Gateway + AI Staging<br/>结构化抽取与实体候选"]
-        AIStage --> Governance["引用、Schema、冲突、许可与质量门禁"]
+        Understanding --> OfficialStage["官方结构化确定性适配器"]
+        Understanding --> AIStage["获批准 Model Gateway<br/>结构化抽取与实体候选"]
+        OfficialStage --> Governance["引用、Schema、冲突、许可与质量门禁"]
+        AIStage --> Governance
         Governance --> Approval["自动发布策略 / 人工例外审核"]
     end
 
@@ -363,7 +372,7 @@ flowchart TB
     class Kafka,ClickHouse,Lake scaleNode;
 ```
 
-这张图的验收含义是：双工作台和 MCP 只是两种交付表面，底层只能有一个领域事实体系；自动入库先经过不可变证据、解析和 AI 治理，模型不能直接写权威数据；MCP 在读取前完成授权、权益、配额和风险判断，在成功交付后形成可对账结算；Kafka、ClickHouse 与 Iceberg 只在真实规模触发后作为投影加入，不能反向成为事务权威。
+这张图的验收含义是：双工作台和 MCP 只是两种交付表面，底层只能有一个领域事实体系；自动入库先经过不可变证据、解析和确定性／模型统一治理，适配器和模型都不能直接写权威数据；MCP 在读取前完成授权、权益、配额和风险判断，在成功交付后形成可对账结算；Kafka、ClickHouse 与 Iceberg 只在真实规模触发后作为投影加入，不能反向成为事务权威。
 
 | Profile | 必需组件 | 进入门禁 |
 |---|---|---|
@@ -380,6 +389,7 @@ flowchart TB
 | 两个公开入口 | 已实现并有真实浏览器/MCP 测试 |
 | PostgreSQL 领域模型与 RLS | 已实现，真实 PostgreSQL 验证 |
 | 自动多源入库 | 已实现 `folder-v1`、`http-manifest-v1`、`s3-snapshot-v1`、`sftp-snapshot-v1` 与 `smb-snapshot-v1`；包含目录/Origin/bucket/凭据白名单、SFTP 主机密钥强校验、SMB3 签名/加密、来源 owner/分级/授权/许可/freshness、失败游标回放、条件下载/来源指纹，以及不可变快照后的真实 ClamAV 解析前门禁；已有真实目录、HTTP、S3、OpenSSH SFTP、加密 Samba 与 clamd/Data Factory 协议验证 |
+| 官方公开来源持续入库 | ClinicalTrials.gov 显式日期范围分区、ChEMBL 单靶点机制 keyset、查询绑定检查点、分批续跑与周期复核已实现；独立确定性治理和同记录单调版本更新复用统一发布权威；真实环境证据与范围按[自动入库验收](automatic-public-source-ingestion.md)单独核对，不代表全库、商业来源或 Production 验收 |
 | AI 治理和十类结构化发布 | 已实现 schema 2.12、分段级引用/请求指纹、token/费用/响应硬预算、原始/规范载荷审计、RDKit 结构权威校验、临床试验设计/队列/终点/结果/状态历史、交易参与方角色/资产阶段/地域权益、结构化监管认定/标签/安全事件、规范患者人群及疾病/靶点关系、流行病学观测、新闻与公告事件、非重试政策失败和冲突审批事务回滚；真实付费模型待环境验收 |
 | 版本化知识/Markdown | 已实现；含当前覆盖摘要、版本时间线、可追溯差异和 PostgreSQL append-only 保护 |
 | 新闻、会议和研究发布 | 已实现；同一治理事件服务支持新闻列表及服务端限定的论文、摘要、海报、演示时间线 |

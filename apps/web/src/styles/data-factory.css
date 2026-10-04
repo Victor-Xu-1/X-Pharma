@@ -701,3 +701,15 @@
   color: var(--ds-ink-muted);
   font-size: 9px;
 }
+.source-sync-status {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.75rem 0;
+  color: var(--ds-ink-muted);
+  font-size: 0.8125rem;
+}
+
+.source-sync-status strong {
+  color: var(--ds-ink-strong);
+  font-weight: 500;
+}

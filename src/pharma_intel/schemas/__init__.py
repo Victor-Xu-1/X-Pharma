@@ -878,9 +878,6 @@ from .sources import (
 from .sources import (
     PubMedDataSourceRoutingRule as PubMedDataSourceRoutingRule,
 )
-from .sources import (
-    _DataSourceRoutingRuleBase as _DataSourceRoutingRuleBase,
-)
 from .targets import (
     TargetEvidenceRead as TargetEvidenceRead,
 )

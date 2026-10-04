@@ -15,7 +15,8 @@ from sqlalchemy.orm import Session
 
 from pharma_intel.config import Settings
 from pharma_intel.db import set_tenant_context
-from pharma_intel.governance.service import SCHEMA_NAME, SCHEMA_VERSION, GovernanceService, governance_policy_sha256
+from pharma_intel.governance.service import SCHEMA_NAME, SCHEMA_VERSION, GovernanceService
+from pharma_intel.governance.source_policy import source_governance_policy
 from pharma_intel.ingest.connectors import SourceConnector, SourceConnectorRegistry, SourceObject
 from pharma_intel.ingest.contracts import SourceVersionReplayStage
 from pharma_intel.ingest.malware import (
@@ -121,8 +122,9 @@ def _requires_reprocessing(
 ) -> bool:
     if include_snapshot and version.state == SourceVersionState.SNAPSHOTTED:
         return True
+    policy = source_governance_policy(session, settings, version)
     if (
-        settings.ai_governance_enabled
+        policy is not None
         and version.parse_status == StageStatus.SUCCEEDED
         and version.source_document_id is not None
         and version.extracted_text_object_uri is not None
@@ -141,7 +143,7 @@ def _requires_reprocessing(
         if active_run is None:
             return True
     if (
-        settings.ai_governance_enabled
+        policy is not None
         and version.governance_status == StageStatus.FAILED
         and version.error_code in REPROCESSABLE_GOVERNANCE_FAILURE_CODES
         and version.parse_status == StageStatus.SUCCEEDED
@@ -154,7 +156,7 @@ def _requires_reprocessing(
     )
     if recoverable_failure:
         return True
-    if not settings.ai_governance_enabled or version.parse_status != StageStatus.SUCCEEDED:
+    if policy is None or version.parse_status != StageStatus.SUCCEEDED:
         return False
     if version.governance_status == StageStatus.SKIPPED:
         return True
@@ -167,7 +169,7 @@ def _requires_reprocessing(
             ExtractionRun.source_version_id == version.id,
             ExtractionRun.schema_name == SCHEMA_NAME,
             ExtractionRun.schema_version == SCHEMA_VERSION,
-            ExtractionRun.policy_sha256 == governance_policy_sha256(settings),
+            ExtractionRun.policy_sha256 == policy.sha256,
         )
         .limit(1)
     )
@@ -855,7 +857,8 @@ class DataFactoryService:
         ingestion_run_id: str | None,
     ) -> ProcessOutcome:
         self._checkpoint(ingestion_run_id, "governance")
-        if self.settings.ai_governance_enabled:
+        policy = source_governance_policy(self.session, self.settings, version)
+        if policy is not None:
             version.governance_status = StageStatus.NOT_STARTED
             version.state = SourceVersionState.GOVERNANCE_PENDING
             self.session.commit()
@@ -866,6 +869,9 @@ class DataFactoryService:
                 self.tenant_id,
             ).govern_version(version.id)
             self.session.refresh(version)
+            metadata = dict(version.metadata_json)
+            metadata["governance_mode"] = policy.mode
+            version.metadata_json = metadata
             self._compile_knowledge_for_version(version.id)
         else:
             version.governance_status = StageStatus.SKIPPED
@@ -933,8 +939,13 @@ class DataFactoryService:
         if version.parse_status != StageStatus.SUCCEEDED or version.source_document_id is None:
             raise SourceVersionReplayRejected(f"{from_stage} replay requires a parsed source document")
         if from_stage == "governance":
-            if not self.settings.ai_governance_enabled:
-                raise SourceVersionReplayRejected("AI governance is disabled")
+            if source_governance_policy(self.session, self.settings, version) is None:
+                reason = (
+                    "Automatic deterministic governance is disabled for this source"
+                    if self.settings.ai_governance_enabled
+                    else "AI governance is disabled"
+                )
+                raise SourceVersionReplayRejected(reason)
             if not version.extracted_text_object_uri:
                 raise SourceVersionReplayRejected("Governance replay requires extracted text")
 

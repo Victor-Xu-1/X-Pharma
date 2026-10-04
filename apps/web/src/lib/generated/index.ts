@@ -290,6 +290,7 @@ export type { PublicKnowledgePageSummary } from './models/PublicKnowledgePageSum
 export type { PublicKnowledgeSourceChangeRead } from './models/PublicKnowledgeSourceChangeRead';
 export type { PublicKnowledgeVersionDiffRead } from './models/PublicKnowledgeVersionDiffRead';
 export type { PublicKnowledgeVersionSummaryRead } from './models/PublicKnowledgeVersionSummaryRead';
+export type { PublicSourceSyncRead } from './models/PublicSourceSyncRead';
 export type { PubMedDataSourceRoutingRule } from './models/PubMedDataSourceRoutingRule';
 export type { QuarantineStatus } from './models/QuarantineStatus';
 export type { RecentEntityVisitRead } from './models/RecentEntityVisitRead';

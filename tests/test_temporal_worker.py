@@ -18,6 +18,7 @@ from pharma_intel.config import Settings
 from pharma_intel.ingest import temporal_worker
 from pharma_intel.ingest.contracts import ScanInput
 from pharma_intel.ingest.workflows import SourceVersionReprocessWorkflow
+from pharma_intel.models import DataSourceType
 
 
 @pytest.mark.anyio
@@ -201,6 +202,9 @@ def test_unavailable_source_uses_bounded_retry_backoff() -> None:
         state=temporal_worker.DataSourceState.ACTIVE,
         consecutive_failures=4,
         scan_interval_seconds=86_400,
+        source_type=DataSourceType.FOLDER,
+        routing_rules=[],
+        connector_cursor={},
     )
 
     assert temporal_worker._source_scan_interval(settings, unavailable) == 60  # type: ignore[arg-type]

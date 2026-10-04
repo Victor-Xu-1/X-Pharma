@@ -19,6 +19,7 @@ class IngestionCapabilitiesRead(BaseModel):
     isolated_parser_enabled: bool
     malware_scanning_enabled: bool
     ai_governance_enabled: bool
+    deterministic_governance_enabled: bool
     ai_model_configured: bool
     ai_model: str | None
     ai_auto_publish_threshold: float

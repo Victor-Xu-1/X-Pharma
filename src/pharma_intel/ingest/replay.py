@@ -18,7 +18,7 @@ GOVERNANCE_FAILURE_CODES = frozenset({"governance_model_failed", "governance_bud
 def replayable_source_version_stages(
     version: SourceVersion,
     *,
-    ai_governance_enabled: bool,
+    governance_enabled: bool,
 ) -> list[SourceVersionReplayStage]:
     if version.snapshot_status != StageStatus.SUCCEEDED or not version.raw_object_uri:
         return []
@@ -38,7 +38,7 @@ def replayable_source_version_stages(
         # narrower parse restart in the operator UI.
         return ["malware_scan", "parse"]
     if (
-        ai_governance_enabled
+        governance_enabled
         and version.governance_status == StageStatus.FAILED
         and version.error_code in GOVERNANCE_FAILURE_CODES
         and version.parse_status == StageStatus.SUCCEEDED

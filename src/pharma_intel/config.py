@@ -157,6 +157,7 @@ class Settings(BaseSettings):
     source_http_connect_timeout_seconds: float = Field(default=10, ge=1, le=30)
     source_http_read_timeout_seconds: float = Field(default=60, ge=1, le=300)
     source_http_max_manifest_bytes: int = Field(default=1_048_576, ge=1024, le=16_777_216)
+    source_http_max_api_response_bytes: int = Field(default=33_554_432, ge=1024, le=67_108_864)
     source_http_max_pages: int = Field(default=100, ge=1, le=1000)
     source_retry_base_seconds: int = Field(default=60, ge=1, le=86_400)
     source_retry_max_seconds: int = Field(default=3_600, ge=1, le=604_800)
@@ -196,6 +197,7 @@ class Settings(BaseSettings):
     source_smb_max_depth: int = Field(default=64, ge=1, le=256)
     ingest_scan_interval_seconds: int = 60
     ingest_stable_seconds: int = 30
+    public_sync_catchup_interval_seconds: int = Field(default=30, ge=10, le=3600)
     ingest_max_file_bytes: int = 1_073_741_824
     parser_max_text_chars: int = 50_000_000
     document_processing_credentials_required: bool = True
@@ -246,6 +248,7 @@ class Settings(BaseSettings):
     temporal_max_concurrent_activities: int = Field(default=20, ge=1, le=1000)
     platform_operations_contract_path: Path = Path("deploy/operations/operations-contract.yaml")
     platform_evidence_root: Path | None = None
+    deterministic_governance_enabled: bool = True
     ai_governance_enabled: bool = False
     llm_credentials_encryption_key: str = ""
     ai_base_url: str = ""

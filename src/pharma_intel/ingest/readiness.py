@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from pharma_intel.config import Settings
 from pharma_intel.ingest.connectors import SourceConnectorRegistry
+from pharma_intel.ingest.public_sync import PublicSyncSummary, public_sync_summary
 from pharma_intel.licensing import EvidenceLicensePolicy
 from pharma_intel.models import DataSource, DataSourceState, TenantDataset
 
@@ -43,6 +44,7 @@ class DataSourceReadiness:
     last_cursor_at: datetime | None
     freshness_age_seconds: int | None
     checks: list[ReadinessCheck]
+    sync_status: PublicSyncSummary | None = None
 
     @property
     def blocking_messages(self) -> list[str]:
@@ -248,6 +250,7 @@ class SourceReadinessService:
                 checks.append(ReadinessCheck("freshness", "pass", "Source is within its freshness objective"))
 
         configuration_ready = not any(check.status == "fail" for check in checks)
+        sync_status = public_sync_summary(source)
         if not configuration_ready:
             operational_status = "blocked"
         elif source.state == DataSourceState.DISABLED:
@@ -256,8 +259,14 @@ class SourceReadinessService:
             operational_status = "paused"
         elif source.state == DataSourceState.UNAVAILABLE:
             operational_status = "unavailable"
-        elif source.last_success_at is None:
+        elif source.last_success_at is None or (
+            len(source.routing_rules) == 1
+            and source.routing_rules[0].get("sync_mode") == "continuous"
+            and sync_status is None
+        ):
             operational_status = "pending"
+        elif sync_status is not None and sync_status.pending:
+            operational_status = "syncing"
         elif freshness_age_seconds is not None and freshness_age_seconds > source.expected_freshness_seconds:
             operational_status = "stale"
         else:
@@ -275,4 +284,5 @@ class SourceReadinessService:
             last_cursor_at=source.last_cursor_at,
             freshness_age_seconds=freshness_age_seconds,
             checks=checks,
+            sync_status=sync_status,
         )
