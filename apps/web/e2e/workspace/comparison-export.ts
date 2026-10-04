@@ -10,7 +10,7 @@ export async function verifyComparisonExport({ page }: Pick<PlaywrightTestArgs &
     description: "Epidermal growth factor receptor",
     external_ids: { uniprot: "P00533" },
     attributes: {},
-    review_status: "approved",
+    review_status: "verified",
     created_at: "2026-07-18T10:00:00Z",
     updated_at: "2026-07-18T10:00:00Z",
   };
@@ -45,7 +45,11 @@ export async function verifyComparisonExport({ page }: Pick<PlaywrightTestArgs &
         },
       });
     }
-    if (path === "/api/v1/comparison-sets" && request.method() === "GET") return route.fulfill({ json: [detail] });
+    if (path === "/api/v1/comparison-sets/catalog" && request.method() === "GET") {
+      expect(url.searchParams.get("limit")).toBe("25");
+      expect(url.searchParams.get("offset")).toBe("0");
+      return route.fulfill({ json: { items: [detail], total: 1, limit: 25, offset: 0 } });
+    }
     if (path === `/api/v1/comparison-sets/${setId}` && request.method() === "GET")
       return route.fulfill({ json: detail });
     if (path === "/api/v1/workspace/export-policy") {
@@ -114,7 +118,7 @@ export async function verifyComparisonExport({ page }: Pick<PlaywrightTestArgs &
   await page.getByLabel("搜索要加入的药物、靶点、机构或适应症").fill("EGFR");
   await page.getByRole("button", { name: "检索", exact: true }).click();
   await page.getByRole("button", { name: "加入 EGFR" }).click();
-  await expect(page.getByText("P00533", { exact: true })).toBeVisible();
+  await expect(page.getByText("UNIPROT: P00533", { exact: true })).toBeVisible();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "导出", exact: true }).click();
   const artifact = await download;
