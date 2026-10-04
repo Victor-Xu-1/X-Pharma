@@ -1,14 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListPlus } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import {
   addComparisonSetMembers,
   collectionsKeys,
   createComparisonSet,
   getComparisonSet,
-  listComparisonSets,
 } from "../lib/contracts/collections";
+import { useCollectionCatalog } from "../lib/useCollectionCatalog";
+import { CollectionDirectoryControls } from "./CollectionDirectoryControls";
 import { ComparisonSetPickerDialog } from "./ComparisonSetPickerDialog";
 
 function comparisonFailureMessage(caught: unknown, fallback: string): string {
@@ -48,11 +49,24 @@ export function AddToComparisonControl({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [comparisonSetId, setComparisonSetId] = useState("");
   const [comparisonError, setComparisonError] = useState("");
-  const comparisonSets = useQuery({
-    queryKey: collectionsKeys.sets,
-    queryFn: ({ signal }) => listComparisonSets(signal),
-    enabled: pickerOpen,
+  const catalog = useCollectionCatalog(pickerOpen, true);
+  const comparisonSets = catalog.query;
+  const lock = useRef(false);
+  const [busy, setBusy] = useState(false);
+  const signature = uniqueEntityIds(selectedEntityIds).join("|");
+  const live = useRef({ mounted: true, open: pickerOpen, signature, generation: 0 });
+  useLayoutEffect(() => {
+    if (live.current.open !== pickerOpen || live.current.signature !== signature) live.current.generation += 1;
+    live.current.open = pickerOpen;
+    live.current.signature = signature;
   });
+  useEffect(() => {
+    live.current.mounted = true;
+    return () => {
+      live.current.mounted = false;
+      live.current.generation += 1;
+    };
+  }, []);
   const addToComparison = useMutation({
     mutationFn: ({
       setId,
@@ -68,11 +82,11 @@ export function AddToComparisonControl({
     mutationFn: ({ name, visibility }: { name: string; visibility: "private" | "tenant" }) =>
       createComparisonSet({ name, visibility }),
   });
-  const editableComparisonSets = (comparisonSets.data ?? []).filter((item) => item.editable);
-  const activeComparisonSetId =
-    (comparisonSetId && editableComparisonSets.some((item) => item.id === comparisonSetId)
-      ? comparisonSetId
-      : editableComparisonSets[0]?.id) || "";
+  const editableComparisonSets = (comparisonSets.data?.items ?? []).filter((item) => item.editable);
+  const activeComparisonSetId = comparisonSetId || editableComparisonSets[0]?.id || "";
+  useEffect(() => {
+    if (pickerOpen && !comparisonSetId && activeComparisonSetId) setComparisonSetId(activeComparisonSetId);
+  }, [activeComparisonSetId, comparisonSetId, pickerOpen]);
   const comparisonDetail = useQuery({
     queryKey: collectionsKeys.detail(activeComparisonSetId),
     queryFn: ({ signal }) => getComparisonSet(activeComparisonSetId, signal),
@@ -86,17 +100,21 @@ export function AddToComparisonControl({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (addToComparison.isPending || createComparison.isPending) return;
-    const selectedSet = editableComparisonSets.find((item) => item.id === activeComparisonSetId);
-    if (!selectedSet || !selectedIds.length) return;
+    if (lock.current || !selectedSetDetail?.editable || !selectedIds.length) return;
+    lock.current = true;
+    setBusy(true);
+    const generation = live.current.generation;
+    const stillHere = () => live.current.mounted && live.current.generation === generation;
     setComparisonError("");
     try {
-      const current = await getComparisonSet(selectedSet.id);
+      const current = await getComparisonSet(activeComparisonSetId);
       queryClient.setQueryData(collectionsKeys.detail(current.id), current);
+      if (!stillHere()) return;
       const currentEntityIds = new Set(current.members.map((member) => member.entity.id));
       const entityIdsToAdd = selectedIds.filter((entityId) => !currentEntityIds.has(entityId));
       const skippedCount = selectedIds.length - entityIdsToAdd.length;
       if (!entityIdsToAdd.length) {
+        if (!stillHere()) return;
         onAdded(`所选实体均已在 ${current.name} 中，无需重复添加`);
         onComparisonReady?.(
           current.id,
@@ -106,7 +124,8 @@ export function AddToComparisonControl({
         return;
       }
       if (current.member_count + entityIdsToAdd.length > 20) {
-        setComparisonError(`该列表还可添加 ${Math.max(0, 20 - current.member_count)} 个实体，请减少选择后重试`);
+        if (stillHere())
+          setComparisonError(`该列表还可添加 ${Math.max(0, 20 - current.member_count)} 个实体，请减少选择后重试`);
         return;
       }
       const detail = await addToComparison.mutateAsync({
@@ -115,7 +134,8 @@ export function AddToComparisonControl({
         expectedVersion: current.version,
       });
       queryClient.setQueryData(collectionsKeys.detail(detail.id), detail);
-      await queryClient.invalidateQueries({ queryKey: collectionsKeys.sets });
+      await queryClient.invalidateQueries({ queryKey: collectionsKeys.catalogs });
+      if (!stillHere()) return;
       onAdded(
         `${entityIdsToAdd.length} 个实体已加入 ${detail.name}${skippedCount ? `，已跳过 ${skippedCount} 个已存在实体` : ""}`,
       );
@@ -125,23 +145,38 @@ export function AddToComparisonControl({
       );
       setPickerOpen(false);
     } catch (caught) {
-      setComparisonError(comparisonFailureMessage(caught, "加入对比列表失败，请稍后重试"));
-      await comparisonSets.refetch();
+      await queryClient.invalidateQueries({ queryKey: collectionsKeys.detail(activeComparisonSetId), exact: true });
+      if (stillHere()) {
+        setComparisonError(comparisonFailureMessage(caught, "加入对比列表失败，请稍后重试"));
+        await comparisonSets.refetch();
+      }
+    } finally {
+      lock.current = false;
+      if (live.current.mounted) setBusy(false);
     }
   }
 
   async function createAndAdd(name: string, visibility: "private" | "tenant") {
-    if (!selectedEntityIds.length || addToComparison.isPending || createComparison.isPending) return;
+    if (!selectedEntityIds.length || lock.current) return;
+    lock.current = true;
+    setBusy(true);
+    const generation = live.current.generation;
+    const stillHere = () => live.current.mounted && live.current.generation === generation;
+    let createdId = "";
     setComparisonError("");
     try {
       const created = await createComparison.mutateAsync({ name, visibility });
+      createdId = created.id;
+      queryClient.setQueryData(collectionsKeys.detail(created.id), created);
+      if (stillHere()) setComparisonSetId(created.id);
       const detail = await addToComparison.mutateAsync({
         setId: created.id,
         entityIds: selectedIds,
         expectedVersion: created.version,
       });
       queryClient.setQueryData(collectionsKeys.detail(detail.id), detail);
-      await queryClient.invalidateQueries({ queryKey: collectionsKeys.sets });
+      await queryClient.invalidateQueries({ queryKey: collectionsKeys.catalogs });
+      if (!stillHere()) return;
       onAdded(`${selectedEntityIds.length} 个实体已加入 ${detail.name}`);
       onComparisonReady?.(
         detail.id,
@@ -149,21 +184,35 @@ export function AddToComparisonControl({
       );
       setPickerOpen(false);
     } catch (caught) {
-      setComparisonError(comparisonFailureMessage(caught, "创建对比列表失败，请稍后重试"));
-      await comparisonSets.refetch();
+      if (stillHere()) {
+        setComparisonError(
+          createdId
+            ? `列表已创建，但成员尚未加入；已保留新列表，请重新确认加入。${comparisonFailureMessage(caught, "成员写入失败")}`
+            : comparisonFailureMessage(caught, "创建对比列表失败，请稍后重试"),
+        );
+        await comparisonSets.refetch();
+      }
+    } finally {
+      lock.current = false;
+      if (live.current.mounted) setBusy(false);
     }
   }
 
-  const pending = addToComparison.isPending || createComparison.isPending;
+  const pending = busy;
+  const availableSets =
+    selectedSetDetail?.editable && !editableComparisonSets.some((item) => item.id === selectedSetDetail.id)
+      ? [selectedSetDetail, ...editableComparisonSets]
+      : editableComparisonSets;
 
   return (
     <>
       <button
         className="table-result-action"
         type="button"
-        disabled={!selectedEntityIds.length}
+        disabled={pending || !selectedEntityIds.length}
         onClick={() => {
           setComparisonError("");
+          setComparisonSetId("");
           setPickerOpen(true);
         }}
       >
@@ -176,7 +225,7 @@ export function AddToComparisonControl({
         alreadyPresentCount={alreadyPresentCount}
         newSelectedCount={newEntityIds.length}
         selectedSetMemberCount={selectedSetDetail?.member_count}
-        sets={editableComparisonSets}
+        sets={availableSets}
         selectedSetId={activeComparisonSetId}
         loading={comparisonSets.isFetching || Boolean(activeComparisonSetId && comparisonDetail.isFetching)}
         pending={pending}
@@ -190,6 +239,7 @@ export function AddToComparisonControl({
         onClose={() => setPickerOpen(false)}
         onSubmit={submit}
         onCreateSet={createAndAdd}
+        catalogControls={<CollectionDirectoryControls catalog={catalog} pending={pending} />}
       />
     </>
   );

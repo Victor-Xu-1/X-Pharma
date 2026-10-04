@@ -1,9 +1,11 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import {
   createMonitoringTopic,
   loadMonitoring,
+  loadMonitoringAlertReplay,
+  loadMonitoringTopicReplay,
   markMonitoringAlertRead,
   setMonitoringTopicActive,
   setMonitoringTopicQueryVersion,
@@ -17,6 +19,8 @@ import { renderWithQueryClient } from "./renderWithQueryClient";
 vi.mock("../lib/contracts/monitoring", () => ({
   monitoringKeys: { all: (unreadOnly: boolean) => ["monitoring", { unreadOnly }] },
   loadMonitoring: vi.fn(),
+  loadMonitoringAlertReplay: vi.fn(),
+  loadMonitoringTopicReplay: vi.fn(),
   createMonitoringTopic: vi.fn(),
   setMonitoringTopicActive: vi.fn(),
   setMonitoringTopicQueryVersion: vi.fn(),
@@ -69,6 +73,16 @@ const user = {
 };
 
 beforeEach(() => {
+  vi.mocked(loadMonitoringTopicReplay).mockResolvedValue({
+    ...saved,
+    query_version: 1,
+    query_json: { q: "IFNA2", entity_type: "target" },
+  });
+  vi.mocked(loadMonitoringAlertReplay).mockResolvedValue({
+    ...saved,
+    query_version: 1,
+    query_json: { q: "IFNA2", entity_type: "target" },
+  });
   vi.mocked(loadMonitoring).mockResolvedValue({ searches: [saved], topics: [topic], alerts: [alert] });
   vi.mocked(markMonitoringAlertRead).mockResolvedValue(undefined);
   vi.mocked(createMonitoringTopic).mockResolvedValue(topic);
@@ -82,6 +96,38 @@ beforeEach(() => {
   });
 });
 
+it("never substitutes the latest query when fixed replay is unavailable", async () => {
+  vi.mocked(loadMonitoringTopicReplay).mockRejectedValue(new Error("Fixed version unavailable"));
+  const openSearch = vi.fn();
+  renderWithQueryClient(
+    <MonitoringView user={user} activeTab="topics" onOpenEntity={vi.fn()} onOpenSearch={openSearch} />,
+  );
+  fireEvent.click(await screen.findByRole("button", { name: "运行 EGFR changes 固定检索" }));
+  await screen.findByText("Fixed version unavailable");
+  expect(openSearch).not.toHaveBeenCalled();
+});
+
+it("does not let a delayed fixed replay navigate after changing monitoring tabs", async () => {
+  let finish!: (saved: SavedSearch) => void;
+  vi.mocked(loadMonitoringTopicReplay).mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const openSearch = vi.fn();
+  renderWithQueryClient(<MonitoringView user={user} onOpenEntity={vi.fn()} onOpenSearch={openSearch} />);
+  await screen.findByText("EGFR changes");
+  fireEvent.click(screen.getByRole("tab", { name: "监控主题" }));
+  const run = await screen.findByRole("button", { name: "运行 EGFR changes 固定检索" });
+  fireEvent.click(run);
+  fireEvent.click(run);
+  await waitFor(() => expect(loadMonitoringTopicReplay).toHaveBeenCalledTimes(1));
+  fireEvent.click(screen.getByRole("tab", { name: "已保存检索" }));
+  await act(async () => finish({ ...saved, query_version: 1 }));
+  expect(openSearch).not.toHaveBeenCalled();
+});
+
 it("shows durable alerts, opens the matching entity and records a read receipt", async () => {
   const openEntity = vi.fn();
   const openSearch = vi.fn();
@@ -91,7 +137,12 @@ it("shows durable alerts, opens the matching entity and records a read receipt",
   fireEvent.click(screen.getByRole("button", { name: "打开 EGFR" }));
   expect(openEntity).toHaveBeenCalledWith("entity-1");
   fireEvent.click(screen.getByRole("button", { name: "重放 EGFR changes 监控检索" }));
-  expect(openSearch).toHaveBeenCalledWith(saved);
+  await waitFor(() =>
+    expect(openSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ query_version: 1, query_json: { q: "IFNA2", entity_type: "target" } }),
+    ),
+  );
+  expect(loadMonitoringAlertReplay).toHaveBeenCalledWith("alert-1");
   fireEvent.click(screen.getByRole("button", { name: "将 EGFR 提醒标记已读" }));
 
   await waitFor(() => expect(markMonitoringAlertRead).toHaveBeenCalledWith("alert-1"));
@@ -132,9 +183,14 @@ it("creates and pauses monitoring topics from saved enterprise searches", async 
   fireEvent.click(screen.getByRole("button", { name: "暂停 EGFR changes" }));
   await waitFor(() => expect(setMonitoringTopicActive).toHaveBeenCalledWith("topic-1", false));
   fireEvent.click(screen.getByRole("tab", { name: "监控主题" }));
-  expect(screen.getByTitle("实体类型=靶点")).toBeVisible();
+  expect(screen.getByText("已保存检索有新版本；本主题仍按固定版本运行")).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "运行 EGFR changes 固定检索" }));
-  expect(openSearch).toHaveBeenCalledWith(saved);
+  await waitFor(() =>
+    expect(openSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ query_version: 1, query_json: { q: "IFNA2", entity_type: "target" } }),
+    ),
+  );
+  expect(loadMonitoringTopicReplay).toHaveBeenCalledWith("topic-1");
   fireEvent.click(screen.getByRole("button", { name: "同步 EGFR changes 到检索 v2" }));
   await waitFor(() => expect(setMonitoringTopicQueryVersion).toHaveBeenCalledWith("topic-1", 2));
 });

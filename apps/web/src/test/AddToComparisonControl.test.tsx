@@ -1,24 +1,26 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { AddToComparisonControl } from "../components/AddToComparisonControl";
 import {
   addComparisonSetMembers,
   type CollectionDetail,
   type CollectionEntity,
+  createComparisonSet,
   getComparisonSet,
-  listComparisonSets,
+  loadCollectionCatalog,
 } from "../lib/contracts/collections";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/collections", () => ({
   collectionsKeys: {
-    sets: ["collections", "sets"],
+    catalogs: ["collections", "catalog"],
+    catalog: (q: string, offset: number) => ["collections", "catalog", q, offset],
     detail: (id: string) => ["collections", "sets", id],
   },
   addComparisonSetMembers: vi.fn(),
   createComparisonSet: vi.fn(),
   getComparisonSet: vi.fn(),
-  listComparisonSets: vi.fn(),
+  loadCollectionCatalog: vi.fn(),
 }));
 
 const entityBase: CollectionEntity = {
@@ -71,9 +73,85 @@ const addedDetail: CollectionDetail = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(listComparisonSets).mockResolvedValue([editableSet]);
+  vi.mocked(loadCollectionCatalog).mockResolvedValue({
+    items: [editableSet],
+    total: [editableSet].length,
+    limit: 25,
+    offset: 0,
+  });
   vi.mocked(getComparisonSet).mockResolvedValue({ ...editableSet, members: [] });
   vi.mocked(addComparisonSetMembers).mockResolvedValue(addedDetail);
+});
+
+it("locks submission during the version preflight read", async () => {
+  renderWithQueryClient(<AddToComparisonControl selectedEntityIds={["drug-1"]} onAdded={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "加入列表（1）" }));
+  const confirm = await screen.findByRole("button", { name: "确认加入" });
+  await waitFor(() => expect(confirm).toBeEnabled());
+  let release!: (detail: CollectionDetail) => void;
+  vi.mocked(getComparisonSet).mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+  );
+  fireEvent.click(confirm);
+  fireEvent.click(confirm);
+  expect(getComparisonSet).toHaveBeenCalledTimes(2);
+  await act(async () => release({ ...editableSet, members: [] }));
+});
+
+it("does not run old completion callbacks after leaving the page", async () => {
+  let release!: (detail: CollectionDetail) => void;
+  vi.mocked(addComparisonSetMembers).mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+  );
+  const ready = vi.fn();
+  const added = vi.fn();
+  const result = renderWithQueryClient(
+    <AddToComparisonControl selectedEntityIds={["drug-1"]} onAdded={added} onComparisonReady={ready} />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "加入列表（1）" }));
+  const confirm = await screen.findByRole("button", { name: "确认加入" });
+  await waitFor(() => expect(confirm).toBeEnabled());
+  fireEvent.click(confirm);
+  await waitFor(() => expect(addComparisonSetMembers).toHaveBeenCalled());
+  result.unmount();
+  await act(async () => release(addedDetail));
+  expect(ready).not.toHaveBeenCalled();
+  expect(added).not.toHaveBeenCalled();
+});
+
+it("keeps a successfully created list recoverable when adding its members fails", async () => {
+  const created = { ...editableSet, id: "new-set", name: "Created review", members: [] };
+  vi.mocked(loadCollectionCatalog).mockResolvedValue({ items: [], total: 0, limit: 25, offset: 0 });
+  vi.mocked(createComparisonSet).mockResolvedValue(created);
+  vi.mocked(getComparisonSet).mockResolvedValue(created);
+  vi.mocked(addComparisonSetMembers).mockRejectedValueOnce(new Error("write unavailable"));
+  const onAdded = vi.fn();
+  renderWithQueryClient(<AddToComparisonControl selectedEntityIds={["drug-1"]} onAdded={onAdded} />);
+  fireEvent.click(screen.getByRole("button", { name: "加入列表（1）" }));
+  await screen.findByLabelText("新建列表");
+  fireEvent.change(screen.getByLabelText("新建列表"), { target: { value: "Created review" } });
+  fireEvent.click(screen.getByRole("button", { name: "创建并加入" }));
+  await screen.findByText(/列表已创建，但成员尚未加入/);
+  expect(await screen.findByLabelText("目标列表")).toHaveValue("new-set");
+  expect(onAdded).not.toHaveBeenCalled();
+  vi.mocked(addComparisonSetMembers).mockResolvedValue({
+    ...created,
+    member_count: 1,
+    version: 2,
+    members: [addedDetail.members[0]],
+  });
+  const retry = await screen.findByRole("button", { name: "确认加入" });
+  await waitFor(() => expect(retry).toBeEnabled());
+  fireEvent.click(retry);
+  await waitFor(() => expect(onAdded).toHaveBeenCalled());
+  expect(createComparisonSet).toHaveBeenCalledTimes(1);
+  expect(addComparisonSetMembers).toHaveBeenLastCalledWith("new-set", { entity_ids: ["drug-1"], expected_version: 1 });
 });
 
 it("offers the comparison list after selected drugs are added", async () => {
@@ -110,7 +188,12 @@ it("adds only new entities and explains which selected entities were already pre
     version: 5,
     members: addedDetail.members,
   };
-  vi.mocked(listComparisonSets).mockResolvedValue([{ ...editableSet, member_count: 1, version: 4 }]);
+  vi.mocked(loadCollectionCatalog).mockResolvedValue({
+    items: [{ ...editableSet, member_count: 1, version: 4 }],
+    total: [{ ...editableSet, member_count: 1, version: 4 }].length,
+    limit: 25,
+    offset: 0,
+  });
   vi.mocked(getComparisonSet).mockResolvedValue(existingDetail);
   vi.mocked(addComparisonSetMembers).mockResolvedValue(updatedDetail);
   const onAdded = vi.fn();
@@ -145,7 +228,12 @@ it("finishes without a duplicate write when every selected entity is already pre
     version: 4,
     members: [addedDetail.members[0]],
   };
-  vi.mocked(listComparisonSets).mockResolvedValue([{ ...editableSet, member_count: 1, version: 4 }]);
+  vi.mocked(loadCollectionCatalog).mockResolvedValue({
+    items: [{ ...editableSet, member_count: 1, version: 4 }],
+    total: [{ ...editableSet, member_count: 1, version: 4 }].length,
+    limit: 25,
+    offset: 0,
+  });
   vi.mocked(getComparisonSet).mockResolvedValue(existingDetail);
   const onAdded = vi.fn();
   const onComparisonReady = vi.fn();

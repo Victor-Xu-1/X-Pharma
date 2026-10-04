@@ -1,4 +1,5 @@
 import { lazy } from "react";
+import { ErrorState } from "../../components/common";
 import { workspaceUrl } from "../../lib/workspaceRouting";
 import type { ResearchRouteContext } from "./routeContext";
 
@@ -8,6 +9,7 @@ const CollectionsView = lazy(() =>
 
 export function CollectionsRoute({ context }: { context: ResearchRouteContext }) {
   const { location, navigate, openEntity, openDrugById } = context;
+  if (location.invalidCollectionId) return <ErrorState message="对比列表链接无效" />;
   return (
     <CollectionsView
       activeCollectionId={location.collectionId ?? null}

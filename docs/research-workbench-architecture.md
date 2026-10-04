@@ -117,6 +117,8 @@ OpenSearch 只负责召回、排序和全量分面。租户过滤进入检索查
 
 ## 前端状态与交互
 
+保存研究的目录、独立深链接、目标绑定写入、共享历史边界、批量加入恢复和监控原版本重放由 [研发工作流审计与升级](research-workflow-integrity.md) 定义；该文档补充既有领域合同，不建立第二套状态或数据权威。
+
 - React 只保存编辑中的查询、抽屉和弹窗状态；服务器状态由 TanStack Query 管理并支持 `AbortSignal` 取消。
 - 联想输入达到 2 个字符后等待 250 ms，请求最多 10 条，失败不会阻断直接检索。
 - 共享单实体联想使用每实例唯一的 combobox/listbox/option ID；输入焦点不离开组合框即可用上下方向键循环候选、Home/End 定位、Enter 选择稳定实体 ID、Escape 收起，激活项通过 `aria-activedescendant`/`aria-selected` 同步并滚动到可见区域。鼠标与键盘最终都只提交服务端候选的规范 ID，不提交高亮文本或浏览器推断值。

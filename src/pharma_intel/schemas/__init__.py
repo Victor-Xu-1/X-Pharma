@@ -222,6 +222,9 @@ from .commercial_usage import (
     CommercialUsageSummaryRead as CommercialUsageSummaryRead,
 )
 from .comparison import (
+    ComparisonSetCatalogRead as ComparisonSetCatalogRead,
+)
+from .comparison import (
     ComparisonSetCreate as ComparisonSetCreate,
 )
 from .comparison import (

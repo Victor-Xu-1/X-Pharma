@@ -90,6 +90,7 @@ export type { CompanyDossierResponse } from './models/CompanyDossierResponse';
 export type { CompanyDossierSummaryRead } from './models/CompanyDossierSummaryRead';
 export type { CompanyTimelineEventRead } from './models/CompanyTimelineEventRead';
 export type { CompanyTimelineResult } from './models/CompanyTimelineResult';
+export type { ComparisonSetCatalogRead } from './models/ComparisonSetCatalogRead';
 export type { ComparisonSetCreate } from './models/ComparisonSetCreate';
 export type { ComparisonSetDetailRead } from './models/ComparisonSetDetailRead';
 export type { ComparisonSetMemberCreate } from './models/ComparisonSetMemberCreate';

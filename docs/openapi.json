@@ -6447,6 +6447,37 @@
         "title": "CompanyTimelineResult",
         "type": "object"
       },
+      "ComparisonSetCatalogRead": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonSetSummaryRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "ComparisonSetCatalogRead",
+        "type": "object"
+      },
       "ComparisonSetCreate": {
         "properties": {
           "description": {
@@ -29120,6 +29151,84 @@
         ]
       }
     },
+    "/api/v1/comparison-sets/catalog": {
+      "get": {
+        "operationId": "comparison_set_catalog_api_v1_comparison_sets_catalog_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 256,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 1000000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "editable_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Editable Only",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonSetCatalogRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Comparison Set Catalog",
+        "tags": [
+          "comparison-sets"
+        ]
+      }
+    },
     "/api/v1/comparison-sets/{comparison_set_id}": {
       "get": {
         "operationId": "get_comparison_set_api_v1_comparison_sets__comparison_set_id__get",
@@ -29433,6 +29542,36 @@
             "schema": {
               "title": "Comparison Set Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before_version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before Version"
             }
           }
         ],
@@ -34252,6 +34391,48 @@
         ]
       }
     },
+    "/api/v1/monitoring/alerts/{alert_id}/replay": {
+      "get": {
+        "operationId": "replay_monitoring_alert_api_v1_monitoring_alerts__alert_id__replay_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "alert_id",
+            "required": true,
+            "schema": {
+              "title": "Alert Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSearchRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replay Monitoring Alert",
+        "tags": [
+          "monitoring"
+        ]
+      }
+    },
     "/api/v1/monitoring/saved-searches": {
       "get": {
         "operationId": "list_saved_searches_api_v1_monitoring_saved_searches_get",
@@ -34519,6 +34700,48 @@
           }
         },
         "summary": "Update Monitoring Topic",
+        "tags": [
+          "monitoring"
+        ]
+      }
+    },
+    "/api/v1/monitoring/topics/{topic_id}/replay": {
+      "get": {
+        "operationId": "replay_monitoring_topic_api_v1_monitoring_topics__topic_id__replay_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "title": "Topic Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSearchRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replay Monitoring Topic",
         "tags": [
           "monitoring"
         ]

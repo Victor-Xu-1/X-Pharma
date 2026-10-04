@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { useLayoutEffect, useState } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 
-import { addComparisonSetMembers, getComparisonSet, listComparisonSets } from "../lib/contracts/collections";
+import { addComparisonSetMembers, getComparisonSet, loadCollectionCatalog } from "../lib/contracts/collections";
 import { loadDealFacetCatalog } from "../lib/contracts/deals";
 import { loadEpidemiologyFacetCatalog } from "../lib/contracts/epidemiology";
 import {
@@ -46,7 +46,7 @@ vi.mock("../lib/contracts/intelligence", () => ({
 }));
 vi.mock("../lib/contracts/collections", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/contracts/collections")>();
-  return { ...actual, listComparisonSets: vi.fn(), getComparisonSet: vi.fn(), addComparisonSetMembers: vi.fn() };
+  return { ...actual, loadCollectionCatalog: vi.fn(), getComparisonSet: vi.fn(), addComparisonSetMembers: vi.fn() };
 });
 vi.mock("../lib/contracts/deals", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/contracts/deals")>();
@@ -156,7 +156,12 @@ beforeEach(() => {
     as_of: "2026-08-12T00:00:00Z",
   });
   vi.mocked(saveEntitySearch).mockResolvedValue({ message: "已保存并启用监控" });
-  vi.mocked(listComparisonSets).mockResolvedValue([comparisonSet]);
+  vi.mocked(loadCollectionCatalog).mockResolvedValue({
+    items: [comparisonSet],
+    total: [comparisonSet].length,
+    limit: 25,
+    offset: 0,
+  });
   const comparisonDetail = {
     ...comparisonSet,
     members: [],
@@ -822,7 +827,7 @@ it("keeps the result selection recoverable when the comparison set changed concu
 
   expect(await within(dialog).findByRole("alert")).toHaveTextContent("对比列表版本已变化");
   expect(screen.getByRole("checkbox", { name: "取消选择对比 EGFR" })).toBeChecked();
-  expect(listComparisonSets).toHaveBeenCalledTimes(2);
+  expect(loadCollectionCatalog).toHaveBeenCalledTimes(2);
 });
 
 it("sorts the complete hit set and pages through URL-owned query state", async () => {
