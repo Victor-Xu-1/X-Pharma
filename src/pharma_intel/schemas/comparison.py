@@ -83,6 +83,13 @@ class ComparisonSetMemberRead(BaseModel):
     entity: EntityRead
 
 
+class ComparisonSetCatalogRead(BaseModel):
+    items: list[ComparisonSetSummaryRead]
+    total: int
+    limit: int
+    offset: int
+
+
 class ComparisonSetDetailRead(ComparisonSetSummaryRead):
     members: list[ComparisonSetMemberRead]
 

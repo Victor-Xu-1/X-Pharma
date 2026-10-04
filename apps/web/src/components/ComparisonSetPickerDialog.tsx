@@ -1,5 +1,5 @@
 import { ListPlus, X } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 
 import type { CollectionSummary } from "../lib/contracts/collections";
 import { useModalFocus } from "../lib/useModalFocus";
@@ -19,6 +19,7 @@ export function ComparisonSetPickerDialog({
   onClose,
   onSubmit,
   onCreateSet,
+  catalogControls,
 }: {
   open: boolean;
   selectedCount: number;
@@ -34,6 +35,7 @@ export function ComparisonSetPickerDialog({
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onCreateSet?: (name: string, visibility: "private" | "tenant") => void | Promise<void>;
+  catalogControls?: ReactNode;
 }) {
   const dialogRef = useModalFocus<HTMLFormElement>(open, onClose, { closeOnEscape: !pending });
   const [newSetName, setNewSetName] = useState("");
@@ -90,11 +92,12 @@ export function ComparisonSetPickerDialog({
             {error}
           </p>
         ) : null}
+        {catalogControls}
         {loading ? (
           <p className="modal-context" role="status">
             正在读取可编辑列表
           </p>
-        ) : sets.length ? (
+        ) : sets.length || selectedSetId ? (
           <label>
             目标列表
             <select
@@ -102,7 +105,13 @@ export function ComparisonSetPickerDialog({
               onChange={(event) => onSetChange(event.target.value)}
               data-modal-autofocus="true"
               required
+              disabled={pending}
             >
+              {selectedSetId && !selectedSet ? (
+                <option value={selectedSetId} disabled>
+                  当前列表不可访问，请选择其他列表
+                </option>
+              ) : null}
               {sets.map((item) => (
                 <option value={item.id} key={item.id}>
                   {item.name} · {item.member_count}/20
@@ -112,7 +121,7 @@ export function ComparisonSetPickerDialog({
           </label>
         ) : (
           <>
-            <p className="modal-context">当前没有可编辑的对比列表。直接创建一个新列表，已选择的实体会继续加入其中。</p>
+            <p className="modal-context">当前目录没有可选择的列表。可调整搜索，或创建新列表后加入已选实体。</p>
             {onCreateSet ? (
               <>
                 <label>
@@ -125,12 +134,14 @@ export function ComparisonSetPickerDialog({
                     data-modal-autofocus="true"
                     maxLength={120}
                     required
+                    disabled={pending}
                   />
                 </label>
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
                     checked={newSetShared}
+                    disabled={pending}
                     onChange={(event) => setNewSetShared(event.target.checked)}
                   />
                   与团队共享

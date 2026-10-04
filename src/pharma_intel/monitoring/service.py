@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from sqlalchemy import and_, or_, select, update
@@ -43,6 +44,12 @@ class MonitoringConflict(MonitoringError):
     pass
 
 
+@dataclass(frozen=True)
+class MonitoringReplay:
+    saved_search: SavedSearch
+    version: SavedSearchVersion
+
+
 class MonitoringService:
     def __init__(self, session: Session, tenant_id: str, user_id: str) -> None:
         self.session = session
@@ -66,6 +73,35 @@ class MonitoringService:
 
     def get_saved_search(self, saved_search_id: str) -> SavedSearch:
         return self._visible_saved_search(saved_search_id)
+
+    def replay_topic(self, topic_id: str) -> MonitoringReplay:
+        topic = self._owned_topic(topic_id)
+        return self._replay(topic.saved_search_id, topic.query_version)
+
+    def replay_alert(self, alert_id: str) -> MonitoringReplay:
+        alert = self.session.scalar(
+            select(MonitoringAlert).where(
+                MonitoringAlert.id == alert_id,
+                MonitoringAlert.tenant_id == self.tenant_id,
+                MonitoringAlert.recipient_user_id == self.user_id,
+            )
+        )
+        if alert is None:
+            raise MonitoringNotFound("Monitoring alert not found")
+        topic = self._owned_topic(alert.topic_id)
+        version = alert.payload_json.get("query_version")
+        if (
+            alert.payload_json.get("saved_search_id") != topic.saved_search_id
+            or type(version) is not int
+            or version < 1
+        ):
+            raise MonitoringNotFound("Original alert query version is unavailable")
+        return self._replay(topic.saved_search_id, version)
+
+    def _replay(self, saved_search_id: str, version: int) -> MonitoringReplay:
+        saved = self._visible_saved_search(saved_search_id)
+        snapshot = self._visible_saved_search_version(saved_search_id, version)
+        return MonitoringReplay(saved_search=saved, version=snapshot)
 
     def create_saved_search(self, command: SavedSearchCreate) -> SavedSearch:
         item = SavedSearch(

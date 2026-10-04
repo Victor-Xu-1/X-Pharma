@@ -1,8 +1,9 @@
 import { X } from "lucide-react";
-import type { FormEvent } from "react";
+import { type FormEvent, useId } from "react";
 import { useModalFocus } from "../lib/useModalFocus";
 
-export function SavedSearchEditorDialog({
+export function ResearchMetadataDialog({
+  title,
   open,
   name,
   description,
@@ -13,6 +14,7 @@ export function SavedSearchEditorDialog({
   onClose,
   onSubmit,
 }: {
+  title: string;
   open: boolean;
   name: string;
   description: string;
@@ -23,6 +25,7 @@ export function SavedSearchEditorDialog({
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const titleId = useId();
   const dialogRef = useModalFocus<HTMLFormElement>(open, onClose, { closeOnEscape: !pending });
   if (!open) return null;
   return (
@@ -32,12 +35,12 @@ export function SavedSearchEditorDialog({
         className="workspace-modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="saved-search-editor-title"
+        aria-labelledby={titleId}
         tabIndex={-1}
         onSubmit={onSubmit}
       >
         <header>
-          <h2 id="saved-search-editor-title">编辑已保存检索</h2>
+          <h2 id={titleId}>{title}</h2>
           <button className="icon-button" type="button" onClick={onClose} aria-label="关闭" disabled={pending}>
             <X size={18} />
           </button>

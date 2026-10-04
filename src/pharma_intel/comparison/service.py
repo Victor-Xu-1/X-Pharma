@@ -46,6 +46,12 @@ class ComparisonSetView:
     members: list[dict[str, object]]
 
 
+@dataclass(frozen=True)
+class ComparisonSetCatalog:
+    items: list[ComparisonSetView]
+    total: int
+
+
 class ComparisonSetService:
     def __init__(self, session: Session, tenant_id: str, user_id: str, *, include_unpublished: bool = False) -> None:
         self.session = session
@@ -57,22 +63,37 @@ class ComparisonSetService:
         return true() if self.include_unpublished else Entity.review_status == ReviewStatus.VERIFIED
 
     def list_sets(self) -> list[ComparisonSetView]:
+        return self.catalog(q="", limit=100, offset=0).items
+
+    def catalog(self, *, q: str, limit: int, offset: int, editable_only: bool = False) -> ComparisonSetCatalog:
+        visible = [
+            ComparisonSet.tenant_id == self.tenant_id,
+            or_(
+                ComparisonSet.owner_user_id == self.user_id,
+                ComparisonSet.visibility == SavedSearchVisibility.TENANT,
+            ),
+        ]
+        if editable_only:
+            visible.append(ComparisonSet.owner_user_id == self.user_id)
+        if q.strip():
+            visible.append(
+                or_(
+                    ComparisonSet.name.icontains(q.strip(), autoescape=True),
+                    ComparisonSet.description.icontains(q.strip(), autoescape=True),
+                )
+            )
+        total = int(self.session.scalar(select(func.count()).select_from(ComparisonSet).where(*visible)) or 0)
         rows = self.session.execute(
             select(ComparisonSet, func.count(Entity.id))
             .outerjoin(ComparisonSetMember, ComparisonSetMember.comparison_set_id == ComparisonSet.id)
             .outerjoin(Entity, (Entity.id == ComparisonSetMember.entity_id) & self._publication_filter())
-            .where(
-                ComparisonSet.tenant_id == self.tenant_id,
-                or_(
-                    ComparisonSet.owner_user_id == self.user_id,
-                    ComparisonSet.visibility == SavedSearchVisibility.TENANT,
-                ),
-            )
+            .where(*visible)
             .group_by(ComparisonSet.id)
             .order_by(ComparisonSet.updated_at.desc(), ComparisonSet.id)
-            .limit(100)
+            .limit(limit)
+            .offset(offset)
         )
-        return [
+        items = [
             ComparisonSetView(
                 item=item,
                 member_count=int(count),
@@ -81,6 +102,7 @@ class ComparisonSetService:
             )
             for item, count in rows
         ]
+        return ComparisonSetCatalog(items=items, total=total)
 
     def get_set(self, item_id: str) -> ComparisonSetView:
         item = self._visible_set(item_id, lock=False)
@@ -277,16 +299,23 @@ class ComparisonSetService:
         self.session.commit()
         return self.get_set(item.id)
 
-    def list_versions(self, item_id: str) -> list[ComparisonSetVersion]:
-        item = self._visible_set(item_id, lock=False)
+    def list_versions(
+        self, item_id: str, *, limit: int = 50, before_version: int | None = None
+    ) -> list[ComparisonSetVersion]:
+        # Current sharing does not authorize disclosure of a private past.
+        item = self._owned_set(item_id, lock=False)
+        conditions = [
+            ComparisonSetVersion.tenant_id == self.tenant_id,
+            ComparisonSetVersion.comparison_set_id == item.id,
+        ]
+        if before_version is not None:
+            conditions.append(ComparisonSetVersion.version < before_version)
         return list(
             self.session.scalars(
                 select(ComparisonSetVersion)
-                .where(
-                    ComparisonSetVersion.tenant_id == self.tenant_id,
-                    ComparisonSetVersion.comparison_set_id == item.id,
-                )
+                .where(*conditions)
                 .order_by(ComparisonSetVersion.version.desc())
+                .limit(limit)
             )
         )
 

@@ -59,6 +59,27 @@ export class MonitoringService {
     });
   }
   /**
+   * Replay Monitoring Alert
+   * @returns SavedSearchRead Successful Response
+   * @throws ApiError
+   */
+  public static replayMonitoringAlertApiV1MonitoringAlertsAlertIdReplayGet({
+    alertId,
+  }: {
+    alertId: string,
+  }): CancelablePromise<SavedSearchRead> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v1/monitoring/alerts/{alert_id}/replay',
+      path: {
+        'alert_id': alertId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
    * List Saved Searches
    * @returns SavedSearchRead Successful Response
    * @throws ApiError
@@ -186,6 +207,27 @@ export class MonitoringService {
       },
       body: requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Replay Monitoring Topic
+   * @returns SavedSearchRead Successful Response
+   * @throws ApiError
+   */
+  public static replayMonitoringTopicApiV1MonitoringTopicsTopicIdReplayGet({
+    topicId,
+  }: {
+    topicId: string,
+  }): CancelablePromise<SavedSearchRead> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v1/monitoring/topics/{topic_id}/replay',
+      path: {
+        'topic_id': topicId,
+      },
       errors: {
         422: `Validation Error`,
       },

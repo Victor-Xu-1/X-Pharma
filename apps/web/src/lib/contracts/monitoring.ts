@@ -35,6 +35,14 @@ export function loadSavedSearch(savedSearchId: string, signal?: AbortSignal): Pr
   );
 }
 
+export function loadMonitoringTopicReplay(topicId: string): Promise<SavedSearchRead> {
+  return contractRequest(MonitoringService.replayMonitoringTopicApiV1MonitoringTopicsTopicIdReplayGet({ topicId }));
+}
+
+export function loadMonitoringAlertReplay(alertId: string): Promise<SavedSearchRead> {
+  return contractRequest(MonitoringService.replayMonitoringAlertApiV1MonitoringAlertsAlertIdReplayGet({ alertId }));
+}
+
 export function createMonitoringTopic(requestBody: MonitoringTopicCreate): Promise<MonitoringTopicRead> {
   return contractRequest(MonitoringService.createMonitoringTopicApiV1MonitoringTopicsPost({ requestBody }));
 }

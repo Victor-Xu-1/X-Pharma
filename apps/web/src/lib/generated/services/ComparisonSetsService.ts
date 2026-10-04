@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { ComparisonSetCatalogRead } from '../models/ComparisonSetCatalogRead';
 import type { ComparisonSetCreate } from '../models/ComparisonSetCreate';
 import type { ComparisonSetDetailRead } from '../models/ComparisonSetDetailRead';
 import type { ComparisonSetMemberCreate } from '../models/ComparisonSetMemberCreate';
@@ -40,6 +41,36 @@ export class ComparisonSetsService {
       url: '/api/v1/comparison-sets',
       body: requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Comparison Set Catalog
+   * @returns ComparisonSetCatalogRead Successful Response
+   * @throws ApiError
+   */
+  public static comparisonSetCatalogApiV1ComparisonSetsCatalogGet({
+    q = '',
+    limit = 25,
+    offset,
+    editableOnly = false,
+  }: {
+    q?: string,
+    limit?: number,
+    offset?: number,
+    editableOnly?: boolean,
+  }): CancelablePromise<ComparisonSetCatalogRead> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v1/comparison-sets/catalog',
+      query: {
+        'q': q,
+        'limit': limit,
+        'offset': offset,
+        'editable_only': editableOnly,
+      },
       errors: {
         422: `Validation Error`,
       },
@@ -176,14 +207,22 @@ export class ComparisonSetsService {
    */
   public static listComparisonSetVersionsApiV1ComparisonSetsComparisonSetIdVersionsGet({
     comparisonSetId,
+    limit = 50,
+    beforeVersion,
   }: {
     comparisonSetId: string,
+    limit?: number,
+    beforeVersion?: (number | null),
   }): CancelablePromise<Array<ComparisonSetVersionRead>> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/api/v1/comparison-sets/{comparison_set_id}/versions',
       path: {
         'comparison_set_id': comparisonSetId,
+      },
+      query: {
+        'limit': limit,
+        'before_version': beforeVersion,
       },
       errors: {
         422: `Validation Error`,

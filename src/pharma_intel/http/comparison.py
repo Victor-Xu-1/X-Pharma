@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -20,6 +20,7 @@ from pharma_intel.comparison.service import (
 from pharma_intel.http.dependencies import PrincipalDep, SessionDep
 from pharma_intel.http.public_read_policy import _can_view_unpublished_entities
 from pharma_intel.schemas import (
+    ComparisonSetCatalogRead,
     ComparisonSetCreate,
     ComparisonSetDetailRead,
     ComparisonSetMemberCreate,
@@ -94,6 +95,28 @@ def _comparison_error(exc: Exception) -> HTTPException:
 def list_comparison_sets(principal: PrincipalDep, session: SessionDep) -> list[ComparisonSetSummaryRead]:
     principal.require("collections:read")
     return [_comparison_summary(item) for item in _human_comparison_service(principal, session).list_sets()]
+
+
+@router.get(
+    "/api/v1/comparison-sets/catalog",
+    response_model=ComparisonSetCatalogRead,
+    tags=["comparison-sets"],
+)
+def comparison_set_catalog(
+    principal: PrincipalDep,
+    session: SessionDep,
+    q: str = Query(default="", max_length=256),
+    limit: int = Query(default=25, ge=1, le=100),
+    offset: int = Query(default=0, ge=0, le=1_000_000),
+    editable_only: bool = False,
+) -> ComparisonSetCatalogRead:
+    principal.require("collections:read")
+    catalog = _human_comparison_service(principal, session).catalog(
+        q=q, limit=limit, offset=offset, editable_only=editable_only
+    )
+    return ComparisonSetCatalogRead(
+        items=[_comparison_summary(item) for item in catalog.items], total=catalog.total, limit=limit, offset=offset
+    )
 
 
 @router.post(
@@ -218,11 +241,17 @@ def remove_comparison_set_member(
     tags=["comparison-sets"],
 )
 def list_comparison_set_versions(
-    comparison_set_id: str, principal: PrincipalDep, session: SessionDep
+    comparison_set_id: str,
+    principal: PrincipalDep,
+    session: SessionDep,
+    limit: int = Query(default=50, ge=1, le=100),
+    before_version: int | None = Query(default=None, ge=1, le=2_147_483_647),
 ) -> list[ComparisonSetVersionRead]:
     principal.require("collections:read")
     try:
-        versions = _human_comparison_service(principal, session).list_versions(comparison_set_id)
+        versions = _human_comparison_service(principal, session).list_versions(
+            comparison_set_id, limit=limit, before_version=before_version
+        )
     except ComparisonSetNotFound as exc:
         raise _comparison_error(exc) from exc
     return [

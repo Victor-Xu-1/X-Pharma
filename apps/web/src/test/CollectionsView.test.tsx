@@ -11,7 +11,7 @@ import {
   exportComparisonSet,
   getComparisonSet,
   getWorkspaceExportPolicy,
-  listComparisonSets,
+  loadCollectionCatalog,
   searchCollectionEntities,
 } from "../lib/contracts/collections";
 import {
@@ -27,11 +27,15 @@ import { CollectionsView } from "../views/CollectionsView";
 vi.mock("../lib/contracts/collections", () => ({
   collectionsKeys: {
     sets: ["collections", "sets"],
+    catalogs: ["collections", "catalog"],
+    catalog: (q: string, offset: number) => ["collections", "catalog", q, offset],
+    versions: (id: string) => ["collections", "versions", id],
     detail: (id: string) => ["collections", "sets", id],
     policy: ["collections", "export-policy"],
     search: (query: string) => ["collections", "entity-search", query],
   },
-  listComparisonSets: vi.fn(),
+  loadCollectionCatalog: vi.fn(),
+  listCollectionVersions: vi.fn(async () => []),
   getComparisonSet: vi.fn(),
   getWorkspaceExportPolicy: vi.fn(),
   searchCollectionEntities: vi.fn(),
@@ -283,7 +287,12 @@ function renderView({
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(listComparisonSets).mockResolvedValue([emptySet]);
+  vi.mocked(loadCollectionCatalog).mockResolvedValue({
+    items: [emptySet],
+    total: [emptySet].length,
+    limit: 25,
+    offset: 0,
+  });
   vi.mocked(getComparisonSet).mockResolvedValue(emptySet);
   vi.mocked(getWorkspaceExportPolicy).mockResolvedValue(policy);
   vi.mocked(searchCollectionEntities).mockResolvedValue({
@@ -310,10 +319,10 @@ beforeEach(() => {
 
 it("builds a version-governed comparison set and downloads a bounded standard export", async () => {
   renderView();
-  expect(await screen.findAllByText("EGFR landscape")).toHaveLength(2);
+  await waitFor(() => expect(screen.getAllByText("EGFR landscape")).toHaveLength(2));
   expect(screen.queryByText("工作台导出策略")).not.toBeInTheDocument();
   expect(screen.queryByText("租户导出策略")).not.toBeInTheDocument();
-  expect(screen.getByRole("checkbox", { name: "记录编号" })).toBeDisabled();
+  expect(await screen.findByRole("checkbox", { name: "记录编号" })).toBeDisabled();
   expect(screen.queryByRole("checkbox", { name: "审核状态" })).not.toBeInTheDocument();
 
   fireEvent.change(screen.getByLabelText("搜索要加入的药物、靶点、机构或适应症"), {
@@ -343,7 +352,12 @@ it("builds a version-governed comparison set and downloads a bounded standard ex
 });
 
 it("compares two governed dossiers from a stable collection selection", async () => {
-  vi.mocked(listComparisonSets).mockResolvedValue([comparisonSet]);
+  vi.mocked(loadCollectionCatalog).mockResolvedValue({
+    items: [comparisonSet],
+    total: [comparisonSet].length,
+    limit: 25,
+    offset: 0,
+  });
   vi.mocked(getComparisonSet).mockResolvedValue(comparisonSet);
   const onLocationChange = vi.fn();
   const onOpenEntity = vi.fn();
@@ -464,7 +478,12 @@ it("explains an undisclosed drug program status without exposing a raw count", a
 });
 
 it("keeps a comparison checkbox checked while URL state catches up", async () => {
-  vi.mocked(listComparisonSets).mockResolvedValue([comparisonSet]);
+  vi.mocked(loadCollectionCatalog).mockResolvedValue({
+    items: [comparisonSet],
+    total: [comparisonSet].length,
+    limit: 25,
+    offset: 0,
+  });
   vi.mocked(getComparisonSet).mockResolvedValue(comparisonSet);
   const onLocationChange = vi.fn();
   renderView({ activeCollectionId: comparisonSet.id, onLocationChange });
@@ -477,7 +496,12 @@ it("keeps a comparison checkbox checked while URL state catches up", async () =>
 });
 
 it("renders the comparison matrix from the optimistic selection before the URL catches up", async () => {
-  vi.mocked(listComparisonSets).mockResolvedValue([comparisonSet]);
+  vi.mocked(loadCollectionCatalog).mockResolvedValue({
+    items: [comparisonSet],
+    total: [comparisonSet].length,
+    limit: 25,
+    offset: 0,
+  });
   vi.mocked(getComparisonSet).mockResolvedValue(comparisonSet);
   const onLocationChange = vi.fn();
   renderView({
@@ -528,7 +552,12 @@ it("keeps the four-entity limit operable and explains how to recover", async () 
       entity: memberEntity,
     })),
   };
-  vi.mocked(listComparisonSets).mockResolvedValue([cappedSet]);
+  vi.mocked(loadCollectionCatalog).mockResolvedValue({
+    items: [cappedSet],
+    total: [cappedSet].length,
+    limit: 25,
+    offset: 0,
+  });
   vi.mocked(getComparisonSet).mockResolvedValue(cappedSet);
   vi.mocked(loadEntityDossier).mockImplementation(async (entityId) => {
     const matchedEntity = cappedSet.members.find((member) => member.entity.id === entityId)?.entity;
@@ -552,7 +581,12 @@ it("keeps the four-entity limit operable and explains how to recover", async () 
 });
 
 it("surfaces a dossier failure and retries the complete comparison", async () => {
-  vi.mocked(listComparisonSets).mockResolvedValue([comparisonSet]);
+  vi.mocked(loadCollectionCatalog).mockResolvedValue({
+    items: [comparisonSet],
+    total: [comparisonSet].length,
+    limit: 25,
+    offset: 0,
+  });
   vi.mocked(getComparisonSet).mockResolvedValue(comparisonSet);
   vi.mocked(loadEntityDossier).mockImplementation(async (entityId) => {
     if (entityId === company.id) throw new Error("该实体档案暂不可访问");

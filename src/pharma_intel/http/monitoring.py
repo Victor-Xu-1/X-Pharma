@@ -5,7 +5,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from pharma_intel.http.dependencies import PrincipalDep, SessionDep
-from pharma_intel.monitoring.service import MonitoringConflict, MonitoringNotFound, MonitoringService
+from pharma_intel.monitoring.service import MonitoringConflict, MonitoringNotFound, MonitoringReplay, MonitoringService
 from pharma_intel.schemas import (
     MonitoringAlertRead,
     MonitoringTopicCreate,
@@ -24,6 +24,47 @@ def _human_monitoring_service(principal: Principal, session: Session) -> Monitor
     if principal.actor_type != "user":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Human workspace session required")
     return MonitoringService(session, principal.tenant_id, principal.actor_id)
+
+
+def _replay_read(replay: MonitoringReplay) -> SavedSearchRead:
+    payload = SavedSearchRead.model_validate(replay.saved_search).model_dump()
+    payload.update(
+        query_type=replay.version.query_type,
+        query_version=replay.version.version,
+        query_json=replay.version.query_json,
+        updated_at=replay.version.created_at,
+    )
+    return SavedSearchRead.model_validate(payload)
+
+
+@router.get(
+    "/api/v1/monitoring/topics/{topic_id}/replay",
+    response_model=SavedSearchRead,
+    response_model_exclude_none=True,
+    response_model_exclude_defaults=True,
+    tags=["monitoring"],
+)
+def replay_monitoring_topic(topic_id: str, principal: PrincipalDep, session: SessionDep) -> SavedSearchRead:
+    principal.require("monitoring:read")
+    try:
+        return _replay_read(_human_monitoring_service(principal, session).replay_topic(topic_id))
+    except MonitoringNotFound as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.get(
+    "/api/v1/monitoring/alerts/{alert_id}/replay",
+    response_model=SavedSearchRead,
+    response_model_exclude_none=True,
+    response_model_exclude_defaults=True,
+    tags=["monitoring"],
+)
+def replay_monitoring_alert(alert_id: str, principal: PrincipalDep, session: SessionDep) -> SavedSearchRead:
+    principal.require("monitoring:read")
+    try:
+        return _replay_read(_human_monitoring_service(principal, session).replay_alert(alert_id))
+    except MonitoringNotFound as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.get(

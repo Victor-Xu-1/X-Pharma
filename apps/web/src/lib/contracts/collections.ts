@@ -2,12 +2,14 @@ import { ApiError } from "../api";
 import { contractRequest } from "../contract";
 import { type ExportFormat, exportPayloadToBlob } from "../download";
 import type {
+  ComparisonSetCatalogRead,
   ComparisonSetCreate,
   ComparisonSetDetailRead,
   ComparisonSetMemberCreate,
   ComparisonSetMemberRemove,
   ComparisonSetSummaryRead,
   ComparisonSetUpdate,
+  ComparisonSetVersionRead,
   EntityRead,
   SearchResult,
   WorkspaceExportCreate,
@@ -30,14 +32,45 @@ function normalizeExportPolicy(policy: WorkspaceExportPolicyRead): CollectionPol
 
 export const collectionsKeys = {
   all: ["collections"] as const,
-  sets: ["collections", "sets"] as const,
+  catalogs: ["collections", "catalog"] as const,
+  catalog: (query: string, offset: number, editableOnly = false) =>
+    ["collections", "catalog", query.trim(), offset, editableOnly] as const,
+  versions: (id: string) => ["collections", "versions", id] as const,
   detail: (comparisonSetId: string) => ["collections", "sets", comparisonSetId] as const,
   policy: ["collections", "export-policy"] as const,
   search: (query: string) => ["collections", "entity-search", query.trim()] as const,
 };
 
-export function listComparisonSets(signal?: AbortSignal): Promise<ComparisonSetSummaryRead[]> {
-  return contractRequest(ComparisonSetsService.listComparisonSetsApiV1ComparisonSetsGet(), signal);
+export function loadCollectionCatalog(
+  query: string,
+  offset: number,
+  signal?: AbortSignal,
+  editableOnly = false,
+): Promise<ComparisonSetCatalogRead> {
+  return contractRequest(
+    ComparisonSetsService.comparisonSetCatalogApiV1ComparisonSetsCatalogGet({
+      q: query.trim(),
+      limit: 25,
+      offset,
+      editableOnly,
+    }),
+    signal,
+  );
+}
+
+export function listCollectionVersions(
+  id: string,
+  beforeVersion?: number,
+  signal?: AbortSignal,
+): Promise<ComparisonSetVersionRead[]> {
+  return contractRequest(
+    ComparisonSetsService.listComparisonSetVersionsApiV1ComparisonSetsComparisonSetIdVersionsGet({
+      comparisonSetId: id,
+      limit: 11,
+      beforeVersion,
+    }),
+    signal,
+  );
 }
 
 export function getComparisonSet(comparisonSetId: string, signal?: AbortSignal): Promise<ComparisonSetDetailRead> {
