@@ -900,6 +900,7 @@ class GovernanceService:
             evidence_items.append(evidence)
             relationship.attributes = {**relationship.attributes, "evidence": evidence_items}
         relationship.review_status = ReviewStatus.VERIFIED
+        relationship.valid_to = None
 
     @staticmethod
     def _defer_projection(staged: StagedFact, code: str, message: str) -> None:

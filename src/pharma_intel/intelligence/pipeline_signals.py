@@ -4,6 +4,7 @@ from typing import Any
 
 from sqlalchemy import and_, case, func, select
 
+from pharma_intel.intelligence.clinical_links import trial_drug_bindings
 from pharma_intel.intelligence.context import QueryContext
 from pharma_intel.intelligence.pipeline_predicates import _pipeline_deal_exists, _pipeline_trial_exists
 from pharma_intel.intelligence.scope import _entity_identity_member_ids
@@ -32,24 +33,23 @@ def _pipeline_signal_maps(
     if not drug_ids:
         return {}, set(), {}, {}, {}
     identity_members = {drug_id: _entity_identity_member_ids(context, drug_id, EntityType.DRUG) for drug_id in drug_ids}
+    bindings = trial_drug_bindings(context)
     all_identity_ids = set().union(*identity_members.values())
     trial_rows = context.session.execute(
         select(
-            ClinicalTrialEntityRole.entity_id,
-            ClinicalTrialEntityRole.trial_id,
+            bindings.c.drug_entity_id,
+            bindings.c.trial_id,
             ClinicalTrialProfile.has_results,
         )
         .join(
             ClinicalTrialProfile,
             and_(
                 ClinicalTrialProfile.tenant_id == context.tenant_id,
-                ClinicalTrialProfile.id == ClinicalTrialEntityRole.trial_id,
+                ClinicalTrialProfile.id == bindings.c.trial_id,
             ),
         )
         .where(
-            ClinicalTrialEntityRole.tenant_id == context.tenant_id,
-            ClinicalTrialEntityRole.entity_id.in_(all_identity_ids),
-            ClinicalTrialEntityRole.role.in_(_TRIAL_DRUG_ROLES),
+            bindings.c.drug_entity_id.in_(all_identity_ids),
         )
         .distinct()
     ).all()
@@ -66,18 +66,16 @@ def _pipeline_signal_maps(
     }
     drugs_with_results = {drug_id for drug_id, members in identity_members.items() if members & raw_drugs_with_results}
     evaluation_rows = context.session.execute(
-        select(ClinicalTrialEntityRole.entity_id, ClinicalTrialProfile.result_evaluation)
+        select(bindings.c.drug_entity_id, ClinicalTrialProfile.result_evaluation)
         .join(
             ClinicalTrialProfile,
             and_(
                 ClinicalTrialProfile.tenant_id == context.tenant_id,
-                ClinicalTrialProfile.id == ClinicalTrialEntityRole.trial_id,
+                ClinicalTrialProfile.id == bindings.c.trial_id,
             ),
         )
         .where(
-            ClinicalTrialEntityRole.tenant_id == context.tenant_id,
-            ClinicalTrialEntityRole.entity_id.in_(all_identity_ids),
-            ClinicalTrialEntityRole.role.in_(_TRIAL_DRUG_ROLES),
+            bindings.c.drug_entity_id.in_(all_identity_ids),
             ClinicalTrialProfile.has_results.is_(True),
             ClinicalTrialProfile.result_evaluation.is_not(None),
         )

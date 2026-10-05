@@ -15,6 +15,7 @@ export function ExplorerRoute({ context }: { context: ResearchRouteContext }) {
       initialQuery={location.query}
       initialEntityType={location.entityType}
       initialEntityTypes={location.entityTypes ?? []}
+      initialIncludeRelated={location.entityIncludeRelated ?? true}
       initialReviewStatus={location.reviewStatus}
       initialSortBy={location.entitySortBy ?? "relevance"}
       initialSortDirection={location.entitySortDirection ?? "desc"}
@@ -27,7 +28,7 @@ export function ExplorerRoute({ context }: { context: ResearchRouteContext }) {
       selectedEntity={selectedEntity?.id === location.entityId ? selectedEntity : (routeEntity.data ?? null)}
       selectedEntityLoading={routeEntity.isFetching && selectedEntity?.id !== location.entityId}
       selectedEntityError={routeEntity.error instanceof Error ? routeEntity.error.message : ""}
-      onSearchChange={(query, entityTypes, reviewStatus, sortBy, sortDirection, offset, sort) =>
+      onSearchChange={(query, entityTypes, reviewStatus, sortBy, sortDirection, offset, sort, includeRelated) =>
         navigate(
           {
             ...location,
@@ -36,6 +37,7 @@ export function ExplorerRoute({ context }: { context: ResearchRouteContext }) {
             query,
             entityType: entityTypes.length === 1 ? (entityTypes[0] ?? "") : "",
             entityTypes,
+            entityIncludeRelated: includeRelated ?? location.entityIncludeRelated ?? true,
             reviewStatus,
             entitySort: sort,
             entitySortBy: sortBy,

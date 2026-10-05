@@ -23,6 +23,8 @@ def _entity_search_query_payload(query: EntitySearchQuery) -> dict[str, object]:
     payload: dict[str, object] = query.model_dump(mode="json", exclude_none=True)
     if not query.entity_types:
         payload.pop("entity_types", None)
+    if not query.include_related:
+        payload.pop("include_related", None)
     return payload
 
 

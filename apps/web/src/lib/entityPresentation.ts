@@ -32,6 +32,8 @@ export function publicIdentifiers(entity: IntelligenceEntity | Entity): Array<[s
 
 export function matchExplanation(entity: IntelligenceEntity | Entity): string | null {
   if (!("match" in entity) || !entity.match) return null;
+  if (entity.match.match_type === "relationship")
+    return `关联命中：${entity.match.matched_value ?? "已发布对象"} · ${entity.match.predicate ?? "已验证关系"}`;
   const relation =
     entity.match.match_relation === "exact"
       ? "精确匹配"
@@ -44,6 +46,7 @@ export function matchExplanation(entity: IntelligenceEntity | Entity): string | 
     external_id: "外部标识",
     description: "描述",
     semantic: "语义关联",
+    relationship: "已验证关联",
   }[entity.match.match_type];
   const namespace = entity.match.namespace ? `${entity.match.namespace} · ` : "";
   const value = entity.match.matched_value ? `：${namespace}${entity.match.matched_value}` : "";

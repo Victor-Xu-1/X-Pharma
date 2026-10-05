@@ -13607,7 +13607,8 @@
             "enum": [
               "exact",
               "partial",
-              "semantic"
+              "semantic",
+              "related"
             ],
             "title": "Match Relation",
             "type": "string"
@@ -13618,7 +13619,8 @@
               "alias",
               "external_id",
               "description",
-              "semantic"
+              "semantic",
+              "relationship"
             ],
             "title": "Match Type",
             "type": "string"
@@ -13644,6 +13646,39 @@
               }
             ],
             "title": "Namespace"
+          },
+          "predicate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Predicate"
+          },
+          "source_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Uri"
+          },
+          "via_entity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Via Entity Id"
           }
         },
         "required": [
@@ -13690,6 +13725,11 @@
             "maxItems": 10,
             "title": "Entity Types",
             "type": "array"
+          },
+          "include_related": {
+            "default": false,
+            "title": "Include Related",
+            "type": "boolean"
           },
           "q": {
             "anyOf": [
@@ -20493,6 +20533,269 @@
         "title": "PublicKnowledgeVersionSummaryRead",
         "type": "object"
       },
+      "PublicResearchCoverage": {
+        "properties": {
+          "entity_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Entity Counts",
+            "type": "object"
+          },
+          "observed_at": {
+            "format": "date-time",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "public_source_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Public Source Names",
+            "type": "array"
+          },
+          "scope_note": {
+            "title": "Scope Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "observed_at",
+          "entity_counts",
+          "public_source_names",
+          "scope_note"
+        ],
+        "title": "PublicResearchCoverage",
+        "type": "object"
+      },
+      "PublicResearchQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 10,
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "q": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Q",
+            "type": "string"
+          },
+          "topic": {
+            "default": "overview",
+            "enum": [
+              "overview",
+              "drugs",
+              "targets",
+              "trials",
+              "organizations",
+              "conditions",
+              "patents",
+              "compound_patents",
+              "literature",
+              "disclosures"
+            ],
+            "title": "Topic",
+            "type": "string"
+          }
+        },
+        "required": [
+          "q"
+        ],
+        "title": "PublicResearchQuery",
+        "type": "object"
+      },
+      "PublicResearchRecord": {
+        "properties": {
+          "category": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "fields": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "maxProperties": 12,
+            "title": "Fields",
+            "type": "object"
+          },
+          "published_on": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published On"
+          },
+          "record_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Record Id",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 1200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "record_id",
+          "category",
+          "title",
+          "url"
+        ],
+        "title": "PublicResearchRecord",
+        "type": "object"
+      },
+      "PublicResearchResponse": {
+        "properties": {
+          "observed_at": {
+            "format": "date-time",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "persisted": {
+            "const": false,
+            "default": false,
+            "title": "Persisted",
+            "type": "boolean"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/PublicResearchSourceResult"
+            },
+            "maxItems": 5,
+            "title": "Results",
+            "type": "array"
+          }
+        },
+        "required": [
+          "query",
+          "observed_at",
+          "results"
+        ],
+        "title": "PublicResearchResponse",
+        "type": "object"
+      },
+      "PublicResearchSourceResult": {
+        "properties": {
+          "error_code": {
+            "anyOf": [
+              {
+                "enum": [
+                  "upstream_unavailable",
+                  "invalid_response"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "license_notice": {
+            "title": "License Notice",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/PublicResearchRecord"
+            },
+            "maxItems": 20,
+            "title": "Records",
+            "type": "array"
+          },
+          "scope_note": {
+            "title": "Scope Note",
+            "type": "string"
+          },
+          "source_query_url": {
+            "title": "Source Query Url",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "available",
+              "empty",
+              "unavailable"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "topic": {
+            "enum": [
+              "overview",
+              "drugs",
+              "targets",
+              "trials",
+              "organizations",
+              "conditions",
+              "patents",
+              "compound_patents",
+              "literature",
+              "disclosures"
+            ],
+            "title": "Topic",
+            "type": "string"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "topic",
+          "provider",
+          "status",
+          "source_query_url",
+          "scope_note",
+          "license_notice"
+        ],
+        "title": "PublicResearchSourceResult",
+        "type": "object"
+      },
       "PublicSourceSyncRead": {
         "properties": {
           "completed_through": {
@@ -23197,6 +23500,13 @@
           "total": {
             "title": "Total",
             "type": "integer"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
           }
         },
         "required": [
@@ -32159,6 +32469,16 @@
               ],
               "title": "Sort"
             }
+          },
+          {
+            "in": "query",
+            "name": "include_related",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Related",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -36507,6 +36827,68 @@
         "summary": "Get Record Provenance",
         "tags": [
           "evidence"
+        ]
+      }
+    },
+    "/api/v1/public-research/coverage": {
+      "get": {
+        "operationId": "public_coverage_api_v1_public_research_coverage_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicResearchCoverage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Public Coverage",
+        "tags": [
+          "public-research"
+        ]
+      }
+    },
+    "/api/v1/public-research/search": {
+      "post": {
+        "operationId": "public_research_api_v1_public_research_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicResearchQuery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicResearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Research",
+        "tags": [
+          "public-research"
         ]
       }
     },

@@ -12,6 +12,8 @@ export const publicEntityAttributeLabels: Record<string, string> = {
   english_name: "英文名称",
   headquarters: "总部所在地",
   innovation_type: "创新类型",
+  identity_note: "名称与身份范围",
+  label_provider: "名称来源",
   inchi: "InChI",
   inchi_key: "InChI Key",
   mechanism: "作用机制",

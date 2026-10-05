@@ -4,10 +4,12 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, select, true
 from sqlalchemy.sql.elements import ColumnElement
 
+from pharma_intel.clinical_semantics import TRIAL_ENTITY_LINK_PREDICATES
 from pharma_intel.intelligence.clinical_filters import _clinical_trial_filters
+from pharma_intel.intelligence.clinical_role_policy import asserted_trial_role
 from pharma_intel.intelligence.context import QueryContext
 from pharma_intel.intelligence.scope import _published_entity_exists
 from pharma_intel.intelligence.vocabulary import _ordered_sort_expressions
@@ -17,6 +19,7 @@ from pharma_intel.models import (
     ClinicalTrialResultDisclosure,
     Entity,
     Relationship,
+    ReviewStatus,
     TrialResultDisclosureType,
     TrialResultEvaluation,
 )
@@ -262,7 +265,10 @@ def _clinical_trial_linked_entities(
             )
             .where(
                 Relationship.tenant_id == context.tenant_id,
-                Relationship.predicate == "trial_links_entity",
+                Relationship.predicate.in_(TRIAL_ENTITY_LINK_PREDICATES),
+                Relationship.valid_to.is_(None),
+                Relationship.review_status == ReviewStatus.VERIFIED if not context.include_unpublished else true(),
+                _published_entity_exists(context, Entity.id),
                 Relationship.subject_id.in_(trial_entity_ids),
             )
             .order_by(Relationship.subject_id, Entity.entity_type, Entity.name, Entity.id)
@@ -299,6 +305,8 @@ def _clinical_trial_entity_roles(
         .where(
             ClinicalTrialEntityRole.tenant_id == context.tenant_id,
             ClinicalTrialEntityRole.trial_id.in_(roles_by_trial),
+            asserted_trial_role(context),
+            _published_entity_exists(context, Entity.id),
         )
         .order_by(ClinicalTrialEntityRole.trial_id, ClinicalTrialEntityRole.role, Entity.name, Entity.id)
     ).all()

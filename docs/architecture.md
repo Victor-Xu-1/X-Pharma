@@ -230,6 +230,8 @@ AI 治理统一访问获批准的第三方 OpenAI-compatible HTTPS API，不提�
 
 ## Agent 数据访问
 
+人员本地关联检索与公开调研是两个读边界：前者复用已发布关系与OpenSearch分页/分面，不伪造别名；后者只返回官方著录元数据，不写事实、不标记verified、不向Agent/API key开放。名称、干预角色、覆盖、隐私与回退见 [公开来源检索与调研](public-research.md)。
+
 结构化查询覆盖实体、靶点、活性、结构、管线、临床、专利和交易；实体与证据全文查询通过 OpenSearch 投影，权威字段仍从 PostgreSQL 读取。每个核心响应返回稳定实体 ID、数据时点、分页、coverage、warnings、来源、quote 和 locator。Agent 可自行选择和组合这些工具，平台不规定其分析流程或最终产物。
 
 OpenSearch 使用三组版本化 index family：`entities`、`evidence` 和 `knowledge`。v2 mapping 为三类投影保存受版本约束的向量和模型 ID；证据检索通过 OpenSearch 原生 `hybrid` 查询与版本化 normalization pipeline 融合 BM25/k-NN 分数。固定 `pagination_depth` 保证分页候选集合一致，超过服务端候选上限失败关闭。读写只使用逻辑 alias；projector 以 outbox event ID 建立独立 delivery，先幂等写外部索引，再提交 delivery 状态。失败采用有上限指数退避，耗尽后进入可审计死信，必须显式重放。全量重建写入新物理索引，校验 Canonical/Parsed/Evidence 精确计数后通过单次 alias action 原子切换。

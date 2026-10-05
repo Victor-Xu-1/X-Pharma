@@ -60,7 +60,7 @@ ORM 的公共入口是 `models/__init__.py`，只聚合显式导出；领域表�
 
 治理服务的公共入口为 `governance/service.py`，不重复定义辅助规则。`contracts` 拥有异常、结构化治理版本和分段类型；`citations` 拥有分段、引用定位和去重；`fact_identity` 拥有稳定事实键及载荷身份；`temporal_merge` 拥有阶段、日期和历史合并；`source_profiles` 拥有来源裁剪和权威身份校验；`policy` 与 `model_audit` 分别拥有策略指纹、预算计量和审计内容。源资料、策略指纹、字段规则与公开异常接口保持不变；这些模块不能反向导入治理编排服务。
 
-已批准结构化事实通过 `governance/materialization` 的唯一分派进入六个 `materialize_*` 领域模块。`MaterializationContext` 显式声明现有事务、组织、规范化器及授权实体/关系/来源类型能力；各模块不自行创建治理服务、会话或另起提交边界。服务不保留旧的领域材料化方法，投影失败和延后语义仍交给原发布流程处理。
+已批准结构化事实通过 `governance/materialization` 的唯一分派进入按职责分开的 `materialize_*` 领域模块。`MaterializationContext` 显式声明现有事务、组织、规范化器及授权实体/关系/来源类型能力；各模块不自行创建治理服务、会话或另起提交边界。服务不保留旧的领域材料化方法，投影失败和延后语义仍交给原发布流程处理。
 
 ClinicalTrials.gov、NextPharma 与 ChEMBL 的确定性处理分别归属 `adapter_clinicaltrials`、`adapter_nextpharma` 和 `adapter_chembl`。`AdapterContext` 显式复用同一来源版本、会话、组织、对象存储、规范化器和统一暂存/失败/状态回调；适配器保留来源授权、不可变内容哈希、幂等策略和审计，不自行构造另一套治理服务。`govern_version` 只负责选择已识别来源及受控模型处理。
 
@@ -77,6 +77,8 @@ ClinicalTrials.gov、NextPharma 与 ChEMBL 的确定性处理分别归属 `adapt
 公开目录包含完整应用、迁移、生成客户端、测试、配置、容器、Kubernetes 和运维源码。私有环境、业务数据、运行证据、缓存、历史快捷链接和一次性空文件保留在原私有环境。
 
 ## 已识别的维护风险
+
+`public_research/`按提供者适配只读在线检索，HTTP与共用`PublicResearchPanel/Results`不写事实。`search/related`拥有关联解析，`search/keyword`拥有关键词谓词；靶点profile移入`materialize_profile`，旧分派内联退出。`trial_labels/clinical_semantics`拥有来源名称/关系，`clinical_links/clinical_role_policy`统一登记药物关联与明确角色；历史顺序推断退出查询但保留审计行。`ingest/xml`统一安全XML，`request_body`统一账号/公开请求限制，不保留竞争实现。数据性质见[公开调研](public-research.md)。
 
 大 SQL 查询的复杂度来自同一授权命中集的过滤、身份归并与统计。查询模块继续按谓词、读取、信号和聚合职责演进，不能用动态转发、复制 SQL 或改变命中语义换取更短文件。纯公共方法签名较长不意味着应复制业务实现；边界测试禁止职责回流。
 

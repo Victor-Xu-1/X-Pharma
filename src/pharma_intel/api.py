@@ -17,6 +17,7 @@ from pharma_intel.http.errors import install_error_handlers
 from pharma_intel.http.middleware import install_request_boundary
 from pharma_intel.http.routing import install_feature_routes
 from pharma_intel.product import PRODUCT_NAME
+from pharma_intel.request_body import BoundedRequestBodies
 from pharma_intel.telemetry import instrument_fastapi
 from pharma_intel.web_branding import install_web_branding
 
@@ -45,6 +46,9 @@ def create_app() -> FastAPI:
     application.openapi_version = "3.1.2"
     install_feature_routes(application)
     application.add_middleware(AccountRequestLimits)
+    application.add_middleware(
+        BoundedRequestBodies, limits={("POST", "/api/v1/public-research/search"): (4096, "公开检索")}
+    )
     install_web_branding(application, settings.web_root, docs_enabled=settings.api_docs_enabled)
     install_error_handlers(application)
     application.add_middleware(

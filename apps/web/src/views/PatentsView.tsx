@@ -15,6 +15,7 @@ import { EmptyQueryResult } from "../components/EmptyQueryResult";
 import { EntityFilterSelect } from "../components/EntityFilterSelect";
 import { PatentLandscape } from "../components/PatentLandscape";
 import { PatentTimeline } from "../components/PatentTimeline";
+import { PublicResearchPanel } from "../components/PublicResearchPanel";
 import { QueryResultSummary } from "../components/QueryResultSummary";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
@@ -451,6 +452,8 @@ export function PatentsView({
         <div className="explorer-intro">
           <p>按专利族聚合优先权、申请人、发明人、公开文本、法律状态、到期时间及药物和靶点关联。</p>
         </div>
+
+        <PublicResearchPanel defaultQuery={initialQuery} defaultTopic="patents" />
 
         <form className="domain-filter-bar patent-filter-bar" onSubmit={submit} aria-label="专利族筛选">
           <label className="domain-query-field">

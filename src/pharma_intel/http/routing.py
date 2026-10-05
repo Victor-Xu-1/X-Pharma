@@ -40,6 +40,7 @@ from pharma_intel.http.organizations import router as organization_router
 from pharma_intel.http.patents import router as patents_router
 from pharma_intel.http.pipeline import router as pipeline_router
 from pharma_intel.http.projection_maintenance import router as projection_maintenance_router
+from pharma_intel.http.public_research import router as public_research_router
 from pharma_intel.http.publication import router as publication_router
 from pharma_intel.http.quality import router as quality_router
 from pharma_intel.http.quarantine import router as quarantine_router
@@ -68,6 +69,7 @@ def install_feature_routes(app: FastAPI) -> None:
     app.include_router(epidemiology_router)
     app.include_router(news_router)
     app.include_router(entities_router)
+    app.include_router(public_research_router)
     app.include_router(dossiers_router)
     app.include_router(workspace_router)
     app.include_router(governance_review_router)

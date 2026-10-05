@@ -117,6 +117,7 @@ export interface WorkspaceLocation {
   query: string;
   entityType: string;
   entityTypes?: string[];
+  entityIncludeRelated?: boolean;
   reviewStatus: string;
   entitySort?: SortCriterion[];
   entitySortBy?: string;

@@ -13,6 +13,7 @@ from pharma_intel.governance.temporal_merge import (
     _required_datetime,
     _validated_datetime,
 )
+from pharma_intel.governance.trial_labels import materialize_trial_labels
 from pharma_intel.identity import normalize_name
 from pharma_intel.models import (
     ClinicalTrialEntityRole,
@@ -86,7 +87,7 @@ def materialize_trial(
         context._relationship(trial_entity, "trial_links_entity", linked, staged)
     materialize_trial_entity_roles(context, trial, trial_entity, staged, payload)
     if context._source_type_for_document(staged.source_document_id) == DataSourceType.CLINICALTRIALS_GOV:
-        materialize_official_trial_intervention_roles(context, trial, trial_entity, staged, payload)
+        materialize_official_trial_interventions(context, trial_entity, staged, payload)
     materialize_trial_result_disclosures(context, trial, staged, payload)
     trial.has_results = any(outcome.get("results") for outcome in trial.outcomes) or bool(
         context.session.scalar(
@@ -99,7 +100,7 @@ def materialize_trial(
         )
     )
     context.session.flush()
-    return [_projection("clinical_trial", trial.id)]
+    return [_projection("clinical_trial", trial.id), *materialize_trial_labels(context, trial_entity, staged, payload)]
 
 
 def materialize_trial_entity_roles(
@@ -136,9 +137,8 @@ def materialize_trial_entity_roles(
         context._relationship(trial_entity, f"trial_{role.value}", entity, staged)
 
 
-def materialize_official_trial_intervention_roles(
+def materialize_official_trial_interventions(
     context: MaterializationContext,
-    trial: ClinicalTrialProfile,
     trial_entity: Entity,
     staged: StagedFact,
     payload: dict[str, Any],
@@ -172,30 +172,8 @@ def materialize_official_trial_intervention_roles(
         seen_entity_ids.add(candidates[0].id)
         matched_entities.append(candidates[0])
 
-    for position, entity in enumerate(matched_entities):
-        role = TrialEntityRole.INVESTIGATIONAL_DRUG if position == 0 else TrialEntityRole.COMBINATION_DRUG
-        association = context.session.scalar(
-            select(ClinicalTrialEntityRole).where(
-                ClinicalTrialEntityRole.tenant_id == context.tenant_id,
-                ClinicalTrialEntityRole.trial_id == trial.id,
-                ClinicalTrialEntityRole.entity_id == entity.id,
-                ClinicalTrialEntityRole.role == role.value,
-            )
-        )
-        if association is None:
-            context.session.add(
-                ClinicalTrialEntityRole(
-                    tenant_id=context.tenant_id,
-                    trial_id=trial.id,
-                    entity_id=entity.id,
-                    role=role.value,
-                    source_document_id=staged.source_document_id,
-                )
-            )
-        else:
-            association.source_document_id = staged.source_document_id
+    for entity in matched_entities:
         context._relationship(trial_entity, "trial_links_entity", entity, staged)
-        context._relationship(trial_entity, f"trial_{role.value}", entity, staged)
 
 
 def materialize_trial_result_disclosures(

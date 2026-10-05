@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy import and_, func, literal, or_, select
 from sqlalchemy.sql.elements import ColumnElement
 
+from pharma_intel.intelligence.clinical_links import trial_drug_bindings
 from pharma_intel.intelligence.context import QueryContext
 from pharma_intel.intelligence.scope import (
     _clean_target_combination_expression,
@@ -14,9 +15,8 @@ from pharma_intel.intelligence.scope import (
     _published_entity_exists,
     _published_identity_exists,
 )
-from pharma_intel.intelligence.vocabulary import _TRIAL_DRUG_ROLES, _meaningful_entity_name_sql
+from pharma_intel.intelligence.vocabulary import _meaningful_entity_name_sql
 from pharma_intel.models import (
-    ClinicalTrialEntityRole,
     ClinicalTrialProfile,
     DealAssetAssociation,
     DealProfile,
@@ -36,22 +36,23 @@ def _pipeline_trial_exists(
     require_results: bool = False,
     result_evaluation: str | None = None,
 ) -> ColumnElement[bool]:
+    bindings = trial_drug_bindings(context)
     role_drug = Entity.__table__.alias("pipeline_trial_role_drug")
     program_drug = Entity.__table__.alias("pipeline_trial_program_drug")
     statement = (
-        select(ClinicalTrialEntityRole.id)
+        select(bindings.c.trial_id)
         .join(
             ClinicalTrialProfile,
             and_(
                 ClinicalTrialProfile.tenant_id == context.tenant_id,
-                ClinicalTrialProfile.id == ClinicalTrialEntityRole.trial_id,
+                ClinicalTrialProfile.id == bindings.c.trial_id,
             ),
         )
         .join(
             role_drug,
             and_(
                 role_drug.c.tenant_id == context.tenant_id,
-                role_drug.c.id == ClinicalTrialEntityRole.entity_id,
+                role_drug.c.id == bindings.c.drug_entity_id,
                 role_drug.c.entity_type == EntityType.DRUG,
             ),
         )
@@ -64,8 +65,6 @@ def _pipeline_trial_exists(
             ),
         )
         .where(
-            ClinicalTrialEntityRole.tenant_id == context.tenant_id,
-            ClinicalTrialEntityRole.role.in_(_TRIAL_DRUG_ROLES),
             role_drug.c.normalized_name == program_drug.c.normalized_name,
         )
     )
@@ -130,19 +129,18 @@ def _pipeline_related_signal_exists(
     drug_entity_id: Any,
     related_entity_id: str,
 ) -> ColumnElement[bool]:
+    bindings = trial_drug_bindings(context)
     linked_trial = (
-        select(ClinicalTrialEntityRole.id)
+        select(bindings.c.trial_id)
         .join(
             ClinicalTrialProfile,
             and_(
                 ClinicalTrialProfile.tenant_id == context.tenant_id,
-                ClinicalTrialProfile.id == ClinicalTrialEntityRole.trial_id,
+                ClinicalTrialProfile.id == bindings.c.trial_id,
             ),
         )
         .where(
-            ClinicalTrialEntityRole.tenant_id == context.tenant_id,
-            ClinicalTrialEntityRole.entity_id == drug_entity_id,
-            ClinicalTrialEntityRole.role.in_(_TRIAL_DRUG_ROLES),
+            bindings.c.drug_entity_id == drug_entity_id,
             ClinicalTrialProfile.entity_id == related_entity_id,
         )
     )

@@ -63,10 +63,13 @@ class EntityRead(BaseModel):
 
 
 class EntitySearchMatchRead(BaseModel):
-    match_type: Literal["canonical_name", "alias", "external_id", "description", "semantic"]
-    match_relation: Literal["exact", "partial", "semantic"]
+    match_type: Literal["canonical_name", "alias", "external_id", "description", "semantic", "relationship"]
+    match_relation: Literal["exact", "partial", "semantic", "related"]
     matched_value: str | None = None
     namespace: str | None = None
+    via_entity_id: str | None = None
+    predicate: str | None = None
+    source_uri: str | None = None
 
 
 class EntitySearchItemRead(EntityRead):
@@ -184,6 +187,7 @@ class SearchResult(QueryResultMetadata):
     suggestions: list[str] = Field(default_factory=list)
     engine: str = "database"
     took_ms: int | None = None
+    warnings: list[str] = Field(default_factory=list)
 
 
 class EntitySearchQuery(BaseModel):
@@ -192,6 +196,7 @@ class EntitySearchQuery(BaseModel):
     entity_type: EntityType | None = None
     entity_types: list[EntityType] = Field(default_factory=list, max_length=10)
     review_status: ReviewStatus | None = None
+    include_related: bool = False
     # Presentation state is versioned with the saved query so replay returns the same research view.
     # Defaults are omitted from persisted JSON to keep legacy entity-search records compact.
     display_mode: Literal["list", "landscape"] = Field(default="list", exclude_if=lambda value: value == "list")

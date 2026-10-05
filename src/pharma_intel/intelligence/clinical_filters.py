@@ -5,11 +5,13 @@ from datetime import datetime
 from sqlalchemy import String, and_, cast, func, literal, or_, select, true
 from sqlalchemy.sql.elements import ColumnElement
 
+from pharma_intel.clinical_semantics import TRIAL_ENTITY_LINK_PREDICATES
+from pharma_intel.intelligence.clinical_links import trial_drug_bindings
+from pharma_intel.intelligence.clinical_role_policy import asserted_trial_role
 from pharma_intel.intelligence.context import QueryContext
 from pharma_intel.intelligence.facets import _json_array_value_exists
 from pharma_intel.intelligence.scope import _entity_identity_ids, _published_entity_exists, _published_identity_exists
 from pharma_intel.intelligence.vocabulary import (
-    _TRIAL_DRUG_ROLES,
     _public_program_drug_category_sql,
     _public_program_modality_sql,
 )
@@ -29,6 +31,7 @@ from pharma_intel.program_semantics import public_program_tags
 
 
 def _clinical_trial_target_program_exists(context: QueryContext, target_entity_id: str) -> ColumnElement[bool]:
+    bindings = trial_drug_bindings(context)
     role_drug = Entity.__table__.alias("target_trial_role_drug")
     program_drug = Entity.__table__.alias("target_trial_program_drug")
     target_identity_ids = _entity_identity_ids(context, target_entity_id, EntityType.TARGET)
@@ -45,9 +48,7 @@ def _clinical_trial_target_program_exists(context: QueryContext, target_entity_i
     conditions: list[ColumnElement[bool]] = [
         DevelopmentProgram.tenant_id == context.tenant_id,
         or_(DevelopmentProgram.target_entity_id.in_(target_identity_ids), current_target),
-        ClinicalTrialEntityRole.tenant_id == context.tenant_id,
-        ClinicalTrialEntityRole.trial_id == ClinicalTrialProfile.id,
-        ClinicalTrialEntityRole.role.in_(_TRIAL_DRUG_ROLES),
+        bindings.c.trial_id == ClinicalTrialProfile.id,
         role_drug.c.normalized_name == program_drug.c.normalized_name,
     ]
     if not context.include_unpublished:
@@ -80,8 +81,8 @@ def _clinical_trial_target_program_exists(context: QueryContext, target_entity_i
             ),
         )
         .join(
-            ClinicalTrialEntityRole,
-            ClinicalTrialEntityRole.entity_id == role_drug.c.id,
+            bindings,
+            bindings.c.drug_entity_id == role_drug.c.id,
         )
         .where(*conditions)
         .exists()
@@ -134,11 +135,14 @@ def _clinical_trial_filters(
     if entity_id:
         linked_trial_ids = select(Relationship.subject_id).where(
             Relationship.tenant_id == context.tenant_id,
-            Relationship.predicate == "trial_links_entity",
+            Relationship.predicate.in_(TRIAL_ENTITY_LINK_PREDICATES),
+            Relationship.valid_to.is_(None),
+            Relationship.review_status == ReviewStatus.VERIFIED if not context.include_unpublished else true(),
             Relationship.object_id == entity_id,
         )
         role_linked_trial_ids = select(ClinicalTrialEntityRole.trial_id).where(
             ClinicalTrialEntityRole.tenant_id == context.tenant_id,
+            asserted_trial_role(context),
             ClinicalTrialEntityRole.entity_id == entity_id,
         )
         entity_type = context.session.scalar(
@@ -167,7 +171,9 @@ def _clinical_trial_filters(
             )
             .where(
                 Relationship.tenant_id == context.tenant_id,
-                Relationship.predicate == "trial_links_entity",
+                Relationship.predicate.in_(TRIAL_ENTITY_LINK_PREDICATES),
+                Relationship.valid_to.is_(None),
+                Relationship.review_status == ReviewStatus.VERIFIED if not context.include_unpublished else true(),
                 Relationship.subject_id == ClinicalTrialProfile.entity_id,
                 Entity.review_status == ReviewStatus.VERIFIED if not context.include_unpublished else true(),
                 func.lower(Entity.name).contains(normalized_query, autoescape=True),
@@ -290,6 +296,7 @@ def _clinical_trial_role_name_exists(context: QueryContext, role: str, normalize
         )
         .where(
             ClinicalTrialEntityRole.tenant_id == context.tenant_id,
+            asserted_trial_role(context),
             ClinicalTrialEntityRole.trial_id == ClinicalTrialProfile.id,
             ClinicalTrialEntityRole.role == role,
             Entity.review_status == ReviewStatus.VERIFIED if not context.include_unpublished else true(),
@@ -309,12 +316,11 @@ def _clinical_trial_linked_drug_program_exists(
     global_phase: str | None,
     organization_country_region: str | None,
 ) -> ColumnElement[bool]:
+    bindings = trial_drug_bindings(context)
     program_conditions: list[ColumnElement[bool]] = [
         DevelopmentProgram.tenant_id == context.tenant_id,
-        ClinicalTrialEntityRole.tenant_id == context.tenant_id,
-        ClinicalTrialEntityRole.trial_id == ClinicalTrialProfile.id,
-        ClinicalTrialEntityRole.role.in_(("investigational_drug", "combination_drug")),
-        ClinicalTrialEntityRole.entity_id == DevelopmentProgram.drug_entity_id,
+        bindings.c.trial_id == ClinicalTrialProfile.id,
+        bindings.c.drug_entity_id == DevelopmentProgram.drug_entity_id,
     ]
     if not context.include_unpublished:
         program_conditions.append(_published_entity_exists(context, DevelopmentProgram.drug_entity_id))
@@ -361,8 +367,8 @@ def _clinical_trial_linked_drug_program_exists(
     return (
         select(DevelopmentProgram.id)
         .join(
-            ClinicalTrialEntityRole,
-            ClinicalTrialEntityRole.entity_id == DevelopmentProgram.drug_entity_id,
+            bindings,
+            bindings.c.drug_entity_id == DevelopmentProgram.drug_entity_id,
         )
         .where(*program_conditions)
         .exists()
@@ -372,6 +378,7 @@ def _clinical_trial_linked_drug_program_exists(
 def _clinical_trial_role_entity_exists(context: QueryContext, entity_id: str, role: str | None) -> ColumnElement[bool]:
     conditions: list[ColumnElement[bool]] = [
         ClinicalTrialEntityRole.tenant_id == context.tenant_id,
+        asserted_trial_role(context),
         ClinicalTrialEntityRole.trial_id == ClinicalTrialProfile.id,
         ClinicalTrialEntityRole.entity_id == entity_id,
     ]
@@ -387,6 +394,7 @@ def _clinical_trial_role_entities_exist(
 ) -> ColumnElement[bool]:
     conditions: list[ColumnElement[bool]] = [
         ClinicalTrialEntityRole.tenant_id == context.tenant_id,
+        asserted_trial_role(context),
         ClinicalTrialEntityRole.trial_id == ClinicalTrialProfile.id,
         ClinicalTrialEntityRole.entity_id.in_(entity_ids),
     ]

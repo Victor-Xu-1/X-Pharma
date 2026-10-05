@@ -392,6 +392,7 @@ export function savedSearchLocation(saved: SavedSearch): WorkspaceLocation {
     query: query.q ?? "",
     entityType: entityTypes.length === 1 ? (entityTypes[0] ?? "") : "",
     entityTypes,
+    entityIncludeRelated: query.include_related ?? false,
     reviewStatus: query.review_status ?? "",
     entitySort: sort,
     entitySortBy: sort[0]?.field ?? "relevance",

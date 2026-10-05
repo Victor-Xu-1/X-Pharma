@@ -4,14 +4,16 @@ from typing import Any
 
 from sqlalchemy import and_, func, literal, select, true, union_all
 
+from pharma_intel.intelligence.clinical_links import trial_drug_bindings
 from pharma_intel.intelligence.context import QueryContext
 from pharma_intel.intelligence.facets import _json_array_facets
 from pharma_intel.intelligence.vocabulary import _public_program_drug_category_sql, _public_program_modality_sql
-from pharma_intel.models import ClinicalTrialEntityRole, DevelopmentProgram, DevelopmentProgramOrganization
+from pharma_intel.models import DevelopmentProgram, DevelopmentProgramOrganization
 from pharma_intel.schemas import ClinicalTrialLandscapeMatrixRowRead, ClinicalTrialLandscapeRead
 
 
 def _clinical_trial_linked_drug_program_facets(context: QueryContext, source: Any) -> dict[str, dict[str, int]]:
+    bindings = trial_drug_bindings(context)
     public_modality = _public_program_modality_sql(
         DevelopmentProgram.modality,
         DevelopmentProgram.drug_category,
@@ -33,18 +35,14 @@ def _clinical_trial_linked_drug_program_facets(context: QueryContext, source: An
         )
         .select_from(source)
         .join(
-            ClinicalTrialEntityRole,
-            and_(
-                ClinicalTrialEntityRole.tenant_id == context.tenant_id,
-                ClinicalTrialEntityRole.trial_id == source.c.trial_id,
-                ClinicalTrialEntityRole.role.in_(("investigational_drug", "combination_drug")),
-            ),
+            bindings,
+            bindings.c.trial_id == source.c.trial_id,
         )
         .join(
             DevelopmentProgram,
             and_(
                 DevelopmentProgram.tenant_id == context.tenant_id,
-                DevelopmentProgram.drug_entity_id == ClinicalTrialEntityRole.entity_id,
+                DevelopmentProgram.drug_entity_id == bindings.c.drug_entity_id,
             ),
         )
         .subquery("clinical_trial_linked_program_facets")

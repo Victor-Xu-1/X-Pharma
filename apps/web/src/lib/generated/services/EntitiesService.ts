@@ -28,6 +28,7 @@ export class EntitiesService {
     sortDirection,
     entityTypes,
     sort,
+    includeRelated = false,
   }: {
     q?: (string | null),
     entityType?: (EntityType | null),
@@ -38,6 +39,7 @@ export class EntitiesService {
     sortDirection?: ('asc' | 'desc' | null),
     entityTypes?: (Array<EntityType> | null),
     sort?: (Array<string> | null),
+    includeRelated?: boolean,
   }): CancelablePromise<SearchResult> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -52,6 +54,7 @@ export class EntitiesService {
         'sort_direction': sortDirection,
         'entity_types': entityTypes,
         'sort': sort,
+        'include_related': includeRelated,
       },
       errors: {
         422: `Validation Error`,

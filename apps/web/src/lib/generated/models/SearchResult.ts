@@ -19,4 +19,5 @@ export type SearchResult = {
   suggestions?: Array<string>;
   took_ms?: (number | null);
   total: number;
+  warnings?: Array<string>;
 };

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import or_, true
+from sqlalchemy import or_, select, true
 from sqlalchemy.sql.elements import ColumnElement
 
 from pharma_intel.intelligence.context import QueryContext
@@ -9,8 +9,11 @@ from pharma_intel.models import (
     ActivityMeasurement,
     CompoundStructure,
     EvidenceClaim,
+    FactProvenanceLink,
+    GovernanceStatus,
     Relationship,
     ReviewStatus,
+    StagedFact,
     TargetEvidenceObservation,
 )
 
@@ -18,6 +21,7 @@ from pharma_intel.models import (
 def _relationship_filters(context: QueryContext, entity_id: str) -> list[ColumnElement[bool]]:
     filters = [
         Relationship.tenant_id == context.tenant_id,
+        Relationship.valid_to.is_(None),
         Relationship.review_status == ReviewStatus.VERIFIED if not context.include_unpublished else true(),
         or_(Relationship.subject_id == entity_id, Relationship.object_id == entity_id),
     ]
@@ -32,10 +36,26 @@ def _relationship_filters(context: QueryContext, entity_id: str) -> list[ColumnE
 
 
 def _evidence_filters(context: QueryContext, entity_id: str) -> list[ColumnElement[bool]]:
+    associated = (
+        select(FactProvenanceLink.id)
+        .join(
+            StagedFact,
+            StagedFact.id == FactProvenanceLink.staged_fact_id,
+        )
+        .where(
+            FactProvenanceLink.tenant_id == context.tenant_id,
+            FactProvenanceLink.resource_type == "entity",
+            FactProvenanceLink.resource_id == entity_id,
+            FactProvenanceLink.evidence_claim_id == EvidenceClaim.id,
+            StagedFact.tenant_id == context.tenant_id,
+            StagedFact.status == GovernanceStatus.PUBLISHED,
+        )
+        .exists()
+    )
     filters = [
         EvidenceClaim.tenant_id == context.tenant_id,
         EvidenceClaim.review_status == ReviewStatus.VERIFIED if not context.include_unpublished else true(),
-        or_(EvidenceClaim.subject_id == entity_id, EvidenceClaim.object_id == entity_id),
+        or_(EvidenceClaim.subject_id == entity_id, EvidenceClaim.object_id == entity_id, associated),
     ]
     if not context.include_unpublished:
         filters.extend(

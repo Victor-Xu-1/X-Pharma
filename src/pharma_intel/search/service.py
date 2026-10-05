@@ -11,6 +11,7 @@ from pharma_intel.repository import EntityRepository
 from pharma_intel.schemas import ENTITY_SORT_FIELDS, EntitySortField, SortDirection
 from pharma_intel.search.client import OpenSearchGateway, SearchProjectionError, get_opensearch_gateway
 from pharma_intel.search.contracts import EntitySearchMatch
+from pharma_intel.search.related import RelatedEntities, related_entities
 from pharma_intel.sorting import SortClause, validate_sort_clauses
 
 
@@ -26,6 +27,7 @@ class EntitySearchResultSet:
     sort_by: EntitySortField
     sort_direction: SortDirection
     sort: tuple[SortClause[EntitySortField], ...]
+    warnings: tuple[str, ...] = ()
 
 
 class EntitySearchService:
@@ -37,6 +39,7 @@ class EntitySearchService:
         gateway: OpenSearchGateway | None = None,
     ) -> None:
         self.repository = EntityRepository(session, tenant_id)
+        self.session = session
         self.tenant_id = tenant_id
         self.settings = settings
         self.gateway = gateway
@@ -53,6 +56,7 @@ class EntitySearchService:
         entity_types: list[EntityType] | None = None,
         sort: Sequence[SortClause[EntitySortField]] | None = None,
         hide_unpublished_facets: bool = False,
+        include_related: bool = False,
     ) -> EntitySearchResultSet:
         effective_sort = validate_sort_clauses(
             sort,
@@ -61,6 +65,10 @@ class EntitySearchService:
             default_direction=sort_direction,
         )
         selected_types = list(dict.fromkeys(([entity_type] if entity_type is not None else []) + (entity_types or [])))
+        related = (
+            related_entities(self.session, self.tenant_id, query) if include_related and query else RelatedEntities()
+        )
+        related_ids = sorted(related.matches)
         if self.settings.search_backend == "database":
             items, total = self.repository.search(
                 query,
@@ -69,14 +77,16 @@ class EntitySearchService:
                 offset,
                 review_status,
                 sort=effective_sort,
+                additional_entity_ids=related_ids,
             )
             facets = self.repository.search_facets(
                 query,
                 review_status if hide_unpublished_facets else None,
+                additional_entity_ids=related_ids,
             )
             return EntitySearchResultSet(
                 items,
-                self._explain_matches(items, query),
+                self._matches(items, query, related),
                 total,
                 facets,
                 [],
@@ -85,6 +95,7 @@ class EntitySearchService:
                 effective_sort[0].field,
                 effective_sort[0].direction,
                 effective_sort,
+                related.warnings,
             )
         gateway = self.gateway or get_opensearch_gateway()
         facet_review_status = (
@@ -99,6 +110,7 @@ class EntitySearchService:
             review_status,
             sort=effective_sort,
             facet_review_status=facet_review_status,
+            additional_entity_ids=related_ids,
         )
         items = self.repository.get_many(page.entity_ids)
         if len(items) != len(page.entity_ids):
@@ -109,7 +121,7 @@ class EntitySearchService:
             )
         return EntitySearchResultSet(
             items,
-            self._explain_matches(items, query),
+            self._matches(items, query, related),
             page.total,
             page.facets,
             page.suggestions,
@@ -118,7 +130,17 @@ class EntitySearchService:
             effective_sort[0].field,
             effective_sort[0].direction,
             effective_sort,
+            related.warnings,
         )
+
+    def _matches(
+        self, items: list[Entity], query: str | None, related: RelatedEntities
+    ) -> dict[str, EntitySearchMatch]:
+        matches = self._explain_matches(items, query)
+        for identifier, match in related.matches.items():
+            if identifier in matches and matches[identifier].match_type == "semantic":
+                matches[identifier] = match
+        return matches
 
     @staticmethod
     def _explain_matches(entities: list[Entity], query: str | None) -> dict[str, EntitySearchMatch]:

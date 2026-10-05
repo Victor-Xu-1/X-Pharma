@@ -25,6 +25,7 @@ import { DomainExportControl } from "../components/DomainExportControl";
 import { EmptyQueryResult } from "../components/EmptyQueryResult";
 import { EntityFilterSelect } from "../components/EntityFilterSelect";
 import { FacetMultiSelect } from "../components/FacetMultiSelect";
+import { PublicResearchPanel } from "../components/PublicResearchPanel";
 import { QueryResultSummary } from "../components/QueryResultSummary";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
@@ -516,6 +517,8 @@ export function DealsView({
       <div className="explorer-intro">
         <p>检索许可、合作、并购和商业化交易，统一核对参与方角色、交易时阶段、权益、金额与来源时点。</p>
       </div>
+
+      <PublicResearchPanel defaultQuery={initialFilters.query} defaultTopic="disclosures" />
 
       <form className="domain-filter-bar deal-filter-bar" onSubmit={submit} aria-label="交易筛选">
         <label className="domain-query-field">

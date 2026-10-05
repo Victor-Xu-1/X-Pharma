@@ -41,6 +41,7 @@ from pharma_intel.schemas import (
     PipelineSavedSearchQuery,
     RegulatorySavedSearchQuery,
 )
+from pharma_intel.search.related import related_entities
 
 logger = structlog.get_logger(__name__)
 CONSUMER_NAME = "monitoring-v1"
@@ -76,6 +77,8 @@ def entity_matches_saved_search_version(entity: Entity, saved_search_version: Sa
             f"Unsupported saved search contract: {saved_search_version.query_type}@{saved_search_version.version}"
         )
     query = saved_search_version.query_json
+    if query.get("review_status") and entity.review_status.value != query["review_status"]:
+        return False
     entity_type = query.get("entity_type")
     if entity_type and entity.entity_type.value != entity_type:
         return False
@@ -89,6 +92,8 @@ def entity_matches_saved_search_version(entity: Entity, saved_search_version: Sa
     searchable = [entity.normalized_name]
     searchable.extend(alias.normalized_alias for alias in entity.aliases)
     searchable.extend(normalize_name(str(value)) for value in entity.external_ids.values())
+    if entity.description:
+        searchable.append(normalize_name(entity.description))
     return any(term in value for value in searchable)
 
 
@@ -99,7 +104,22 @@ def saved_search_matches_entity(
     saved_search_version: SavedSearchVersion,
 ) -> bool:
     if saved_search_version.query_type == "entity_search":
-        return entity_matches_saved_search_version(entity, saved_search_version)
+        if entity.tenant_id != tenant_id:
+            return False
+        if entity_matches_saved_search_version(entity, saved_search_version):
+            return True
+        query = saved_search_version.query_json
+        if query.get("include_related") is not True or not query.get("q"):
+            return False
+        filter_only = SavedSearchVersion(
+            version=saved_search_version.version,
+            query_type="entity_search",
+            query_json={**query, "q": None},
+        )
+        return (
+            entity_matches_saved_search_version(entity, filter_only)
+            and entity.id in related_entities(session, tenant_id, str(query["q"])).matches
+        )
     if saved_search_version.query_type == "pipeline_search" and saved_search_version.version >= 1:
         pipeline_query = PipelineSavedSearchQuery.model_validate(saved_search_version.query_json)
         return IntelligenceService(session, tenant_id).program_saved_search_matches_entity(entity.id, pipeline_query)
