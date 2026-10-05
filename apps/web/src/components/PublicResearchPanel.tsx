@@ -115,6 +115,8 @@ export function PublicResearchPanel({
               onChange={(event) => setDraft({ ...draft, q: event.target.value })}
               placeholder="英文靶点、药物、公司或研究主题"
             />
+          </div>
+          <div className="query-row">
             <label htmlFor={`${inputId}-topic`}>调研范围</label>
             <select
               id={`${inputId}-topic`}

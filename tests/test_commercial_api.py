@@ -364,7 +364,7 @@ def test_agent_entity_domain_uses_reserved_opaque_cursor_without_offset_enumerat
             assert first_result["sort_by"] == "name"
             assert first_result["sort_direction"] == "desc"
             assert first_result["sort"] == [{"field": "name", "direction": "desc"}]
-            assert first_result["query_schema_version"] == "pharma.entity.search.v2"
+            assert first_result["query_schema_version"] == "pharma.entity.search.v3"
             assert {"field": "q", "operator": "contains", "value": first_arguments["q"]} in first_result[
                 "applied_filters"
             ]

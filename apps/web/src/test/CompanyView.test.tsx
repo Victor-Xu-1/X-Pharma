@@ -203,6 +203,29 @@ it("uses public product copy when a company summary is unavailable", async () =>
   expect(screen.queryByText("暂无经治理的公司摘要")).not.toBeInTheDocument();
 });
 
+it("prioritizes registered trials and an identity caveat for provider-scoped sponsor names", async () => {
+  const note = "ClinicalTrials.gov申办方名称，不代表已核实的法律主体或企业集团归并。";
+  vi.mocked(loadCompanyDossier).mockResolvedValueOnce({
+    ...dossier,
+    entity: {
+      ...dossier.entity,
+      description: null,
+      attributes: { identity_scope: "provider_label", label_provider: "ClinicalTrials.gov", identity_note: note },
+    },
+    programs: [],
+    summary: { ...dossier.summary, program_count: 0, drug_count: 0, phase_distribution: {}, highest_phase: null },
+  });
+  renderCompanyView();
+
+  expect(await screen.findByText(note)).toBeInTheDocument();
+  expect(screen.getByText("登记申办方名称")).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "登记临床试验" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "登记临床试验（0）" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "全部登记试验" })).toBeDisabled();
+  expect(screen.queryByText("暂无可统计研发阶段")).not.toBeInTheDocument();
+  expect(screen.queryByText("研发项目 / 药物")).not.toBeInTheDocument();
+});
+
 it("renders a recoverable company dossier error", async () => {
   vi.mocked(loadCompanyDossier).mockRejectedValueOnce(new Error("Company service unavailable"));
   renderCompanyView();

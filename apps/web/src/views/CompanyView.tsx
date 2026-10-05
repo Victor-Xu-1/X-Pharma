@@ -11,6 +11,7 @@ import { type CompanyDossier, companyKeys, loadCompanyDossier } from "../lib/con
 import type { ProvenanceSelection } from "../lib/contracts/provenance";
 import type { Entity } from "../lib/types";
 import type { CompanyDossierSection } from "../lib/workspaceRouting";
+import { CompanySourceLabelOverview } from "./CompanySourceLabelOverview";
 import {
   CompanyTimelinePanel,
   Deals,
@@ -100,6 +101,11 @@ export function CompanyView({
   if (!dossier.data) return <Spinner label={`正在加载 ${company.name} 公司档案`} />;
 
   const data = dossier.data;
+  const providerLabel = data.entity.attributes.identity_scope === "provider_label";
+  const identityNote =
+    typeof data.entity.attributes.identity_note === "string"
+      ? data.entity.attributes.identity_note
+      : "注册平台的申办方名称，不代表已核实的法律主体或企业集团归并。";
   const openDrug = onOpenDrug ?? onOpenEntity;
   const openTarget = onOpenTarget ?? onOpenEntity;
   const openDisease = onOpenDisease ?? onOpenEntity;
@@ -130,42 +136,44 @@ export function CompanyView({
             <Building2 size={23} />
           </div>
           <div className="company-profile-identity">
-            <span>公司专业档案</span>
+            <span>{providerLabel ? "登记申办方名称" : "公司专业档案"}</span>
             <h2>{data.entity.name}</h2>
-            <p>{data.entity.description ?? "暂无公司简介"}</p>
+            <p>{providerLabel ? identityNote : (data.entity.description ?? "暂无公司简介")}</p>
           </div>
         </header>
 
-        <dl className="dossier-metrics company-profile-metrics">
-          <div>
-            <dt>最高阶段</dt>
-            <dd>{phaseLabel(data.summary.highest_phase)}</dd>
-          </div>
-          <div>
-            <dt>研发项目 / 药物</dt>
-            <dd>
-              {data.summary.program_count} / {data.summary.drug_count}
-            </dd>
-          </div>
-          <div>
-            <dt>靶点 / 适应症</dt>
-            <dd>
-              {data.summary.target_count} / {data.summary.indication_count}
-            </dd>
-          </div>
-          <div>
-            <dt>关联交易</dt>
-            <dd>{data.summary.deal_count}</dd>
-          </div>
-          <div>
-            <dt>带日期事件</dt>
-            <dd>{data.summary.timeline_event_count}</dd>
-          </div>
-          <div>
-            <dt>最近活动</dt>
-            <dd>{formatDate(data.summary.latest_activity_at)}</dd>
-          </div>
-        </dl>
+        {!providerLabel ? (
+          <dl className="dossier-metrics company-profile-metrics">
+            <div>
+              <dt>最高阶段</dt>
+              <dd>{phaseLabel(data.summary.highest_phase)}</dd>
+            </div>
+            <div>
+              <dt>研发项目 / 药物</dt>
+              <dd>
+                {data.summary.program_count} / {data.summary.drug_count}
+              </dd>
+            </div>
+            <div>
+              <dt>靶点 / 适应症</dt>
+              <dd>
+                {data.summary.target_count} / {data.summary.indication_count}
+              </dd>
+            </div>
+            <div>
+              <dt>关联交易</dt>
+              <dd>{data.summary.deal_count}</dd>
+            </div>
+            <div>
+              <dt>带日期事件</dt>
+              <dd>{data.summary.timeline_event_count}</dd>
+            </div>
+            <div>
+              <dt>最近活动</dt>
+              <dd>{formatDate(data.summary.latest_activity_at)}</dd>
+            </div>
+          </dl>
+        ) : null}
 
         <ResearchTabList
           tabs={tabs}
@@ -182,7 +190,16 @@ export function CompanyView({
           aria-labelledby={`company-dossier-tab-${activeSection}`}
         >
           {activeSection === "overview" ? (
-            <CompanyOverview data={data} onOpenDrug={openDrug} onOpenSection={onSectionChange} />
+            providerLabel ? (
+              <CompanySourceLabelOverview
+                data={data}
+                onOpen={setProvenanceSelection}
+                onOpenTrial={onOpenTrial}
+                onOpenTrials={() => onSectionChange("trials")}
+              />
+            ) : (
+              <CompanyOverview data={data} onOpenDrug={openDrug} onOpenSection={onSectionChange} />
+            )
           ) : null}
           {activeSection === "pipeline" ? (
             <Programs
