@@ -1,6 +1,6 @@
 /* Shell */
 .workspace-shell {
-  --sidebar-width: 240px;
+  --sidebar-width: 224px;
   min-height: 100vh;
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
@@ -34,7 +34,7 @@
   flex: 1 1 auto;
   display: grid;
   align-content: start;
-  gap: 2px;
+  gap: 4px;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 14px 10px;
@@ -88,12 +88,10 @@
 }
 .nav-button svg {
   flex: 0 0 auto;
+  stroke-width: 1.6;
 }
 .nav-button.active {
   font-weight: 500;
-}
-.nav-button svg {
-  stroke-width: 1.6;
 }
 .collapse-button {
   width: 30px;
@@ -130,13 +128,13 @@
   display: none;
 }
 .workspace-content {
-  padding: 24px clamp(20px, 3vw, 40px) 48px;
+  padding: 28px clamp(20px, 3vw, 40px) 48px;
 }
 .page-heading {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 .page-heading h1 {
-  font-size: 24px;
+  font-size: 26px;
   line-height: 1.35;
 }
 .research-workbench .page-heading h1 {
