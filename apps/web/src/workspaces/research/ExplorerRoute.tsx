@@ -47,6 +47,8 @@ export function ExplorerRoute({ context }: { context: ResearchRouteContext }) {
             invalidEntityId: false,
           },
           true,
+          // Controlled inputs must commit immediately; keep other dense-view updates transitional.
+          includeRelated !== undefined && includeRelated !== (location.entityIncludeRelated ?? true),
         )
       }
       onDisplayModeChange={(explorerDisplayMode) =>
