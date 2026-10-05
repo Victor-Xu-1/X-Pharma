@@ -33,6 +33,7 @@ describe("workspace URL contract", () => {
       query: "EGFR",
       entityType: "",
       entityTypes: [],
+      entityIncludeRelated: true,
       reviewStatus: "",
       entitySort: [{ field: "relevance", direction: "desc" }],
       entitySortBy: "relevance",

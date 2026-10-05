@@ -7,10 +7,12 @@ import pytest
 from pydantic import ValidationError
 
 from pharma_intel.public_research.service import PublicResearchService
-from pharma_intel.schemas.public_research import PublicResearchQuery
+from pharma_intel.schemas.public_research import PublicResearchQuery, PublicResearchSourceResult
 
 
-def _search(topic: str, payload: object, *, status: int = 200, media_type: str = "application/json"):
+def _search(
+    topic: str, payload: object, *, status: int = 200, media_type: str = "application/json"
+) -> tuple[PublicResearchSourceResult, list[httpx.Request]]:
     seen: list[httpx.Request] = []
 
     def respond(request: httpx.Request) -> httpx.Response:

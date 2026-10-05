@@ -103,7 +103,7 @@ export function PublicResearchPanel({
           </button>
         </details>
         <p>
-          仅点击“查询公开来源”后才发送下方关键词。不要输入患者、未公开项目或其他保密信息；联网结果与本地已治理数据分开。
+          仅点击“查询公开来源”后才发送下方关键词。不要输入患者、未公开项目或其他保密信息；联网结果与本地已核验数据分开。
         </p>
         <form className="intelligence-query-panel" onSubmit={submit} aria-label="公开来源检索">
           <div className="query-row">
