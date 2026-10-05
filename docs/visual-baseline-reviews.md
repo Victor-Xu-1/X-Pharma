@@ -42,6 +42,17 @@ unchanged 196,608-byte boundary. Post-fix real-browser comparison, readonly
 reference comparison, mandatory PR CI and exact-main deployment remain
 separate evidence gates until actually observed.
 
+The fixed clean candidate `c7c42fddd19647f0489b5c0f415c0f0d8bc8e5d5`
+then passed the real 500-record mobile containment/keyboard check and all
+four 28-page captures (112 screenshots). Final related frontend tests passed
+61/61 across eight files; reference manifest/profile tests passed 22/22.
+The subsequent local readonly 12-owner attempt was interrupted after WSL
+startup failures and health-request timeouts. It is not counted as a pass.
+Its original bounded EXIT cleanup restored the authoritative projection and
+readiness without WSL restart or network changes. The mandatory automatic
+browser gate must establish strict exact-head readonly reference comparison
+before normal merge; no subset is represented as full-suite acceptance.
+
 ## 2026-10-04: researcher navigation and compact workbenches
 
 Clean E-drive source `396bcc3845650667ed7d8d634dd4b5fdffe4d250` was built and
