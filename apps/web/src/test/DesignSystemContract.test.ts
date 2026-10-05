@@ -647,4 +647,16 @@ describe("unified minimal biomedical light design system", () => {
 
     expect(body).toContain("display: none;");
   });
+
+  it("bounds the mobile knowledge scroller instead of letting content overflow a capped parent", () => {
+    const responsive = source("../styles/chemistry.css");
+    const listBounds = ruleContainingSelectors(responsive, [".knowledge-page-list", ".review-list"]);
+    const indexBorders = ruleContainingSelectors(responsive, [".knowledge-index", ".review-list"]);
+    const knowledge = source("../styles/knowledge.css");
+    expect(listBounds.body).toContain("max-height: 300px;");
+    expect(indexBorders.body).not.toContain("max-height:");
+    expect(ruleBody(knowledge, ".knowledge-page-list")).toContain("overflow-y: auto;");
+    expect(ruleBody(knowledge, ".knowledge-count")).not.toContain("font-size:");
+    expect(ruleBody(knowledge, ".knowledge-count")).not.toContain("text-transform:");
+  });
 });

@@ -880,9 +880,12 @@
     flex: 1 1 50%;
     justify-content: center;
   }
-  .knowledge-index,
+  .knowledge-page-list,
   .review-list {
     max-height: 300px;
+  }
+  .knowledge-index,
+  .review-list {
     border-right: 0;
     border-bottom: 1px solid var(--ds-border);
   }

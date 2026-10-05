@@ -4,6 +4,44 @@ The current reference inventory is the 20-image researcher review below.
 It retains the bounded natural-flow table implementation, not either former
 transform-rendering paint phase. The manifest owns all current image hashes.
 
+## 2026-10-05: restrained biomedical visual language
+
+Three native Image Generation concept anchors informed the existing shared
+tokens, not a replacement application: white canvas, neutral navigation,
+desaturated teal emphasis, charcoal primary actions and the original orange
+X-Pharma logo. The tool does not expose a verified model-version identifier.
+Concept illustration fields, timestamps and the incorrectly reused company
+logo are not product data or brand assets. The version remains v0.1.0.
+
+Clean candidate `4833c239cbdef4352083d695d81e93cc27ebf92f` supplied
+28 real page captures at each of four viewports. A private registration
+locator mistake and an incorrect browser environment variable were corrected;
+later shared-load failures at 1920px and tablet were retained, and the same
+two capture registrations passed on a bounded rerun without increased
+timeouts. The offline gallery rendered all 115 local images, with no remote
+requests or page errors. These are visual previews, not new scientific
+coverage or an assertion that every business interaction was exercised.
+
+The unchanged original accessibility, dossier-accessibility and complete
+17-stage navigation registrations updated the 20 controlled references:
+12/12 passed in 6.7 minutes with Google Chrome 154.0.8037.97. The full-suite
+coverage guard then correctly rejected this scoped selection. Its cleanup
+restored the authoritative projection and the three owned services remain
+healthy. All 20 PNGs were visually reviewed, and the unchanged canonical
+manifest generator owns their hashes. Masks, pixel tolerance 0.001, action,
+navigation, case, Web Vitals and build budgets were not relaxed.
+
+Real mobile preview review found an existing long knowledge-list overflow:
+the parent was capped at 300px but its scrolling child retained a 550px cap.
+The mobile cap now belongs to the list, while parent borders and governance
+list behavior remain. Dead count casing and overridden 9px typography were
+removed; the shared readable typography remains authoritative. The original
+runtime first fails the new containment browser check, and the focused
+design-system/knowledge tests pass 28/28. CSS is 196,589 bytes, below the
+unchanged 196,608-byte boundary. Post-fix real-browser comparison, readonly
+reference comparison, mandatory PR CI and exact-main deployment remain
+separate evidence gates until actually observed.
+
 ## 2026-10-04: researcher navigation and compact workbenches
 
 Clean E-drive source `396bcc3845650667ed7d8d634dd4b5fdffe4d250` was built and
