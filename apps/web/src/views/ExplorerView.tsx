@@ -426,7 +426,7 @@ export function ExplorerView({
     enabled: Boolean(directTarget),
   });
   const displayedEntityTypeCount = (entityType: string) =>
-    selectedEntityTypes.length === 1 && selectedEntityTypes[0] === entityType
+    !entityType || (selectedEntityTypes.length === 1 && selectedEntityTypes[0] === entityType)
       ? result?.total
       : result?.facets.entity_type?.[entityType];
   const landscapeSections = useMemo<DomainLandscapeSection<ExplorerLandscapeFilter>[]>(
@@ -519,10 +519,6 @@ export function ExplorerView({
 
   return (
     <section className="data-section explorer-section">
-      <div className="explorer-intro">
-        <p>查询药物、靶点、机构、疾病、临床、专利与交易；结果可查看来源和更新时间。</p>
-      </div>
-
       <form className="intelligence-query-panel" onSubmit={submit}>
         <div className="query-row">
           <label htmlFor="intelligence-query">查询对象</label>
@@ -667,29 +663,6 @@ export function ExplorerView({
       >
         {result ? (
           <div className="explorer-results">
-            {Object.keys(result.facets.entity_type ?? {}).length ? (
-              <fieldset className="facet-strip" aria-label="实体类型筛选">
-                <button
-                  className={selectedEntityTypes.length === 0 ? "selected" : ""}
-                  type="button"
-                  onClick={() => chooseDomain("")}
-                  aria-pressed={selectedEntityTypes.length === 0}
-                >
-                  全部 <span>{result.total}</span>
-                </button>
-                {Object.entries(result.facets.entity_type).map(([type, count]) => (
-                  <button
-                    className={selectedEntityTypes.includes(type) ? "selected" : ""}
-                    key={type}
-                    type="button"
-                    onClick={() => chooseDomain(type)}
-                    aria-pressed={selectedEntityTypes.includes(type)}
-                  >
-                    {entityLabels[type] ?? type} <span>{displayedEntityTypeCount(type) ?? count}</span>
-                  </button>
-                ))}
-              </fieldset>
-            ) : null}
             {directTarget && onOpenTargetPipeline ? (
               <section
                 className="pipeline-result-toolbar target-direct-access"

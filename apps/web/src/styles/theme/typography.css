@@ -122,12 +122,28 @@
     .table-sort-editor-heading,
     .table-selection-status,
     .table-preference-error
-  ),
-:root .workspace-shell :is(.professional-query-builder, .domain-filter-bar) *,
-.internal-workbench main :is(button, input, label, p, select, small, span, dl *, th, td, nav),
-.factory-warning strong {
+  ) {
   font-size: var(--ds-text-xs);
   line-height: var(--ds-leading-compact);
+}
+
+:root
+  .workspace-shell
+  :is(
+    .professional-query-builder,
+    .domain-filter-bar,
+    .pipeline-filter-bar,
+    .trial-filter-bar,
+    .patent-filter-bar,
+    .deal-filter-bar,
+    .regulatory-filter-bar,
+    .epidemiology-filter-bar,
+    .news-display-control
+  )
+  :is(button, input, select, label, legend, summary),
+.internal-workbench main :is(button, input, label, p, select, nav) {
+  font-size: var(--ds-text-sm);
+  line-height: var(--ds-leading-body);
 }
 
 :root

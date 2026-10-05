@@ -1,8 +1,52 @@
 # Visual baseline reviews
 
-The current reference inventory is the 20-image researcher review below.
+The current reference inventory is the 20-image comprehensive preview-fidelity review below.
 It retains the bounded natural-flow table implementation, not either former
 transform-rendering paint phase. The manifest owns all current image hashes.
+
+## 2026-10-05: comprehensive biomedical preview fidelity
+
+The three previously selected native concepts remain the visual anchors.
+Fresh captures of exact main0c12132967df identified compressed typography,
+duplicated query controls, truncated dossier titles and uneven responsive
+card rows. Candidate d9031a11f9a1504d9dc2b8681af85459fe007182 resolves those
+through the existing shared tokens and components, without copying invented
+scientific records or a false company logo from the concepts. All28 existing
+routes/entrances across four viewports produced112 real captures, followed
+by four focused interaction/geometry passes and combined/focused comparison.
+See the current iteration in `docs/design-qa.md` for the review history.
+
+The independent [refresh run37324706734](https://github.com/Victor-Xu-1/X-Pharma/actions/runs/37324706734)
+on exactd903 passed all six gates. It generated the references through the
+unchanged original144-case Chrome registration (22.5m), then repeated all144
+cases readonly (22.2m). The second result explicitly records
+snapshots_updated=false and zero remaining temporary accounts, entities,
+chemistry/activity, governed and ingestion fixtures. Web/MCP consistency and
+independent-client checks also passed. Neither a scoped local result nor a
+snapshot-update invocation is represented as ordinary release acceptance.
+
+All20 PNGs and the original manifest from artifact11354867082 were downloaded
+to the external E-drive evidence store, checked against their SHA-256 values
+and visually inspected across the four viewports. The reviewed inventory is
+now the canonical reference. The browser remains Google Chrome154.0.8037.97;
+the existing font profile, masks,0.001 pixel threshold,68/46px virtual rows,
+case/navigation/action/Web Vitals and build limits are retained unchanged.
+The two UI entrances still use one design system, original logo andv0.1.0.
+
+The first local reference attempt had9 passes and3 loading timeouts. A
+six-case bounded rerun was interrupted by the shared WSL outage and was not
+accepted. Its partial images are preserved externally, not mixed into the
+reviewed CI inventory. Restoring native access then exposed an existing
+fixture-cleanup foreign-key omission when an evidence source had acquired
+an ingestion run. The failed transaction rolled back; evidence and replay
+source children now share one cleanup scope. The new old-SQL regression is
+red, the11 related checks and strict typing/lint are green, and actual scoped
+PostgreSQL cleanup restored authoritative readiness while retaining the
+normal preview organization's entity/version counts and verified backups.
+
+Ordinary exact-head PR CI, normal merge and exact-main deployment retain
+their independent gates. These repository-owned synthetic images are not
+commercial data coverage, scientific results or a cold-install certificate.
 
 ## 2026-10-05: restrained biomedical visual language
 

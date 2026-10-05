@@ -10,7 +10,6 @@
 
 .collection-entity-link:hover strong,
 .comparison-entity-link:hover strong,
-.explorer-intro span,
 .entity-detail-drawer header span,
 .entity-search-match {
   color: var(--ds-accent-strong);

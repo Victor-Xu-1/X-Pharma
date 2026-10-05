@@ -40,10 +40,10 @@ td {
   padding: 11px 12px;
   vertical-align: middle;
   text-align: left;
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
 }
 th {
-  font-size: 10px;
+  font-size: var(--ds-text-sm);
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -676,11 +676,10 @@ tbody tr:last-child td {
   border-bottom: 1px solid var(--ds-border-subtle);
   padding: 11px 12px;
   overflow: hidden;
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
 }
 .virtual-table-heading {
-  min-height: 37px;
-  font-size: 10px;
+  min-height: 44px;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -762,8 +761,9 @@ tbody tr:last-child td {
 }
 .density-compact .virtual-table-heading,
 .density-compact .virtual-table-cell {
-  padding-top: 6px;
-  padding-bottom: 6px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  font-size: var(--ds-text-xs);
 }
 .cell-subtitle {
   max-width: 480px;
@@ -980,7 +980,6 @@ tbody tr:last-child td {
 .query-input.large {
   min-height: 48px;
 }
-.facet-strip,
 .suggestion-row {
   display: flex;
   align-items: center;
@@ -992,7 +991,6 @@ tbody tr:last-child td {
   padding-left: 0;
   padding-right: 0;
 }
-.facet-strip button,
 .suggestion-row button {
   min-height: 30px;
   flex: 0 0 auto;
@@ -1000,11 +998,6 @@ tbody tr:last-child td {
   border-radius: 4px;
   padding: 5px 9px;
   font-size: 11px;
-}
-.facet-strip button span {
-  margin-left: 4px;
-  color: var(--ds-ink-muted);
-  font-variant-numeric: tabular-nums;
 }
 .suggestion-row button {
   border-style: dashed;

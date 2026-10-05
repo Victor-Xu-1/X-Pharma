@@ -330,7 +330,7 @@ export function DataFactoryView({ user }: { user: User }) {
                     )}
                   />
                 </header>
-                <dl className="enterprise-tenant-details">
+                <dl className="enterprise-tenant-details factory-projection-metrics">
                   <div>
                     <dt>集群</dt>
                     <dd>{searchStatus.cluster_name ?? "未连接"}</dd>

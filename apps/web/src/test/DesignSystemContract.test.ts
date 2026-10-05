@@ -112,7 +112,7 @@ describe("unified minimal biomedical light design system", () => {
     expect(ruleBody(designSystem, ".nav-button.active")).toContain("color: var(--ds-accent-strong);");
     expect(palette).toContain('primary: "#407f82"');
     expect(palette).toContain('primaryEmphasis: "#08656d"');
-    expect(ruleBody(layout, ".page-heading h1")).toContain("font-size: 26px;");
+    expect(ruleBody(layout, ".page-heading h1")).toContain("font-size: 32px;");
     expect(ruleBody(layout, ".workspace-shell")).toContain("--sidebar-width: 224px;");
     expect(designSystem).toContain("--ds-action: #0d0d0d;");
     expect(designSystem).toContain("--ds-shadow-sm: none;");
@@ -272,15 +272,11 @@ describe("unified minimal biomedical light design system", () => {
       ":root .workspace-shell",
       ".brand-lockup small",
       ".regulatory-source-reference",
-      ".internal-workbench main",
       "button",
-      "input",
       "label",
       "legend",
-      "select",
       "small",
       "span",
-      ".factory-warning strong",
     ]);
     const shellHierarchyRule = ruleBody(designSystem, ".sidebar-account-copy strong");
     const shellContextRule = ruleContainingSelectors(designSystem, [
@@ -294,8 +290,8 @@ describe("unified minimal biomedical light design system", () => {
     const loginMicrocopyRule = designSystem.match(/\.brand-lockup small,\s*\.login-version\s*\{([^}]*)\}/);
 
     expect(designSystem).toContain("--ds-text-xs: 12px;");
-    expect(designSystem).toContain("--ds-text-sm: 13px;");
-    expect(designSystem).toContain("--ds-text-md: 14px;");
+    expect(designSystem).toContain("--ds-text-sm: 14px;");
+    expect(designSystem).toContain("--ds-text-md: 16px;");
     expect(designSystem).toContain("--ds-leading-compact: 1.4;");
     expect(designSystem).toContain("--ds-leading-body: 1.5;");
     expect(ruleBody(designSystem, "body")).toContain("font-size: var(--ds-text-md);");
@@ -352,15 +348,16 @@ describe("unified minimal biomedical light design system", () => {
       ":root .workspace-shell",
       ".professional-query-builder",
       ".domain-filter-bar",
-      "*",
+      "input",
+      "summary",
     ]);
     const compactQueryModes = ruleContainingSelectors(designSystem, [
       ".segmented-control button",
       ".advanced-filter-panel > summary",
     ]);
 
-    expect(queryTypography.body).toContain("font-size: var(--ds-text-xs);");
-    expect(queryTypography.body).toContain("line-height: var(--ds-leading-compact);");
+    expect(queryTypography.body).toContain("font-size: var(--ds-text-sm);");
+    expect(queryTypography.body).toContain("line-height: var(--ds-leading-body);");
     expect(compactQueryModes.body).toContain("font-size: var(--ds-text-xs);");
     expect(compactQueryModes.body).toContain("line-height: var(--ds-leading-compact);");
     expect(ruleBody(baseStyles, ".professional-query-builder > nav button")).toContain("font-size: 10px;");
@@ -447,12 +444,7 @@ describe("unified minimal biomedical light design system", () => {
     expect(
       declarationBodyCount(designSystem, ["background: var(--ds-accent-soft)", "color: var(--ds-accent-strong)"]),
     ).toBe(1);
-    expect(
-      declarationBodyCount(designSystem, [
-        "border-radius: var(--ds-radius-control)",
-        "min-height: var(--ds-control-height)",
-      ]),
-    ).toBe(1);
+    expect(declarationBodyCount(designSystem, ["border-radius: var(--ds-radius-control)", "min-height: 48px"])).toBe(1);
     expect(declarationBodyCount(designSystem, ["color: var(--ds-ink-muted)", "font-size: 12px"])).toBe(1);
   });
 
@@ -462,9 +454,9 @@ describe("unified minimal biomedical light design system", () => {
     for (const token of [
       "--ds-radius-control: 10px;",
       "--ds-radius-panel: 12px;",
-      "--ds-control-height: 40px;",
-      "--ds-button-height: 36px;",
-      "--ds-icon-control-size: 34px;",
+      "--ds-control-height: 44px;",
+      "--ds-button-height: 40px;",
+      "--ds-icon-control-size: 36px;",
     ]) {
       expect(designSystem).toContain(token);
     }
@@ -481,7 +473,7 @@ describe("unified minimal biomedical light design system", () => {
     expect(iconButton).toContain("height: var(--ds-icon-control-size);");
 
     const shellNavigation = designSystem.match(/\.nav-button,\s*\.collapse-button\s*\{([^}]*)\}/)?.[1];
-    expect(shellNavigation).toContain("min-height: var(--ds-control-height);");
+    expect(shellNavigation).toContain("min-height: 48px;");
     expect(shellNavigation).toContain("border-radius: var(--ds-radius-control);");
 
     const baseStyles = source("../styles.css");
@@ -608,17 +600,18 @@ describe("unified minimal biomedical light design system", () => {
   it("keeps internal metadata and dense table text at the readable minimum", () => {
     const designSystem = source("../design-system.css");
     const readableInternalMetadata = ruleContainingSelectors(designSystem, [
-      ".internal-workbench main :is(button, input, label, p, select, small, span, dl *, th, td, nav)",
+      ".internal-workbench main :is(button, input, label, p, select, nav)",
     ]);
 
-    expect(readableInternalMetadata.body).toContain("font-size: var(--ds-text-xs);");
-    expect(readableInternalMetadata.body).toContain("line-height: var(--ds-leading-compact);");
+    expect(readableInternalMetadata.body).toContain("font-size: var(--ds-text-sm);");
+    expect(readableInternalMetadata.body).toContain("line-height: var(--ds-leading-body);");
+    expect(designSystem).not.toContain("select, small, span, dl *, th, td, nav");
   });
 
   it("keeps public query controls and workbench toolbars readable", () => {
     const styles = `${source("../styles.css")}\n${source("../design-system.css")}`;
     for (const selector of [
-      ".explorer-intro p",
+      ".research-entry p",
       ".inline-filter-options button",
       ".result-summary",
       ".result-summary small",
@@ -635,7 +628,7 @@ describe("unified minimal biomedical light design system", () => {
       ".landscape-grid article p",
     ]) {
       const readableRules = [...styles.matchAll(/([^{}]+)\{([^{}]*)\}/gs)].filter(
-        (match) => match[1].includes(selector) && /font-size:\s*(?:12px|var\(--ds-text-xs\))/.test(match[2]),
+        (match) => match[1].includes(selector) && /font-size:\s*(?:12px|var\(--ds-text-(?:xs|sm)\))/.test(match[2]),
       );
       expect(readableRules.length, `${selector} has readable shared typography`).toBeGreaterThan(0);
     }
@@ -658,5 +651,20 @@ describe("unified minimal biomedical light design system", () => {
     expect(ruleBody(knowledge, ".knowledge-page-list")).toContain("overflow-y: auto;");
     expect(ruleBody(knowledge, ".knowledge-count")).not.toContain("font-size:");
     expect(ruleBody(knowledge, ".knowledge-count")).not.toContain("text-transform:");
+  });
+
+  it("matches the preview hierarchy without clipping dossier titles or shrinking data controls", () => {
+    const layout = source("../styles.css");
+    expect(layout).not.toContain(".research-workbench .page-heading h1");
+    expect(ruleBody(layout, ".entity-record-list .table-link-button")).toContain("white-space: normal;");
+    expect(ruleBody(layout, ".company-source-summary")).toContain("padding: 20px;");
+    expect(ruleBody(layout, ".landscape-grid")).toContain("repeat(auto-fit,");
+    expect(ruleBody(layout, ".landscape-grid")).toContain("min(100%, 250px)");
+    expect(ruleBody(layout, ".dossier-metrics")).toContain("repeat(auto-fit,");
+    expect(ruleBody(layout, ".virtual-table-cell")).toContain("font-size: var(--ds-text-sm);");
+    expect(ruleBody(layout, ".density-compact .virtual-table-cell")).toContain("font-size: var(--ds-text-xs);");
+    expect(ruleBody(layout, ".inline-filter-options")).toContain("flex-wrap: wrap;");
+    expect(source("../styles/dossiers.css")).not.toContain(".status-badge");
+    expect(ruleBody(layout, ".entity-record-list article > .badge")).toContain("grid-column: 2;");
   });
 });

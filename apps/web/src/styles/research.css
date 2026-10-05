@@ -2,10 +2,13 @@
 .explorer-section {
   position: relative;
 }
-.explorer-intro {
+.research-entry {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
   justify-content: flex-start;
-  padding: 0 0 12px;
+  padding: 0 0 20px;
 }
 .entity-detail-drawer header span {
   display: block;
@@ -20,11 +23,12 @@
   font-size: 22px;
   letter-spacing: 0;
 }
-.explorer-intro p {
+.research-entry p {
+  flex: 1 1 320px;
   max-width: 840px;
   margin: 0;
   color: var(--ds-ink-muted);
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
   line-height: 1.7;
   text-align: left;
 }
@@ -1558,12 +1562,12 @@
 }
 .query-row {
   display: grid;
-  grid-template-columns: 104px minmax(260px, 1fr) auto auto;
+  grid-template-columns: 84px minmax(260px, 1fr) auto auto;
   align-items: center;
   gap: 10px;
   min-height: 64px;
   border-bottom: 1px solid var(--ds-border-subtle);
-  padding: 10px 14px;
+  padding: 16px 18px;
 }
 .query-row:last-child {
   border-bottom: 0;
@@ -1571,7 +1575,7 @@
 .query-row > label,
 .query-label {
   color: var(--ds-ink);
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
   font-weight: 800;
   text-align: right;
 }
@@ -1582,7 +1586,7 @@
   align-items: center;
   gap: 8px;
   border: 1px solid var(--ds-border-strong);
-  border-radius: 4px;
+  border-radius: var(--ds-radius-control);
   background: var(--ds-surface);
   padding: 0 10px;
 }
@@ -1647,21 +1651,21 @@
   color: var(--ds-danger);
 }
 .filter-row {
-  grid-template-columns: 104px minmax(0, 1fr);
+  grid-template-columns: 84px minmax(0, 1fr);
   min-height: 54px;
 }
 .advanced-filters {
   border-bottom: 0;
 }
 .advanced-filters summary {
-  min-height: 38px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
   color: var(--ds-ink);
   padding: 8px 14px;
-  font-size: 11px;
+  font-size: var(--ds-text-sm);
   font-weight: 700;
   list-style-position: inside;
 }
@@ -1701,24 +1705,24 @@
 .inline-filter-options {
   display: flex;
   align-items: center;
-  gap: 5px;
-  overflow-x: auto;
+  gap: 8px;
+  flex-wrap: wrap;
   border: 0;
   margin: 0;
   padding: 0;
 }
 .inline-filter-options button {
-  min-height: 30px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
   flex: 0 0 auto;
-  border: 1px solid transparent;
-  border-radius: 3px;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-control);
   background: transparent;
   color: var(--ds-ink);
   padding: 5px 9px;
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
 }
 .inline-filter-options button:hover {
   background: var(--ds-surface-muted);

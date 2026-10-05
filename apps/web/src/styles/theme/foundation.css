@@ -238,7 +238,7 @@ a:hover,
 
 .nav-button,
 .collapse-button {
-  min-height: var(--ds-control-height);
+  min-height: 48px;
   border-radius: var(--ds-radius-control);
 }
 
@@ -389,7 +389,6 @@ tbody tr:hover,
   color: var(--ds-accent-strong);
 }
 
-.facet-strip button,
 .suggestion-row button,
 .segmented-control button {
   border-color: var(--ds-border);
@@ -397,14 +396,12 @@ tbody tr:hover,
   color: var(--ds-ink-muted);
 }
 
-.facet-strip button:hover,
 .suggestion-row button:hover,
 .segmented-control button:hover {
   border-color: var(--ds-border-strong);
   background: var(--ds-surface-soft);
 }
 
-.facet-strip button.selected,
 .segmented-control button[aria-pressed="true"],
 .facet-multi-select details[open] summary,
 .dataset-selector button.selected,

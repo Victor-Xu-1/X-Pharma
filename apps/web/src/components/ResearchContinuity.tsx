@@ -14,16 +14,19 @@ export function ResearchContinuity({ onOpenEntity }: { onOpenEntity: (id: string
   });
   return (
     <section aria-label="研究连续性">
-      <button
-        className="secondary-button"
-        type="button"
-        aria-expanded={open}
-        aria-controls={regionId}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <History size={15} aria-hidden="true" />
-        继续最近的研究
-      </button>
+      <div className="research-entry">
+        <button
+          className="secondary-button"
+          type="button"
+          aria-expanded={open}
+          aria-controls={regionId}
+          onClick={() => setOpen((value) => !value)}
+        >
+          <History size={15} aria-hidden="true" />
+          继续最近的研究
+        </button>
+        <p>查询药物、靶点、机构、疾病、临床、专利与交易；结果可查看来源和更新时间。</p>
+      </div>
       <div id={regionId} hidden={!open}>
         {open ? (
           recent.isError ? (
