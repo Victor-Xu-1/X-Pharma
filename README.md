@@ -122,6 +122,8 @@ docker compose -f compose.yaml -f compose.dev.yaml run --rm api pharma-bootstrap
 
 ## 数据接入与 AI
 
+本地检索支持有出处的一层关联扩展；基因名、试验申办方和研究条件形成可检索档案。情报/专利/交易页支持按需公开调研，在线著录与本地已治理事实分开，不填造家族、法律状态或交易条款。范围、隐私、安全及回退见 [公开来源检索与调研](docs/public-research.md)。
+
 管理员注册来源后，数据经不可变快照、ClamAV、隔离解析、治理审核和投影进入平台。只有实际获授权的数据才能接入或交付。连接器、来源许可与注册操作见 [来源接入](runbooks/source-onboarding.md)，数据工厂调用关系见 [架构说明](docs/architecture.md)。
 
 ClinicalTrials.gov 与 ChEMBL 目标/机制支持不依赖 LLM 的确定性治理及有界持续同步。日期分区、检查点、完整周期水位、更新与异常边界见 [真实公开来源自动入库](docs/automatic-public-source-ingestion.md)。单批完成不等于全库完成，PubMed 元数据窗口也不等于全文抽取。

@@ -25,7 +25,13 @@ export const intelligenceKeys = {
     sortDirection: EntitySearchSortDirection = "desc",
     offset = 0,
     sort?: readonly SortCriterion<EntitySearchSortField>[],
-  ) => ["intelligence", "entities", { query, entityTypes, reviewStatus, sortBy, sortDirection, offset, sort }] as const,
+    includeRelated = false,
+  ) =>
+    [
+      "intelligence",
+      "entities",
+      { query, entityTypes, reviewStatus, sortBy, sortDirection, offset, sort, includeRelated },
+    ] as const,
   suggestions: (query: string, entityTypes: readonly string[]) =>
     ["intelligence", "entity-suggestions", { query, entityTypes }] as const,
   lookup: (query: string, entityType: string) => ["intelligence", "entity-lookup", { query, entityType }] as const,
@@ -43,6 +49,7 @@ export interface EntitySearchPageOptions {
   sortDirection?: EntitySearchSortDirection;
   sort?: SortCriterion<EntitySearchSortField>[];
   offset?: number;
+  includeRelated?: boolean;
 }
 
 export type IntelligenceEntity = EntitySearchItemRead;
@@ -88,6 +95,7 @@ export async function searchEntities(
       limit: 100,
       offset,
       sort: sort.map((criterion) => `${criterion.field}:${criterion.direction}`),
+      includeRelated: options.includeRelated ?? false,
     }),
     signal,
   );
@@ -174,6 +182,7 @@ export async function saveEntitySearch({
   analysisView,
   shared,
   monitor,
+  includeRelated = false,
 }: {
   name: string;
   query: string;
@@ -186,6 +195,7 @@ export async function saveEntitySearch({
   analysisView: "chart" | "table";
   shared: boolean;
   monitor: boolean;
+  includeRelated?: boolean;
 }): Promise<{ message: string }> {
   const normalizedTypes = asEntityTypes(entityTypes);
   const saved = await contractRequest(
@@ -197,6 +207,7 @@ export async function saveEntitySearch({
           entity_type: normalizedTypes.length === 1 ? normalizedTypes[0] : undefined,
           entity_types: normalizedTypes.length > 1 ? normalizedTypes : undefined,
           review_status: asReviewStatus(reviewStatus),
+          include_related: includeRelated,
           sort_by: sortBy,
           sort_direction: sortDirection,
           sort: effectiveSort(sort, sortBy, sortDirection).map(

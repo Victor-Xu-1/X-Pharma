@@ -4,6 +4,8 @@
 
 ## 唯一处理链
 
+两官方适配器1.1.0补充来源基因名及提供者范围的条件/申办方档案。注册干预顺序不推断主药/联合用药，历史推断行保留审计但退出当前角色查询。来源名称、一般关联、在线补充与本地事实的边界见[公开来源检索与调研](public-research.md)。
+
 来源注册与许可 → Temporal 自然调度 → 有界发现与不可变快照 → ClamAV → 隔离 parser → 确定性/模型治理 → 同一暂存与发布事务 → outbox → OpenSearch → 人员查询。
 
 `DETERMINISTIC_GOVERNANCE_ENABLED=true` 允许已识别、已授权的 ClinicalTrials.gov/ChEMBL 结构化快照独立治理。`AI_GOVERNANCE_ENABLED` 只控制需要模型的抽取；关闭模型不会让官方结构化记录跳过治理。确定性路径仍校验来源、摘要、字段、引用、实体身份和冲突，不调用本地或未批准模型。

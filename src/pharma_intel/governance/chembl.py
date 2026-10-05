@@ -26,7 +26,7 @@ from pharma_intel.models import (
 from pharma_intel.program_semantics import public_program_drug_category, public_program_modality
 
 ADAPTER_NAME = "chembl_mechanism_json"
-ADAPTER_VERSION = "1.0.0"
+ADAPTER_VERSION = "1.1.0"
 SNAPSHOT_SCHEMA = "pharma.chembl.mechanism.v1"
 
 

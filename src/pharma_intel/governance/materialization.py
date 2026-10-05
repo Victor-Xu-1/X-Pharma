@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-import re
-from typing import Any, cast
-
-from sqlalchemy import select
+from typing import Any
 
 from pharma_intel.governance.contracts import GovernanceError
-from pharma_intel.governance.fact_identity import _projection
 from pharma_intel.governance.materialization_context import MaterializationContext
 from pharma_intel.governance.materialize_assets import materialize_deal, materialize_patent
 from pharma_intel.governance.materialize_chemistry import materialize_activity, materialize_structure
@@ -15,12 +11,12 @@ from pharma_intel.governance.materialize_events import (
     materialize_news,
     materialize_regulatory,
 )
+from pharma_intel.governance.materialize_profile import materialize_target_profile
 from pharma_intel.governance.materialize_programs import materialize_program
 from pharma_intel.governance.materialize_targets import materialize_target_evidence
 from pharma_intel.governance.materialize_trials import materialize_trial
 from pharma_intel.models import (
     StagedFact,
-    TargetProfile,
 )
 
 
@@ -31,30 +27,7 @@ def materialize_structured_fact(
     if fact_kind == "claim":
         return []
     if fact_kind == "target_profile":
-        subject = context._entity(cast(dict[str, Any], payload["subject"]), staged.source_document_id)
-        profile = context.session.scalar(
-            select(TargetProfile).where(
-                TargetProfile.tenant_id == context.tenant_id,
-                TargetProfile.entity_id == subject.id,
-            )
-        )
-        if profile is None:
-            profile = TargetProfile(
-                tenant_id=context.tenant_id,
-                entity_id=subject.id,
-                organism=str(payload.get("organism") or "Homo sapiens"),
-            )
-            context.session.add(profile)
-        for field in ("gene_symbol", "uniprot_accession", "target_class", "function_summary"):
-            if payload.get(field) is not None:
-                setattr(profile, field, payload[field])
-        if payload.get("sequence") is not None:
-            profile.sequence = re.sub(r"\s+", "", str(payload["sequence"])).upper()
-        if payload.get("organism") is not None:
-            profile.organism = str(payload["organism"])
-        profile.source_document_id = staged.source_document_id
-        context.session.flush()
-        return [_projection("target_profile", profile.id)]
+        return materialize_target_profile(context, staged, payload)
     if fact_kind == "target_evidence":
         return materialize_target_evidence(context, staged, payload)
     if fact_kind == "structure":

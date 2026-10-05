@@ -1105,6 +1105,7 @@ export function TrialsView({
       <section className="data-section trial-section">
         <div className="explorer-intro">
           <p>聚合注册平台的试验设计、状态、分期、适应症、干预和申办方，并关联药物与靶点信息。</p>
+          <p>注册干预列表不自动区分主药与联合用药；角色条件只匹配有明确角色证据的记录。</p>
         </div>
 
         <form className="domain-filter-bar trial-filter-bar" onSubmit={submit} aria-label="临床试验筛选">

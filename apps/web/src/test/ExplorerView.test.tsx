@@ -290,6 +290,7 @@ it("searches through the typed contract and opens a governed target result", asy
 
   expect(await screen.findByRole("table", { name: "实体检索结果" })).toBeInTheDocument();
   expect(searchEntities).toHaveBeenCalledWith("EGFR", ["target"], "verified", expect.any(AbortSignal), {
+    includeRelated: true,
     sortBy: "relevance",
     sortDirection: "desc",
     offset: 0,
@@ -510,6 +511,7 @@ it("ignores governance review parameters in the external workspace", async () =>
 
   await screen.findByRole("table", { name: "实体检索结果" });
   expect(searchEntities).toHaveBeenCalledWith("EGFR", ["target"], "verified", expect.any(AbortSignal), {
+    includeRelated: true,
     sortBy: "relevance",
     sortDirection: "desc",
     offset: 0,
@@ -927,6 +929,7 @@ it("saves the normalized query and reports a partial monitoring outcome without 
 
   await waitFor(() => expect(saveEntitySearch).toHaveBeenCalledOnce());
   expect(vi.mocked(saveEntitySearch).mock.calls[0]?.[0]).toEqual({
+    includeRelated: true,
     name: "EGFR landscape",
     query: "EGFR",
     entityTypes: ["target"],

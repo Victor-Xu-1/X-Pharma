@@ -58,6 +58,7 @@ export function serializeWorkspaceLocation(
     | "query"
     | "entityType"
     | "entityTypes"
+    | "entityIncludeRelated"
     | "reviewStatus"
     | "entitySort"
     | "entitySortBy"
@@ -343,6 +344,7 @@ export function serializeWorkspaceLocation(
     params.set("saved", location.chemistrySavedSearchId.toLowerCase());
   }
   if (location.view === "explorer") {
+    if (location.entityIncludeRelated === false) params.set("related", "0");
     const selectedEntityTypes = Array.from(
       new Set(
         (location.entityTypes?.length ? location.entityTypes : [location.entityType]).filter((value) =>

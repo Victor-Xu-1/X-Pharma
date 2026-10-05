@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from pharma_intel.config import Settings
-from pharma_intel.governance.chembl import reconcile_chembl_target_links
+from pharma_intel.governance.chembl import ADAPTER_VERSION, reconcile_chembl_target_links
 from pharma_intel.governance.service import GovernanceService
 from pharma_intel.models import (
     DataSource,
@@ -17,6 +17,7 @@ from pharma_intel.models import (
     DevelopmentProgram,
     DevelopmentProgramTarget,
     Entity,
+    EntityAlias,
     EntityType,
     ExtractionRun,
     GovernanceStatus,
@@ -190,6 +191,15 @@ def test_authorized_chembl_governance_publishes_an_idempotent_program_with_citat
     assert target is not None
     assert target.name == "Epidermal growth factor receptor"
     assert target.external_ids["chembl"] == "CHEMBL203"
+    assert (
+        session.scalar(
+            select(EntityAlias.id).where(
+                EntityAlias.entity_id == target.id,
+                EntityAlias.normalized_alias == "egfr",
+            )
+        )
+        is not None
+    )
     profile = session.scalar(select(TargetProfile).where(TargetProfile.entity_id == target.id))
     assert profile is not None
     assert profile.gene_symbol == "EGFR"
@@ -204,7 +214,7 @@ def test_authorized_chembl_governance_publishes_an_idempotent_program_with_citat
     run = session.get(ExtractionRun, first["run_id"])
     assert run is not None
     assert run.model_provider == "deterministic-adapter"
-    assert run.model_name == "chembl_mechanism_json:1.0.0"
+    assert run.model_name == f"chembl_mechanism_json:{ADAPTER_VERSION}"
     assert run.structured_output is not None
     assert run.structured_output["deterministic_adapter"]["mechanism_id"] == 241
     assert version.state == SourceVersionState.PUBLISHED

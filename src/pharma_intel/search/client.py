@@ -289,6 +289,7 @@ class OpenSearchGateway:
         sort_direction: SortDirection = "desc",
         sort: Sequence[SortClause[EntitySortField]] | None = None,
         facet_review_status: ReviewStatus | None = None,
+        additional_entity_ids: Sequence[str] = (),
     ) -> EntitySearchPage:
         effective_sort = validate_sort_clauses(
             sort,
@@ -340,6 +341,12 @@ class OpenSearchGateway:
                     "minimum_should_match": 1,
                 }
             }
+            if additional_entity_ids:
+                if len(additional_entity_ids) > 1000:
+                    raise ValueError("Related entity candidates exceed the safety limit")
+                lexical_query["bool"]["should"].append(
+                    {"terms": {"entity_id": list(additional_entity_ids), "boost": 0.5}}
+                )
             if self.settings.search_semantic_enabled and effective_sort[0].field == "relevance":
                 candidate_count = self._hybrid_candidate_count(offset, limit)
                 query_clause = {

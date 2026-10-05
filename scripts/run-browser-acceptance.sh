@@ -154,7 +154,8 @@ opensearch_index_prefix=$(
   exit 1
 }
 
-run_id="$(date -u +%Y%m%d%H%M%S)-$RANDOM"
+source "$ROOT_DIR/scripts/lib/browser_fixture_identity.sh"
+run_id=$(browser_fixture_run_id "$(date -u +%Y%m%d%H%M%S)" "$RANDOM")
 browser_projects=(desktop-1440 desktop-1920 tablet-1024 mobile-390)
 email_prefix="e2e-$run_id"
 email_pattern="${email_prefix}-%@example.test"

@@ -257,7 +257,7 @@ def test_health_and_authenticated_entity_flow(
             assert result.json()["engine"] == "database"
             assert result.json()["sort_by"] == "relevance"
             assert result.json()["sort_direction"] == "desc"
-            assert result.json()["query_schema_version"] == "pharma.entity.search.v2"
+            assert result.json()["query_schema_version"] == "pharma.entity.search.v3"
             assert result.json()["applied_filters"] == [{"field": "q", "operator": "contains", "value": "keytruda"}]
             assert result.json()["items"][0]["aliases"] == ["Keytruda"]
             assert result.json()["facets"] == {
@@ -321,6 +321,9 @@ def test_health_and_authenticated_entity_flow(
                 "match_relation": "exact",
                 "matched_value": "P12345",
                 "namespace": "uniprot",
+                "via_entity_id": None,
+                "predicate": None,
+                "source_uri": None,
             }
             bounded_aliases = [f"Candidate alias {index:02d}" for index in range(25)]
             bounded = client.post(

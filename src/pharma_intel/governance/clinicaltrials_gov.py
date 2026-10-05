@@ -28,7 +28,7 @@ from pharma_intel.governance.schemas import (
 from pharma_intel.models import EntityType, TrialResultDisclosureType
 
 ADAPTER_NAME = "clinicaltrials_gov_v2"
-ADAPTER_VERSION = "1.0.0"
+ADAPTER_VERSION = "1.1.0"
 OFFICIAL_API_ROOT = "https://clinicaltrials.gov/api/v2/studies"
 OFFICIAL_STUDY_ROOT = "https://clinicaltrials.gov/study"
 _NCT_ID = re.compile(r"NCT[0-9]{8}")
@@ -64,6 +64,7 @@ def adapter_policy_manifest() -> dict[str, object]:
             "target attribution",
             "therapy-line inference",
             "qualitative efficacy conclusions",
+            "investigational/combination role inferred from intervention order",
         ],
         "license": "ClinicalTrials.gov public data",
     }

@@ -35,13 +35,14 @@ from pharma_intel.search.client import SearchProjectionError
 from pharma_intel.search.service import EntitySearchResultSet, EntitySearchService
 
 router = APIRouter()
-ENTITY_SEARCH_SCHEMA_VERSION = "pharma.entity.search.v2"
+ENTITY_SEARCH_SCHEMA_VERSION = "pharma.entity.search.v3"
 
 
 def _entity_search_applied_filters(
     q: str | None,
     selected_types: list[EntityType],
     review_status: ReviewStatus | None,
+    include_related: bool = False,
 ) -> list[AppliedFilterRead]:
     """Build the server-normalized applied-filter echo for entity search responses.
 
@@ -54,6 +55,7 @@ def _entity_search_applied_filters(
         ("q", "contains", q.strip() if q else None),
         ("entity_types", "in", [item.value for item in selected_types]),
         ("review_status", "eq", review_status.value if review_status else None),
+        ("include_related", "eq", True if include_related and q else None),
     )
 
 
@@ -67,6 +69,9 @@ def _entity_search_items(result: EntitySearchResultSet) -> list[EntitySearchItem
                 "match_relation": match.match_relation,
                 "matched_value": match.matched_value,
                 "namespace": match.namespace,
+                "via_entity_id": match.via_entity_id,
+                "predicate": match.predicate,
+                "source_uri": match.source_uri,
             }
             if match is not None
             else None
@@ -108,6 +113,7 @@ def search_entities(
     sort_direction: SortDirection | None = None,
     entity_types: Annotated[list[EntityType] | None, Query()] = None,
     sort: Annotated[list[SortToken] | None, Query(max_length=5)] = None,
+    include_related: bool = False,
 ) -> SearchResult:
     principal.require("entities:read")
     effective_review_status = _effective_public_review_status(principal, review_status)
@@ -132,12 +138,13 @@ def search_entities(
             selected_types,
             effective_sort,
             hide_unpublished_facets=not _can_view_unpublished_entities(principal),
+            include_related=include_related,
         )
     except SearchProjectionError as exc:
         raise HTTPException(status_code=503, detail="Entity search projection unavailable") from exc
     return SearchResult(
         query_schema_version=ENTITY_SEARCH_SCHEMA_VERSION,
-        applied_filters=_entity_search_applied_filters(q, selected_types, effective_review_status),
+        applied_filters=_entity_search_applied_filters(q, selected_types, effective_review_status, include_related),
         items=_entity_search_items(result),
         total=result.total,
         limit=limit,
@@ -149,6 +156,7 @@ def search_entities(
         suggestions=result.suggestions,
         engine=result.engine,
         took_ms=result.took_ms,
+        warnings=list(result.warnings),
     )
 
 

@@ -22,6 +22,7 @@ import { type DomainAnalysisView, DomainLandscape, type DomainLandscapeSection }
 import { EntityPreviewDrawer } from "../components/EntityPreviewDrawer";
 import { EntitySearchInput } from "../components/EntitySearchInput";
 import { ProfessionalQueryBuilder } from "../components/ProfessionalQueryBuilder";
+import { PublicResearchPanel } from "../components/PublicResearchPanel";
 import { ResultPagination } from "../components/ResultPagination";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
 import { type ColumnDef, type SortingState, VirtualDataTable } from "../components/VirtualDataTable";
@@ -108,6 +109,7 @@ export function ExplorerView({
   initialQuery,
   initialEntityType,
   initialEntityTypes,
+  initialIncludeRelated = true,
   initialReviewStatus,
   initialSortBy = "relevance",
   initialSortDirection = "desc",
@@ -131,6 +133,7 @@ export function ExplorerView({
   initialQuery: string;
   initialEntityType: string;
   initialEntityTypes?: string[];
+  initialIncludeRelated?: boolean;
   initialReviewStatus: string;
   initialSortBy?: string;
   initialSortDirection?: EntitySearchSortDirection;
@@ -151,6 +154,7 @@ export function ExplorerView({
     sortDirection: EntitySearchSortDirection,
     offset: number,
     sort?: SortCriterion<EntitySearchSortField>[],
+    includeRelated?: boolean,
   ) => void;
   onDisplayModeChange?: (displayMode: ExplorerDisplayMode) => void;
   onAnalysisViewChange?: (analysisView: DomainAnalysisView) => void;
@@ -185,6 +189,7 @@ export function ExplorerView({
     initialSortDirection,
     initialOffset,
     initialSort,
+    initialIncludeRelated,
   );
   const searchEnabled = Boolean(initialQuery || requestedInitialEntityTypes.length || initialReviewStatus);
   const search = useQuery({
@@ -195,6 +200,7 @@ export function ExplorerView({
         sortDirection: initialSortDirection,
         sort: initialSort,
         offset: initialOffset,
+        includeRelated: initialIncludeRelated,
       }),
     enabled: searchEnabled,
   });
@@ -301,6 +307,7 @@ export function ExplorerView({
       analysisView: initialAnalysisView,
       shared,
       monitor,
+      includeRelated: initialIncludeRelated,
     });
   }
 
@@ -583,10 +590,40 @@ export function ExplorerView({
           </summary>
           <ProfessionalQueryBuilder query={query.trim()} onExecute={onOpenSpecializedSearch} />
         </details>
+        <label
+          className="checkbox-field"
+          title="从精确名称、别名或标识出发，仅扩展一层有当前已发布证据的关系，不推断机制或获批用途。"
+        >
+          <input
+            type="checkbox"
+            checked={initialIncludeRelated}
+            onChange={(event) =>
+              onSearchChange(
+                initialQuery,
+                requestedInitialEntityTypes,
+                PUBLIC_REVIEW_STATUS,
+                initialSortBy as EntitySearchSortField,
+                initialSortDirection,
+                0,
+                initialSort,
+                event.target.checked,
+              )
+            }
+          />
+          包含已验证关联
+        </label>
       </form>
 
+      <PublicResearchPanel defaultQuery={initialQuery} />
+      {result?.warnings?.map((warning) => (
+        <p className="inline-feedback" role="status" key={warning}>
+          {warning}
+        </p>
+      ))}
       <AppliedFiltersBar
-        filters={result?.applied_filters?.filter((filter) => filter.field !== "review_status")}
+        filters={result?.applied_filters?.filter(
+          (filter) => !["review_status", "include_related"].includes(filter.field),
+        )}
         labels={appliedFilterLabels}
         valueLabels={appliedFilterValueLabels}
         onClear={() => {

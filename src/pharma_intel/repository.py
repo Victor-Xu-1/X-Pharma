@@ -3,12 +3,13 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
-from sqlalchemy import and_, case, false, func, or_, select, text
+from sqlalchemy import and_, case, false, func, select, text
 from sqlalchemy.orm import Session, selectinload
 
 from pharma_intel.identity import EntityIdentityService
 from pharma_intel.models import Entity, EntityAlias, EntityIdentifier, EntityType, OutboxEvent, ReviewStatus
 from pharma_intel.schemas import ENTITY_SORT_FIELDS, EntityCreate, EntitySortField, SortDirection
+from pharma_intel.search.keyword import entity_keyword_predicate
 from pharma_intel.sorting import SortClause, validate_sort_clauses
 
 _space_re = re.compile(r"\s+")
@@ -116,6 +117,7 @@ class EntityRepository:
         sort_by: EntitySortField = "relevance",
         sort_direction: SortDirection = "desc",
         sort: Sequence[SortClause[EntitySortField]] | None = None,
+        additional_entity_ids: Sequence[str] = (),
     ) -> tuple[list[Entity], int]:
         effective_sort = validate_sort_clauses(
             sort,
@@ -145,29 +147,7 @@ class EntityRepository:
             .where(*filters)
         )
         if query:
-            pattern = f"%{normalize_name(query)}%"
-            alias_match = (
-                select(EntityAlias.id)
-                .where(
-                    EntityAlias.entity_id == Entity.id,
-                    EntityAlias.tenant_id == self.tenant_id,
-                    EntityAlias.normalized_alias.like(pattern),
-                )
-                .exists()
-            )
-            identifier_match = (
-                select(EntityIdentifier.id)
-                .where(
-                    EntityIdentifier.entity_id == Entity.id,
-                    EntityIdentifier.tenant_id == self.tenant_id,
-                    EntityIdentifier.normalized_value.like(pattern),
-                )
-                .exists()
-            )
-            description_match = func.lower(func.coalesce(Entity.description, "")).like(pattern)
-            statement = statement.where(
-                or_(Entity.normalized_name.like(pattern), alias_match, identifier_match, description_match)
-            )
+            statement = statement.where(entity_keyword_predicate(self.tenant_id, query, additional_entity_ids))
         count = self.session.scalar(select(func.count()).select_from(statement.subquery())) or 0
         entity_type_order = case(
             {
@@ -259,32 +239,13 @@ class EntityRepository:
         self,
         query: str | None,
         review_status: ReviewStatus | None = None,
+        additional_entity_ids: Sequence[str] = (),
     ) -> dict[str, dict[str, int]]:
         filters = [Entity.tenant_id == self.tenant_id]
         if review_status is not None:
             filters.append(Entity.review_status == review_status)
         if query:
-            pattern = f"%{normalize_name(query)}%"
-            alias_match = (
-                select(EntityAlias.id)
-                .where(
-                    EntityAlias.entity_id == Entity.id,
-                    EntityAlias.tenant_id == self.tenant_id,
-                    EntityAlias.normalized_alias.like(pattern),
-                )
-                .exists()
-            )
-            identifier_match = (
-                select(EntityIdentifier.id)
-                .where(
-                    EntityIdentifier.entity_id == Entity.id,
-                    EntityIdentifier.tenant_id == self.tenant_id,
-                    EntityIdentifier.normalized_value.like(pattern),
-                )
-                .exists()
-            )
-            description_match = func.lower(func.coalesce(Entity.description, "")).like(pattern)
-            filters.append(or_(Entity.normalized_name.like(pattern), alias_match, identifier_match, description_match))
+            filters.append(entity_keyword_predicate(self.tenant_id, query, additional_entity_ids))
         entity_types = self.session.execute(
             select(Entity.entity_type, func.count()).where(*filters).group_by(Entity.entity_type)
         )

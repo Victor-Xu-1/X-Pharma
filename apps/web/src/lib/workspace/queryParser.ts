@@ -151,6 +151,7 @@ export function parseWorkspaceQuery(
           explorerDisplayMode: params.get("display") === "landscape" ? ("landscape" as const) : ("list" as const),
           explorerAnalysisView: params.get("analysis_view") === "table" ? ("table" as const) : ("chart" as const),
           entityTypes: selectedEntityTypes,
+          entityIncludeRelated: params.get("related") === null || params.get("related") === "1",
           offset: Math.min(100_000, Math.max(0, Number.parseInt(params.get("offset") ?? "0", 10) || 0)),
         }
       : {};

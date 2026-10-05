@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from pharma_intel.config import Settings
-from pharma_intel.governance.clinicaltrials_gov import parse_clinicaltrials_gov_snapshot
+from pharma_intel.governance.clinicaltrials_gov import ADAPTER_VERSION, parse_clinicaltrials_gov_snapshot
 from pharma_intel.governance.service import GovernanceService
 from pharma_intel.intelligence import IntelligenceService
 from pharma_intel.models import (
@@ -167,6 +167,29 @@ def _snapshot() -> bytes:
     return json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
 
 
+def test_official_trial_publishes_source_scoped_searchable_condition_and_sponsor_labels(
+    session: Session, tenant: Tenant, tmp_path: Path
+) -> None:
+    store, version = _version(session, tenant, tmp_path)
+    service = GovernanceService(session, Settings(ai_governance_enabled=False), store, tenant.id)
+    first = service.govern_version(version.id)
+    repeated = service.govern_version(version.id)
+    assert first["run_id"] == repeated["run_id"]
+    entities = list(session.scalars(select(Entity).where(Entity.tenant_id == tenant.id)))
+    conditions = [item for item in entities if item.entity_type == EntityType.DISEASE]
+    sponsors = [item for item in entities if item.entity_type == EntityType.ORGANIZATION]
+    assert [item.name for item in conditions] == ["EGFR-positive solid tumor"]
+    assert {item.name for item in sponsors} == {"Example Therapeutics", "Example Cancer Center"}
+    assert all(item.attributes["identity_scope"] == "provider_label" for item in conditions + sponsors)
+    assert all(item.review_status == ReviewStatus.VERIFIED for item in conditions + sponsors)
+    assert not any(item.attributes.get("approved_indication") for item in conditions)
+    for label in conditions + sponsors:
+        dossier = IntelligenceService(session, tenant.id, include_unpublished=False).entity_dossier(label.id)
+        assert dossier is not None
+        assert len(dossier.clinical_trials) == 1
+        assert next(item.total for item in dossier.coverage if item.domain == "evidence") == 1
+
+
 def _version(
     session: Session,
     tenant: Tenant,
@@ -317,15 +340,25 @@ def test_official_governance_bypasses_llm_publishes_and_links_target_pipeline(
     run = session.get(ExtractionRun, first["run_id"])
     assert run is not None
     assert run.model_provider == "deterministic-adapter"
-    assert run.model_name == "clinicaltrials_gov_v2:1.0.0"
+    assert run.model_name == f"clinicaltrials_gov_v2:{ADAPTER_VERSION}"
     trial = session.scalar(select(ClinicalTrialProfile).where(ClinicalTrialProfile.registry_id == "NCT07672483"))
     assert trial is not None
     assert trial.has_results is True
     assert trial.conditions == ["EGFR-positive solid tumor"]
     role = session.scalar(select(ClinicalTrialEntityRole).where(ClinicalTrialEntityRole.trial_id == trial.id))
-    assert role is not None
-    assert role.entity_id == verified_drug.id
-    assert role.role == TrialEntityRole.INVESTIGATIONAL_DRUG.value
+    assert role is None  # Registered intervention order does not establish investigational/combination roles.
+    legacy_role = ClinicalTrialEntityRole(
+        tenant_id=tenant.id,
+        trial_id=trial.id,
+        entity_id=verified_drug.id,
+        role=TrialEntityRole.INVESTIGATIONAL_DRUG.value,
+        source_document_id=version.source_document_id,
+    )
+    session.add(legacy_role)
+    session.commit()
+    public_trial = IntelligenceService(session, tenant.id, include_unpublished=False).clinical_trial_detail(trial.id)
+    assert public_trial is not None and public_trial.entity_roles == []
+    assert session.get(ClinicalTrialEntityRole, legacy_role.id) is not None  # Retained, not deleted.
     assert session.scalar(select(func.count()).select_from(ReviewTask)) == 0
     assert version.state == SourceVersionState.PUBLISHED
 

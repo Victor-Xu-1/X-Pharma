@@ -9,6 +9,7 @@ export type EntitySearchQuery = {
   display_mode?: 'list' | 'landscape';
   entity_type?: (EntityType | null);
   entity_types?: Array<EntityType>;
+  include_related?: boolean;
   'q'?: (string | null);
   review_status?: (ReviewStatus | null);
   sort?: Array<string>;

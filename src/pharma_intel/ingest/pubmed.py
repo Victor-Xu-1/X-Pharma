@@ -29,6 +29,7 @@ from pharma_intel.ingest.connectors import (
     _is_non_negative_integer,
     _is_sha256,
 )
+from pharma_intel.ingest.xml import parse_xml as _parse_xml
 from pharma_intel.models import DataSource, DataSourceType
 from pharma_intel.product import SOURCE_USER_AGENT
 
@@ -464,14 +465,6 @@ def _pubmed_authors(record: etree._Element) -> list[str]:
 
 def _unique_texts(elements: list[etree._Element]) -> list[str]:
     return list(dict.fromkeys(text for element in elements if (text := _element_text(element))))
-
-
-def _parse_xml(payload: bytes, resource_name: str) -> etree._Element:
-    parser = etree.XMLParser(resolve_entities=False, no_network=True, recover=False, huge_tree=False)
-    try:
-        return etree.fromstring(payload, parser=parser)
-    except (etree.XMLSyntaxError, ValueError) as exc:
-        raise ConnectorTransportError(f"{resource_name} returned invalid XML") from exc
 
 
 def _required_integer(root: etree._Element, xpath: str, field_name: str) -> int:

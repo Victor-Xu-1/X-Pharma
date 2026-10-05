@@ -10,6 +10,9 @@ class EntitySearchMatch:
     match_relation: str
     matched_value: str | None = None
     namespace: str | None = None
+    via_entity_id: str | None = None
+    predicate: str | None = None
+    source_uri: str | None = None
 
 
 @dataclass(frozen=True)

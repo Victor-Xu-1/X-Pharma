@@ -51,6 +51,7 @@ export function entityMatchExplanation(entity: EntitySearchItemRead): string | n
     exact: "精确匹配",
     partial: "部分匹配",
     semantic: "相关结果",
+    related: "关联命中",
   }[entity.match.match_relation];
   const source = {
     canonical_name: "名称",
@@ -58,6 +59,7 @@ export function entityMatchExplanation(entity: EntitySearchItemRead): string | n
     external_id: "数据库编号",
     description: "简介",
     semantic: "相关内容",
+    relationship: "已验证关联",
   }[entity.match.match_type];
   const namespace =
     entity.match.namespace && isPublicEntityIdentifierNamespace(entity.match.namespace)

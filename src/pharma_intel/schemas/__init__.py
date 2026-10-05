@@ -791,6 +791,11 @@ from .projections import (
 from .projections import (
     SearchProjectionStatusRead as SearchProjectionStatusRead,
 )
+from .public_research import PublicResearchCoverage as PublicResearchCoverage
+from .public_research import PublicResearchQuery as PublicResearchQuery
+from .public_research import PublicResearchRecord as PublicResearchRecord
+from .public_research import PublicResearchResponse as PublicResearchResponse
+from .public_research import PublicResearchSourceResult as PublicResearchSourceResult
 from .quality import (
     DataQualityCoverageRead as DataQualityCoverageRead,
 )
