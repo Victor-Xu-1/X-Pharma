@@ -100,7 +100,24 @@ function workspaceWhereRule(css: string, selector: string) {
   throw new Error(`Missing workspace :where() rule containing ${selector}`);
 }
 
-describe("unified OpenAI-inspired minimal light design system", () => {
+describe("unified minimal biomedical light design system", () => {
+  it("uses the AI visual target's restrained scientific accent without changing brand or table density", () => {
+    const designSystem = source("../design-system.css");
+    const palette = source("../components/chartPalette.ts");
+    const layout = source("../styles.css");
+    expect(designSystem).toContain("--ds-accent: #407f82;");
+    expect(designSystem).toContain("--ds-accent-strong: #08656d;");
+    expect(designSystem).toContain("--ds-accent-soft: #e8f4f3;");
+    expect(designSystem).toContain("--ds-nav-active: #e6f2f2;");
+    expect(ruleBody(designSystem, ".nav-button.active")).toContain("color: var(--ds-accent-strong);");
+    expect(palette).toContain('primary: "#407f82"');
+    expect(palette).toContain('primaryEmphasis: "#08656d"');
+    expect(ruleBody(layout, ".page-heading h1")).toContain("font-size: 26px;");
+    expect(ruleBody(layout, ".workspace-shell")).toContain("--sidebar-width: 224px;");
+    expect(designSystem).toContain("--ds-action: #0d0d0d;");
+    expect(designSystem).toContain("--ds-shadow-sm: none;");
+    expect(ruleBody(layout, ".table-density-control button")).toContain("min-height: 27px;");
+  });
   it("wraps full entity identifiers without hiding or clipping mobile dossier content", () => {
     const layout = source("../styles.css");
     const identity = ruleBody(layout, ".target-title-row > div > div:last-child");
@@ -137,8 +154,8 @@ describe("unified OpenAI-inspired minimal light design system", () => {
     expect(designSystem).toContain("--ds-canvas: #ffffff;");
     expect(designSystem).toContain("--ds-nav: #f9f9f9;");
     expect(designSystem).toContain("--ds-ink-strong: #0d0d0d;");
-    expect(designSystem).toContain("--ds-accent: #5d5d5d;");
-    expect(designSystem).toContain("--ds-accent-strong: #303030;");
+    expect(designSystem).toContain("--ds-accent: #407f82;");
+    expect(designSystem).toContain("--ds-accent-strong: #08656d;");
     expect(designSystem).toContain("--ds-action: #0d0d0d;");
     expect(designSystem).toContain("--ds-font-display: var(--ds-font-sans);");
     expect(designSystem).not.toMatch(/Georgia|Noto Serif|Songti SC|SimSun|#faf9f5|#f0eee6/i);
@@ -165,7 +182,7 @@ describe("unified OpenAI-inspired minimal light design system", () => {
     expect([...used].filter((token) => !defined.has(token))).toEqual([]);
   });
 
-  it("uses a shared neutral chart palette without per-chart color overrides", () => {
+  it("uses a shared scientific chart accent without per-chart color overrides", () => {
     const palette = source("../components/chartPalette.ts");
     const chartSources = [
       source("../components/ClinicalTrialLandscape.tsx"),
@@ -174,7 +191,7 @@ describe("unified OpenAI-inspired minimal light design system", () => {
     ].join("\n");
 
     expect(palette).not.toMatch(/#356b80|#0284c7|#a7d0d9/i);
-    expect(palette).toContain("#5d5d5d");
+    expect(palette).toContain("#407f82");
     expect(palette).not.toMatch(/#d97757|#9c4a2b/i);
     expect(chartSources).toContain("chartPalette");
     expect(chartSources).not.toMatch(/#[0-9a-f]{6}\b|rgba\(/i);
@@ -202,6 +219,7 @@ describe("unified OpenAI-inspired minimal light design system", () => {
       ["--ds-ink-muted", "--ds-surface-muted"],
       ["--ds-info", "--ds-info-soft"],
       ["--ds-nav-text", "--ds-nav-active"],
+      ["--ds-accent-strong", "--ds-nav-active"],
       ["--ds-ink-strong", "--ds-canvas"],
     ] as const;
 
@@ -487,7 +505,7 @@ describe("unified OpenAI-inspired minimal light design system", () => {
       "background: var(--ds-border-strong);",
     );
     expect(ruleBody(designSystem, ".tab-bar button")).toContain("color: var(--ds-ink-muted);");
-    expect(ruleBody(designSystem, ".tab-bar button.active")).toContain("color: var(--ds-ink-strong);");
+    expect(ruleBody(designSystem, ".tab-bar button.active")).toContain("color: var(--ds-accent-strong);");
   });
 
   it("keeps high-density table scroll containers compact without removing overflow", () => {
@@ -628,5 +646,17 @@ describe("unified OpenAI-inspired minimal light design system", () => {
     const body = ruleBody(designSystem, ".workspace-shell details:not([open]) > :not(summary)");
 
     expect(body).toContain("display: none;");
+  });
+
+  it("bounds the mobile knowledge scroller instead of letting content overflow a capped parent", () => {
+    const responsive = source("../styles/chemistry.css");
+    const listBounds = ruleContainingSelectors(responsive, [".knowledge-page-list", ".review-list"]);
+    const indexBorders = ruleContainingSelectors(responsive, [".knowledge-index", ".review-list"]);
+    const knowledge = source("../styles/knowledge.css");
+    expect(listBounds.body).toContain("max-height: 300px;");
+    expect(indexBorders.body).not.toContain("max-height:");
+    expect(ruleBody(knowledge, ".knowledge-page-list")).toContain("overflow-y: auto;");
+    expect(ruleBody(knowledge, ".knowledge-count")).not.toContain("font-size:");
+    expect(ruleBody(knowledge, ".knowledge-count")).not.toContain("text-transform:");
   });
 });

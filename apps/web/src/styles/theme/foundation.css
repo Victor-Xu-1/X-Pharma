@@ -221,7 +221,7 @@ a:hover,
 
 .nav-button.active {
   background: var(--ds-nav-active);
-  color: var(--ds-ink-strong);
+  color: var(--ds-accent-strong);
   box-shadow: none;
 }
 

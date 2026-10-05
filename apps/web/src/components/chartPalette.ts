@@ -1,12 +1,12 @@
 export const chartPalette = {
-  axis: "#5d5d5d",
+  axis: "#59666c",
   axisLabel: "#333333",
-  axisLine: "#e5e5e5",
-  grid: "#ececec",
+  axisLine: "#e3e9e8",
+  grid: "#edf1f1",
   surface: "#ffffff",
-  primary: "#5d5d5d",
-  primaryEmphasis: "#303030",
-  trendArea: "rgba(13, 13, 13, 0.06)",
+  primary: "#407f82",
+  primaryEmphasis: "#08656d",
+  trendArea: "rgba(8, 101, 109, 0.06)",
   phase: {
     approved: "#303030",
     filed: "#444444",

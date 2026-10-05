@@ -94,7 +94,7 @@
 
 .tab-bar button.active {
   border-bottom-color: var(--ds-accent-strong);
-  color: var(--ds-ink-strong);
+  color: var(--ds-accent-strong);
 }
 
 .tab-bar button:focus-visible {

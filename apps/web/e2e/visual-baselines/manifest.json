@@ -5,121 +5,121 @@
   "files": {
     "research-deal-rights-desktop-1440.png": {
       "capture": "dossier-section",
-      "sha256": "30ac0fecb4b68041cc9e7dd69c6a6550d5fbb0e8c77fa3a2d77b21f6863c1374",
+      "sha256": "1e481c849f957a9c9505e5c83e2c0b196b030c00cb63de81df175cf0bfca421e",
       "state": "controlled-deal-rights",
       "viewport": "1440x900"
     },
     "research-deal-rights-desktop-1920.png": {
       "capture": "dossier-section",
-      "sha256": "fc61076a2dda18f94182d39c4463122bbd957bc2c309c2a6448906a7221e51d7",
+      "sha256": "37a6c1b6b37171309639608295197a7e9519f92e3c9637a4b66b0e2537060c86",
       "state": "controlled-deal-rights",
       "viewport": "1920x1080"
     },
     "research-deal-rights-mobile-390.png": {
       "capture": "dossier-section",
-      "sha256": "1f1cf89506513801ac22b57c8969bd88aac4cb2f5005b24a5a3e4c1d46008810",
+      "sha256": "5375f6fe4687cfeccbc098a85f4925205964bb06fc640c0556880ec932fa32f2",
       "state": "controlled-deal-rights",
       "viewport": "390x844"
     },
     "research-deal-rights-tablet-1024.png": {
       "capture": "dossier-section",
-      "sha256": "63242a4d3644e0f22906550ee00cd0f3655cef3a2f9dedd0c6866723ba073534",
+      "sha256": "4d56f8e0b6e898c711c9b0b79530fbc0b183019ce84d26467e2e096a29e10913",
       "state": "controlled-deal-rights",
       "viewport": "1024x768"
     },
     "research-dense-results-desktop-1440.png": {
       "capture": "table-shell",
-      "sha256": "ac875fbfb98b2a16d9bfcefa7989847fe8d8d06da6b608871c79c70e30ffee65",
+      "sha256": "8296796580035ce11b4aca4d694059c69323a8b176574971646b319658208260",
       "state": "controlled-dense-results",
       "viewport": "1440x900"
     },
     "research-dense-results-desktop-1920.png": {
       "capture": "table-shell",
-      "sha256": "7fe22dc2038827b5b9b9f8af032d45940e0ad24a6a79688ab100e8863e490cc3",
+      "sha256": "ee7064e11f080a87cd0ac6b9fae7bb3d3c427863fc8fafc6ca00eda2c829f38e",
       "state": "controlled-dense-results",
       "viewport": "1920x1080"
     },
     "research-dense-results-mobile-390.png": {
       "capture": "table-shell",
-      "sha256": "bbd966020922e28b86235497f3785bfd32d2018e076ea4bff7cc30a8a9e2d783",
+      "sha256": "11a3c0892d87251116d228b52c5e87bd92a5b551a95b5910fa05d8ec5898b1f2",
       "state": "controlled-dense-results",
       "viewport": "390x844"
     },
     "research-dense-results-tablet-1024.png": {
       "capture": "table-shell",
-      "sha256": "45db7e953c8b126d1c7e07fcdfa2c21174124372b17821e001e81ec6bc01e20c",
+      "sha256": "761563e0cca1a4815b94bffc7819a1fd429d0d031fef2cd07b7b385cb1646108",
       "state": "controlled-dense-results",
       "viewport": "1024x768"
     },
     "research-patent-timeline-desktop-1440.png": {
       "capture": "dossier-section",
-      "sha256": "38008ca080e1b3ab50566d2da350d6db405d4bf3cb036e00a7330f4d71ae70f8",
+      "sha256": "5ff0c7ffc360d0923db23bc5630189445f23c54c0673f0c974b1c1eaa74adff4",
       "state": "controlled-patent-timeline",
       "viewport": "1440x900"
     },
     "research-patent-timeline-desktop-1920.png": {
       "capture": "dossier-section",
-      "sha256": "42ef8d31207b79f52c981e1a66e98df2aabbe1baea57fe61f3330a17529248a3",
+      "sha256": "cc002b4dda097d8873a3bb0dc37e0485f1eccc8dc2e01f24c2bd2421644115c3",
       "state": "controlled-patent-timeline",
       "viewport": "1920x1080"
     },
     "research-patent-timeline-mobile-390.png": {
       "capture": "dossier-section",
-      "sha256": "7d334624ab89d7363718526a8f819f1edf929a30b2db251b8fd97c0b217fa47f",
+      "sha256": "fa0d2bccff3a34b56b102db8c0bcfe872d4ed73c9819607308069dac62a72d2c",
       "state": "controlled-patent-timeline",
       "viewport": "390x844"
     },
     "research-patent-timeline-tablet-1024.png": {
       "capture": "dossier-section",
-      "sha256": "e768e3077307485675b0e2fcd5deb7501f4692c1d0174051ae6b72b6cf2e2582",
+      "sha256": "4cae701b0f7d56e153307453c6919a5a023703f85106757a8ffaa0d13e7e15a1",
       "state": "controlled-patent-timeline",
       "viewport": "1024x768"
     },
     "research-trial-outcomes-desktop-1440.png": {
       "capture": "dossier-section",
-      "sha256": "31e2aa75470648aaf9e5f089b97f1e375418ad4e3e8a46cde7cb00e6aee4968d",
+      "sha256": "0054732937673189dbd52df0e6683086cf466b79a82f7d4649a633d0aff13085",
       "state": "controlled-trial-outcomes",
       "viewport": "1440x900"
     },
     "research-trial-outcomes-desktop-1920.png": {
       "capture": "dossier-section",
-      "sha256": "9bc9b87f1faed382c7689e8f5c3138185f8a423a48143508b14c22bb01a7ccbf",
+      "sha256": "dc42025da5f3f0fa2a6807f216317c62660e43ac7bb56f5f80c9ecd6c75c18cd",
       "state": "controlled-trial-outcomes",
       "viewport": "1920x1080"
     },
     "research-trial-outcomes-mobile-390.png": {
       "capture": "dossier-section",
-      "sha256": "c85d2fb5f634634fc217a8c4c3718453b73df5c454ea87081000f14590854d50",
+      "sha256": "6a61d20cfaea2fa0cc53e8b16f4146673423c2b8b6ffddc6fe6b5182f6e5a9e7",
       "state": "controlled-trial-outcomes",
       "viewport": "390x844"
     },
     "research-trial-outcomes-tablet-1024.png": {
       "capture": "dossier-section",
-      "sha256": "cf69168e9a8a95d8171dba2cede2677545b0be1a1978d401f0a2f682156a4eac",
+      "sha256": "a6d5d09fe720aa22d7609de934c05387988338cc69d33d56c242e65819954e32",
       "state": "controlled-trial-outcomes",
       "viewport": "1024x768"
     },
     "research-workbench-desktop-1440.png": {
       "capture": "full-page",
-      "sha256": "40dfecda8763f8d397797857f2d36a54aa057dc30ce451a0dbf2c58f761b709b",
+      "sha256": "582a2097f7d9a0d3de91fb01ff2d476c6c920c72dba98e6509822d1c588600bf",
       "state": "controlled-no-result",
       "viewport": "1440x900"
     },
     "research-workbench-desktop-1920.png": {
       "capture": "full-page",
-      "sha256": "db8ee995cae95cb26681f6477f7d2a7797833f94a632880b72a29b239cd4addd",
+      "sha256": "9c26a4c93da66cfdfb06f1e0f1e62c6071bd870ca219ec1c2dbb0b97230a13f3",
       "state": "controlled-no-result",
       "viewport": "1920x1080"
     },
     "research-workbench-mobile-390.png": {
       "capture": "full-page",
-      "sha256": "df722d38f1ac28d37f63b749bc42514e0ad52c6e281634df737b9896d5ece3b2",
+      "sha256": "aea01e42fcfabfa7533724dda433709e70f56500324d919f97d53b0e92ab37ef",
       "state": "controlled-no-result",
       "viewport": "390x844"
     },
     "research-workbench-tablet-1024.png": {
       "capture": "full-page",
-      "sha256": "2917b294d3a95f590f0d1bf0c79d7626facbc18dcba46fa65b733b45e1e3b3f3",
+      "sha256": "4f16b359d62af3c61661bf2a3568797642b0dcd47472d4091de272386f9f29b7",
       "state": "controlled-no-result",
       "viewport": "1024x768"
     }

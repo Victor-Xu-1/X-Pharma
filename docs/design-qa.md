@@ -1,4 +1,112 @@
-# Design QA: 研发情报基础查询
+# Design QA: X-Pharma 工作台
+
+## 2026-10-05: clean biomedical workbench adaptation
+
+Visual source: native Image Generation explorer, company and factory concepts.
+The backend model identifier is not exposed by the tool. This is a restrained
+adaptation of the existing product, not a pixel-perfect clone of generated
+copy, invented data or inaccurate brand marks. The existing design system
+remains the single implementation authority.
+
+Local evidence root (private runtime captures are not committed):
+`E:\WSL\management\x-pharma\deliverables\biomedical-visual-preview`.
+Source images: `AI-explorer-design-target.png`, `AI-company-design-target.png`,
+`AI-factory-design-target.png`, each 1487×1058 pixels. Implementation:
+`real-pages/desktop-1440/research-explorer.png`, `research-company.png` and
+`internal-factory.png`, each 1440×1024 at CSS viewport 1440×1024 and DPR 1,
+from exact candidate `c7c42fddd19647f0489b5c0f415c0f0d8bc8e5d5`.
+The concepts are proportionally width-normalized to 1440 pixels; the remaining
+one-pixel height difference is retained rather than stretched away.
+
+Full comparisons place both artifacts in one image:
+`comparison-explorer.png`, `comparison-company.png`, `comparison-factory.png`.
+Focused comparisons cover navigation, title/toolbar, company identity/tabs and
+factory status/stages: `comparison-explorer-navigation.png` and the three
+`comparison-*-header.png` images. These images were opened and visually
+compared; filenames or passing compilation were not used as visual evidence.
+
+### Findings and comparison history
+
+- **P2, resolved: mobile knowledge list overlapped the document empty state.**
+  Initial real capture `knowledge-mobile-before-fix.png` showed list rows
+  extending past the index's 300px bound into the document. The list retained
+  its 550px bound. The mobile height limit now belongs to the scrollable list;
+  the parent follows normal document flow. Governance list bounds and parent
+  borders remain. `comparison-knowledge-mobile.png` compares initial and fixed
+  states at the same empty selection, 500 records and CSS 390×844 viewport.
+  Both are 1024×2216 raster pixels at the original Pixel 7 DPR 2.625; no density
+  mismatch was treated as a defect. The real-browser containment test failed
+  before the fix and passed after it, including keyboard focus/visibility for
+  record 21. The initial-state post-fix image and the keyboard-focused image
+  were separately inspected. No other actionable P0/P1/P2 finding remains.
+- **Accepted adaptation: readable dense-workbench typography.** Generated
+  text is larger and more approximate than its prompt. The product retains
+  its system/Noto Sans CJK font stack, readable 12px metadata, 13–14px controls,
+  26px page heading and existing table density. No remote or proprietary font
+  is added. Full-size images and focused crops were checked for alignment,
+  optical weight, wrapping and truncation rather than judged only as thumbnails.
+- **Accepted adaptation: actual data and professional controls.** The explorer
+  keeps real relationship matching, selection, sorting and professional
+  filters rather than the concept's illustrative six-row table. Company
+  registration provenance and actual trial links remain; the building icon
+  is intentionally retained instead of the concept's incorrect product logo
+  as a company logo. Factory sources, statuses and authorization notices remain
+  real and can change over time. Empty domains are not filled with invented
+  scientific, commercial, patent or licensed coverage.
+
+### Required fidelity surfaces
+
+- Fonts/typography: shared system stack, compact optical weights and hierarchy
+  are coherent across the 24 views and account forms; intentional density
+  differences are documented above. Existing full-title/detail affordances
+  remain for compact result text.
+- Spacing/layout: desktop navigation is 224px, headings use consistent 28px
+  top spacing and 24px separation. Existing mobile drawer, tab scrolling,
+  labelled horizontal data-table scrolling and pane reflow are retained.
+  The one observed overlapping pane was fixed and compared again.
+- Colors/tokens: white canvas, near-white navigation, subdued teal active
+  states and charcoal primary actions match the selected direction. Focus and
+  emphasis use `#08656d`; success, warning and error semantics are unchanged.
+  The component contrast contracts and original WCAG routes own accessibility
+  acceptance; no contrast or pixel threshold was reduced.
+- Image/asset fidelity: the supplied orange logo and favicon are unchanged
+  repository assets, not generated replacements. Icons remain the existing
+  library. No CSS art, handcrafted SVG decoration, DNA background, screenshot
+  renderer or concept bitmap is introduced into the application.
+- Copy/content: original Chinese workflows and domain-specific caveats remain.
+  Concept captions, illustrative dates and generated assertions were not
+  copied into the application. The preview gallery explicitly distinguishes
+  three concepts from 112 actual page captures and does not claim a model ID.
+
+### Implemented checks and remaining acceptance boundaries
+
+- Final shared design, brand, controls, navigation and knowledge selection:
+  61/61 tests across eight related files passed. Visual manifest/profile
+  contracts passed 22/22 and e2e TypeScript passed. Earlier overlapping runs
+  are not summed as independent coverage. Production assets remain bounded:
+  research JS473307, internal JS360666, CSS196589 bytes.
+- Fixed candidate's real page capture registrations passed 4/4 in 1.7 minutes:
+  28 pages at 1440×1024, 1920×1080, 1024×768 and 390×844; zero page errors or
+  document horizontal overflow. This is a page-render gate, not exhaustive
+  business or scientific acceptance.
+- Original 12 accessibility/17-stage navigation registrations passed during
+  explicit reference review. A later local readonly attempt was interrupted
+  after WSL startup failures and health-request timeouts, not counted as a
+  pass. Its bounded EXIT cleanup restored the authoritative search projection
+  and readiness. Mandatory automatic CI owns the remaining strict readonly
+  comparison without snapshot updates. Readonly references, CI, normal merge
+  and exact-main deployment are independent release gates. No manual global
+  suite was run and no gate was relaxed.
+
+Implementation checklist: shared tokens/hierarchy applied; original branding
+preserved; all page surfaces captured; mobile overlap fixed; full and focused
+comparisons completed; real keyboard access verified. Professional-user UAT,
+assistive-technology review, paid-provider validation and production RUM are
+not established by these visual previews.
+
+final result: passed
+
+## 历史私有平台记录
 
 > 本文保留旧私有平台 v1.x 的历史检查记录，不是当前 X-Pharma 的验收报告。
 > 旧深色侧栏与浅蓝视觉结论已由用户的新要求取代；当前权威为

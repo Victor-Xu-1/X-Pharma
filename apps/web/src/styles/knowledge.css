@@ -166,8 +166,6 @@
   border-bottom: 1px solid var(--ds-border-subtle);
   color: var(--ds-ink-muted);
   padding: 9px 13px;
-  font-size: 9px;
-  text-transform: uppercase;
 }
 .knowledge-page-list {
   max-height: 550px;
