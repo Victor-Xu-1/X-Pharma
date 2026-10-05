@@ -101,30 +101,30 @@
     },
     "research-workbench-desktop-1440.png": {
       "capture": "full-page",
-      "sha256": "3fc5260f5de5c046b111571b4e2449a4e55f93fc409e2b842b4e18026aa9125c",
+      "sha256": "40dfecda8763f8d397797857f2d36a54aa057dc30ce451a0dbf2c58f761b709b",
       "state": "controlled-no-result",
       "viewport": "1440x900"
     },
     "research-workbench-desktop-1920.png": {
       "capture": "full-page",
-      "sha256": "e8d07f43863bca321f5285fd2e9ebc358dc9a3a731717a41aa140868c1200017",
+      "sha256": "db8ee995cae95cb26681f6477f7d2a7797833f94a632880b72a29b239cd4addd",
       "state": "controlled-no-result",
       "viewport": "1920x1080"
     },
     "research-workbench-mobile-390.png": {
       "capture": "full-page",
-      "sha256": "eb9f69421db52bb8280585bc572b4aaee0e9dab367af7353ba3c391ffa64b727",
+      "sha256": "df722d38f1ac28d37f63b749bc42514e0ad52c6e281634df737b9896d5ece3b2",
       "state": "controlled-no-result",
       "viewport": "390x844"
     },
     "research-workbench-tablet-1024.png": {
       "capture": "full-page",
-      "sha256": "3bbd428160576b0709ce6f4b001874f405b2417e96d81c818d6f39c652a80cd3",
+      "sha256": "2917b294d3a95f590f0d1bf0c79d7626facbc18dcba46fa65b733b45e1e3b3f3",
       "state": "controlled-no-result",
       "viewport": "1024x768"
     }
   },
-  "generated_at": "2026-10-04",
+  "generated_at": "2026-10-05",
   "generator": "scripts/run-browser-acceptance.sh --update-snapshots",
   "license": "repository-owned-test-artifact",
   "schema": "pharma.workbench-visual-baselines.v3",
