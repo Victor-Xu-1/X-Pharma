@@ -664,5 +664,7 @@ describe("unified minimal biomedical light design system", () => {
     expect(ruleBody(layout, ".virtual-table-cell")).toContain("font-size: var(--ds-text-sm);");
     expect(ruleBody(layout, ".density-compact .virtual-table-cell")).toContain("font-size: var(--ds-text-xs);");
     expect(ruleBody(layout, ".inline-filter-options")).toContain("flex-wrap: wrap;");
+    expect(source("../styles/dossiers.css")).not.toContain(".status-badge");
+    expect(ruleBody(layout, ".entity-record-list article > .badge")).toContain("grid-column: 2;");
   });
 });
