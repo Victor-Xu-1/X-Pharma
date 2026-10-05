@@ -659,6 +659,7 @@ describe("unified minimal biomedical light design system", () => {
     expect(ruleBody(layout, ".entity-record-list .table-link-button")).toContain("white-space: normal;");
     expect(ruleBody(layout, ".company-source-summary")).toContain("padding: 20px;");
     expect(ruleBody(layout, ".landscape-grid")).toContain("repeat(auto-fit,");
+    expect(ruleBody(layout, ".landscape-grid")).toContain("min(100%, 250px)");
     expect(ruleBody(layout, ".dossier-metrics")).toContain("repeat(auto-fit,");
     expect(ruleBody(layout, ".virtual-table-cell")).toContain("font-size: var(--ds-text-sm);");
     expect(ruleBody(layout, ".density-compact .virtual-table-cell")).toContain("font-size: var(--ds-text-xs);");

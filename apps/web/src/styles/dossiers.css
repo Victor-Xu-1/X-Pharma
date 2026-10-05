@@ -827,7 +827,11 @@
     grid-template-columns: 1fr;
   }
   .entity-record-list article {
-    grid-template-columns: 26px minmax(0, 1fr) auto;
+    grid-template-columns: 26px minmax(0, 1fr);
+  }
+  .entity-record-list article > .status-badge {
+    grid-column: 2;
+    justify-self: start;
   }
   .entity-record-list article > button:last-child {
     grid-column: 2 / -1;

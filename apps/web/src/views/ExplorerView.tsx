@@ -426,7 +426,7 @@ export function ExplorerView({
     enabled: Boolean(directTarget),
   });
   const displayedEntityTypeCount = (entityType: string) =>
-    selectedEntityTypes.length === 1 && selectedEntityTypes[0] === entityType
+    !entityType || (selectedEntityTypes.length === 1 && selectedEntityTypes[0] === entityType)
       ? result?.total
       : result?.facets.entity_type?.[entityType];
   const landscapeSections = useMemo<DomainLandscapeSection<ExplorerLandscapeFilter>[]>(
@@ -663,29 +663,6 @@ export function ExplorerView({
       >
         {result ? (
           <div className="explorer-results">
-            {Object.keys(result.facets.entity_type ?? {}).length ? (
-              <fieldset className="facet-strip" aria-label="实体类型筛选">
-                <button
-                  className={selectedEntityTypes.length === 0 ? "selected" : ""}
-                  type="button"
-                  onClick={() => chooseDomain("")}
-                  aria-pressed={selectedEntityTypes.length === 0}
-                >
-                  全部 <span>{result.total}</span>
-                </button>
-                {Object.entries(result.facets.entity_type).map(([type, count]) => (
-                  <button
-                    className={selectedEntityTypes.includes(type) ? "selected" : ""}
-                    key={type}
-                    type="button"
-                    onClick={() => chooseDomain(type)}
-                    aria-pressed={selectedEntityTypes.includes(type)}
-                  >
-                    {entityLabels[type] ?? type} <span>{displayedEntityTypeCount(type) ?? count}</span>
-                  </button>
-                ))}
-              </fieldset>
-            ) : null}
             {directTarget && onOpenTargetPipeline ? (
               <section
                 className="pipeline-result-toolbar target-direct-access"

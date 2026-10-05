@@ -381,7 +381,7 @@ it("renders facet counts returned by the search contract without inventing total
   );
 
   const facetStripCount = (await screen.findAllByText("1234", { exact: true })).find((element) =>
-    element.closest("fieldset.facet-strip"),
+    element.closest("fieldset.inline-filter-options"),
   );
   expect(facetStripCount).toBeDefined();
   expect(facetStripCount?.closest("fieldset")?.textContent).toContain("987");
@@ -425,9 +425,7 @@ it("uses the current result total for the selected entity type instead of a broa
   );
 
   expect(await screen.findByRole("button", { name: "对象类型：靶点，8 条" })).toBeInTheDocument();
-  expect(
-    within(screen.getByRole("group", { name: "实体类型筛选" })).getByRole("button", { name: "靶点 8" }),
-  ).toBeInTheDocument();
+  expect(screen.queryByRole("group", { name: "实体类型筛选" })).not.toBeInTheDocument();
 });
 
 it("shows public database identifiers without governance terminology", async () => {

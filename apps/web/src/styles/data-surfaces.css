@@ -980,7 +980,6 @@ tbody tr:last-child td {
 .query-input.large {
   min-height: 48px;
 }
-.facet-strip,
 .suggestion-row {
   display: flex;
   align-items: center;
@@ -992,7 +991,6 @@ tbody tr:last-child td {
   padding-left: 0;
   padding-right: 0;
 }
-.facet-strip button,
 .suggestion-row button {
   min-height: 30px;
   flex: 0 0 auto;
@@ -1000,11 +998,6 @@ tbody tr:last-child td {
   border-radius: 4px;
   padding: 5px 9px;
   font-size: 11px;
-}
-.facet-strip button span {
-  margin-left: 4px;
-  color: var(--ds-ink-muted);
-  font-variant-numeric: tabular-nums;
 }
 .suggestion-row button {
   border-style: dashed;
