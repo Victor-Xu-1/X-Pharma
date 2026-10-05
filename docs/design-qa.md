@@ -14,7 +14,7 @@ Fresh baseline: exact main `0c12132967df7a0e29a84eb072e6b46ae371fab9`,
 never stretched. The combined `comparison-{explorer,company,factory}.png`
 and corresponding `*-header.png` were opened and inspected together.
 
-Initial findings, currently awaiting post-fix captures:
+Initial findings (closed by the post-fix evidence below):
 
 - P1 typography: 24px research title overrides shared26px; internal descendant
   and query blanket12px rules compress readable body and controls far below
@@ -32,12 +32,106 @@ Initial findings, currently awaiting post-fix captures:
   projection details. Increase genuine icon slots and readable spacing;
   reflow actual status fields without manufacturing concept-only timestamps.
 
+Iteration1 (`4be11414f6d3d56585625541345995bde998cc21`) captured all112
+screens successfully; combined/focused reference comparisons were inspected.
+It resolved the initial desktop hierarchy and wrapping, but revealed P2
+mobile company title compression and a tablet3+1 card row. Iteration2 removes
+the redundant second entity-type control rail, retains all counts in the
+original primary controls, and reflows mobile record status beneath text.
+The responsive selectors now target the actual `.badge` component; obsolete
+`.status-badge` selectors were corrected rather than retained as dead paths.
+The private wide-screen check was corrected: a complete untruncated single
+line at1920px is valid, while narrower views must wrap. Tablet checks now
+require2+2 card occupancy, not merely two rows (which could hide3+1).
+
 Required fidelity surfaces: fonts and wrapping, layout rhythm, semantic
 color tokens, original asset sharpness/provenance, and factual copy are all
 in scope. Existing permissions, public-data gaps, table densities, query
 state and progressive disclosures must remain functional.
 
-final result: blocked
+### Post-fix comparison and focused verification
+
+Final UI candidate `d9031a11f9a1504d9dc2b8681af85459fe007182`:
+`E:\WSL\management\x-pharma\deliverables\design-fidelity\iteration-3`.
+All28 routes/entrances at1440x1024,1920x1080,1024x768 and390x844 rendered
+successfully (112 actual PNGs, no page errors or document horizontal overflow).
+The generic entity entry correctly resolves to its typed target dossier; it
+is not counted as a distinct invented product screen. Mobile raster1024x2216
+uses the original DPR2.625; desktop/tablet use DPR1.
+
+The three combined full views and focused headers were reopened after the
+fixes. Company/mobile detail and four-viewport dossier sheets were inspected:
+long titles now use the available reading width, status appears below the
+title on mobile, and tablet cards occupy2+2 rather than3+1. Original company
+trial/provenance actions remain real and accessible.
+
+The new focused Chrome registration passed4/4 (24.4s): actual32/26px title,
+14px standard rows, one research instruction, non-scrolling type controls,
+recent-research disclosure, full title visibility, real trial navigation,
+responsive card occupancy, dossier tab actions and source-dialog open/cancel.
+All-page capture passed4/4 (35.3s). Neither registration executes a global
+manual suite or creates an account/source/scientific fact.
+
+Five fidelity surfaces reviewed:
+
+- Fonts: existing offline sans-serif family preserved;32/26px page titles,
+  30px identity,16px body,14px controls/standard rows,12px metadata/compact
+  rows. No replacement font download; wrapping has actual browser evidence.
+- Rhythm:32px desktop gutter, consistent heading/navigation space,20px
+  source panel inset,72px identity slots,48px factory icons and20px section
+  gaps. Responsive rails/lists remain scrollable in their own containers.
+- Colors: unchanged restrained teal/white/neutral authority; warning/danger
+  and healthy status retain independent semantics and AA contrast contracts.
+- Assets: original orange logo and derived icons unchanged,48px display
+  remains sharp with128px asset; library domain icons are not fake corporate
+  logos. No generated figure/copy was rasterized into interactive UI.
+- Copy: one research instruction, corrected stacked-mobile knowledge copy,
+  actual registry titles/counts/status and explicit data-coverage caveats.
+
+Expected functional differences from the concepts: the real explorer retains
+selection, safe export, sort/density/column tools, target handoff and full
+catalogue (not six illustrative records); factory keeps authorized source
+cards with scan/edit/pause/checkpoint operations. Actual source fields and
+query time replace illustrative dates; the generic organization icon avoids
+false X-Pharma affiliation. These are not unresolved visual regressions.
+No actionableP0/P1/P2 remains in the compared states. Screenshot evidence
+does not imply scientific completeness or global WCAG/product certification.
+
+Release gate history: the first controlled12-registration reference update
+had9 passes and3 loading timeouts (5.0m). Failure images show pending company/
+facet reads, not accepted blank states. Trace includes7.15s pipeline reads,
+5.90s identity reads and18.54s telemetry; these do not establish a product
+performance pass. Its original cleanup completed. The subsequent six-case
+single-worker rerun was interrupted during the shared WSL outage; neither
+that run nor its partial local PNG updates is counted as acceptance.
+
+Independent [refresh run37324706734](https://github.com/Victor-Xu-1/X-Pharma/actions/runs/37324706734)
+on exactd903 completed all six mandatory gates. Original Chrome registration
+passed144/144 (22.5m) for the explicit update, then144/144 (22.2m) strictly
+readonly; the latter reports snapshots_updated=false and all temporary
+fixture counts zero. All20 generated PNGs and their original-generator
+manifest were downloaded, hash-verified and visually reviewed. They replace
+the incomplete local update, which remains in the external evidence store.
+Masks, budgets, browser/font profile and0.001 pixel tolerance are unchanged.
+
+Once native access returned, bounded recovery found239 entities and five
+accounts belonging to this task's isolated test organization. An ingestion
+run referencing its temporary evidence source exposed an existing foreign-key
+cleanup omission; the transaction rolled back. Evidence and replay sources
+now share one selected-ID cleanup path, removing ingestion/version children
+before their parents. The new regression fails with the old SQL; all11
+related cleanup/runtime checks, scoped lint and strict typing pass. Actual
+PostgreSQL recovery removed only these fixtures, restored authoritative
+search/readiness and preserved the preview organization's2698 entities and
+910 source versions. Verified pre-recovery/pre-change backups remain.
+
+Offline gallery Chrome checks retain the initial desktop pass and mobile
+114/115 image-load failure; the bounded mobile-only rerun passes with all115
+images, original timeout and no external requests. These are artifact checks,
+not product performance certification. Mandatory ordinary PR/main CI and
+exact-main deployment remain separate release evidence from this visual pass.
+
+final result: passed
 
 ## Previous completed iteration (historical evidence)
 

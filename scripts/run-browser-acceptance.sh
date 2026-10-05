@@ -398,6 +398,11 @@ cleanup_fixtures() {
   docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -v ON_ERROR_STOP=1 >/dev/null <<SQL
 BEGIN;
 CREATE TEMP TABLE browser_evidence_facts (id varchar(36) PRIMARY KEY, resource_id varchar(36)) ON COMMIT DROP;
+CREATE TEMP TABLE browser_fixture_sources (id varchar(36) PRIMARY KEY) ON COMMIT DROP;
+INSERT INTO browser_fixture_sources
+SELECT id FROM data_sources
+WHERE tenant_id = '$tenant_id'
+  AND (name LIKE 'Browser evidence e2e-%' OR name LIKE 'Browser replay e2e-%');
 INSERT INTO browser_evidence_facts
 SELECT id, published_resource_id
 FROM staged_facts
@@ -443,20 +448,6 @@ DELETE FROM staged_facts
 WHERE tenant_id = '$tenant_id' AND id IN (SELECT id FROM browser_evidence_facts);
 DELETE FROM extraction_runs
 WHERE tenant_id = '$tenant_id' AND model_provider = 'browser-acceptance-evidence';
-DELETE FROM source_versions
-WHERE tenant_id = '$tenant_id' AND source_asset_id IN (
-  SELECT id FROM source_assets WHERE data_source_id IN (
-    SELECT id FROM data_sources WHERE tenant_id = '$tenant_id' AND name LIKE 'Browser evidence e2e-%'
-  )
-);
-DELETE FROM source_assets
-WHERE tenant_id = '$tenant_id' AND data_source_id IN (
-  SELECT id FROM data_sources WHERE tenant_id = '$tenant_id' AND name LIKE 'Browser evidence e2e-%'
-);
-DELETE FROM source_documents
-WHERE tenant_id = '$tenant_id' AND title LIKE 'Browser evidence e2e-%';
-DELETE FROM data_sources
-WHERE tenant_id = '$tenant_id' AND name LIKE 'Browser evidence e2e-%';
 DELETE FROM knowledge_pages
 WHERE tenant_id = '$tenant_id' AND id IN (SELECT id FROM browser_knowledge_pages);
 CREATE TEMP TABLE browser_quality_issues (id varchar(36) PRIMARY KEY, snapshot_id varchar(36)) ON COMMIT DROP;
@@ -524,38 +515,33 @@ WHERE tenant_id = '$tenant_id'
   AND resource_id IN (
     SELECT id FROM ingestion_runs
     WHERE tenant_id = '$tenant_id' AND data_source_id IN (
-      SELECT id FROM data_sources
-      WHERE tenant_id = '$tenant_id' AND name LIKE 'Browser replay e2e-%'
+      SELECT id FROM browser_fixture_sources
     )
   );
 DELETE FROM ingestion_run_operations
 WHERE tenant_id = '$tenant_id' AND ingestion_run_id IN (
   SELECT id FROM ingestion_runs
   WHERE tenant_id = '$tenant_id' AND data_source_id IN (
-    SELECT id FROM data_sources
-    WHERE tenant_id = '$tenant_id' AND name LIKE 'Browser replay e2e-%'
+    SELECT id FROM browser_fixture_sources
   )
 );
 DELETE FROM ingestion_findings
 WHERE tenant_id = '$tenant_id' AND ingestion_run_id IN (
   SELECT id FROM ingestion_runs
   WHERE tenant_id = '$tenant_id' AND data_source_id IN (
-    SELECT id FROM data_sources
-    WHERE tenant_id = '$tenant_id' AND name LIKE 'Browser replay e2e-%'
+    SELECT id FROM browser_fixture_sources
   )
 );
 DELETE FROM ingestion_runs
 WHERE tenant_id = '$tenant_id' AND data_source_id IN (
-  SELECT id FROM data_sources
-  WHERE tenant_id = '$tenant_id' AND name LIKE 'Browser replay e2e-%'
+  SELECT id FROM browser_fixture_sources
 );
 DELETE FROM source_version_operations
 WHERE tenant_id = '$tenant_id' AND source_version_id IN (
   SELECT sv.id FROM source_versions sv
   JOIN source_assets sa ON sa.id = sv.source_asset_id
   WHERE sa.data_source_id IN (
-    SELECT id FROM data_sources
-    WHERE tenant_id = '$tenant_id' AND name LIKE 'Browser replay e2e-%'
+    SELECT id FROM browser_fixture_sources
   )
 );
 DELETE FROM audit_events
@@ -565,8 +551,7 @@ WHERE tenant_id = '$tenant_id'
     SELECT sv.id FROM source_versions sv
     JOIN source_assets sa ON sa.id = sv.source_asset_id
     WHERE sa.data_source_id IN (
-      SELECT id FROM data_sources
-      WHERE tenant_id = '$tenant_id' AND name LIKE 'Browser replay e2e-%'
+      SELECT id FROM browser_fixture_sources
     )
   );
 ALTER TABLE source_version_quarantine_decisions DISABLE TRIGGER immutable_source_version_quarantine_decisions;
@@ -575,25 +560,24 @@ WHERE tenant_id = '$tenant_id' AND source_version_id IN (
   SELECT sv.id FROM source_versions sv
   JOIN source_assets sa ON sa.id = sv.source_asset_id
   WHERE sa.data_source_id IN (
-    SELECT id FROM data_sources
-    WHERE tenant_id = '$tenant_id' AND name LIKE 'Browser replay e2e-%'
+    SELECT id FROM browser_fixture_sources
   )
 );
 ALTER TABLE source_version_quarantine_decisions ENABLE TRIGGER immutable_source_version_quarantine_decisions;
 DELETE FROM source_versions
 WHERE tenant_id = '$tenant_id' AND source_asset_id IN (
   SELECT id FROM source_assets WHERE data_source_id IN (
-    SELECT id FROM data_sources
-    WHERE tenant_id = '$tenant_id' AND name LIKE 'Browser replay e2e-%'
+    SELECT id FROM browser_fixture_sources
   )
 );
 DELETE FROM source_assets
 WHERE tenant_id = '$tenant_id' AND data_source_id IN (
-  SELECT id FROM data_sources
-  WHERE tenant_id = '$tenant_id' AND name LIKE 'Browser replay e2e-%'
+  SELECT id FROM browser_fixture_sources
 );
 DELETE FROM data_sources
-WHERE tenant_id = '$tenant_id' AND name LIKE 'Browser replay e2e-%';
+WHERE tenant_id = '$tenant_id' AND id IN (SELECT id FROM browser_fixture_sources);
+DELETE FROM source_documents
+WHERE tenant_id = '$tenant_id' AND title LIKE 'Browser evidence e2e-%';
 COMMIT;
 SQL
   docker compose exec -T postgres psql -X -U "$pg_user" -d "$pg_db" -At -v ON_ERROR_STOP=1 \
