@@ -2,35 +2,47 @@
 .entity-dossier-page {
   min-width: 0;
 }
-.entity-dossier-title {
+.entity-dossier-title,
+.drug-profile-header,
+.company-profile-header {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 13px;
+  gap: 20px;
 }
-.entity-dossier-symbol {
-  width: 46px;
-  height: 46px;
+.entity-dossier-symbol,
+.drug-profile-symbol,
+.company-profile-symbol {
+  width: 72px;
+  height: 72px;
   display: grid;
   place-items: center;
-  border-radius: 4px;
+  border-radius: var(--ds-radius-panel);
   background: var(--ds-surface-muted);
   color: var(--ds-accent-strong);
 }
-.entity-dossier-title span {
+.entity-dossier-title span,
+.drug-profile-identity span,
+.company-profile-identity span,
+.drug-profile-section > header span,
+.company-profile-section > header span {
   color: var(--ds-ink-muted);
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--ds-text-xs);
+  font-weight: 600;
 }
-.entity-dossier-title h2 {
+.entity-dossier-title h2,
+.drug-profile-identity h2,
+.company-profile-identity h2 {
   margin: 2px 0 0;
-  font-size: 23px;
+  font-size: 30px;
 }
-.entity-dossier-title p {
+.entity-dossier-title p,
+.drug-profile-identity p,
+.company-profile-identity p {
   max-width: 900px;
   margin: 4px 0 0;
   color: var(--ds-ink-muted);
-  font-size: 11px;
+  font-size: var(--ds-text-sm);
   line-height: 1.55;
 }
 .drug-profile-identity,
@@ -42,37 +54,8 @@
 .drug-profile-page {
   min-width: 0;
 }
-.drug-profile-header {
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 13px;
-}
 .drug-profile-symbol {
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  border-radius: 4px;
   background: var(--ds-accent-soft);
-  color: var(--ds-accent-strong);
-}
-.drug-profile-identity span,
-.drug-profile-section > header span {
-  color: var(--ds-ink-muted);
-  font-size: 10px;
-  font-weight: 700;
-}
-.drug-profile-identity h2 {
-  margin: 2px 0 0;
-  font-size: 23px;
-}
-.drug-profile-identity p {
-  max-width: 900px;
-  margin: 4px 0 0;
-  color: var(--ds-ink-muted);
-  font-size: 11px;
-  line-height: 1.55;
 }
 .drug-profile-metrics {
   grid-template-columns: repeat(6, minmax(110px, 1fr));
@@ -379,38 +362,6 @@
 .company-profile-page {
   min-width: 0;
 }
-.company-profile-header {
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 13px;
-}
-.company-profile-symbol {
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  border-radius: 4px;
-  background: var(--ds-surface-muted);
-  color: var(--ds-accent-strong);
-}
-.company-profile-identity span,
-.company-profile-section > header span {
-  color: var(--ds-ink-muted);
-  font-size: 10px;
-  font-weight: 700;
-}
-.company-profile-identity h2 {
-  margin: 2px 0 0;
-  font-size: 23px;
-}
-.company-profile-identity p {
-  max-width: 900px;
-  margin: 4px 0 0;
-  color: var(--ds-ink-muted);
-  font-size: 11px;
-  line-height: 1.55;
-}
 .company-profile-metrics {
   grid-template-columns: repeat(6, minmax(110px, 1fr));
 }
@@ -438,7 +389,17 @@
 .company-profile-section > header h3 {
   margin: 2px 0 0;
   color: var(--ds-ink-strong);
-  font-size: 14px;
+  font-size: 20px;
+}
+.company-source-summary {
+  margin-top: 28px;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-panel);
+  padding: 20px;
+}
+.company-source-summary > p {
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-sm);
 }
 .company-profile-section > header > button {
   border: 0;
@@ -663,13 +624,18 @@
 .entity-record-list h3 {
   margin: 3px 0;
   color: var(--ds-ink-strong);
-  font-size: 13px;
+  font-size: var(--ds-text-md);
+}
+.entity-record-list .table-link-button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: var(--ds-leading-body);
 }
 .entity-record-list span,
 .entity-record-list p {
   margin: 0;
   color: var(--ds-ink-muted);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
   overflow-wrap: anywhere;
 }
 .company-intelligence-view {

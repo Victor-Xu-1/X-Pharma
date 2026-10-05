@@ -1,5 +1,46 @@
 # Design QA: X-Pharma 工作台
 
+## Current iteration: comprehensive preview fidelity
+
+The user explicitly requested a closer, page-by-page match after the earlier
+lightweight adaptation. The earlier acceptance does not waive this iteration's
+typography, spacing, density or layout findings.
+
+Source truth: the three unchanged `AI-*-design-target.png` references under
+`E:\WSL\management\x-pharma\deliverables\design-fidelity\before`.
+Fresh baseline: exact main `0c12132967df7a0e29a84eb072e6b46ae371fab9`,
+28 actual screens at each of four CSS viewports. Desktop comparison is
+1440x1024/DPR1; source 1487x1058 is proportionally normalized to width1440,
+never stretched. The combined `comparison-{explorer,company,factory}.png`
+and corresponding `*-header.png` were opened and inspected together.
+
+Initial findings, currently awaiting post-fix captures:
+
+- P1 typography: 24px research title overrides shared26px; internal descendant
+  and query blanket12px rules compress readable body and controls far below
+  the concepts. Fix one 32/26px title hierarchy and 16/14/12px text scale.
+- P2 company: 46px identity, unbounded single-line title truncation, and no
+  source-summary surface. Fix shared identity, wrapping and 20px panel inset;
+  preserve the correct generic organization icon rather than the concept's
+  inaccurate X-Pharma company mark.
+- P2 explorer: recent-research and instruction occupy competing rows; object
+  controls are too small and crowded. Unify the instruction's ownership and
+  let genuine type controls wrap, retaining all counts/query semantics.
+- P2 target: six metrics in five columns and four cards in three columns
+  leave orphaned rows. Use responsive auto-fit within existing sections.
+- P2 factory: tight stage nodes, collapsed inter-panel rhythm and four-column
+  projection details. Increase genuine icon slots and readable spacing;
+  reflow actual status fields without manufacturing concept-only timestamps.
+
+Required fidelity surfaces: fonts and wrapping, layout rhythm, semantic
+color tokens, original asset sharpness/provenance, and factual copy are all
+in scope. Existing permissions, public-data gaps, table densities, query
+state and progressive disclosures must remain functional.
+
+final result: blocked
+
+## Previous completed iteration (historical evidence)
+
 ## 2026-10-05: clean biomedical workbench adaptation
 
 Visual source: native Image Generation explorer, company and factory concepts.

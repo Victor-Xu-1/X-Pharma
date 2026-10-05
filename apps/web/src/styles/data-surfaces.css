@@ -40,10 +40,10 @@ td {
   padding: 11px 12px;
   vertical-align: middle;
   text-align: left;
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
 }
 th {
-  font-size: 10px;
+  font-size: var(--ds-text-sm);
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -676,11 +676,10 @@ tbody tr:last-child td {
   border-bottom: 1px solid var(--ds-border-subtle);
   padding: 11px 12px;
   overflow: hidden;
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
 }
 .virtual-table-heading {
-  min-height: 37px;
-  font-size: 10px;
+  min-height: 44px;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -762,8 +761,9 @@ tbody tr:last-child td {
 }
 .density-compact .virtual-table-heading,
 .density-compact .virtual-table-cell {
-  padding-top: 6px;
-  padding-bottom: 6px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  font-size: var(--ds-text-xs);
 }
 .cell-subtitle {
   max-width: 480px;

@@ -18,7 +18,7 @@
   overflow-wrap: anywhere;
 }
 .target-title-row h2 {
-  font-size: 23px;
+  font-size: 30px;
 }
 .target-title-row p {
   margin: 3px 0 0;
@@ -37,7 +37,7 @@
 }
 .dossier-metrics {
   display: grid;
-  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   margin: 22px 0 0;
   border-top: 1px solid var(--ds-border);
   border-bottom: 1px solid var(--ds-border);
@@ -67,7 +67,7 @@
   margin-top: 20px;
 }
 .tab-bar button {
-  min-height: 39px;
+  min-height: 48px;
   border: 0;
   border-bottom: 3px solid transparent;
   background: transparent;

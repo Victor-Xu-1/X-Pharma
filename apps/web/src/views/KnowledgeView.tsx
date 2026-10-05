@@ -426,7 +426,7 @@ export function KnowledgeView({
             )}
           </>
         ) : (
-          <EmptyState title="选择一个知识专题" detail="右侧将展示可追溯的当前版本" />
+          <EmptyState title="选择一个知识专题" detail="选择后查看可追溯的当前版本" />
         )}
       </article>
     </section>

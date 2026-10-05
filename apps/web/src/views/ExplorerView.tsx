@@ -519,10 +519,6 @@ export function ExplorerView({
 
   return (
     <section className="data-section explorer-section">
-      <div className="explorer-intro">
-        <p>查询药物、靶点、机构、疾病、临床、专利与交易；结果可查看来源和更新时间。</p>
-      </div>
-
       <form className="intelligence-query-panel" onSubmit={submit}>
         <div className="query-row">
           <label htmlFor="intelligence-query">查询对象</label>

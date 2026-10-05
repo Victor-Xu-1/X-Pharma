@@ -238,7 +238,7 @@ a:hover,
 
 .nav-button,
 .collapse-button {
-  min-height: var(--ds-control-height);
+  min-height: 48px;
   border-radius: var(--ds-radius-control);
 }
 

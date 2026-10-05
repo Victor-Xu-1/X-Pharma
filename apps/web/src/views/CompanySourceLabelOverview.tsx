@@ -18,7 +18,7 @@ export function CompanySourceLabelOverview({
   const total = coverage?.total ?? data.clinical_trials.length;
   const visibleTrials = data.clinical_trials.slice(0, 5);
   return (
-    <section className="company-profile-section" aria-label="登记临床试验">
+    <section className="company-profile-section company-source-summary" aria-label="登记临床试验">
       <header>
         <h3>登记临床试验（{total}）</h3>
         <button type="button" onClick={onOpenTrials} disabled={!data.clinical_trials.length}>
