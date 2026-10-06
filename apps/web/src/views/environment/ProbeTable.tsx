@@ -1,3 +1,4 @@
+import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { EnvironmentProbeRead } from "../../lib/generated";
 
 const stateLabels = {
@@ -9,7 +10,7 @@ const stateLabels = {
 };
 export function EnvironmentProbeTable({ probes, label }: { probes: EnvironmentProbeRead[]; label: string }) {
   return (
-    <div className="table-frame enterprise-table">
+    <ScrollableTableRegion className="enterprise-table" ariaLabel={`${label}（可滚动）`}>
       <table aria-label={label}>
         <thead>
           <tr>
@@ -39,6 +40,6 @@ export function EnvironmentProbeTable({ probes, label }: { probes: EnvironmentPr
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollableTableRegion>
   );
 }

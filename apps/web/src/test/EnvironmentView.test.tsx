@@ -61,6 +61,9 @@ it("keeps probe requirements and actionable failures without repeating routine e
   });
   renderWithQueryClient(<EnvironmentView />);
   const table = await screen.findByRole("table", { name: "网关依赖版本" });
+  const scrollRegion = screen.getByRole("region", { name: "网关依赖版本（可滚动）" });
+  expect(scrollRegion).toHaveAttribute("tabindex", "0");
+  expect(scrollRegion).toContainElement(table);
   const readiness = screen.getByRole("region", { name: "依赖就绪概览" });
   expect(readiness).toHaveTextContent("需修复");
   expect(readiness).toHaveTextContent("pnpm");
