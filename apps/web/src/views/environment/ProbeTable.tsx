@@ -1,3 +1,4 @@
+import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { EnvironmentProbeRead } from "../../lib/generated";
 
 const stateLabels = {
@@ -9,7 +10,7 @@ const stateLabels = {
 };
 export function EnvironmentProbeTable({ probes, label }: { probes: EnvironmentProbeRead[]; label: string }) {
   return (
-    <div className="table-frame enterprise-table">
+    <ScrollableTableRegion className="enterprise-table" ariaLabel={`${label}（可滚动）`}>
       <table aria-label={label}>
         <thead>
           <tr>
@@ -30,13 +31,15 @@ export function EnvironmentProbeTable({ probes, label }: { probes: EnvironmentPr
                 <code>{probe.expected ?? "未声明"}</code>
               </td>
               <td>
-                <span className={`badge environment-status-${probe.status}`}>{stateLabels[probe.status]}</span>
+                <span className={`badge environment-status-${probe.status}`}>
+                  {probe.status === "present" && probe.expected ? "符合已声明要求" : stateLabels[probe.status]}
+                </span>
                 {probe.status !== "present" ? <p>{probe.detail}</p> : null}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollableTableRegion>
   );
 }

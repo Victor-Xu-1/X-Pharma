@@ -3,6 +3,15 @@ set -Eeuo pipefail
 
 umask 077
 
+reviewed=false
+case "${1:-}" in
+  --reviewed) reviewed=true; shift ;;
+  "") ;;
+  *) echo 'Usage: bootstrap-wsl-chrome.sh [--reviewed]' >&2; exit 2 ;;
+esac
+[[ $# -eq 0 ]] || { echo 'Unexpected Chrome bootstrap argument' >&2; exit 2; }
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+
 cache_root=${PHARMA_CHROME_CACHE_DIR:-"$HOME/.cache/pharma-intelligence/google-chrome"}
 repository_origin="https://dl.google.com/linux/chrome/deb"
 signing_key_url="https://dl.google.com/linux/linux_signing_key.pub"
@@ -32,6 +41,15 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 curl_args=(--fail --silent --show-error --location --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 300 --retry 2 --retry-all-errors)
+if [[ "$reviewed" == true ]]; then
+  # Frozen official archive metadata is bound to the reviewed visual manifest.
+  # It is not represented as a package in Google's current rolling signed index.
+  mapfile -t package_metadata < <(cd "$root" && python3 -m scripts.reviewed_chrome_metadata)
+  [[ ${#package_metadata[@]} -eq 5 ]] || {
+    echo 'Reviewed Chrome artifact validation failed; no latest fallback is permitted' >&2
+    exit 1
+  }
+else
 curl "${curl_args[@]}" "$signing_key_url" --output "$workspace/google-linux-signing-key.pub"
 mapfile -t fingerprints < <(
   gpg --batch --show-keys --with-colons "$workspace/google-linux-signing-key.pub" \
@@ -131,15 +149,17 @@ PY
   echo "Google Chrome package metadata parsing failed" >&2
   exit 1
 }
+fi
 version=${package_metadata[0]}
 package_path=${package_metadata[1]}
 package_size=${package_metadata[2]}
 package_sha256=${package_metadata[3]}
+executable_sha256=${package_metadata[4]:-}
 release_root="$cache_root/releases/$version"
 chrome_executable="$release_root/opt/google/chrome/google-chrome"
 
 if [[ ! -x "$chrome_executable" ]]; then
-  curl "${curl_args[@]}" "$repository_origin/$package_path" --output "$workspace/google-chrome.deb"
+  curl "${curl_args[@]}" --max-filesize "$package_size" "$repository_origin/$package_path" --output "$workspace/google-chrome.deb"
   [[ "$(stat -c %s "$workspace/google-chrome.deb")" == "$package_size" ]] || {
     echo "Google Chrome package size validation failed" >&2
     exit 1
@@ -160,12 +180,19 @@ if [[ ! -x "$chrome_executable" ]]; then
   mv "$workspace/release" "$release_root"
 fi
 
+if [[ -n "$executable_sha256" ]]; then
+  [[ "$(sha256sum "$release_root/opt/google/chrome/chrome" | awk '{print $1}')" == "$executable_sha256" ]] || {
+    echo 'Reviewed Chrome executable integrity differs from the frozen artifact' >&2
+    exit 1
+  }
+fi
+
 reported_version=$($chrome_executable --version)
 while [[ "$reported_version" == *[[:space:]] ]]; do
   reported_version=${reported_version%?}
 done
 [[ "$reported_version" == "Google Chrome ${version%-*}" ]] || {
-  echo "Google Chrome executable version does not match signed repository metadata" >&2
+  echo "Google Chrome executable version does not match selected validated metadata" >&2
   exit 1
 }
 current_partial="$cache_root/current.partial.$$"
@@ -175,3 +202,6 @@ mv -f "$current_partial" "$cache_root/current"
 
 printf 'chrome_executable=%s\n' "$chrome_executable"
 printf 'chrome_version=%s\n' "${version%-*}"
+printf 'chrome_package_sha256=%s\n' "$package_sha256"
+printf 'chrome_package_size=%s\n' "$package_size"
+printf 'chrome_package_path=%s\n' "$package_path"

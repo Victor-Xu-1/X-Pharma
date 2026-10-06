@@ -48,6 +48,8 @@ subscriptions, exports, preferences or audit history.
 
 ## Registration and invitation acceptance
 
+The account page receives the server-owned authentication mode through the same session boundary. Local email is explicitly an unverified login identifier, not proof of ownership. Enterprise mode makes the identity email read-only and removes the local password form; password and account recovery stay with the enterprise IdP, without a local-password fallback. These UI controls do not replace production OIDC configuration or actual IdP/recovery acceptance.
+
 In local development mode, external researchers can register an independent
 viewer account when self-registration is enabled. New internal accounts require
 an administrator-issued invitation. An existing identity instead uses the

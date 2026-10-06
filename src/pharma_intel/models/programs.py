@@ -18,6 +18,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base, TimestampMixin, new_uuid
 from .enums import DevelopmentPhase, ProgramTargetRole
+from .phase_constraints import development_phase_check
 
 
 class DevelopmentProgram(Base, TimestampMixin):
@@ -27,18 +28,8 @@ class DevelopmentProgram(Base, TimestampMixin):
         Index("ix_program_target_phase", "tenant_id", "target_entity_id", "phase"),
         Index("ix_program_target_combination_lookup", "tenant_id", "target_combination_key"),
         Index("ix_program_regional_phase", "tenant_id", "global_phase", "china_phase"),
-        CheckConstraint(
-            "global_phase IS NULL OR global_phase IN "
-            "('discovery','preclinical','ind','phase_1','phase_1_2','phase_2','phase_2_3','phase_3',"
-            "'filed','approved','discontinued')",
-            name="ck_program_global_phase",
-        ),
-        CheckConstraint(
-            "china_phase IS NULL OR china_phase IN "
-            "('discovery','preclinical','ind','phase_1','phase_1_2','phase_2','phase_2_3','phase_3',"
-            "'filed','approved','discontinued')",
-            name="ck_program_china_phase",
-        ),
+        development_phase_check("global_phase", "ck_program_global_phase"),
+        development_phase_check("china_phase", "ck_program_china_phase"),
         CheckConstraint(
             "program_status IS NULL OR program_status IN ('active', 'inactive', 'unknown')",
             name="ck_program_status",

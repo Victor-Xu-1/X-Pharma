@@ -1,7 +1,7 @@
 import { ArrowRight, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import type { IntelligenceEntity } from "../lib/contracts/intelligence";
-import { entityLabels, matchExplanation, publicIdentifiers } from "../lib/entityPresentation";
+import { entityTypeLabel, matchExplanation, publicIdentifiers } from "../lib/entityPresentation";
 import { publicEntityAttributeLabels, publicEntityAttributes } from "../lib/publicEntity";
 import type { Entity } from "../lib/types";
 import { useModalFocus } from "../lib/useModalFocus";
@@ -50,7 +50,7 @@ export function EntityPreviewDrawer({
       >
         <header>
           <div>
-            <span>{entity ? (entityLabels[entity.entity_type] ?? entity.entity_type) : "基础查询"}</span>
+            <span>{entity ? entityTypeLabel(entity) : "基础查询"}</span>
             <h2 id="entity-detail-title">{entity?.name ?? "实体详情"}</h2>
           </div>
           <button

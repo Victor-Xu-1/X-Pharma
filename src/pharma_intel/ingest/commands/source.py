@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from pharma_intel.config import Settings
 from pharma_intel.ingest.commands.errors import IngestionCommandError
 from pharma_intel.ingest.connectors import SourceConnectorRegistry
-from pharma_intel.ingest.source_routing import canonical_routing_rules, routing_scope_identity
+from pharma_intel.ingest.source_routing import canonical_routing_rules, routing_scope_identity, source_scope_digest
 from pharma_intel.licensing import EvidenceLicensePolicy
 from pharma_intel.models import AuditEvent, DataSource, DataSourceState, DataSourceType, SourceAsset, TenantDataset
 from pharma_intel.schemas import DataSourceCreate, DataSourceRead, DataSourceStateUpdate, DataSourceUpdate
@@ -155,6 +155,7 @@ def create_data_source(
     )
     _validate_source_connector(source, settings=settings)
     _validate_source_authorization_window(source)
+    source.scope_digest = source_scope_digest(source.source_type, source.routing_rules)
     session.add(source)
     try:
         session.flush()
@@ -170,7 +171,7 @@ def create_data_source(
     except IntegrityError as exc:
         session.rollback()
         raise IngestionCommandError(
-            status_code=409, detail="A data source with this name or root already exists"
+            status_code=409, detail="A data source with this name or source query scope already exists"
         ) from exc
     return DataSourceRead.model_validate(source)
 
@@ -240,6 +241,7 @@ def update_data_source(
     changed_fields = sorted(field for field, value in values.items() if value != getattr(source, field))
     for field, value in values.items():
         setattr(source, field, value)
+    source.scope_digest = source_scope_digest(source.source_type, source.routing_rules)
     if any(field in values for field in ("root_uri", "include_globs", "exclude_globs", "routing_rules")):
         source.connector_cursor = {}
         source.last_cursor_at = None
@@ -267,7 +269,7 @@ def update_data_source(
     except IntegrityError as exc:
         session.rollback()
         raise IngestionCommandError(
-            status_code=409, detail="A data source with this name or root already exists"
+            status_code=409, detail="A data source with this name or source query scope already exists"
         ) from exc
     return DataSourceRead.model_validate(source)
 

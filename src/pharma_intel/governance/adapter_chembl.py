@@ -124,6 +124,17 @@ def govern_chembl(context: AdapterContext, version: SourceVersion) -> dict[str, 
                 source_quote=record.source_quote,
             ),
         ]
+        facts.extend(
+            PreparedSegmentFact(
+                prepared=context.normalizer.prepare(fact),
+                segment_index=index,
+                segment_sha256=segment_sha256,
+                quote_verified=True,
+                source_locator=fact.citation.locator,
+                source_quote=fact.citation.quote,
+            )
+            for index, fact in enumerate(record.enrichment, start=2)
+        )
     except ValueError as exc:
         error = GovernanceError(str(exc))
         context._record_failed_run(run, version, error, [], 0, 0, Decimal("0"))
@@ -176,10 +187,14 @@ def govern_chembl(context: AdapterContext, version: SourceVersion) -> dict[str, 
         "warnings": [
             "ChEMBL maximum clinical phase is not a current-status assertion",
             "ChEMBL target identity remains separate until identity review confirms a canonical merge",
+            "ChEMBL activity samples are bounded; provider standard values require aligned type and relation",
         ],
         "fact_count": len(facts),
+        "activity_coverage": record.activity_coverage.model_dump() if record.activity_coverage else None,
         "governance_schema_version": SCHEMA_VERSION,
-        "normalization_versions": sorted({fact.prepared.normalization_version for fact in facts}),
+        "normalization_versions": sorted(
+            {fact.prepared.normalization_version for fact in facts if fact.prepared.normalization_version is not None}
+        ),
         "deterministic_adapter": {
             "name": CHEMBL_ADAPTER_NAME,
             "version": CHEMBL_ADAPTER_VERSION,

@@ -1,6 +1,5 @@
 import { BarChart3, Building2, Crosshair, ExternalLink, FlaskConical, Globe2, List, Pill } from "lucide-react";
 import { lazy, Suspense } from "react";
-
 import type {
   PipelineAnalysisDimension,
   PipelineAnalysisLimit,
@@ -9,39 +8,12 @@ import type {
   PipelineTargetAggregation,
 } from "../lib/contracts/pipeline";
 import type { PipelineLandscapeBucketRead, PipelineLandscapeRead } from "../lib/generated";
+import { phaseDisplayOrder, spacedPhaseLabels as phaseLabels } from "../lib/phasePresentation";
 import { programModalityLabel } from "../lib/programDisplay";
 
 const LandscapeBarChart = lazy(() =>
   import("./LandscapeBarChart").then((module) => ({ default: module.LandscapeBarChart })),
 );
-
-const phaseLabels: Record<string, string> = {
-  discovery: "发现",
-  preclinical: "临床前",
-  ind: "IND",
-  phase_1: "I 期",
-  phase_1_2: "I/II 期",
-  phase_2: "II 期",
-  phase_2_3: "II/III 期",
-  phase_3: "III 期",
-  filed: "申报",
-  approved: "已批准",
-  discontinued: "终止",
-};
-const phaseDisplayOrder = [
-  "approved",
-  "filed",
-  "phase_3",
-  "phase_2_3",
-  "phase_2",
-  "phase_1_2",
-  "phase_1",
-  "ind",
-  "preclinical",
-  "discovery",
-  "discontinued",
-  "__missing__",
-];
 
 export type PipelineLandscapeFilterField =
   | "phase"

@@ -61,6 +61,13 @@ it("keeps probe requirements and actionable failures without repeating routine e
   });
   renderWithQueryClient(<EnvironmentView />);
   const table = await screen.findByRole("table", { name: "网关依赖版本" });
+  const scrollRegion = screen.getByRole("region", { name: "网关依赖版本（可滚动）" });
+  expect(scrollRegion).toHaveAttribute("tabindex", "0");
+  expect(scrollRegion).toContainElement(table);
+  const readiness = screen.getByRole("region", { name: "依赖就绪概览" });
+  expect(readiness).toHaveTextContent("需修复");
+  expect(readiness).toHaveTextContent("pnpm");
+  expect(readiness).toHaveTextContent("不代表完整离线包或生产环境已验收");
   expect(within(table).getAllByRole("columnheader")).toHaveLength(4);
   expect(within(table).getByText("pnpm@11.7.0")).toBeInTheDocument();
   expect(within(table).getByText("缓存中的包管理器版本与项目要求不符")).toBeInTheDocument();
@@ -108,6 +115,20 @@ it("distinguishes gateway versions from absent host evidence and disables instal
   fireEvent.click(screen.getByRole("tab", { name: "安装与修复" }));
   expect(screen.getByRole("button", { name: "生成安装计划" })).toBeDisabled();
   expect(prepareEnvironmentPlan).not.toHaveBeenCalled();
+});
+
+it("folds compatible gateway details without hiding source uncertainty or the inspection action", async () => {
+  vi.mocked(loadEnvironment).mockResolvedValue({
+    ...environment,
+    runtime: [{ ...environment.runtime[0], expected: ">=3.13,<3.14" }],
+  });
+  renderWithQueryClient(<EnvironmentView />);
+  const readiness = await screen.findByRole("region", { name: "依赖就绪概览" });
+  expect(readiness).toHaveTextContent("网关：依赖可用");
+  expect(readiness).toHaveTextContent("项目环境：待核对");
+  expect(screen.getByRole("table", { name: "网关依赖版本", hidden: true })).not.toBeVisible();
+  fireEvent.click(screen.getByText("查看网关依赖明细", { exact: true }));
+  expect(screen.getByRole("table", { name: "网关依赖版本" })).toBeVisible();
 });
 
 it("generates an offline-bound plan but never executes it in the browser", async () => {

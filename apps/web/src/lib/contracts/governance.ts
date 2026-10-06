@@ -8,6 +8,7 @@ import type {
   DataQualitySnapshotRead,
   EntityResolutionCaseRead,
   EntityResolutionImpactRead,
+  GovernanceFactComparisonRead,
   GovernanceRunPageRead,
   ProjectionMaintenanceJobRead,
   PublicationBatchRead,
@@ -18,6 +19,7 @@ import { GovernanceService } from "../generated";
 
 export const governanceKeys = {
   queues: ["governance", "queues"] as const,
+  factComparison: (factId: string) => ["governance", "fact-comparison", factId] as const,
   identityHistory: ["governance", "identity-history"] as const,
   identityImpact: (caseId: string) => ["governance", "identity-impact", caseId] as const,
   qualityIssues: (status: string) => ["governance", "quality-issues", status] as const,
@@ -37,6 +39,15 @@ export type GovernanceQueues = {
   facts: StagedFactRead[];
   identityCases: EntityResolutionCaseRead[];
 };
+
+export function loadFactComparison(factId: string, signal?: AbortSignal): Promise<GovernanceFactComparisonRead> {
+  return contractRequest(
+    GovernanceService.getStagedFactComparisonApiV1GovernanceStagedFactsStagedFactIdComparisonGet({
+      stagedFactId: factId,
+    }),
+    signal,
+  );
+}
 
 export async function loadGovernanceQueues(signal?: AbortSignal): Promise<GovernanceQueues> {
   const [facts, identityCases] = await Promise.all([

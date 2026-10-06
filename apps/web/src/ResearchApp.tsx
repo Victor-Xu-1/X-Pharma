@@ -4,9 +4,10 @@ import { ResearchWorkspace } from "./workspaces/research/ResearchWorkspace";
 export function ResearchApp() {
   return (
     <SessionBoundary workbench="research">
-      {({ user, logout, updateUser, logoutPending, logoutError }) => (
+      {({ authMode, user, logout, updateUser, logoutPending, logoutError }) => (
         <ResearchWorkspace
           user={user}
+          authMode={authMode}
           onLogout={logout}
           onUserUpdated={updateUser}
           logoutPending={logoutPending}

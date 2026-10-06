@@ -611,6 +611,12 @@ export function parseWorkspaceQuery(
           knowledgePageId,
           invalidKnowledgePageId: rawKnowledgePageId !== null && knowledgePageId === null,
           knowledgePanel,
+          offset: Math.min(1_000_000, Math.max(0, Number.parseInt(params.get("offset") ?? "0", 10) || 0)),
+          knowledgePageType: /^[a-z][a-z0-9_]{0,79}$/.test(params.get("page_type") ?? "")
+            ? (params.get("page_type") ?? "")
+            : "",
+          knowledgeSortBy: params.get("sort_by") === "updated_at" ? ("updated_at" as const) : ("title" as const),
+          knowledgeSortDirection: params.get("sort_direction") === "desc" ? ("desc" as const) : ("asc" as const),
           knowledgeVersionNumber:
             knowledgePanel === "coverage" &&
             Number.isSafeInteger(requestedKnowledgeVersion) &&

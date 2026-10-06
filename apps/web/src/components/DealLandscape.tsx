@@ -1,8 +1,8 @@
 import { BarChart3, CircleDollarSign, Flag, List, Network, Route } from "lucide-react";
 import { lazy, Suspense } from "react";
-
 import type { DealAnalysisDimension, DealAnalysisLimit, DealAnalysisView } from "../lib/contracts/deals";
 import type { DealLandscapeBucketRead, DealLandscapeRead } from "../lib/generated";
+import { compactPhaseLabels as phaseLabels } from "../lib/phasePresentation";
 
 const LandscapeBarChart = lazy(() =>
   import("./LandscapeBarChart").then((module) => ({ default: module.LandscapeBarChart })),
@@ -50,19 +50,6 @@ const directionLabels: Record<string, string> = {
   cross_border: "跨境",
   global: "全球",
   undisclosed: "未披露",
-};
-const phaseLabels: Record<string, string> = {
-  discovery: "发现",
-  preclinical: "临床前",
-  ind: "IND",
-  phase_1: "I 期",
-  phase_1_2: "I/II 期",
-  phase_2: "II 期",
-  phase_2_3: "II/III 期",
-  phase_3: "III 期",
-  filed: "申报",
-  approved: "已批准",
-  discontinued: "终止",
 };
 
 function labeledBuckets(buckets: DealLandscapeBucketRead[], labels?: Record<string, string>) {

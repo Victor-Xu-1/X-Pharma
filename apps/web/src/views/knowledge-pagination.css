@@ -1,0 +1,13 @@
+.knowledge-index .domain-pagination {
+  grid-template-columns: minmax(0, 1fr);
+  padding-inline: 12px;
+}
+
+.knowledge-index .domain-pagination-controls {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.knowledge-index .domain-pagination-error {
+  grid-column: 1;
+}

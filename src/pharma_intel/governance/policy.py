@@ -4,6 +4,7 @@ import hashlib
 from decimal import Decimal
 from typing import Any
 
+from pharma_intel.chemistry.standardization import STANDARDIZATION_VERSION
 from pharma_intel.config import Settings
 from pharma_intel.governance.contracts import HIGH_RISK_FACT_KINDS, POLICY_SCHEMA, SCHEMA_NAME, SCHEMA_VERSION
 from pharma_intel.governance.fact_identity import _hash_json
@@ -55,6 +56,7 @@ def governance_policy_manifest(settings: Settings) -> dict[str, Any]:
         "schema": POLICY_SCHEMA,
         "governance_schema_name": SCHEMA_NAME,
         "governance_schema_version": SCHEMA_VERSION,
+        "normalization_policy": STANDARDIZATION_VERSION,
         "model_provider": "openai-compatible",
         "model_name": settings.ai_model,
         "model_endpoint_sha256": hashlib.sha256(settings.ai_base_url.strip().rstrip("/").encode("utf-8")).hexdigest(),

@@ -16,20 +16,29 @@ export async function verifyKnowledgeGovernance({ page }: Pick<PlaywrightTestArg
         },
       });
     }
-    if (path === "/api/v1/knowledge/pages") {
+    if (path === "/api/v1/knowledge/pages/search") {
       return route.fulfill({
-        json: [
-          {
-            current_version_id: "knowledge-version-2",
-            id: "knowledge-page-1",
-            page_key: "entity/target/egfr",
-            page_type: "target",
-            status: "published",
-            subject_entity_id: "target-egfr",
-            title: "EGFR competitive landscape",
-            updated_at: "2026-07-24T08:00:00Z",
-          },
-        ],
+        json: {
+          as_of: "2026-07-24T08:00:00Z",
+          facets: { page_type: { target: 1 } },
+          items: [
+            {
+              current_version_id: "knowledge-version-2",
+              id: "knowledge-page-1",
+              page_key: "entity/target/egfr",
+              page_type: "target",
+              status: "published",
+              subject_entity_id: "target-egfr",
+              title: "EGFR competitive landscape",
+              updated_at: "2026-07-24T08:00:00Z",
+            },
+          ],
+          limit: 50,
+          offset: 0,
+          sort_by: "title",
+          sort_direction: "asc",
+          total: 1,
+        },
       });
     }
     if (path === "/api/v1/knowledge/pages/knowledge-page-1") {
@@ -155,11 +164,12 @@ export async function verifyKnowledgeGovernance({ page }: Pick<PlaywrightTestArg
 
   await page.goto("/workspace/research?view=knowledge");
   await expect(page.getByRole("heading", { name: "版本化知识专题" })).toBeVisible();
+  await expect(page.locator(".knowledge-count")).toHaveText("1 个专题");
   await page.getByRole("button", { name: /EGFR competitive landscape/ }).click();
   await expect(page.getByRole("heading", { name: "EGFR competitive landscape" })).toBeVisible();
   await page.getByRole("tab", { name: "覆盖与版本" }).click();
   await expect(page.getByRole("region", { name: "专题覆盖摘要" })).toContainText("3专题要点");
-  await expect(page.getByRole("cell", { name: "has_competitor" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "竞品关系" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "v1 → v2" })).toBeVisible();
   await expect(page.getByText("Competitive landscape update", { exact: true })).toBeVisible();
   await expect(page.getByText("page=8", { exact: true })).toBeVisible();

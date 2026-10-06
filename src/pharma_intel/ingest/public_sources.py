@@ -13,7 +13,7 @@ from pharma_intel.ingest.chembl import CHEMBL_API_ROOT, ChemblRoutingRule
 from pharma_intel.ingest.clinicaltrials import CLINICALTRIALS_GOV_STUDIES_URL, ClinicalTrialsGovRoutingRule
 from pharma_intel.ingest.connectors import SourceConnectorRegistry
 from pharma_intel.ingest.pubmed import PUBMED_EUTILITIES_ROOT, PubMedRoutingRule
-from pharma_intel.ingest.source_routing import canonical_routing_rules, routing_scope_identity
+from pharma_intel.ingest.source_routing import canonical_routing_rules, routing_scope_identity, source_scope_digest
 from pharma_intel.licensing import EvidenceLicensePolicy
 from pharma_intel.models import (
     AuditEvent,
@@ -102,9 +102,14 @@ def _register(
                 policy.permits("web", datetime.now(UTC)) or policy.permits("mcp", datetime.now(UTC))
             ):
                 raise ValueError("Existing dataset must be active and currently licensed before source registration")
+        scope_digest = source_scope_digest(definition.source_type, [rule])
         source = session.scalar(
             select(DataSource)
-            .where(DataSource.tenant_id == tenant.id, DataSource.root_uri == definition.root_uri)
+            .where(
+                DataSource.tenant_id == tenant.id,
+                DataSource.root_uri == definition.root_uri,
+                DataSource.scope_digest == scope_digest,
+            )
             .with_for_update()
         )
         routing_rules = [rule]
@@ -113,9 +118,14 @@ def _register(
         if source is None:
             source = DataSource(
                 tenant_id=tenant.id,
-                name=definition.name,
+                name=(
+                    definition.name
+                    if definition.source_type == DataSourceType.CHEMBL
+                    else f"{definition.name} [{scope_digest[:8]}]"
+                ),
                 source_type=definition.source_type,
                 root_uri=definition.root_uri,
+                scope_digest=scope_digest,
                 owner="X-Pharma public data operations",
                 data_classification="public",
                 authorization_scopes=authorization_scopes,
@@ -227,12 +237,16 @@ def register_chembl_source(
     page_size: int,
     scan_interval_seconds: int = 86_400,
     sync_mode: Literal["snapshot", "continuous"] = "snapshot",
+    include_activities: bool = False,
+    activity_limit: int = 10,
 ) -> DataSource:
     rule = ChemblRoutingRule(
         target_chembl_id=target_chembl_id,
         max_records=max_records,
         page_size=page_size,
         sync_mode=sync_mode,
+        include_activities=include_activities,
+        activity_limit=activity_limit,
     )
     definition = PublicSourceDefinition(
         DataSourceType.CHEMBL,

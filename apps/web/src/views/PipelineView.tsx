@@ -33,6 +33,7 @@ import {
 import { sortCriteriaFromTable, tableSortingFromCriteria } from "../lib/contracts/sorting";
 import { facetOptions } from "../lib/facets";
 import type { CompetitiveProgramRead } from "../lib/generated";
+import { compactPhaseLabels as phaseLabels } from "../lib/phasePresentation";
 import {
   pipelineBooleanSignalLabels as booleanSignalLabels,
   pipelineResultEvaluationLabels as resultEvaluationLabels,
@@ -93,20 +94,6 @@ const appliedFilterLabels = {
   deal_total_potential_amount_min: "潜在总额",
   deal_total_potential_amount_max: "潜在总额",
 } as const;
-
-const phaseLabels: Record<string, string> = {
-  discovery: "发现",
-  preclinical: "临床前",
-  ind: "IND",
-  phase_1: "I 期",
-  phase_1_2: "I/II 期",
-  phase_2: "II 期",
-  phase_2_3: "II/III 期",
-  phase_3: "III 期",
-  filed: "申报",
-  approved: "已批准",
-  discontinued: "终止",
-};
 
 const programStatusLabels: Record<string, string> = {
   active: "进行中",

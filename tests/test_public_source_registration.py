@@ -62,3 +62,31 @@ def test_public_registration_validates_before_any_database_write(monkeypatch: py
             max_records=10,
             page_size=1001,
         )
+
+
+def test_chembl_topics_are_independent_and_existing_checkpoint_is_preserved(
+    session: Session,
+    tenant: Tenant,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    factory = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
+    monkeypatch.setattr(public_sources, "get_session_factory", lambda: factory)
+    monkeypatch.setattr(public_sources, "get_settings", lambda: Settings(object_store_root=tmp_path))
+    first = public_sources.register_chembl_source(
+        tenant_slug=tenant.slug, target_chembl_id="CHEMBL203", max_records=5, page_size=5
+    )
+    old = session.get(DataSource, first.id)
+    assert old is not None
+    old.connector_cursor = {"retained-audit-marker": "checkpoint"}
+    session.commit()
+    second = public_sources.register_chembl_source(
+        tenant_slug=tenant.slug, target_chembl_id="CHEMBL999", max_records=5, page_size=5
+    )
+    assert second.id != first.id and second.scope_digest != first.scope_digest
+    session.refresh(old)
+    assert old.connector_cursor == {"retained-audit-marker": "checkpoint"}
+    repeated = public_sources.register_chembl_source(
+        tenant_slug=tenant.slug, target_chembl_id="CHEMBL999", max_records=5, page_size=5
+    )
+    assert repeated.id == second.id

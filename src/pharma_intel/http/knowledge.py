@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -7,15 +9,18 @@ from sqlalchemy.orm import Session
 from pharma_intel.http.dependencies import PrincipalDep, SessionDep
 from pharma_intel.knowledge.public import public_knowledge_markdown
 from pharma_intel.knowledge.read_model import KnowledgePageNotFound, KnowledgeReadService, KnowledgeVersionNotFound
+from pharma_intel.knowledge.search import search_published_knowledge
 from pharma_intel.models import KnowledgePage, KnowledgePageStatus, KnowledgePageVersion
 from pharma_intel.schemas import (
     PublicKnowledgePageCoverageRead,
     PublicKnowledgePageDetail,
+    PublicKnowledgePageSearchResult,
     PublicKnowledgePageSummary,
     PublicKnowledgeVersionDiffRead,
     PublicKnowledgeVersionSummaryRead,
 )
 from pharma_intel.security import Principal
+from pharma_intel.sorting import SortDirection
 
 router = APIRouter()
 
@@ -43,17 +48,37 @@ def list_knowledge_pages(
     limit: int = Query(default=100, ge=1, le=1000),
 ) -> list[PublicKnowledgePageSummary]:
     principal.require("knowledge:read")
-    statement = select(KnowledgePage).where(
-        KnowledgePage.tenant_id == principal.tenant_id,
-        KnowledgePage.status == KnowledgePageStatus.PUBLISHED,
-        KnowledgePage.current_version_id.is_not(None),
+    return search_published_knowledge(
+        session,
+        principal.tenant_id,
+        query=q,
+        page_type=page_type,
+        limit=limit,
+    ).items
+
+
+@router.get("/api/v1/knowledge/pages/search", response_model=PublicKnowledgePageSearchResult, tags=["knowledge"])
+def search_knowledge_pages(
+    principal: PrincipalDep,
+    session: SessionDep,
+    q: str | None = Query(default=None, max_length=500),
+    page_type: str | None = Query(default=None, max_length=80),
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0, le=1_000_000),
+    sort_by: Literal["title", "updated_at"] = "title",
+    sort_direction: SortDirection = "asc",
+) -> PublicKnowledgePageSearchResult:
+    principal.require("knowledge:read")
+    return search_published_knowledge(
+        session,
+        principal.tenant_id,
+        query=q,
+        page_type=page_type,
+        limit=limit,
+        offset=offset,
+        sort_by=sort_by,
+        sort_direction=sort_direction,
     )
-    if q:
-        statement = statement.where(KnowledgePage.title.ilike(f"%{q}%"))
-    if page_type:
-        statement = statement.where(KnowledgePage.page_type == page_type)
-    pages = session.scalars(statement.order_by(KnowledgePage.title).limit(limit))
-    return [PublicKnowledgePageSummary.model_validate(page) for page in pages]
 
 
 @router.get("/api/v1/knowledge/pages/{page_id}", response_model=PublicKnowledgePageDetail, tags=["knowledge"])

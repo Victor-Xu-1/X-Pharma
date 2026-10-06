@@ -13,6 +13,7 @@ from pharma_intel.models import (
     ActivityMeasurement,
     Assay,
     CompoundStructure,
+    DataSourceType,
     MeasurementRelation,
     StagedFact,
 )
@@ -78,20 +79,25 @@ def materialize_activity(
 ) -> list[dict[str, str]]:
     compound = context._entity(cast(dict[str, Any], payload["compound"]), staged.source_document_id)
     target = context._entity(cast(dict[str, Any], payload["target"]), staged.source_document_id)
+    source_system = (
+        "chembl"
+        if context._source_type_for_document(staged.source_document_id) == DataSourceType.CHEMBL
+        else "governed_ai"
+    )
     assay_identity = hashlib.sha256(
         f"{staged.source_document_id}:{str(payload['assay_name']).casefold()}".encode()
     ).hexdigest()
     assay = context.session.scalar(
         select(Assay).where(
             Assay.tenant_id == context.tenant_id,
-            Assay.source_system == "governed_ai",
+            Assay.source_system == source_system,
             Assay.source_assay_id == assay_identity,
         )
     )
     if assay is None:
         assay = Assay(
             tenant_id=context.tenant_id,
-            source_system="governed_ai",
+            source_system=source_system,
             source_assay_id=assay_identity,
             target_entity_id=target.id,
             assay_type=cast(str | None, payload.get("assay_type")),
@@ -103,7 +109,7 @@ def materialize_activity(
     activity = context.session.scalar(
         select(ActivityMeasurement).where(
             ActivityMeasurement.tenant_id == context.tenant_id,
-            ActivityMeasurement.source_system == "governed_ai",
+            ActivityMeasurement.source_system == source_system,
             ActivityMeasurement.source_activity_id == staged.fact_key,
         )
     )
@@ -111,7 +117,7 @@ def materialize_activity(
     if activity is None:
         activity = ActivityMeasurement(
             tenant_id=context.tenant_id,
-            source_system="governed_ai",
+            source_system=source_system,
             source_activity_id=staged.fact_key,
             assay_id=assay.id,
             compound_entity_id=compound.id,
@@ -121,6 +127,10 @@ def materialize_activity(
             reported_value=str(payload["reported_value"]),
         )
         context.session.add(activity)
+    activity.assay_id = assay.id
+    activity.reported_type = str(payload["reported_type"])
+    activity.reported_relation = relation
+    activity.reported_value = str(payload["reported_value"])
     activity.reported_units = cast(str | None, payload.get("reported_units"))
     activity.standard_type = str(payload["reported_type"]) if payload.get("standard_value") is not None else None
     activity.standard_relation = relation if payload.get("standard_value") is not None else None

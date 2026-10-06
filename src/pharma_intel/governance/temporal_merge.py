@@ -267,6 +267,9 @@ def _optional_decimal(value: Any) -> Decimal | None:
 def _normalize_phase(value: str) -> DevelopmentPhase | None:
     chinese_value = re.sub(r"\s+", "", value).casefold()
     chinese_aliases = {
+        "未知": DevelopmentPhase.UNKNOWN,
+        "未披露": DevelopmentPhase.UNKNOWN,
+        "早期i期临床": DevelopmentPhase.EARLY_PHASE_1,
         "药物发现": DevelopmentPhase.DISCOVERY,
         "发现": DevelopmentPhase.DISCOVERY,
         "临床前": DevelopmentPhase.PRECLINICAL,
@@ -305,6 +308,9 @@ def _normalize_phase(value: str) -> DevelopmentPhase | None:
         return chinese_aliases[chinese_value]
     normalized = re.sub(r"[^a-z0-9]+", "_", value.casefold()).strip("_")
     aliases = {
+        "unknown": DevelopmentPhase.UNKNOWN,
+        "early_phase_1": DevelopmentPhase.EARLY_PHASE_1,
+        "early_phase_i": DevelopmentPhase.EARLY_PHASE_1,
         "discovery": DevelopmentPhase.DISCOVERY,
         "research": DevelopmentPhase.DISCOVERY,
         "preclinical": DevelopmentPhase.PRECLINICAL,

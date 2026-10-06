@@ -21,13 +21,14 @@ _DEVELOPMENT_PHASE_RANK = {
     "discovery": 0,
     "preclinical": 1,
     "ind": 2,
-    "phase_1": 3,
-    "phase_1_2": 4,
-    "phase_2": 5,
-    "phase_2_3": 6,
-    "phase_3": 7,
-    "filed": 8,
-    "approved": 9,
+    "early_phase_1": 3,
+    "phase_1": 4,
+    "phase_1_2": 5,
+    "phase_2": 6,
+    "phase_2_3": 7,
+    "phase_3": 8,
+    "filed": 9,
+    "approved": 10,
 }
 
 

@@ -21,7 +21,7 @@ class PreparedFact:
 
 
 class FactNormalizer:
-    """Converts untrusted model facts into deterministic, publishable payloads."""
+    """Converts untrusted reported facts into deterministic, publishable payloads."""
 
     def __init__(self, standardizer: ChemistryStandardizer | None = None) -> None:
         self.standardizer = standardizer or ChemistryStandardizer()
@@ -63,7 +63,7 @@ class FactNormalizer:
             "heavy_atom_count": standardized.heavy_atom_count,
             "standardization_version": standardized.standardization_version,
         }
-        findings = tuple(self._model_authority_mismatches(raw_payload, payload))
+        findings = tuple(self._reported_authority_mismatches(raw_payload, payload))
         return PreparedFact(
             fact=fact,
             raw_payload=raw_payload,
@@ -102,7 +102,7 @@ class FactNormalizer:
         return standardized
 
     @staticmethod
-    def _model_authority_mismatches(
+    def _reported_authority_mismatches(
         raw_payload: dict[str, Any],
         normalized_payload: dict[str, Any],
     ) -> list[dict[str, Any]]:
@@ -115,7 +115,7 @@ class FactNormalizer:
                 {
                     "code": "structure_authority_mismatch",
                     "severity": "error",
-                    "message": f"Model-supplied {field} does not match the RDKit-derived value",
+                    "message": f"Supplied {field} does not match the RDKit-derived value",
                     "field": field,
                     "model_value": _display_value(model_value),
                     "derived_value": _display_value(normalized_payload[field]),

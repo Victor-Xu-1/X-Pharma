@@ -97,6 +97,9 @@ export async function verifyResearcherReview(
   }
   await page.goto("/workspace/internal?view=environment");
   await expect(page.getByRole("heading", { name: "运行环境与安装管理", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "依赖就绪概览", exact: true })).toBeVisible();
+  const gatewayDetails = page.locator("details").filter({ has: page.getByText("查看网关依赖明细", { exact: true }) });
+  if ((await gatewayDetails.getAttribute("open")) === null) await gatewayDetails.locator(":scope > summary").click();
   await expect(page.getByRole("table", { name: "网关依赖版本" })).toBeVisible();
   await expect(page.getByRole("table", { name: "网关依赖版本" }).getByRole("columnheader")).toHaveCount(4);
   await expect(page.getByText(/未声明明确版本要求时，不判定为兼容/)).toBeVisible();

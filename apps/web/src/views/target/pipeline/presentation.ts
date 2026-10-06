@@ -1,6 +1,7 @@
 import { hasPipelineSearchFilter, type PipelineSearchFilters } from "../../../lib/contracts/pipeline";
 import type { CompetitiveProgram } from "../../../lib/contracts/target";
 import type { AppliedFilterRead, PipelineLandscapeRead } from "../../../lib/generated";
+import { targetPhaseLabels } from "../../../lib/phasePresentation";
 import { publicProgramTags } from "../../../lib/programDisplay";
 
 export const targetDrugColumnOptions = [
@@ -196,19 +197,7 @@ export function pipelineProgramStatusLabel(
   return states.length > 1 ? "混合状态" : programStatusLabel(program.program_status);
 }
 
-export const developmentPhaseLabels: Record<string, string> = {
-  discovery: "药物发现",
-  preclinical: "临床前",
-  ind: "IND",
-  phase_1: "I 期",
-  phase_1_2: "I/II 期",
-  phase_2: "II 期",
-  phase_2_3: "II/III 期",
-  phase_3: "III 期",
-  filed: "申报上市",
-  approved: "已批准",
-  discontinued: "已终止",
-};
+export const developmentPhaseLabels = targetPhaseLabels;
 
 export function developmentPhaseLabel(value: string): string {
   return developmentPhaseLabels[value.toLowerCase()] ?? value;

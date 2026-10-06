@@ -3,16 +3,25 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from pharma_intel.chemistry.standardization import STANDARDIZATION_VERSION
+from pharma_intel.governance.chembl_enrichment import (
+    ChemblActivity,
+    ChemblActivityCoverage,
+    ChemblStructure,
+    enrichment_facts,
+)
 from pharma_intel.governance.contracts import OFFICIAL_SOURCE_UPDATE_POLICY
 from pharma_intel.governance.schemas import (
+    ActivityFact,
     Citation,
     EntityReference,
     ProgramFact,
     ProgramTargetFact,
+    StructureFact,
     TargetProfileFact,
 )
 from pharma_intel.models import (
@@ -23,11 +32,17 @@ from pharma_intel.models import (
     ProgramTargetRole,
     ReviewStatus,
 )
-from pharma_intel.program_semantics import public_program_drug_category, public_program_modality
+from pharma_intel.program_semantics import (
+    CHEMBL_MAXIMUM_PHASES,
+    chembl_maximum_phase,
+    chembl_reported_phase_number,
+    public_program_drug_category,
+    public_program_modality,
+)
 
 ADAPTER_NAME = "chembl_mechanism_json"
-ADAPTER_VERSION = "1.1.0"
-SNAPSHOT_SCHEMA = "pharma.chembl.mechanism.v1"
+ADAPTER_VERSION = "1.3.2"
+SNAPSHOT_SCHEMA = "pharma.chembl.mechanism.v2"
 
 
 class _SnapshotModel(BaseModel):
@@ -43,11 +58,20 @@ class ChemblTarget(_SnapshotModel):
     uniprot_accession: str | None = Field(default=None, pattern=r"^[A-Z0-9]{6,10}$")
 
 
-class ChemblMolecule(_SnapshotModel):
+class _PhasedSnapshotModel(_SnapshotModel):
+    max_phase: float | None = Field(default=None, ge=-1, le=4, strict=True)
+
+    @field_validator("max_phase", mode="before")
+    @classmethod
+    def decode_reported_phase(cls, value: object) -> float | None:
+        return chembl_reported_phase_number(value)
+
+
+class ChemblMolecule(_PhasedSnapshotModel):
     chembl_id: str = Field(pattern=r"^CHEMBL[0-9]+$")
     pref_name: str = Field(min_length=1, max_length=500)
     molecule_type: str | None = Field(default=None, max_length=120)
-    max_phase: float | None = Field(default=None, ge=0, le=4)
+    structure: ChemblStructure | None = None
 
 
 class ChemblMechanismReference(_SnapshotModel):
@@ -56,13 +80,12 @@ class ChemblMechanismReference(_SnapshotModel):
     ref_url: str = Field(default="", max_length=2000)
 
 
-class ChemblMechanism(_SnapshotModel):
+class ChemblMechanism(_PhasedSnapshotModel):
     mec_id: int = Field(gt=0)
     target_chembl_id: str = Field(pattern=r"^CHEMBL[0-9]+$")
     molecule_chembl_id: str = Field(pattern=r"^CHEMBL[0-9]+$")
     action_type: str | None = Field(default=None, max_length=120)
     mechanism_of_action: str = Field(min_length=1, max_length=500)
-    max_phase: float = Field(ge=0, le=4)
     direct_interaction: int | None = None
     molecular_mechanism: int | None = None
     mechanism_refs: list[ChemblMechanismReference] = Field(default_factory=list, max_length=20)
@@ -83,13 +106,25 @@ class ChemblSource(_SnapshotModel):
 
 
 class ChemblSnapshot(_SnapshotModel):
-    schema_version: Literal["pharma.chembl.mechanism.v1"]
+    schema_version: Literal["pharma.chembl.mechanism.v1", "pharma.chembl.mechanism.v2"]
     provider: Literal["ChEMBL"]
     target: ChemblTarget
     molecule: ChemblMolecule
     mechanism: ChemblMechanism
     citation: ChemblCitation
     source: ChemblSource
+    activities: list[ChemblActivity] = Field(default_factory=list, max_length=10)
+    activity_coverage: ChemblActivityCoverage = Field(default_factory=ChemblActivityCoverage)
+
+    @model_validator(mode="after")
+    def validate_enrichment_scope(self) -> ChemblSnapshot:
+        if self.schema_version.endswith("v1") and (self.activities or self.molecule.structure):
+            raise ValueError("Legacy snapshots cannot include v2 enrichment")
+        if len(self.activities) != self.activity_coverage.fetched - self.activity_coverage.excluded:
+            raise ValueError("Activity coverage differs from snapshot observations")
+        if len({item.activity_id for item in self.activities}) != len(self.activities):
+            raise ValueError("Snapshot contains duplicate ChEMBL activity identifiers")
+        return self
 
 
 @dataclass(frozen=True)
@@ -99,6 +134,8 @@ class ChemblRecord:
     source_locator: str
     source_quote: str
     mechanism_id: int
+    enrichment: tuple[StructureFact | ActivityFact, ...] = ()
+    activity_coverage: ChemblActivityCoverage | None = None
 
 
 @dataclass(frozen=True)
@@ -217,15 +254,14 @@ def adapter_policy_manifest() -> dict[str, object]:
         "automatic_source_updates": OFFICIAL_SOURCE_UPDATE_POLICY,
         "version": ADAPTER_VERSION,
         "snapshot_schema": SNAPSHOT_SCHEMA,
+        "normalization_policy": STANDARDIZATION_VERSION,
+        "enrichment_policy": (
+            "Reported molecular structure and explicitly requested bounded activity observations; no replicate pooling."
+        ),
         "fact_kind": "program",
         "identity_namespaces": ["chembl"],
-        "phase_mapping": {
-            "0": "preclinical",
-            "1": "phase_1",
-            "2": "phase_2",
-            "3": "phase_3",
-            "4": "approved",
-        },
+        "phase_mapping": {str(value): phase.value for value, phase in CHEMBL_MAXIMUM_PHASES.items()},
+        "phase_scope": "Reported maximum across indications; no regional approval or current status inference.",
         "status_policy": "ChEMBL mechanism records do not establish current active status; status remains unset.",
         "license": "CC BY-SA 3.0",
     }
@@ -267,14 +303,14 @@ def parse_chembl_snapshot(content: bytes) -> ChemblRecord:
                 ),
             )
         ],
-        phase=_phase_from_max_phase(snapshot.mechanism.max_phase),
+        phase=chembl_maximum_phase(snapshot.mechanism.max_phase),
         modality=public_program_modality(snapshot.mechanism.action_type, snapshot.molecule.molecule_type),
         drug_category=public_program_drug_category(
             snapshot.mechanism.action_type,
             snapshot.molecule.molecule_type,
         ),
         mechanism_of_action=snapshot.mechanism.mechanism_of_action,
-        global_phase=_phase_from_max_phase(snapshot.mechanism.max_phase),
+        global_phase=None,
         program_tags=[],
         citation=Citation(
             locator=snapshot.citation.locator,
@@ -310,16 +346,13 @@ def parse_chembl_snapshot(content: bytes) -> ChemblRecord:
         source_locator=snapshot.citation.locator,
         source_quote=snapshot.citation.quote,
         mechanism_id=snapshot.mechanism.mec_id,
+        enrichment=tuple(
+            enrichment_facts(
+                compound=fact.drug,
+                target=target_profile.subject,
+                structure=snapshot.molecule.structure,
+                activities=snapshot.activities,
+            )
+        ),
+        activity_coverage=snapshot.activity_coverage,
     )
-
-
-def _phase_from_max_phase(value: float) -> str:
-    if value >= 4:
-        return "approved"
-    if value >= 3:
-        return "phase_3"
-    if value >= 2:
-        return "phase_2"
-    if value >= 1:
-        return "phase_1"
-    return "preclinical"

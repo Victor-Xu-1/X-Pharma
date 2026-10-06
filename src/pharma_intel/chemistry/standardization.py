@@ -15,7 +15,7 @@ inchi: Any = import_module("rdkit.Chem.inchi")
 rdMolDescriptors: Any = import_module("rdkit.Chem.rdMolDescriptors")
 rdMolStandardize: Any = import_module("rdkit.Chem.MolStandardize.rdMolStandardize")
 
-STANDARDIZATION_VERSION = "rdkit-2026.03.3/cleanup-fragment-uncharger-tautomer-v1"
+STANDARDIZATION_VERSION = "rdkit-2026.03.3/cleanup-fragment-uncharger-stereo-tautomer-v2"
 MAX_STRUCTURE_CHARS = 20_000
 MAX_STRUCTURE_ATOMS = 2_000
 MAX_SMARTS_CHARS = 4_000
@@ -27,7 +27,12 @@ _RDKIT_PARSE_LOCK = threading.RLock()
 class ChemistryStandardizer:
     def __init__(self) -> None:
         self._uncharger = rdMolStandardize.Uncharger()
-        self._tautomer_enumerator = rdMolStandardize.TautomerEnumerator()
+        parameters = rdMolStandardize.CleanupParameters()
+        parameters.tautomerRemoveBondStereo = False
+        parameters.tautomerRemoveSp3Stereo = False
+        parameters.tautomerRemoveIsotopicHs = False
+        parameters.tautomerReassignStereo = True
+        self._tautomer_enumerator = rdMolStandardize.TautomerEnumerator(parameters)
         self._tautomer_enumerator.SetMaxTautomers(256)
         self._tautomer_enumerator.SetMaxTransforms(1_000)
 
@@ -41,9 +46,16 @@ class ChemistryStandardizer:
             molecule = rdMolStandardize.Cleanup(molecule)
             molecule = rdMolStandardize.FragmentParent(molecule)
             molecule = self._uncharger.uncharge(molecule)
+            retained_features = self._retained_features(molecule)
             molecule = self._tautomer_enumerator.Canonicalize(molecule)
             Chem.SanitizeMol(molecule)
             Chem.AssignStereochemistry(molecule, cleanIt=True, force=True)
+            if self._retained_features(molecule) != retained_features:
+                raise ChemistryValidationError(
+                    "stereochemistry_loss",
+                    "Canonical tautomer processing could not retain the supplied parent "
+                    "stereochemistry or isotope labels",
+                )
             self._validate_molecule(molecule, MAX_STRUCTURE_ATOMS)
 
             canonical_smiles = Chem.MolToSmiles(molecule, canonical=True, isomericSmiles=True)
@@ -81,6 +93,18 @@ class ChemistryStandardizer:
                     f"SMARTS queries must contain between 1 and {MAX_SMARTS_ATOMS} atoms",
                 )
             return str(Chem.MolToSmarts(query))
+
+    @staticmethod
+    def _retained_features(molecule: Any) -> tuple[int, int, tuple[tuple[int, int], ...]]:
+        atom_stereo = sum(atom.GetChiralTag() != Chem.ChiralType.CHI_UNSPECIFIED for atom in molecule.GetAtoms())
+        bond_stereo = sum(
+            bond.GetStereo() not in (Chem.BondStereo.STEREONONE, Chem.BondStereo.STEREOANY)
+            for bond in molecule.GetBonds()
+        )
+        isotope_labels = tuple(
+            (int(atom.GetIdx()), int(atom.GetIsotope())) for atom in molecule.GetAtoms() if atom.GetIsotope()
+        )
+        return atom_stereo, bond_stereo, isotope_labels
 
     @staticmethod
     def _validate_text(value: str, maximum: int, too_large_code: str) -> str:

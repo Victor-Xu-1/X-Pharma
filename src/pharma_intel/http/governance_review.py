@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
 
 import pharma_intel.object_store as object_store_module
+from pharma_intel.governance.review_comparison import read_fact_comparison
 from pharma_intel.governance.service import GovernanceError, GovernanceService, governance_policy_sha256
 from pharma_intel.http import runtime
 from pharma_intel.http.dependencies import PrincipalDep, SessionDep
@@ -22,6 +23,7 @@ from pharma_intel.models import (
     StagedFact,
 )
 from pharma_intel.schemas import GovernanceRunPageRead, GovernanceRunRead, ReviewDecision, StagedFactRead
+from pharma_intel.schemas.governance import GovernanceFactComparisonRead
 
 request_logger = structlog.get_logger("pharma_intel.request")
 
@@ -128,6 +130,23 @@ def _export_published_knowledge_page(compiler: KnowledgeCompiler, page_id: str) 
             page_id=page_id,
             error_type=type(exc).__name__,
         )
+
+
+@router.get(
+    "/api/v1/governance/staged-facts/{staged_fact_id}/comparison",
+    response_model=GovernanceFactComparisonRead,
+    tags=["governance"],
+)
+def get_staged_fact_comparison(
+    staged_fact_id: str,
+    principal: PrincipalDep,
+    session: SessionDep,
+) -> GovernanceFactComparisonRead:
+    principal.require("governance:read")
+    try:
+        return read_fact_comparison(session, principal.tenant_id, staged_fact_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="Staged fact not found") from exc
 
 
 @router.post(

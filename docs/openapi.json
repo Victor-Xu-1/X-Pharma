@@ -1847,6 +1847,18 @@
         "additionalProperties": false,
         "description": "Routing rule retained for the public ChEMBL connector.\n\nChEMBL sources were registered before PubMed and ClinicalTrials.gov routing\nrules became a tagged union. Keep the persisted target identifier explicit so\nexisting sources remain readable and new registrations use the same contract.",
         "properties": {
+          "activity_limit": {
+            "default": 10,
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Activity Limit",
+            "type": "integer"
+          },
+          "include_activities": {
+            "default": false,
+            "title": "Include Activities",
+            "type": "boolean"
+          },
           "max_records": {
             "default": 100,
             "maximum": 1000.0,
@@ -10797,6 +10809,7 @@
           "discovery",
           "preclinical",
           "ind",
+          "early_phase_1",
           "phase_1",
           "phase_1_2",
           "phase_2",
@@ -10804,7 +10817,8 @@
           "phase_3",
           "filed",
           "approved",
-          "discontinued"
+          "discontinued",
+          "unknown"
         ],
         "title": "DevelopmentPhase",
         "type": "string"
@@ -15101,6 +15115,121 @@
           "license_scopes"
         ],
         "title": "EvidenceSearchResponse",
+        "type": "object"
+      },
+      "GovernanceFactComparisonItemRead": {
+        "properties": {
+          "fact": {
+            "$ref": "#/components/schemas/StagedFactRead"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GovernanceFactOriginRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "fact",
+          "origin"
+        ],
+        "title": "GovernanceFactComparisonItemRead",
+        "type": "object"
+      },
+      "GovernanceFactComparisonRead": {
+        "properties": {
+          "conflict_total": {
+            "minimum": 0.0,
+            "title": "Conflict Total",
+            "type": "integer"
+          },
+          "conflicts": {
+            "items": {
+              "$ref": "#/components/schemas/GovernanceFactComparisonItemRead"
+            },
+            "title": "Conflicts",
+            "type": "array"
+          },
+          "fact": {
+            "$ref": "#/components/schemas/StagedFactRead"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GovernanceFactOriginRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          },
+          "unavailable_conflicts": {
+            "minimum": 0.0,
+            "title": "Unavailable Conflicts",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fact",
+          "origin",
+          "conflicts",
+          "conflict_total",
+          "unavailable_conflicts",
+          "truncated"
+        ],
+        "title": "GovernanceFactComparisonRead",
+        "type": "object"
+      },
+      "GovernanceFactOriginRead": {
+        "properties": {
+          "collected_at": {
+            "format": "date-time",
+            "title": "Collected At",
+            "type": "string"
+          },
+          "model_name": {
+            "title": "Model Name",
+            "type": "string"
+          },
+          "model_provider": {
+            "title": "Model Provider",
+            "type": "string"
+          },
+          "source_content_sha256": {
+            "title": "Source Content Sha256",
+            "type": "string"
+          },
+          "source_file_name": {
+            "title": "Source File Name",
+            "type": "string"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "source_version_number": {
+            "title": "Source Version Number",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "model_provider",
+          "model_name",
+          "source_name",
+          "source_file_name",
+          "source_version_number",
+          "source_content_sha256",
+          "collected_at"
+        ],
+        "title": "GovernanceFactOriginRead",
         "type": "object"
       },
       "GovernanceRunPageRead": {
@@ -20341,6 +20470,78 @@
         "title": "PublicKnowledgePageDetail",
         "type": "object"
       },
+      "PublicKnowledgePageSearchResult": {
+        "properties": {
+          "as_of": {
+            "format": "date-time",
+            "title": "As Of",
+            "type": "string"
+          },
+          "facets": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "type": "object"
+            },
+            "title": "Facets",
+            "type": "object"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PublicKnowledgePageSummary"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "query_schema_version": {
+            "const": "pharma.knowledge.search.v1",
+            "default": "pharma.knowledge.search.v1",
+            "title": "Query Schema Version",
+            "type": "string"
+          },
+          "sort_by": {
+            "enum": [
+              "title",
+              "updated_at"
+            ],
+            "title": "Sort By",
+            "type": "string"
+          },
+          "sort_direction": {
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "title": "Sort Direction",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset",
+          "sort_by",
+          "sort_direction",
+          "facets",
+          "as_of"
+        ],
+        "title": "PublicKnowledgePageSearchResult",
+        "type": "object"
+      },
       "PublicKnowledgePageSummary": {
         "properties": {
           "id": {
@@ -24536,6 +24737,17 @@
             "format": "date-time",
             "title": "Created At",
             "type": "string"
+          },
+          "fact_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fact Key"
           },
           "fact_kind": {
             "title": "Fact Kind",
@@ -34427,6 +34639,48 @@
         ]
       }
     },
+    "/api/v1/governance/staged-facts/{staged_fact_id}/comparison": {
+      "get": {
+        "operationId": "get_staged_fact_comparison_api_v1_governance_staged_facts__staged_fact_id__comparison_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "staged_fact_id",
+            "required": true,
+            "schema": {
+              "title": "Staged Fact Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GovernanceFactComparisonRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Staged Fact Comparison",
+        "tags": [
+          "governance"
+        ]
+      }
+    },
     "/api/v1/governance/staged-facts/{staged_fact_id}/decision": {
       "post": {
         "operationId": "decide_staged_fact_api_v1_governance_staged_facts__staged_fact_id__decision_post",
@@ -34557,6 +34811,125 @@
           }
         },
         "summary": "List Knowledge Pages",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/v1/knowledge/pages/search": {
+      "get": {
+        "operationId": "search_knowledge_pages_api_v1_knowledge_pages_search_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 1000000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "default": "title",
+              "enum": [
+                "title",
+                "updated_at"
+              ],
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort_direction",
+            "required": false,
+            "schema": {
+              "default": "asc",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "title": "Sort Direction",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicKnowledgePageSearchResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search Knowledge Pages",
         "tags": [
           "knowledge"
         ]

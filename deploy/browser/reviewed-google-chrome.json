@@ -1,0 +1,10 @@
+{
+  "schema": "pharma.reviewed-chrome-artifact.v1",
+  "visual_manifest_sha256": "6ec4c6832d839a702fefc2c5776a47bb60eff6dd16d80f3abe0c68669b4b0248",
+  "filename": "pool/main/g/google-chrome-stable/google-chrome-stable_154.0.8037.97-1_amd64.deb",
+  "size_bytes": 142172388,
+  "sha256": "a4edbe95e9b01db6c9b97d7a1323121eda18362b5620df06abac1b59bee80053",
+  "executable_sha256": "6c792041b07547a662e1b17974d1dc34a3db630379b45d9d89ddd7e3e68cc587",
+  "license_url": "https://www.google.com/chrome/terms/",
+  "provenance": "Google official HTTPS archive; complete file and symlink-value comparison matched the existing signed-repository user-level installation used for reviewed references. No binary is redistributed in this repository."
+}

@@ -41,7 +41,7 @@ import {
   tableSortingFromCriteria,
 } from "../lib/contracts/sorting";
 import { loadTargetProfile, targetKeys } from "../lib/contracts/target";
-import { entityLabels, matchExplanation, publicIdentifiers } from "../lib/entityPresentation";
+import { entityLabels, entityTypeLabel, matchExplanation, publicIdentifiers } from "../lib/entityPresentation";
 import type { Entity } from "../lib/types";
 import { usePagedEntitySelection } from "../lib/usePagedEntitySelection";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
@@ -339,7 +339,7 @@ export function ExplorerView({
         accessorKey: "entity_type",
         header: "类型",
         size: 120,
-        cell: ({ getValue }) => entityLabels[String(getValue())] ?? String(getValue()),
+        cell: ({ row }) => entityTypeLabel(row.original),
       },
       {
         id: "external_ids",
@@ -426,9 +426,13 @@ export function ExplorerView({
     enabled: Boolean(directTarget),
   });
   const displayedEntityTypeCount = (entityType: string) =>
-    !entityType || (selectedEntityTypes.length === 1 && selectedEntityTypes[0] === entityType)
-      ? result?.total
-      : result?.facets.entity_type?.[entityType];
+    !entityType
+      ? selectedEntityTypes.length === 0
+        ? result?.total
+        : undefined
+      : selectedEntityTypes.length === 1 && selectedEntityTypes[0] === entityType
+        ? result?.total
+        : result?.facets.entity_type?.[entityType];
   const landscapeSections = useMemo<DomainLandscapeSection<ExplorerLandscapeFilter>[]>(
     () => [
       {
@@ -611,6 +615,9 @@ export function ExplorerView({
       </form>
 
       <PublicResearchPanel defaultQuery={initialQuery} />
+      {result && requestedInitialEntityTypes.length ? (
+        <p className="inline-feedback">当前结果仅统计已选对象类型；点击“全部情报”重新查询完整范围。</p>
+      ) : null}
       {result?.warnings?.map((warning) => (
         <p className="inline-feedback" role="status" key={warning}>
           {warning}

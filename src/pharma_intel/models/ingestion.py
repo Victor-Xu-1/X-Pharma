@@ -55,7 +55,7 @@ class DataSource(Base, TimestampMixin):
     __tablename__ = "data_sources"
     __table_args__ = (
         UniqueConstraint("tenant_id", "name"),
-        UniqueConstraint("tenant_id", "root_uri"),
+        UniqueConstraint("tenant_id", "root_uri", "scope_digest", name="uq_data_source_scope"),
         CheckConstraint("stable_seconds >= 0", name="ck_data_source_stable_seconds"),
         CheckConstraint("max_file_bytes > 0", name="ck_data_source_max_file_bytes"),
         CheckConstraint("scan_interval_seconds >= 10", name="ck_data_source_scan_interval"),
@@ -71,6 +71,7 @@ class DataSource(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     source_type: Mapped[DataSourceType] = mapped_column(Enum(DataSourceType), index=True, nullable=False)
     root_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    scope_digest: Mapped[str] = mapped_column(String(64), default="root", server_default="root", nullable=False)
     credential_ref: Mapped[str | None] = mapped_column(String(500))
     owner: Mapped[str] = mapped_column(String(200), default="migration-unassigned", nullable=False)
     data_classification: Mapped[str] = mapped_column(String(32), default="internal", nullable=False)

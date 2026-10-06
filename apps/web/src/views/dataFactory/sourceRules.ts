@@ -66,6 +66,8 @@ export type PublicSourceDraft = {
   maxRecords: number;
   pageSize: number;
   includeAbstract: boolean;
+  includeActivities: boolean;
+  activityLimit: number;
   clinicalSort: ClinicalTrialsSort;
   syncMode: "snapshot" | "continuous";
   startDate: string;
@@ -82,6 +84,8 @@ export function initialPublicSourceDraft(source?: DataSource): PublicSourceDraft
     maxRecords: typeof rule?.max_records === "number" ? rule.max_records : 100,
     pageSize: typeof rule?.page_size === "number" ? rule.page_size : 100,
     includeAbstract: rule?.include_abstract === true,
+    includeActivities: rule?.include_activities === true,
+    activityLimit: typeof rule?.activity_limit === "number" ? rule.activity_limit : 10,
     clinicalSort: clinicalTrialsSort(rule?.sort),
     syncMode: source ? (rule?.sync_mode === "continuous" ? "continuous" : "snapshot") : "continuous",
     startDate: typeof rule?.start_date === "string" ? rule.start_date : new Date().toISOString().slice(0, 10),
@@ -105,9 +109,20 @@ export function sourceRoutingRules(
   }
   const budget = { max_records: draft.maxRecords, page_size: draft.pageSize };
   if (sourceType === "chembl") {
+    if (draft.includeActivities && draft.maxRecords > 25) throw new Error("活性补充每批最多 25 条机制记录");
     const targetId = draft.targetChemblId.trim().toUpperCase();
     if (!/^CHEMBL[0-9]+$/.test(targetId)) throw new Error("请填写有效的 ChEMBL 靶点编号");
-    return [{ ...budget, target_chembl_id: targetId, sync_mode: draft.syncMode }];
+    if (!Number.isInteger(draft.activityLimit) || draft.activityLimit < 1 || draft.activityLimit > 10) {
+      throw new Error("每个药物的活性样本上限必须是 1–10 的整数");
+    }
+    return [
+      {
+        ...budget,
+        target_chembl_id: targetId,
+        sync_mode: draft.syncMode,
+        ...(draft.includeActivities ? { include_activities: true, activity_limit: draft.activityLimit } : {}),
+      },
+    ];
   }
   const query = draft.queryTerm.trim();
   if (!query) throw new Error("检索主题不能为空");

@@ -7,9 +7,9 @@ import type {
   DealSearchItemRead,
   DealSearchResult,
   DealStatus,
-  DevelopmentPhase,
 } from "../generated";
 import { DealsService, MonitoringService } from "../generated";
+import { developmentPhases } from "../phasePresentation";
 import { effectiveSort, type SortCriterion } from "./sorting";
 
 export const dealSortFields = [
@@ -188,19 +188,6 @@ const rightTypes = new Set<DealRightType>([
   "distribution",
   "option",
   "other",
-]);
-const developmentPhases = new Set<DevelopmentPhase>([
-  "discovery",
-  "preclinical",
-  "ind",
-  "phase_1",
-  "phase_1_2",
-  "phase_2",
-  "phase_2_3",
-  "phase_3",
-  "filed",
-  "approved",
-  "discontinued",
 ]);
 
 function enumValue<T extends string>(value: string, values: ReadonlySet<T>): T | undefined {

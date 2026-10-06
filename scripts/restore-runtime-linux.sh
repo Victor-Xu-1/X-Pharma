@@ -68,6 +68,9 @@ manifest="$backup/manifest.json"
   cd "$backup"
   sha256sum --check --strict checksums.sha256 >/dev/null
 )
+identity=$(python3 "$root/scripts/lib/runtime_backup_manifest.py" "$manifest")
+mapfile -t database_records <<< "$identity"
+IFS=$'\t' read -r database postgres_admin <<< "${database_records[0]}"
 
 record=$(python3 - "$manifest" "$backup" <<'PY'
 from __future__ import annotations
@@ -111,8 +114,8 @@ postgres_image = document.get("postgresImage")
 postgres_id = document.get("postgresImageId")
 api_image = document.get("apiImage")
 api_id = document.get("apiImageId")
-if database != "pharma_intel":
-    raise SystemExit(f"unexpected business database: {database}")
+if not isinstance(database, str) or not re.fullmatch(r"[a-z_][a-z0-9_]{0,62}", database):
+    raise SystemExit("invalid business database in manifest")
 if not isinstance(head, str) or not re.fullmatch(r"[a-z0-9]+", head):
     raise SystemExit("invalid Alembic head in manifest")
 for label, image in (("PostgreSQL", postgres_image), ("API", api_image)):
@@ -153,7 +156,8 @@ ensure_exact_image "$api_image" "$api_image_id" API
 
 busybox_image='busybox:1.36.1@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662'
 if ! docker image inspect "$busybox_image" >/dev/null 2>&1; then
-  docker pull "$busybox_image" >/dev/null
+  echo "required checksummed BusyBox image is absent; load it before offline restore" >&2
+  exit 1
 fi
 
 compose=(
@@ -213,7 +217,7 @@ done
 suffix="$(date +%s)-$$"
 container="pharma-runtime-restore-$suffix"
 token=$(openssl rand -hex 6)
-bootstrap_user=pharma_app
+bootstrap_user=$postgres_admin
 bootstrap_database="restore_$token"
 probe_role="restore_probe_$token"
 bootstrap_password=$(openssl rand -hex 32)
@@ -272,18 +276,19 @@ for file in postgres-globals.sql postgres.dump temporal.dump temporal-visibility
   docker cp "$backup/$file" "$container:/tmp/$file" >/dev/null
   docker exec -u 0 "$container" chown postgres:postgres "/tmp/$file"
 done
-role_create_count=$(docker exec "$container" grep -c "^CREATE ROLE pharma_app;$" /tmp/postgres-globals.sql || true)
+role_create_count=$(docker exec "$container" grep -Ec "^CREATE ROLE (\"$bootstrap_user\"|$bootstrap_user);$" /tmp/postgres-globals.sql || true)
 [[ "$role_create_count" == 1 ]] || {
-  echo "expected exactly one CREATE ROLE statement for pharma_app in the globals dump" >&2
+  echo "expected exactly one CREATE ROLE statement for the declared PostgreSQL administrator" >&2
   exit 1
 }
 docker exec "$container" sh -c \
-  "sed '/^CREATE ROLE pharma_app;$/d' /tmp/postgres-globals.sql > /tmp/postgres-globals-restore.sql"
+  "sed -E '/^CREATE ROLE (\"$bootstrap_user\"|$bootstrap_user);$/d' /tmp/postgres-globals.sql > /tmp/postgres-globals-restore.sql"
 docker exec "$container" psql -X -U "$bootstrap_user" -d "$bootstrap_database" \
   -v ON_ERROR_STOP=1 -f /tmp/postgres-globals-restore.sql >/dev/null
 
-for target_database in "$database" temporal temporal_visibility; do
-  docker exec "$container" createdb -U "$bootstrap_user" -O pharma_app "$target_database"
+for record in "${database_records[@]:1}"; do
+  IFS=$'\t' read -r target_database owner dump <<< "$record"
+  docker exec "$container" createdb -U "$bootstrap_user" -O "$owner" "$target_database"
 done
 docker exec "$container" pg_restore -U "$bootstrap_user" -d "$database" --exit-on-error /tmp/postgres.dump >/dev/null
 docker exec "$container" pg_restore -U "$bootstrap_user" -d temporal --exit-on-error /tmp/temporal.dump >/dev/null
@@ -384,9 +389,9 @@ for archive_spec in "object-store.tar.gz:$object_volume" "markdown-wiki.tar.gz:$
 done
 
 docker exec -i "$container" psql -X -U "$bootstrap_user" -d postgres -v ON_ERROR_STOP=1 <<SQL >/dev/null
-ALTER DATABASE postgres OWNER TO pharma_app;
-ALTER DATABASE template0 OWNER TO pharma_app;
-ALTER DATABASE template1 OWNER TO pharma_app;
+ALTER DATABASE postgres OWNER TO "$postgres_admin";
+ALTER DATABASE template0 OWNER TO "$postgres_admin";
+ALTER DATABASE template1 OWNER TO "$postgres_admin";
 DROP DATABASE "$bootstrap_database";
 SQL
 

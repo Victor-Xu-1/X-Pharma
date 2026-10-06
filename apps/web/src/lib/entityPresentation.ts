@@ -15,6 +15,43 @@ export const entityLabels: Record<string, string> = {
   person: "人物",
 };
 
+const relationshipLabels: Record<string, string> = {
+  has_target: "作用靶点",
+  has_competitor: "竞品关系",
+  has_target_class: "靶点分类",
+  has_indication: "关联适应症",
+  developed_by: "研发机构",
+  trial_studies_condition: "登记研究条件",
+  trial_lead_sponsor: "登记主申办方",
+  trial_collaborator: "登记合作方",
+};
+
+export function relationshipLabel(predicate: string): string {
+  return relationshipLabels[predicate] ?? predicate;
+}
+
+type EntityIdentity = Pick<Entity, "entity_type" | "attributes">;
+
+export function isProviderLabel(entity: EntityIdentity): boolean {
+  return (
+    ["disease", "organization"].includes(entity.entity_type) && entity.attributes.identity_scope === "provider_label"
+  );
+}
+
+export function entityTypeLabel(entity: EntityIdentity): string {
+  if (isProviderLabel(entity)) return entity.entity_type === "disease" ? "登记条件" : "登记申办方";
+  return entityLabels[entity.entity_type] ?? entity.entity_type;
+}
+
+export function entityIdentityNote(entity: EntityIdentity): string | null {
+  if (!isProviderLabel(entity)) return null;
+  const note = entity.attributes.identity_note;
+  if (typeof note === "string" && note.trim()) return note;
+  return entity.entity_type === "disease"
+    ? "注册平台的研究条件名称，尚未完成本体标准化，不代表获批适应症。"
+    : "注册平台的申办方名称，不代表已核实的法律主体或企业集团归并。";
+}
+
 export function publicIdentifiers(entity: IntelligenceEntity | Entity): Array<[string, string]> {
   const identifiers: Array<[string, string]> = [];
   const seen = new Set<string>();
@@ -33,7 +70,9 @@ export function publicIdentifiers(entity: IntelligenceEntity | Entity): Array<[s
 export function matchExplanation(entity: IntelligenceEntity | Entity): string | null {
   if (!("match" in entity) || !entity.match) return null;
   if (entity.match.match_type === "relationship")
-    return `关联命中：${entity.match.matched_value ?? "已发布对象"} · ${entity.match.predicate ?? "已验证关系"}`;
+    return `关联命中：${entity.match.matched_value ?? "已发布对象"} · ${
+      entity.match.predicate ? relationshipLabel(entity.match.predicate) : "已验证关系"
+    }`;
   const relation =
     entity.match.match_relation === "exact"
       ? "精确匹配"

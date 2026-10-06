@@ -1,6 +1,6 @@
 import { CheckCircle2, KeyRound, LogOut, Mail, Save } from "lucide-react";
 import { type FormEvent, useState } from "react";
-
+import type { AuthMode } from "../lib/contracts/session";
 import { changeCurrentUserPassword, updateCurrentUser } from "../lib/contracts/session";
 import type { User } from "../lib/types";
 
@@ -44,10 +44,12 @@ function errorMessage(error: unknown, fallback: string): string {
 
 export function OverviewView({
   user,
+  authMode,
   onLogout,
   onUserUpdated,
 }: {
   user: User;
+  authMode?: AuthMode;
   onLogout: () => void;
   onUserUpdated?: (user: User) => void;
 }) {
@@ -70,7 +72,7 @@ export function OverviewView({
     try {
       const updated = await updateCurrentUser({
         display_name: displayName,
-        email: profileDraft.email,
+        ...(authMode === "oidc" ? {} : { email: profileDraft.email }),
         phone: profileDraft.phone.trim() || null,
         avatar_url: profileDraft.avatarUrl.trim() || null,
       });
@@ -125,6 +127,13 @@ export function OverviewView({
           账户正常
         </span>
       </section>
+      {authMode === "local" ? (
+        <p className="field-help">
+          本地账号：邮箱仅作为登录标识，尚未验证邮箱归属；忘记密码请联系本地管理员。正式部署需要企业身份与恢复策略。
+        </p>
+      ) : authMode === "oidc" ? (
+        <p className="field-help">企业账号：登录、邮箱身份、密码及恢复由企业身份服务管理。</p>
+      ) : null}
 
       <div className="user-center-settings-grid">
         <section className="user-center-panel" aria-labelledby="user-center-profile-title">
@@ -167,6 +176,7 @@ export function OverviewView({
               <span>邮箱</span>
               <input
                 type="email"
+                readOnly={authMode === "oidc"}
                 value={profileDraft.email}
                 onChange={(event) => setProfileDraft((current) => ({ ...current, email: event.target.value }))}
                 required
@@ -199,57 +209,61 @@ export function OverviewView({
           <header className="user-center-panel-header">
             <div>
               <h2 id="user-center-security-title">登录安全</h2>
-              <p>修改密码后，其他登录会话会退出</p>
+              <p>{authMode === "oidc" ? "密码与账号恢复请前往企业身份服务" : "修改密码后，其他登录会话会退出"}</p>
             </div>
             <KeyRound size={20} aria-hidden="true" />
           </header>
-          <form className="user-center-form" onSubmit={savePassword}>
-            <label className="user-center-field">
-              <span>当前密码</span>
-              <input
-                type="password"
-                value={passwordDraft.current}
-                onChange={(event) => setPasswordDraft((current) => ({ ...current, current: event.target.value }))}
-                minLength={8}
-                maxLength={200}
-                required
-                autoComplete="current-password"
-              />
-            </label>
-            <label className="user-center-field">
-              <span>新密码</span>
-              <input
-                type="password"
-                value={passwordDraft.next}
-                onChange={(event) => setPasswordDraft((current) => ({ ...current, next: event.target.value }))}
-                minLength={12}
-                maxLength={200}
-                required
-                autoComplete="new-password"
-              />
-            </label>
-            <label className="user-center-field">
-              <span>确认新密码</span>
-              <input
-                type="password"
-                value={passwordDraft.confirm}
-                onChange={(event) => setPasswordDraft((current) => ({ ...current, confirm: event.target.value }))}
-                minLength={12}
-                maxLength={200}
-                required
-                autoComplete="new-password"
-              />
-            </label>
-            {passwordStatus ? (
-              <p className={`user-center-form-status ${passwordStatus.kind}`} role="status">
-                {passwordStatus.text}
-              </p>
-            ) : null}
-            <button className="secondary-button" type="submit" disabled={passwordSaving}>
-              <KeyRound size={16} aria-hidden="true" />
-              {passwordSaving ? "修改中…" : "修改密码"}
-            </button>
-          </form>
+          {authMode === "oidc" ? (
+            <p>本软件不会接收或修改企业密码，也不会提供本地密码登录回退。</p>
+          ) : (
+            <form className="user-center-form" onSubmit={savePassword}>
+              <label className="user-center-field">
+                <span>当前密码</span>
+                <input
+                  type="password"
+                  value={passwordDraft.current}
+                  onChange={(event) => setPasswordDraft((current) => ({ ...current, current: event.target.value }))}
+                  minLength={8}
+                  maxLength={200}
+                  required
+                  autoComplete="current-password"
+                />
+              </label>
+              <label className="user-center-field">
+                <span>新密码</span>
+                <input
+                  type="password"
+                  value={passwordDraft.next}
+                  onChange={(event) => setPasswordDraft((current) => ({ ...current, next: event.target.value }))}
+                  minLength={12}
+                  maxLength={200}
+                  required
+                  autoComplete="new-password"
+                />
+              </label>
+              <label className="user-center-field">
+                <span>确认新密码</span>
+                <input
+                  type="password"
+                  value={passwordDraft.confirm}
+                  onChange={(event) => setPasswordDraft((current) => ({ ...current, confirm: event.target.value }))}
+                  minLength={12}
+                  maxLength={200}
+                  required
+                  autoComplete="new-password"
+                />
+              </label>
+              {passwordStatus ? (
+                <p className={`user-center-form-status ${passwordStatus.kind}`} role="status">
+                  {passwordStatus.text}
+                </p>
+              ) : null}
+              <button className="secondary-button" type="submit" disabled={passwordSaving}>
+                <KeyRound size={16} aria-hidden="true" />
+                {passwordSaving ? "修改中…" : "修改密码"}
+              </button>
+            </form>
+          )}
         </section>
       </div>
 

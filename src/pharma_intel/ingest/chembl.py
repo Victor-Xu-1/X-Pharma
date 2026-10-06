@@ -16,9 +16,10 @@ from typing import Any
 from urllib.parse import urlencode
 
 import httpx
-from pydantic import ConfigDict, Field, ValidationError, field_validator
+from pydantic import ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from pharma_intel.config import Settings
+from pharma_intel.ingest.chembl_enrichment import activity_page, molecule_structure
 from pharma_intel.ingest.chembl_sync import normalize_mechanism, prepare_mechanism_cycle
 from pharma_intel.ingest.connectors import (
     ConnectorCapabilities,
@@ -35,6 +36,7 @@ from pharma_intel.ingest.public_http import request_public_api_bytes
 from pharma_intel.ingest.public_sync import ContinuousSyncRule, PublicSyncState, read_sync_state
 from pharma_intel.models import DataSource, DataSourceType
 from pharma_intel.product import SOURCE_USER_AGENT
+from pharma_intel.program_semantics import chembl_reported_phase_number
 
 CHEMBL_API_ROOT = "https://www.ebi.ac.uk/chembl/api/data/"
 CHEMBL_MECHANISM_URL = f"{CHEMBL_API_ROOT}mechanism.json"
@@ -42,7 +44,7 @@ CHEMBL_TARGET_URL = f"{CHEMBL_API_ROOT}target/{{target_chembl_id}}.json"
 CHEMBL_MOLECULE_URL = f"{CHEMBL_API_ROOT}molecule.json"
 CHEMBL_ID_PATTERN = re.compile(r"^CHEMBL[0-9]+$")
 CHEMBL_MAX_PAGE_SIZE = 100
-CHEMBL_SNAPSHOT_SCHEMA = "pharma.chembl.mechanism.v1"
+CHEMBL_SNAPSHOT_SCHEMA = "pharma.chembl.mechanism.v2"
 CHEMBL_SNAPSHOT_TIME = datetime(1970, 1, 1, tzinfo=UTC)
 
 
@@ -52,6 +54,14 @@ class ChemblRoutingRule(ContinuousSyncRule):
     target_chembl_id: str = Field(min_length=7, max_length=32)
     max_records: int = Field(default=100, ge=1, le=1000)
     page_size: int = Field(default=100, ge=1, le=CHEMBL_MAX_PAGE_SIZE)
+    include_activities: bool = Field(default=False, strict=True)
+    activity_limit: int = Field(default=10, ge=1, le=10, strict=True)
+
+    @model_validator(mode="after")
+    def bound_enrichment_work(self) -> ChemblRoutingRule:
+        if self.include_activities and self.max_records > 25:
+            raise ValueError("Activity-enabled ChEMBL batches are limited to 25 mechanism records")
+        return self
 
     @field_validator("target_chembl_id")
     @classmethod
@@ -60,6 +70,13 @@ class ChemblRoutingRule(ContinuousSyncRule):
         if CHEMBL_ID_PATTERN.fullmatch(normalized) is None:
             raise ValueError("target_chembl_id must be a valid ChEMBL identifier")
         return normalized
+
+    def document(self) -> dict[str, Any]:
+        value = super().document()
+        if not self.include_activities:
+            value.pop("include_activities")
+            value.pop("activity_limit")
+        return value
 
 
 @dataclass(frozen=True)
@@ -159,6 +176,28 @@ class ChEMBLSourceConnector:
             mechanisms, reported_total = self._discover_mechanisms(source, rule)
         molecule_ids = list(dict.fromkeys(str(item["molecule_chembl_id"]) for item in mechanisms))
         molecules = self._discover_molecules(source, molecule_ids)
+        activity_data: dict[str, tuple[list[dict[str, Any]], dict[str, Any]]] = {}
+        if rule.include_activities:
+            for molecule_id in molecule_ids:
+                page = self._request_json(
+                    source,
+                    f"{CHEMBL_API_ROOT}activity.json",
+                    {
+                        "molecule_chembl_id": molecule_id,
+                        "target_chembl_id": rule.target_chembl_id,
+                        "limit": str(rule.activity_limit),
+                        "offset": "0",
+                        "order_by": "activity_id",
+                    },
+                    "ChEMBL activity",
+                    maximum_bytes=1_048_576,
+                )
+                activity_data[molecule_id] = activity_page(
+                    page,
+                    molecule_id=molecule_id,
+                    target_id=rule.target_chembl_id,
+                    limit=rule.activity_limit,
+                )
 
         objects: list[SourceObject] = []
         for mechanism in mechanisms:
@@ -172,6 +211,7 @@ class ChEMBLSourceConnector:
                 molecule=_molecule_summary(molecule, molecule_id),
                 mechanism=_mechanism_summary(mechanism),
                 target_chembl_id=rule.target_chembl_id,
+                activity_data=activity_data.get(molecule_id),
             )
             if len(content) > source.max_file_bytes:
                 raise ConnectorConfigurationError(f"ChEMBL mechanism {mechanism_id} exceeds max_file_bytes")
@@ -374,7 +414,7 @@ class ChEMBLSourceConnector:
         *,
         maximum_bytes: int,
     ) -> dict[str, Any]:
-        self.rate_limiter.wait(source.id, source.rate_limit_per_minute)
+        self.rate_limiter.wait(CHEMBL_API_ROOT, source.rate_limit_per_minute)
         try:
             with httpx.Client(
                 timeout=httpx.Timeout(
@@ -470,11 +510,16 @@ def _molecule_summary(payload: dict[str, Any], expected_id: str) -> dict[str, An
     molecule_id = str(payload.get("molecule_chembl_id") or "").upper()
     if molecule_id != expected_id:
         raise ConnectorTransportError("ChEMBL molecule response changed the requested molecule identity")
+    try:
+        chembl_reported_phase_number(payload.get("max_phase"))
+    except ValueError as exc:
+        raise ConnectorTransportError("ChEMBL molecule response has an unsupported maximum phase") from exc
     return {
         "chembl_id": molecule_id,
         "pref_name": str(payload.get("pref_name") or "").strip()[:500] or molecule_id,
         "molecule_type": str(payload.get("molecule_type") or "")[:120] or None,
         "max_phase": payload.get("max_phase"),
+        "structure": molecule_structure(payload),
     }
 
 
@@ -512,6 +557,7 @@ def _snapshot_bytes(
     molecule: dict[str, Any],
     mechanism: dict[str, Any],
     target_chembl_id: str,
+    activity_data: tuple[list[dict[str, Any]], dict[str, Any]] | None = None,
 ) -> bytes:
     payload = {
         "schema_version": CHEMBL_SNAPSHOT_SCHEMA,
@@ -519,6 +565,8 @@ def _snapshot_bytes(
         "target": target_summary,
         "molecule": molecule,
         "mechanism": mechanism,
+        "activities": activity_data[0] if activity_data else [],
+        "activity_coverage": activity_data[1] if activity_data else {"requested": False},
         "citation": {
             "locator": f"mechanism:{mechanism['mec_id']}",
             "quote": _citation_quote(mechanism),

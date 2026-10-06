@@ -16,6 +16,8 @@ import {
 import { useEffect, useState } from "react";
 
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "../components/common";
+import { FactQualityFindings } from "../components/FactQualityFindings";
+import { FactReviewComparison } from "../components/FactReviewComparison";
 import { QualityOperationsPanel } from "../components/QualityOperationsPanel";
 import {
   commitPublicationBatch,
@@ -38,6 +40,7 @@ import {
   requestProjectionMaintenance,
   type StagedFact,
 } from "../lib/contracts/governance";
+import { governanceLabel, groupReviewFacts } from "../lib/governancePresentation";
 
 export function GovernanceView() {
   const [mode, setMode] = useState<"facts" | "identity" | "quality" | "runs">("facts");
@@ -145,7 +148,7 @@ export function GovernanceView() {
     });
   }
 
-  if (!queues.data && !queues.error) return <Spinner label="正在读取 AI 审核队列" />;
+  if (!queues.data && !queues.error) return <Spinner label="正在读取数据审核队列" />;
   if (queues.error && !queues.data) {
     const message = queues.error instanceof Error ? queues.error.message : "审核队列加载失败";
     return <ErrorState message={message} retry={() => void queues.refetch()} />;
@@ -456,26 +459,31 @@ export function GovernanceView() {
               <strong>{facts.length}</strong> 项待审核
             </span>
           </div>
-          {facts.map((fact) => (
-            <button
-              key={fact.id}
-              type="button"
-              className={selected?.id === fact.id ? "active" : ""}
-              onClick={() => {
-                setSelectedFactId(fact.id);
-                setNotes("");
-                clearFeedback();
-              }}
-            >
-              <div>
-                <strong>{fact.fact_kind}</strong>
-                <StatusBadge value={fact.status} />
-              </div>
-              <p>{fact.source_quote}</p>
-              <small>
-                置信度 {(fact.confidence * 100).toFixed(1)}% · {formatDate(fact.created_at, true)}
-              </small>
-            </button>
+          {groupReviewFacts(facts).map((group) => (
+            <details key={group[0].id} open>
+              <summary>
+                {governanceLabel(group[0].fact_kind)} · {group.length} 条候选
+              </summary>
+              {group.map((fact) => (
+                <button
+                  key={fact.id}
+                  type="button"
+                  className={selected?.id === fact.id ? "active" : ""}
+                  onClick={() => {
+                    setSelectedFactId(fact.id);
+                    setNotes("");
+                    clearFeedback();
+                  }}
+                >
+                  <div>
+                    <strong>{governanceLabel(fact.fact_kind)}</strong>
+                    <StatusBadge value={fact.status} />
+                  </div>
+                  <p>{fact.source_quote}</p>
+                  <small>{formatDate(fact.created_at, true)} · 引证待核对</small>
+                </button>
+              ))}
+            </details>
           ))}
         </aside>
         <article className="review-detail">
@@ -484,29 +492,11 @@ export function GovernanceView() {
               <header>
                 <div>
                   <p className="eyebrow">STAGED FACT</p>
-                  <h2>{selected.fact_kind}</h2>
+                  <h2>{governanceLabel(selected.fact_kind)}</h2>
                 </div>
-                <span className="confidence-score">
-                  {(selected.confidence * 100).toFixed(1)}
-                  <small>%</small>
-                </span>
+                <StatusBadge value={selected.status} />
               </header>
-              <section>
-                <h3>数据治理对照</h3>
-                <div className="payload-comparison">
-                  <div>
-                    <h4>模型原始输出</h4>
-                    <pre className="json-preview">{JSON.stringify(selected.raw_payload, null, 2)}</pre>
-                  </div>
-                  <div>
-                    <h4>平台规范化结果</h4>
-                    {selected.normalization_version ? (
-                      <p className="normalization-version">{selected.normalization_version}</p>
-                    ) : null}
-                    <pre className="json-preview">{JSON.stringify(selected.payload, null, 2)}</pre>
-                  </div>
-                </div>
-              </section>
+              <FactReviewComparison fact={selected} />
               <section>
                 <h3>原文引证</h3>
                 <blockquote>{selected.source_quote}</blockquote>
@@ -521,18 +511,7 @@ export function GovernanceView() {
                   </div>
                 </dl>
               </section>
-              {selected.quality_findings.length ? (
-                <section>
-                  <h3>质量发现</h3>
-                  <pre className="json-preview compact">{JSON.stringify(selected.quality_findings, null, 2)}</pre>
-                </section>
-              ) : null}
-              {selected.conflict_with_ids.length ? (
-                <section>
-                  <h3>冲突事实</h3>
-                  <p className="mono-cell">{selected.conflict_with_ids.join(", ")}</p>
-                </section>
-              ) : null}
+              {selected.quality_findings.length ? <FactQualityFindings findings={selected.quality_findings} /> : null}
               <label className="review-notes">
                 <span>审核意见</span>
                 <textarea rows={4} value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={4000} />

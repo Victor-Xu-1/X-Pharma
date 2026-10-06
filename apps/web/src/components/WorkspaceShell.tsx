@@ -24,7 +24,7 @@ const titles: Record<ViewKey, string> = {
   target: "靶点全景档案",
   drug: "药物专业档案",
   company: "公司专业档案",
-  disease: "疾病专业档案",
+  disease: "疾病与登记条件",
   entity: "多领域情报档案",
   evidence: "原始资料查证",
   knowledge: "版本化知识专题",

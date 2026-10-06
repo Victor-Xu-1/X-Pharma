@@ -626,6 +626,7 @@ from .knowledge import (
 from .knowledge import (
     PublicKnowledgePageDetail as PublicKnowledgePageDetail,
 )
+from .knowledge import PublicKnowledgePageSearchResult as PublicKnowledgePageSearchResult
 from .knowledge import (
     PublicKnowledgePageSummary as PublicKnowledgePageSummary,
 )

@@ -8,6 +8,7 @@ import type {
   TrialResultEvaluation,
 } from "../generated";
 import { MonitoringService, TrialsService } from "../generated";
+import { developmentPhases } from "../phasePresentation";
 import { effectiveSort, type SortCriterion } from "./sorting";
 
 export const trialSortFields = [
@@ -191,19 +192,6 @@ const trialTherapyLines = new Set<TrialTherapyLine>([
   "consolidation",
   "induction",
   "conversion",
-]);
-const developmentPhases = new Set<DevelopmentPhase>([
-  "discovery",
-  "preclinical",
-  "ind",
-  "phase_1",
-  "phase_1_2",
-  "phase_2",
-  "phase_2_3",
-  "phase_3",
-  "filed",
-  "approved",
-  "discontinued",
 ]);
 
 function asTrialEntityRole(value: string): TrialEntityRole | undefined {

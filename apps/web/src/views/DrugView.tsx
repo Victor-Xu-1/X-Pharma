@@ -13,7 +13,6 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
-
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "../components/common";
 import { DossierCoverageDisclosure } from "../components/DossierCoverageDisclosure";
 import { MoleculeDepiction } from "../components/MoleculeDepiction";
@@ -38,6 +37,7 @@ import {
   rightTypeLabels,
 } from "../lib/dealDisplay";
 import type { EntityType } from "../lib/generated";
+import { phaseLabel } from "../lib/phasePresentation";
 import { programModalityLabel, programTagLabel, publicProgramTags } from "../lib/programDisplay";
 import { publicCoverageNotice } from "../lib/publicWarnings";
 import type { Entity } from "../lib/types";
@@ -64,20 +64,6 @@ const drugTabs: Array<ResearchTabOption<DrugDossierSection>> = [
   { key: "news", label: "动态" },
   { key: "structures", label: "结构" },
 ];
-
-const phaseLabels: Record<string, string> = {
-  discontinued: "已终止",
-  discovery: "发现阶段",
-  preclinical: "临床前",
-  ind: "IND",
-  phase_1: "I 期临床",
-  phase_1_2: "I/II 期临床",
-  phase_2: "II 期临床",
-  phase_2_3: "II/III 期临床",
-  phase_3: "III 期临床",
-  filed: "已申报",
-  approved: "已批准",
-};
 
 type DrugEntityKind = Extract<EntityType, "target" | "disease" | "organization">;
 type DrugEntityOpener = (entityType: EntityType, entityId: string) => void;
@@ -1193,11 +1179,6 @@ function renderEntityLinks(items: EntityLink[], onOpenEntity: DrugEntityOpener) 
       </button>
     </span>
   ));
-}
-
-function phaseLabel(value: string | null | undefined): string {
-  if (!value) return "未披露";
-  return phaseLabels[value.toLowerCase()] ?? value;
 }
 
 type DrugProgram = DrugDossier["programs"][number];

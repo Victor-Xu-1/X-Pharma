@@ -5,38 +5,11 @@ import { SVGRenderer } from "echarts/renderers";
 import { useEffect, useRef } from "react";
 
 import type { PipelineLandscapeBucketRead } from "../lib/generated";
+import { spacedPhaseLabels as phaseLabels, phaseDisplayOrder as phaseOrder } from "../lib/phasePresentation";
 import { chartPalette } from "./chartPalette";
 
 use([BarChart, DataZoomComponent, GridComponent, LegendComponent, TooltipComponent, SVGRenderer]);
 
-const phaseOrder = [
-  "approved",
-  "filed",
-  "phase_3",
-  "phase_2_3",
-  "phase_2",
-  "phase_1_2",
-  "phase_1",
-  "ind",
-  "preclinical",
-  "discovery",
-  "discontinued",
-  "__missing__",
-] as const;
-const phaseLabels: Record<string, string> = {
-  approved: "已批准",
-  filed: "申报",
-  phase_3: "III 期",
-  phase_2_3: "II/III 期",
-  phase_2: "II 期",
-  phase_1_2: "I/II 期",
-  phase_1: "I 期",
-  ind: "IND",
-  preclinical: "临床前",
-  discovery: "发现",
-  discontinued: "终止",
-  __missing__: "未披露",
-};
 const phaseColors: Record<string, string> = {
   approved: chartPalette.phase.approved,
   filed: chartPalette.phase.filed,
@@ -45,6 +18,8 @@ const phaseColors: Record<string, string> = {
   phase_2: chartPalette.phase.phase2,
   phase_1_2: chartPalette.phase.phase12,
   phase_1: chartPalette.phase.phase1,
+  early_phase_1: chartPalette.trialPhase.earlyPhase1,
+  unknown: chartPalette.phase.missing,
   ind: chartPalette.phase.ind,
   preclinical: chartPalette.phase.preclinical,
   discovery: chartPalette.phase.discovery,

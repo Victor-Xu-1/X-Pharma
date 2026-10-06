@@ -1,3 +1,4 @@
+import { developmentPhases as canonicalDevelopmentPhases } from "../phasePresentation";
 import type { UserRole } from "../types";
 import {
   companyDossierSections,
@@ -111,19 +112,7 @@ export const entityTypeValues = [
 export const entityTypes = new Set<string>(entityTypeValues);
 export const reviewStatuses = new Set(["draft", "verified", "rejected", "superseded"]);
 export const entitySortFields = new Set(["relevance", "name", "entity_type", "updated_at"]);
-export const developmentPhases = new Set([
-  "discovery",
-  "preclinical",
-  "ind",
-  "phase_1",
-  "phase_1_2",
-  "phase_2",
-  "phase_2_3",
-  "phase_3",
-  "filed",
-  "approved",
-  "discontinued",
-]);
+export const developmentPhases: ReadonlySet<string> = canonicalDevelopmentPhases;
 export const pipelineOrganizationRoles = new Set([
   "originator",
   "collaborator",

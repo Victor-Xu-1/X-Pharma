@@ -7,7 +7,7 @@ import { enterpriseKeys, loadEnterprisePlatform } from "../lib/contracts/enterpr
 import { environmentKeys, loadEnvironment } from "../lib/contracts/environment";
 import { EnvironmentInstallationPanel } from "./environment/InstallationPanel";
 import { PlatformOperationsPanel } from "./environment/PlatformPanel";
-import { EnvironmentProbeTable } from "./environment/ProbeTable";
+import { EnvironmentRuntimePanel } from "./environment/RuntimePanel";
 
 type Tab = "runtime" | "installation" | "operations";
 const tabs = [
@@ -49,52 +49,7 @@ export function EnvironmentView() {
       </div>
       <ResearchTabList tabs={tabs} activeTab={tab} onChange={setTab} ariaLabel="环境管理功能" idPrefix="environment" />
       <div role="tabpanel" id={`environment-panel-${tab}`} aria-labelledby={`environment-tab-${tab}`}>
-        {tab === "runtime" ? (
-          <>
-            <p>“已检测”只表示读取到版本；未声明明确版本要求时，不判定为兼容。详细要求以项目锁文件或部署配置为准。</p>
-            <section>
-              <header>
-                <h2>应用运行环境</h2>
-                <p>网关进程的实际版本，不代表主机或其他容器已经健康。</p>
-              </header>
-              <EnvironmentProbeTable probes={environment.runtime} label="网关依赖版本" />
-            </section>
-            <section>
-              <header>
-                <h2>主机与项目依赖</h2>
-                <p>{environment.host_detail}</p>
-              </header>
-              {environment.host ? (
-                <>
-                  <p>
-                    主机检测 {formatDate(environment.host.generated_at, true)} · 源码{" "}
-                    {environment.host.revision.slice(0, 12)} ·{" "}
-                    {environment.host.clean_source ? "源码干净" : "存在未提交变更"} · 可用空间{" "}
-                    {(environment.host.disk_free_bytes / 1024 ** 3).toFixed(1)} GiB
-                  </p>
-                  <EnvironmentProbeTable probes={environment.host.probes} label="主机依赖版本" />
-                  {environment.host.latest_install ? (
-                    <p role="status">
-                      最近安装：{environment.host.latest_install.recipe_id} ·{" "}
-                      {environment.host.latest_install.status === "succeeded"
-                        ? "成功"
-                        : environment.host.latest_install.status === "running"
-                          ? "执行中"
-                          : "失败"}{" "}
-                      · {environment.host.latest_install.detail}
-                      {" · "}
-                      {environment.host.latest_install.revision
-                        ? `安装时源码 ${environment.host.latest_install.revision.slice(0, 12)}`
-                        : "旧记录未绑定源码，不能作为当前源码的安装证明"}
-                    </p>
-                  ) : null}
-                </>
-              ) : (
-                <p role="status">尚无有效的主机报告。可在“安装与修复”查看接入步骤。</p>
-              )}
-            </section>
-          </>
-        ) : null}
+        {tab === "runtime" ? <EnvironmentRuntimePanel environment={environment} /> : null}
         {tab === "installation" ? <EnvironmentInstallationPanel environment={environment} /> : null}
         {tab === "operations" ? (
           platform.isError ? (
