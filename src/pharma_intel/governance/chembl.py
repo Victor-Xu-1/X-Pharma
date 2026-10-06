@@ -34,12 +34,13 @@ from pharma_intel.models import (
 from pharma_intel.program_semantics import (
     CHEMBL_MAXIMUM_PHASES,
     chembl_maximum_phase,
+    chembl_reported_phase_number,
     public_program_drug_category,
     public_program_modality,
 )
 
 ADAPTER_NAME = "chembl_mechanism_json"
-ADAPTER_VERSION = "1.3.0"
+ADAPTER_VERSION = "1.3.1"
 SNAPSHOT_SCHEMA = "pharma.chembl.mechanism.v2"
 
 
@@ -61,16 +62,8 @@ class _PhasedSnapshotModel(_SnapshotModel):
 
     @field_validator("max_phase", mode="before")
     @classmethod
-    def reject_boolean_phase(cls, value: object) -> object:
-        if isinstance(value, bool):
-            raise ValueError("Unsupported ChEMBL maximum phase")
-        return value
-
-    @field_validator("max_phase")
-    @classmethod
-    def validate_reported_stage(cls, value: float | None) -> float | None:
-        chembl_maximum_phase(value)
-        return value
+    def decode_reported_phase(cls, value: object) -> float | None:
+        return chembl_reported_phase_number(value)
 
 
 class ChemblMolecule(_PhasedSnapshotModel):

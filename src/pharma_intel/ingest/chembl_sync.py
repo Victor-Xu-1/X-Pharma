@@ -5,7 +5,7 @@ from typing import Any
 
 from pharma_intel.ingest.connectors import ConnectorTransportError
 from pharma_intel.ingest.public_sync import ContinuousSyncRule, PublicSyncState, sync_configuration_sha256
-from pharma_intel.program_semantics import chembl_maximum_phase
+from pharma_intel.program_semantics import chembl_reported_phase_number
 
 
 def prepare_mechanism_cycle(
@@ -37,7 +37,7 @@ def normalize_mechanism(record: object, target_id: str) -> dict[str, Any]:
     if not str(record.get("mechanism_of_action") or "").strip():
         raise ConnectorTransportError("ChEMBL mechanism record is missing mechanism_of_action")
     try:
-        chembl_maximum_phase(record.get("max_phase"))
+        chembl_reported_phase_number(record.get("max_phase"))
     except ValueError as exc:
         raise ConnectorTransportError("ChEMBL mechanism record has an unsupported maximum phase") from exc
     normalized = dict(record)

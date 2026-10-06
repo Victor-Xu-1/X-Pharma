@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
+from decimal import Decimal
 
 from pharma_intel.models.enums import DevelopmentPhase
 
@@ -24,6 +26,23 @@ def chembl_maximum_phase(value: float | None) -> str:
         return CHEMBL_MAXIMUM_PHASES[value].value
     except KeyError as exc:
         raise ValueError("Unsupported ChEMBL maximum phase") from exc
+
+
+def chembl_reported_phase_number(value: object) -> float | None:
+    """Decode official decimal text against the same exact phase vocabulary."""
+    if isinstance(value, str):
+        if len(value) > 32 or re.fullmatch(r"-?[0-9]+(?:\.[0-9]+)?", value.strip()) is None:
+            raise ValueError("Unsupported ChEMBL maximum phase")
+        reported = Decimal(value.strip())
+        if reported not in CHEMBL_MAXIMUM_PHASES:
+            raise ValueError("Unsupported ChEMBL maximum phase")
+        value = float(reported)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise ValueError("Unsupported ChEMBL maximum phase")
+    chembl_maximum_phase(value)
+    return float(value)
 
 
 MECHANISM_ACTION_TYPES = frozenset(

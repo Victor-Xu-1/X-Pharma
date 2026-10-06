@@ -12,7 +12,7 @@ from pharma_intel.config import Settings
 from pharma_intel.governance.chembl import parse_chembl_snapshot
 from pharma_intel.governance.schemas import ActivityFact, StructureFact
 from pharma_intel.governance.service import GovernanceService
-from pharma_intel.ingest.chembl import ChemblRoutingRule
+from pharma_intel.ingest.chembl import ChemblRoutingRule, _molecule_summary, _snapshot_bytes
 from pharma_intel.ingest.chembl_enrichment import activity_page, molecule_structure
 from pharma_intel.ingest.connectors import ConnectorTransportError
 from pharma_intel.models import ActivityMeasurement, CompoundStructure, Tenant
@@ -54,6 +54,43 @@ def test_v2_retains_reported_structure_and_individual_activity_without_claiming_
     assert activity.citation.locator == "activity:12"
     assert record.activity_coverage is not None and record.activity_coverage.reported_total == 100
     assert parse_chembl_snapshot(_snapshot()).enrichment == ()
+
+
+@pytest.mark.parametrize("reported_phase", ["4.0", "0.5", "-1"])
+def test_connector_snapshot_accepts_exact_official_decimal_phase_text_without_rewriting_source(
+    reported_phase: str,
+) -> None:
+    payload = json.loads(_enriched_snapshot())
+    molecule_id = payload["molecule"]["chembl_id"]
+    molecule = _molecule_summary(
+        {
+            "molecule_chembl_id": molecule_id,
+            "pref_name": payload["molecule"]["pref_name"],
+            "max_phase": reported_phase,
+            "molecule_structures": {"canonical_smiles": "CCO"},
+        },
+        molecule_id,
+    )
+    content = _snapshot_bytes(
+        target_summary=payload["target"],
+        molecule=molecule,
+        mechanism=payload["mechanism"],
+        target_chembl_id=payload["target"]["chembl_id"],
+        activity_data=(payload["activities"], payload["activity_coverage"]),
+    )
+    original = bytes(content)
+    record = parse_chembl_snapshot(content)
+    assert content == original and json.loads(content)["molecule"]["max_phase"] == reported_phase
+    assert [fact.fact_kind for fact in record.enrichment] == ["structure", "activity"]
+    assert record.fact.phase == "approved" and record.fact.global_phase is None
+
+
+@pytest.mark.parametrize("reported_phase", ["0.50000000000000001", "NaN", "Infinity", "4e0", "1.5", "approved", "true"])
+def test_decimal_phase_text_must_be_an_exact_known_stage_not_a_rounded_or_invented_number(reported_phase: str) -> None:
+    payload = json.loads(_enriched_snapshot())
+    payload["molecule"]["max_phase"] = reported_phase
+    with pytest.raises(ValueError, match="governed schema"):
+        parse_chembl_snapshot(json.dumps(payload).encode())
 
 
 def test_v2_rejects_cross_target_and_duplicate_activity_identity() -> None:

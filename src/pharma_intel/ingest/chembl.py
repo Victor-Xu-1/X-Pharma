@@ -36,6 +36,7 @@ from pharma_intel.ingest.public_http import request_public_api_bytes
 from pharma_intel.ingest.public_sync import ContinuousSyncRule, PublicSyncState, read_sync_state
 from pharma_intel.models import DataSource, DataSourceType
 from pharma_intel.product import SOURCE_USER_AGENT
+from pharma_intel.program_semantics import chembl_reported_phase_number
 
 CHEMBL_API_ROOT = "https://www.ebi.ac.uk/chembl/api/data/"
 CHEMBL_MECHANISM_URL = f"{CHEMBL_API_ROOT}mechanism.json"
@@ -509,6 +510,10 @@ def _molecule_summary(payload: dict[str, Any], expected_id: str) -> dict[str, An
     molecule_id = str(payload.get("molecule_chembl_id") or "").upper()
     if molecule_id != expected_id:
         raise ConnectorTransportError("ChEMBL molecule response changed the requested molecule identity")
+    try:
+        chembl_reported_phase_number(payload.get("max_phase"))
+    except ValueError as exc:
+        raise ConnectorTransportError("ChEMBL molecule response has an unsupported maximum phase") from exc
     return {
         "chembl_id": molecule_id,
         "pref_name": str(payload.get("pref_name") or "").strip()[:500] or molecule_id,
