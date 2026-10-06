@@ -4,6 +4,7 @@
 /* eslint-disable */
 import type { PublicKnowledgePageCoverageRead } from '../models/PublicKnowledgePageCoverageRead';
 import type { PublicKnowledgePageDetail } from '../models/PublicKnowledgePageDetail';
+import type { PublicKnowledgePageSearchResult } from '../models/PublicKnowledgePageSearchResult';
 import type { PublicKnowledgePageSummary } from '../models/PublicKnowledgePageSummary';
 import type { PublicKnowledgeVersionDiffRead } from '../models/PublicKnowledgeVersionDiffRead';
 import type { PublicKnowledgeVersionSummaryRead } from '../models/PublicKnowledgeVersionSummaryRead';
@@ -32,6 +33,42 @@ export class KnowledgeService {
         'q': q,
         'page_type': pageType,
         'limit': limit,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Search Knowledge Pages
+   * @returns PublicKnowledgePageSearchResult Successful Response
+   * @throws ApiError
+   */
+  public static searchKnowledgePagesApiV1KnowledgePagesSearchGet({
+    q,
+    pageType,
+    limit = 50,
+    offset,
+    sortBy = 'title',
+    sortDirection = 'asc',
+  }: {
+    q?: (string | null),
+    pageType?: (string | null),
+    limit?: number,
+    offset?: number,
+    sortBy?: 'title' | 'updated_at',
+    sortDirection?: 'asc' | 'desc',
+  }): CancelablePromise<PublicKnowledgePageSearchResult> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v1/knowledge/pages/search',
+      query: {
+        'q': q,
+        'page_type': pageType,
+        'limit': limit,
+        'offset': offset,
+        'sort_by': sortBy,
+        'sort_direction': sortDirection,
       },
       errors: {
         422: `Validation Error`,

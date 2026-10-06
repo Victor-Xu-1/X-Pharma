@@ -62,6 +62,7 @@ class StagedFactRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
     fact_kind: str
+    fact_key: str | None = None
     raw_payload: dict[str, Any]
     payload: dict[str, Any]
     normalization_version: str | None
@@ -73,6 +74,28 @@ class StagedFactRead(BaseModel):
     quality_findings: list[dict[str, Any]]
     conflict_with_ids: list[str]
     created_at: datetime
+
+
+class GovernanceFactOriginRead(BaseModel):
+    model_provider: str
+    model_name: str
+    source_name: str
+    source_file_name: str
+    source_version_number: int
+    source_content_sha256: str
+    collected_at: datetime
+
+
+class GovernanceFactComparisonItemRead(BaseModel):
+    fact: StagedFactRead
+    origin: GovernanceFactOriginRead | None
+
+
+class GovernanceFactComparisonRead(GovernanceFactComparisonItemRead):
+    conflicts: list[GovernanceFactComparisonItemRead]
+    conflict_total: int = Field(ge=0)
+    unavailable_conflicts: int = Field(ge=0)
+    truncated: bool
 
 
 class GovernanceRunRead(BaseModel):

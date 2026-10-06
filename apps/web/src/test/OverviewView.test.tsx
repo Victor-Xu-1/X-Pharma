@@ -33,6 +33,19 @@ beforeEach(() => {
   vi.mocked(changeCurrentUserPassword).mockReset();
 });
 
+it("keeps enterprise identity recovery out of the local password path", () => {
+  renderOverview({ authMode: "oidc" });
+  expect(screen.getByLabelText("邮箱")).toHaveAttribute("readonly");
+  expect(screen.queryByLabelText("当前密码")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "修改密码" })).not.toBeInTheDocument();
+  expect(screen.getByText(/本软件不会接收或修改企业密码/)).toBeInTheDocument();
+});
+
+it("does not imply local email ownership has been verified", () => {
+  renderOverview({ authMode: "local" });
+  expect(screen.getByText(/尚未验证邮箱归属/)).toBeInTheDocument();
+});
+
 it("keeps the user center focused on account management", () => {
   renderOverview();
 

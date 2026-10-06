@@ -2,6 +2,7 @@ import { contractRequest } from "../contract";
 import type {
   PublicKnowledgePageCoverageRead,
   PublicKnowledgePageDetail,
+  PublicKnowledgePageSearchResult,
   PublicKnowledgePageSummary,
   PublicKnowledgeVersionDiffRead,
   PublicKnowledgeVersionSummaryRead,
@@ -9,7 +10,7 @@ import type {
 import { KnowledgeService } from "../generated";
 
 export const knowledgeKeys = {
-  pages: (query: string) => ["knowledge", "pages", { query }] as const,
+  pages: (filters: KnowledgeSearchFilters) => ["knowledge", "pages", filters] as const,
   detail: (pageId: string) => ["knowledge", "pages", pageId] as const,
   coverage: (pageId: string) => ["knowledge", "pages", pageId, "coverage"] as const,
   versions: (pageId: string) => ["knowledge", "pages", pageId, "versions"] as const,
@@ -17,9 +18,28 @@ export const knowledgeKeys = {
     ["knowledge", "pages", pageId, "versions", versionNumber, "diff"] as const,
 };
 
-export function listKnowledgePages(query: string, signal?: AbortSignal): Promise<PublicKnowledgePageSummary[]> {
+export const KNOWLEDGE_PAGE_SIZE = 50;
+export type KnowledgeSearchFilters = {
+  query: string;
+  offset: number;
+  pageType: string;
+  sortBy: "title" | "updated_at";
+  sortDirection: "asc" | "desc";
+};
+
+export function searchKnowledgePages(
+  filters: KnowledgeSearchFilters,
+  signal?: AbortSignal,
+): Promise<PublicKnowledgePageSearchResult> {
   return contractRequest(
-    KnowledgeService.listKnowledgePagesApiV1KnowledgePagesGet({ q: query.trim() || undefined, limit: 500 }),
+    KnowledgeService.searchKnowledgePagesApiV1KnowledgePagesSearchGet({
+      q: filters.query.trim() || undefined,
+      pageType: filters.pageType || undefined,
+      limit: KNOWLEDGE_PAGE_SIZE,
+      offset: filters.offset,
+      sortBy: filters.sortBy,
+      sortDirection: filters.sortDirection,
+    }),
     signal,
   );
 }
@@ -63,6 +83,7 @@ export function getKnowledgePageVersionDiff(
 }
 
 export type KnowledgePage = PublicKnowledgePageSummary;
+export type KnowledgeSearchResult = PublicKnowledgePageSearchResult;
 export type KnowledgeDetail = PublicKnowledgePageDetail;
 export type KnowledgeCoverage = PublicKnowledgePageCoverageRead;
 export type KnowledgeVersion = PublicKnowledgeVersionSummaryRead;

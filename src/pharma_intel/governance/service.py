@@ -86,6 +86,7 @@ from pharma_intel.governance.policy import (
     governance_policy_sha256 as governance_policy_sha256,
 )
 from pharma_intel.governance.schemas import (
+    ActivityFact,
     ExtractionEnvelope,
     ProgramFact,
     StructureFact,
@@ -614,7 +615,15 @@ class GovernanceService:
         elif prepared.normalization_conflict or canonical_conflict or conflicts:
             status = GovernanceStatus.CONFLICT
         elif (
-            trusted_structured and isinstance(fact, ProgramFact | TargetProfileFact) and fact.citation.confidence == 1
+            trusted_structured
+            and (
+                isinstance(fact, ProgramFact | TargetProfileFact)
+                or (
+                    isinstance(fact, StructureFact | ActivityFact)
+                    and self._source_type_for_document(version.source_document_id) == DataSourceType.CHEMBL
+                )
+            )
+            and fact.citation.confidence == 1
         ) or authoritative_trial:
             status = GovernanceStatus.VALIDATED
         elif (

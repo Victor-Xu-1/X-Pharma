@@ -7,6 +7,7 @@ export type StagedFactRead = {
   confidence: number;
   conflict_with_ids: Array<string>;
   created_at: string;
+  fact_key?: (string | null);
   fact_kind: string;
   id: string;
   normalization_version: (string | null);

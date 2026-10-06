@@ -58,6 +58,7 @@ class DevelopmentPhase(_PersistedStringEnum):
     DISCOVERY = "discovery"
     PRECLINICAL = "preclinical"
     IND = "ind"
+    EARLY_PHASE_1 = "early_phase_1"
     PHASE_1 = "phase_1"
     PHASE_1_2 = "phase_1_2"
     PHASE_2 = "phase_2"
@@ -66,6 +67,7 @@ class DevelopmentPhase(_PersistedStringEnum):
     FILED = "filed"
     APPROVED = "approved"
     DISCONTINUED = "discontinued"
+    UNKNOWN = "unknown"
 
 
 class ProgramOrganizationRole(_PersistedStringEnum):

@@ -56,6 +56,7 @@ import type {
   EntityType,
   TrialResultEvaluation,
 } from "../lib/generated";
+import { trialLinkedPhaseLabels as developmentPhaseLabels } from "../lib/phasePresentation";
 import { programTagLabel, publicProgramTags } from "../lib/programDisplay";
 import { publicCoverageNotice } from "../lib/publicWarnings";
 import { clinicalTrialPhaseLabel, clinicalTrialStatusLabel, clinicalTrialStudyTypeLabel } from "../lib/trialDisplay";
@@ -110,20 +111,6 @@ const appliedFilterLabels = {
   disclosed_from: "披露日期",
   disclosed_to: "披露日期",
 } as const;
-
-const developmentPhaseLabels: Record<string, string> = {
-  discovery: "发现阶段",
-  preclinical: "临床前",
-  ind: "申报临床",
-  phase_1: "I 期临床",
-  phase_1_2: "I/II 期临床",
-  phase_2: "II 期临床",
-  phase_2_3: "II/III 期临床",
-  phase_3: "III 期临床",
-  filed: "申请上市",
-  approved: "批准上市",
-  discontinued: "停止研发",
-};
 
 const trialRoleLabels: Record<string, string> = {
   investigational_drug: "试验药物",

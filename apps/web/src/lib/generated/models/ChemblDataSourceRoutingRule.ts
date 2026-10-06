@@ -10,6 +10,8 @@
  * existing sources remain readable and new registrations use the same contract.
  */
 export type ChemblDataSourceRoutingRule = {
+  activity_limit?: number;
+  include_activities?: boolean;
   max_records?: number;
   page_size?: number;
   sync_mode?: 'snapshot' | 'continuous';

@@ -52,19 +52,7 @@ export const rightTypeLabels: Record<string, string> = {
   other: "其他",
 };
 
-export const phaseLabels: Record<string, string> = {
-  discovery: "发现",
-  preclinical: "临床前",
-  ind: "IND",
-  phase_1: "I期",
-  phase_1_2: "I/II期",
-  phase_2: "II期",
-  phase_2_3: "II/III期",
-  phase_3: "III期",
-  filed: "已申报",
-  approved: "已批准",
-  discontinued: "已终止",
-};
+export { compactPhaseLabels as phaseLabels } from "./phasePresentation";
 
 export function formatAmount(value: number | null, currency: string | null) {
   if (value === null) return "未披露";

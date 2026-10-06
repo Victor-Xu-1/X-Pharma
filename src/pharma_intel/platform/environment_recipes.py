@@ -15,12 +15,14 @@ from pharma_intel.schemas.environment import (
 )
 
 MANIFEST_FILES = (
+    ".python-version",
     "pyproject.toml",
     "uv.lock",
     "apps/web/package.json",
     "apps/web/pnpm-lock.yaml",
     "deploy/kubernetes/platform/versions.env",
     "scripts/bootstrap-wsl-tools.sh",
+    "deploy/api.Dockerfile",
 )
 RECIPES = (
     EnvironmentRecipeRead(

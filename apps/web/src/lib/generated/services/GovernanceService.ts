@@ -13,6 +13,7 @@ import type { EntityResolutionCaseRead } from '../models/EntityResolutionCaseRea
 import type { EntityResolutionDecisionRequest } from '../models/EntityResolutionDecisionRequest';
 import type { EntityResolutionImpactRead } from '../models/EntityResolutionImpactRead';
 import type { EntityType } from '../models/EntityType';
+import type { GovernanceFactComparisonRead } from '../models/GovernanceFactComparisonRead';
 import type { GovernanceRunPageRead } from '../models/GovernanceRunPageRead';
 import type { OntologyTermRead } from '../models/OntologyTermRead';
 import type { OntologyTermUpsert } from '../models/OntologyTermUpsert';
@@ -519,6 +520,27 @@ export class GovernanceService {
         'status': status,
         'limit': limit,
         'offset': offset,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Get Staged Fact Comparison
+   * @returns GovernanceFactComparisonRead Successful Response
+   * @throws ApiError
+   */
+  public static getStagedFactComparisonApiV1GovernanceStagedFactsStagedFactIdComparisonGet({
+    stagedFactId,
+  }: {
+    stagedFactId: string,
+  }): CancelablePromise<GovernanceFactComparisonRead> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v1/governance/staged-facts/{staged_fact_id}/comparison',
+      path: {
+        'staged_fact_id': stagedFactId,
       },
       errors: {
         422: `Validation Error`,

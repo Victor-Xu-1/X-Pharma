@@ -133,6 +133,9 @@ export interface WorkspaceLocation {
   invalidKnowledgePageId?: boolean;
   knowledgePanel?: KnowledgePanel;
   knowledgeVersionNumber?: number | null;
+  knowledgePageType?: string;
+  knowledgeSortBy?: "title" | "updated_at";
+  knowledgeSortDirection?: SortDirection;
   monitoringTab?: MonitoringTab;
   evidenceDatasetKeys?: string[];
   evidenceDocumentId?: string | null;

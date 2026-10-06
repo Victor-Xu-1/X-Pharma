@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from pharma_intel.platform import environment_executor as executor
-from pharma_intel.platform.environment_recipes import create_plan, manifest_digest, plan_digest
+from pharma_intel.platform.environment_recipes import MANIFEST_FILES, create_plan, manifest_digest, plan_digest
 from pharma_intel.schemas.environment import EnvironmentInstallPlanRead
 from tests.test_environment_plans import host_report
 
@@ -19,14 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.fixture
 def source(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    for name in (
-        "pyproject.toml",
-        "uv.lock",
-        "apps/web/package.json",
-        "apps/web/pnpm-lock.yaml",
-        "deploy/kubernetes/platform/versions.env",
-        "scripts/bootstrap-wsl-tools.sh",
-    ):
+    for name in MANIFEST_FILES:
         path = tmp_path / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(

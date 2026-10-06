@@ -10,6 +10,7 @@ from pharma_intel.models import (
     DealPartyRole,
     DealRightType,
     DealStatus,
+    DevelopmentPhase,
     EntityType,
     ProgramTargetRole,
     RegulatoryDesignationType,
@@ -489,19 +490,7 @@ class DealAssetStageFact(StrictModel):
             raise ValueError("Deal assets must be drug, product, or technology entities")
         if self.development_phase_at_transaction is not None:
             self.development_phase_at_transaction = self.development_phase_at_transaction.strip().lower()
-            valid_phases = {
-                "discovery",
-                "preclinical",
-                "ind",
-                "phase_1",
-                "phase_1_2",
-                "phase_2",
-                "phase_2_3",
-                "phase_3",
-                "filed",
-                "approved",
-                "discontinued",
-            }
+            valid_phases = {phase.value for phase in DevelopmentPhase}
             if self.development_phase_at_transaction not in valid_phases:
                 raise ValueError("Unsupported development phase at transaction")
         return self

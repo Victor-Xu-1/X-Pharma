@@ -7,13 +7,11 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import MetaData, Table, create_engine, inspect, text
 from sqlalchemy.orm import Session
 
 from pharma_intel.config import get_settings
 from pharma_intel.models import (
-    DataSource,
-    DataSourceType,
     Entity,
     EntityType,
     EvidenceClaim,
@@ -605,14 +603,36 @@ def test_fact_provenance_migration_backfills_duplicate_publication_events_once(
             tenant = Tenant(slug="provenance-backfill", name="Provenance Backfill")
             session.add(tenant)
             session.flush()
-            source = DataSource(
-                tenant_id=tenant.id,
-                name="Backfill source",
-                source_type=DataSourceType.FOLDER,
-                root_uri="/provenance-backfill",
-                owner="Research Operations",
-                authorization_scopes=["contract:backfill"],
-                dataset_key="literature",
+            source_id = str(uuid.uuid4())
+            # Seed the released schema, not today's ORM with future columns.
+            historical_sources = Table("data_sources", MetaData(), autoload_with=session.connection())
+            session.execute(
+                historical_sources.insert().values(
+                    id=source_id,
+                    tenant_id=tenant.id,
+                    name="Backfill source",
+                    source_type="FOLDER",
+                    root_uri="/provenance-backfill",
+                    owner="Research Operations",
+                    data_classification="internal",
+                    authorization_scopes=["contract:backfill"],
+                    authorization_valid_from=datetime.now(UTC),
+                    dataset_key="literature",
+                    include_globs=[],
+                    exclude_globs=[],
+                    routing_rules=[],
+                    stable_seconds=30,
+                    max_file_bytes=1_073_741_824,
+                    scan_interval_seconds=300,
+                    expected_freshness_seconds=86_400,
+                    rate_limit_per_minute=60,
+                    state="ACTIVE",
+                    config_version=1,
+                    consecutive_failures=0,
+                    connector_cursor={},
+                    created_at=datetime.now(UTC),
+                    updated_at=datetime.now(UTC),
+                )
             )
             subject = Entity(
                 tenant_id=tenant.id,
@@ -621,11 +641,11 @@ def test_fact_provenance_migration_backfills_duplicate_publication_events_once(
                 normalized_name="egfr",
                 review_status=ReviewStatus.VERIFIED,
             )
-            session.add_all([source, subject])
+            session.add(subject)
             session.flush()
             asset = SourceAsset(
                 tenant_id=tenant.id,
-                data_source_id=source.id,
+                data_source_id=source_id,
                 logical_path="egfr.pdf",
                 source_uri="file:///provenance-backfill/egfr.pdf",
                 file_name="egfr.pdf",

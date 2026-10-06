@@ -2,6 +2,30 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from pharma_intel.models.enums import DevelopmentPhase
+
+CHEMBL_MAXIMUM_PHASES: dict[float | None, DevelopmentPhase] = {
+    None: DevelopmentPhase.UNKNOWN,
+    -1: DevelopmentPhase.UNKNOWN,
+    0: DevelopmentPhase.PRECLINICAL,
+    0.5: DevelopmentPhase.EARLY_PHASE_1,
+    1: DevelopmentPhase.PHASE_1,
+    2: DevelopmentPhase.PHASE_2,
+    3: DevelopmentPhase.PHASE_3,
+    4: DevelopmentPhase.APPROVED,
+}
+
+
+def chembl_maximum_phase(value: float | None) -> str:
+    """Preserve reported ChEMBL stages; missing/unknown is not preclinical."""
+    if isinstance(value, bool) or (value is not None and not isinstance(value, (int, float))):
+        raise ValueError("Unsupported ChEMBL maximum phase")
+    try:
+        return CHEMBL_MAXIMUM_PHASES[value].value
+    except KeyError as exc:
+        raise ValueError("Unsupported ChEMBL maximum phase") from exc
+
+
 MECHANISM_ACTION_TYPES = frozenset(
     {
         "ACTIVATOR",

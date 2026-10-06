@@ -1,14 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { Building2, Clock3, FlaskConical, Pill, ShieldCheck } from "lucide-react";
 import { useState } from "react";
-
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "../components/common";
 import { DossierCoverageDisclosure } from "../components/DossierCoverageDisclosure";
+import { EntityIdentityNotice } from "../components/EntityIdentityNotice";
 import { RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
 import { ScrollableTableRegion } from "../components/ScrollableTableRegion";
 import { type CompanyDossier, companyKeys, loadCompanyDossier } from "../lib/contracts/company";
 import type { ProvenanceSelection } from "../lib/contracts/provenance";
+import { isProviderLabel } from "../lib/entityPresentation";
+import { phaseLabel } from "../lib/phasePresentation";
 import type { Entity } from "../lib/types";
 import type { CompanyDossierSection } from "../lib/workspaceRouting";
 import { CompanySourceLabelOverview } from "./CompanySourceLabelOverview";
@@ -35,20 +37,6 @@ const tabs: Array<ResearchTabOption<CompanyDossierSection>> = [
   { key: "regulatory", label: "监管" },
   { key: "news", label: "公司动态" },
 ];
-
-const phaseLabels: Record<string, string> = {
-  discontinued: "已终止",
-  discovery: "发现阶段",
-  preclinical: "临床前",
-  ind: "IND",
-  phase_1: "I 期临床",
-  phase_1_2: "I/II 期临床",
-  phase_2: "II 期临床",
-  phase_2_3: "II/III 期临床",
-  phase_3: "III 期临床",
-  filed: "已申报",
-  approved: "已批准",
-};
 
 export function CompanyView({
   company,
@@ -101,11 +89,7 @@ export function CompanyView({
   if (!dossier.data) return <Spinner label={`正在加载 ${company.name} 公司档案`} />;
 
   const data = dossier.data;
-  const providerLabel = data.entity.attributes.identity_scope === "provider_label";
-  const identityNote =
-    typeof data.entity.attributes.identity_note === "string"
-      ? data.entity.attributes.identity_note
-      : "注册平台的申办方名称，不代表已核实的法律主体或企业集团归并。";
+  const providerLabel = isProviderLabel(data.entity);
   const openDrug = onOpenDrug ?? onOpenEntity;
   const openTarget = onOpenTarget ?? onOpenEntity;
   const openDisease = onOpenDisease ?? onOpenEntity;
@@ -138,9 +122,11 @@ export function CompanyView({
           <div className="company-profile-identity">
             <span>{providerLabel ? "登记申办方名称" : "公司专业档案"}</span>
             <h2>{data.entity.name}</h2>
-            <p>{providerLabel ? identityNote : (data.entity.description ?? "暂无公司简介")}</p>
+            {!providerLabel ? <p>{data.entity.description ?? "暂无公司简介"}</p> : null}
           </div>
         </header>
+
+        <EntityIdentityNotice entity={data.entity} />
 
         {!providerLabel ? (
           <dl className="dossier-metrics company-profile-metrics">
@@ -408,10 +394,6 @@ function CompanyOverview({
       </DossierCoverageDisclosure>
     </div>
   );
-}
-
-function phaseLabel(value: string | null | undefined): string {
-  return value ? (phaseLabels[value] ?? value) : "未披露";
 }
 
 function coverageLabel(value: string): string {

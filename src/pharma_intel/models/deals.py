@@ -19,6 +19,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base, TimestampMixin, new_uuid
 from .enums import DealDirection, DealStatus
+from .phase_constraints import development_phase_check
 
 
 class DealProfile(Base, TimestampMixin):
@@ -91,12 +92,7 @@ class DealAssetAssociation(Base, TimestampMixin):
     __tablename__ = "deal_asset_associations"
     __table_args__ = (
         UniqueConstraint("tenant_id", "deal_id", "asset_entity_id"),
-        CheckConstraint(
-            "development_phase_at_transaction IS NULL OR development_phase_at_transaction IN "
-            "('discovery','preclinical','ind','phase_1','phase_1_2','phase_2','phase_2_3','phase_3',"
-            "'filed','approved','discontinued')",
-            name="ck_deal_asset_transaction_phase",
-        ),
+        development_phase_check("development_phase_at_transaction", "ck_deal_asset_transaction_phase"),
         Index(
             "ix_deal_asset_phase_lookup",
             "tenant_id",

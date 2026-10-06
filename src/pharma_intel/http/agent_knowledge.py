@@ -8,6 +8,7 @@ from sqlalchemy import select
 from pharma_intel.http.agent_page import _agent_page
 from pharma_intel.http.commercial_policy import _commercial_service
 from pharma_intel.http.dependencies import PrincipalDep, SessionDep
+from pharma_intel.knowledge.search import published_knowledge_statement
 from pharma_intel.models import KnowledgePage, KnowledgePageStatus, KnowledgePageVersion
 from pharma_intel.schemas import AgentPageResult, KnowledgePageDetail, KnowledgePageSummary
 
@@ -41,18 +42,8 @@ def search_knowledge_pages_for_agent(
         arguments["cursor"] = cursor
 
     def fetch(offset: int, fetch_limit: int) -> list[KnowledgePageSummary]:
-        statement = select(KnowledgePage).where(
-            KnowledgePage.tenant_id == principal.tenant_id,
-            KnowledgePage.status == KnowledgePageStatus.PUBLISHED,
-            KnowledgePage.current_version_id.is_not(None),
-        )
-        if q:
-            statement = statement.where(KnowledgePage.title.ilike(f"%{q}%"))
-        if page_type:
-            statement = statement.where(KnowledgePage.page_type == page_type)
-        pages = session.scalars(
-            statement.order_by(KnowledgePage.title, KnowledgePage.id).limit(fetch_limit).offset(offset)
-        )
+        statement = published_knowledge_statement(principal.tenant_id, query=q, page_type=page_type)
+        pages = session.scalars(statement.limit(fetch_limit).offset(offset))
         return [KnowledgePageSummary.model_validate(page) for page in pages]
 
     return _agent_page(

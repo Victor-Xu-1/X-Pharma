@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from pharma_intel import __version__
 from pharma_intel.config import Settings
 from pharma_intel.models import AuditEvent
+from pharma_intel.platform.environment_compatibility import pinned_dependencies, version_state
 from pharma_intel.platform.environment_recipes import RECIPES, create_plan
 from pharma_intel.schemas.environment import (
     EnvironmentInstallPlanRead,
@@ -58,32 +59,57 @@ def read_host_report(
 
 
 def environment_snapshot(settings: Settings) -> EnvironmentRead:
+    try:
+        metadata = importlib.metadata.metadata("x-pharma")
+        python_requirement = metadata.get("Requires-Python")
+        requirements = pinned_dependencies(importlib.metadata.requires("x-pharma") or [])
+    except (importlib.metadata.PackageNotFoundError, ValueError):
+        python_requirement, requirements = None, {}
     probes = [
         EnvironmentProbeRead(
             id="python",
             label="Python",
             scope="gateway",
-            status="present",
+            status=version_state(platform.python_version(), python_requirement),
             observed=platform.python_version(),
+            expected=python_requirement,
             detail="当前网关进程实际使用的解释器。",
         )
     ]
     for name, label in (("x-pharma", "X-Pharma"), ("sqlalchemy", "SQLAlchemy"), ("mcp", "MCP SDK"), ("rdkit", "RDKit")):
+        expected = __version__ if name == "x-pharma" else requirements.get(name)
         try:
             version = importlib.metadata.version(name)
             probe = EnvironmentProbeRead(
                 id=name,
                 label=label,
                 scope="gateway",
-                status="present",
+                status=version_state(version, f"=={expected}" if expected else None),
                 observed=version,
+                expected=f"=={expected}" if expected else None,
                 detail="已安装的发行包版本；不替代服务健康检查。",
             )
         except importlib.metadata.PackageNotFoundError:
             probe = EnvironmentProbeRead(
-                id=name, label=label, scope="gateway", status="missing", detail="当前网关环境未发现该发行包。"
+                id=name,
+                label=label,
+                scope="gateway",
+                status="missing",
+                expected=f"=={expected}" if expected else None,
+                detail="当前网关环境未发现该发行包。",
             )
         probes.append(probe)
+    probes.append(
+        EnvironmentProbeRead(
+            id="human-identity",
+            label="人员身份与账号恢复",
+            scope="gateway",
+            status="unverified",
+            observed="本地账号（邮箱未验证）" if settings.human_auth_mode == "local" else "企业 OIDC 配置",
+            expected="正式环境使用企业 OIDC 与受控恢复策略",
+            detail="本地登录不能作为正式身份验收；企业 IdP、账号恢复和目标部署必须提供独立实测证据。",
+        )
+    )
     host_status, host, detail = read_host_report(settings.platform_evidence_root)
     return EnvironmentRead(
         generated_at=datetime.now(UTC),

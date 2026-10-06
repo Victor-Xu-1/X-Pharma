@@ -2,6 +2,19 @@ import { describe, expect, it } from "vitest";
 import { initialPublicSourceDraft, sourceRoutingRules } from "../views/dataFactory/sourceRules";
 
 describe("public-source routing contracts", () => {
+  it("requires explicit bounded activity enrichment and keeps disabled legacy rules unchanged", () => {
+    const draft = {
+      ...initialPublicSourceDraft(),
+      targetChemblId: "CHEMBL203",
+      includeActivities: true,
+      maxRecords: 25,
+      activityLimit: 5,
+    };
+    expect(sourceRoutingRules("chembl", draft)[0]).toEqual(
+      expect.objectContaining({ include_activities: true, activity_limit: 5 }),
+    );
+    expect(() => sourceRoutingRules("chembl", { ...draft, activityLimit: 11 })).toThrow("1–10");
+  });
   it("keeps continuous configuration explicit and preserves its bounded work budget", () => {
     const draft = {
       ...initialPublicSourceDraft(),

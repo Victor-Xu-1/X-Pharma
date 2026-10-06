@@ -6,6 +6,6 @@ const OverviewView = lazy(() =>
 );
 
 export function OverviewRoute({ context }: { context: ResearchRouteContext }) {
-  const { user, onLogout, onUserUpdated } = context;
-  return <OverviewView user={user} onLogout={onLogout} onUserUpdated={onUserUpdated} />;
+  const { authMode, user, onLogout, onUserUpdated } = context;
+  return <OverviewView user={user} authMode={authMode} onLogout={onLogout} onUserUpdated={onUserUpdated} />;
 }

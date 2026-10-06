@@ -97,7 +97,10 @@ export function CollectionsView({
               />
             </>
           ) : (
-            <EmptyState title="暂无对比列表" detail="创建列表后可加入靶点、药物、公司、试验和专利等条目" />
+            <EmptyState
+              title="建立你的研究列表"
+              detail="先创建列表，再从情报检索或对象档案加入关注对象；可进行对比、保存证据并共享给团队。"
+            />
           )}
         </div>
       </div>

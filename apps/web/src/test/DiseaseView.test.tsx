@@ -286,6 +286,39 @@ it("uses public product copy when a disease summary is unavailable", async () =>
   expect(screen.queryByText("暂无经治理的疾病摘要")).not.toBeInTheDocument();
 });
 
+it("presents a provider condition as a registry label, not a canonical disease landscape", async () => {
+  const registryLabel: Entity = {
+    ...disease,
+    name: "Abemaciclib",
+    description: null,
+    external_ids: {},
+    attributes: {
+      identity_scope: "provider_label",
+      label_provider: "ClinicalTrials.gov",
+      identity_note: "ClinicalTrials.gov研究条件名称，不代表获批适应症或本体标准化。",
+    },
+  };
+  vi.mocked(loadDiseaseDossier).mockResolvedValueOnce({
+    ...dossier,
+    entity: {
+      ...dossier.entity,
+      name: registryLabel.name,
+      description: registryLabel.description,
+      external_ids: registryLabel.external_ids,
+      attributes: registryLabel.attributes,
+      canonical_entity_id: registryLabel.id,
+    },
+  });
+  renderDiseaseView(registryLabel);
+
+  expect(await screen.findByText("登记条件档案")).toBeInTheDocument();
+  expect(screen.getByRole("note", { name: "来源名称范围" })).toHaveTextContent("不代表获批适应症或本体标准化");
+  expect(screen.queryByText("疾病专业档案")).not.toBeInTheDocument();
+  expect(screen.queryByText("最高研发阶段")).not.toBeInTheDocument();
+  expect(screen.queryByRole("table", { name: "最新疾病负担观测" })).not.toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "关联试验" })).toBeInTheDocument();
+});
+
 it("renders a recoverable disease dossier error", async () => {
   vi.mocked(loadDiseaseDossier).mockRejectedValueOnce(new Error("Disease service unavailable"));
   renderDiseaseView();

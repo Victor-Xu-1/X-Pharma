@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -40,6 +40,18 @@ class PublicKnowledgePageSummary(BaseModel):
     page_type: str
     title: str
     updated_at: datetime
+
+
+class PublicKnowledgePageSearchResult(BaseModel):
+    query_schema_version: Literal["pharma.knowledge.search.v1"] = "pharma.knowledge.search.v1"
+    items: list[PublicKnowledgePageSummary]
+    total: int
+    limit: int
+    offset: int
+    sort_by: Literal["title", "updated_at"]
+    sort_direction: SortDirection
+    facets: dict[str, dict[str, int]]
+    as_of: datetime
 
 
 class PublicKnowledgePageDetail(PublicKnowledgePageSummary):

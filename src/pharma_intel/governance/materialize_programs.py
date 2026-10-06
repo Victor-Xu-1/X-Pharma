@@ -5,6 +5,8 @@ from typing import Any, cast
 
 from sqlalchemy import select
 
+from pharma_intel.governance.chembl_program_identity import native_chembl_program
+from pharma_intel.governance.chembl_projection_repair import clear_proven_legacy_chembl_regional_inference
 from pharma_intel.governance.fact_identity import _projection
 from pharma_intel.governance.materialization_context import MaterializationContext
 from pharma_intel.governance.temporal_merge import (
@@ -80,14 +82,16 @@ def materialize_program(
             )
             return []
         regional_phases[field_name] = normalized
-    program = context.session.scalar(
-        select(DevelopmentProgram).where(
-            DevelopmentProgram.tenant_id == context.tenant_id,
-            DevelopmentProgram.drug_entity_id == drug.id,
-            DevelopmentProgram.disease_entity_id == (disease.id if disease else None),
-            DevelopmentProgram.organization_entity_id == (organization.id if organization else None),
+    native_record, program = native_chembl_program(context, staged)
+    if not native_record:
+        program = context.session.scalar(
+            select(DevelopmentProgram).where(
+                DevelopmentProgram.tenant_id == context.tenant_id,
+                DevelopmentProgram.drug_entity_id == drug.id,
+                DevelopmentProgram.disease_entity_id == (disease.id if disease else None),
+                DevelopmentProgram.organization_entity_id == (organization.id if organization else None),
+            )
         )
-    )
     if program is None:
         program = DevelopmentProgram(
             tenant_id=context.tenant_id,
@@ -98,6 +102,7 @@ def materialize_program(
         )
         context.session.add(program)
     incoming_status_date = _validated_datetime(payload.get("status_date"))
+    clear_proven_legacy_chembl_regional_inference(context, staged, program)
     should_update_current = program.status_date is None or (
         incoming_status_date is not None and _as_utc(incoming_status_date) >= _as_utc(program.status_date)
     )

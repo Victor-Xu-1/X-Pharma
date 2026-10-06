@@ -425,6 +425,8 @@ it("uses the current result total for the selected entity type instead of a broa
   );
 
   expect(await screen.findByRole("button", { name: "对象类型：靶点，8 条" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "对象类型：全部情报" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "对象类型：全部情报，8 条" })).not.toBeInTheDocument();
   expect(screen.queryByRole("group", { name: "实体类型筛选" })).not.toBeInTheDocument();
 });
 

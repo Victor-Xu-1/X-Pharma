@@ -71,6 +71,9 @@ export function serializeWorkspaceLocation(
     | "knowledgePageId"
     | "knowledgePanel"
     | "knowledgeVersionNumber"
+    | "knowledgePageType"
+    | "knowledgeSortBy"
+    | "knowledgeSortDirection"
     | "monitoringTab"
     | "evidenceDatasetKeys"
     | "evidenceDocumentId"
@@ -318,6 +321,14 @@ export function serializeWorkspaceLocation(
       params.set("document", location.evidenceDocumentId.trim());
       params.set("chunk", String(location.evidenceChunkIndex + 1));
     }
+  }
+  if (location.view === "knowledge") {
+    if (location.offset && Number.isSafeInteger(location.offset) && location.offset > 0 && location.offset <= 1_000_000)
+      params.set("offset", String(location.offset));
+    if (/^[a-z][a-z0-9_]{0,79}$/.test(location.knowledgePageType ?? ""))
+      params.set("page_type", location.knowledgePageType ?? "");
+    if (location.knowledgeSortBy === "updated_at") params.set("sort_by", "updated_at");
+    if (location.knowledgeSortDirection === "desc") params.set("sort_direction", "desc");
   }
   if (location.view === "knowledge" && location.knowledgePageId && entityIdPattern.test(location.knowledgePageId)) {
     params.set("page", location.knowledgePageId.toLowerCase());

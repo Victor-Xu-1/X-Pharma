@@ -14,6 +14,7 @@ import {
   loadDataQualitySnapshots,
   loadEntityResolutionHistory,
   loadEntityResolutionImpact,
+  loadFactComparison,
   loadGovernanceQueues,
   loadGovernanceRuns,
   loadProjectionMaintenanceAccess,
@@ -29,6 +30,7 @@ import { renderWithQueryClient } from "./renderWithQueryClient";
 vi.mock("../lib/contracts/governance", () => ({
   governanceKeys: {
     queues: ["governance", "queues"],
+    factComparison: (factId: string) => ["governance", "fact-comparison", factId],
     identityHistory: ["governance", "identity-history"],
     identityImpact: (caseId: string) => ["governance", "identity-impact", caseId],
     qualityIssues: (status: string) => ["governance", "quality-issues", status],
@@ -44,6 +46,7 @@ vi.mock("../lib/contracts/governance", () => ({
   },
   loadGovernanceQueues: vi.fn(),
   loadGovernanceRuns: vi.fn(),
+  loadFactComparison: vi.fn(),
   loadEntityResolutionHistory: vi.fn(),
   loadEntityResolutionImpact: vi.fn(),
   loadDataQualitySnapshots: vi.fn(),
@@ -67,6 +70,13 @@ vi.mock("../lib/contracts/governance", () => ({
 beforeEach(() => {
   vi.mocked(loadGovernanceQueues).mockReset();
   vi.mocked(loadGovernanceRuns).mockReset();
+  vi.mocked(loadFactComparison).mockReset();
+  vi.mocked(loadFactComparison).mockImplementation(async (factId) => {
+    const queues = await loadGovernanceQueues();
+    const fact = queues.facts.find((item) => item.id === factId);
+    if (!fact) throw new Error("Fixture fact unavailable");
+    return { fact, origin: null, conflicts: [], conflict_total: 0, unavailable_conflicts: 0, truncated: false };
+  });
   vi.mocked(loadEntityResolutionHistory).mockReset();
   vi.mocked(loadEntityResolutionImpact).mockReset();
   vi.mocked(loadDataQualitySnapshots).mockReset();
@@ -165,8 +175,9 @@ it("shows model and normalized payloads and requires notes for conflict approval
 
   renderWithQueryClient(<GovernanceView />);
 
-  expect(await screen.findByText("模型原始输出")).toBeInTheDocument();
-  expect(screen.getByText("平台规范化结果")).toBeInTheDocument();
+  expect(await screen.findByText("来源解析值（方式未确认）")).toBeInTheDocument();
+  expect(screen.getAllByText("平台规范化结果").length).toBeGreaterThan(0);
+  expect(screen.queryByText("模型原始输出")).not.toBeInTheDocument();
   expect(screen.getByText(/rdkit-2026\.03\.3/)).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: /批准并发布/ }));

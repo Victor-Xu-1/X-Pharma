@@ -4,6 +4,28 @@ import { canAccessView, canAccessWorkbench, parseWorkbenchLocation, workspaceUrl
 import { pipelineFiltersFromLocation } from "../workspaces/research/locationModel";
 
 describe("workspace URL contract", () => {
+  it("round-trips explicit early and unknown stages without aliasing them to preclinical", () => {
+    for (const stage of ["early_phase_1", "unknown"]) {
+      const location = parseWorkbenchLocation("research", `?view=pipeline&phase=${stage}`);
+      expect(location.phase).toBe(stage);
+      expect(
+        parseWorkbenchLocation(
+          "research",
+          workspaceUrl(location).split("?")[1] ? `?${workspaceUrl(location).split("?")[1]}` : "",
+        ).phase,
+      ).toBe(stage);
+    }
+  });
+
+  it("keeps knowledge paging and filters across a deep-link round trip", () => {
+    const location = parseWorkbenchLocation(
+      "research",
+      "?view=knowledge&q=EGFR&offset=550&page_type=target&sort_by=updated_at&sort_direction=desc",
+    );
+    expect(location.offset).toBe(550);
+    const parsed = new URL(workspaceUrl(location), "https://example.test");
+    expect(parseWorkbenchLocation("research", parsed.search)).toEqual(location);
+  });
   it("opens the research workbench at intelligence search while keeping the user center explicit", () => {
     const researchHome = parseWorkbenchLocation("research");
     expect(researchHome.view).toBe("explorer");
@@ -612,7 +634,7 @@ describe("workspace URL contract", () => {
     expect(
       parseWorkbenchLocation(
         "research",
-        "?view=pipeline&phase=unknown&organization_role=partner&status_date_from=invalid&status_date_to=2026-02-30" +
+        "?view=pipeline&phase=invalid-phase&organization_role=partner&status_date_from=invalid&status_date_to=2026-02-30" +
           "&has_clinical_results=unknown&clinical_result_evaluation=unknown&has_deal=unknown" +
           "&deal_currency=usd&deal_total_potential_amount_min=-1&deal_total_potential_amount_max=nan" +
           "&analysis_dimension=unknown&analysis_view=unknown&analysis_top=999&offset=-20",
@@ -732,7 +754,7 @@ describe("workspace URL contract", () => {
           "&initiation_type=unknown&therapy_line=unknown" +
           "&results_posted_to=2026-02-30&has_key_result=unknown&disclosed_from=invalid&disclosed_to=2026-02-30" +
           "&role_entity_id=invalid&role_entity_role=investigational_drug" +
-          "&linked_drug_global_phase=unknown" +
+          "&linked_drug_global_phase=invalid-phase" +
           "&sort_by=unknown&sort_direction=sideways&trial=invalid&offset=-20",
       ),
     ).toMatchObject({

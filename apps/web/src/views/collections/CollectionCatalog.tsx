@@ -78,11 +78,10 @@ export function CollectionCatalog({
                 <StatusBadge value={item.visibility === "tenant" ? "团队共享" : "仅自己可见"} />
               </button>
             ))
+          ) : catalog.filter.q ? (
+            <EmptyState title="没有匹配的列表" detail="调整名称或说明关键词；已打开的列表不会改变" />
           ) : (
-            <EmptyState
-              title={catalog.filter.q ? "没有匹配的列表" : "暂无对比列表"}
-              detail={catalog.filter.q ? "调整名称或说明关键词；已打开的列表不会改变" : "创建列表后即可保存关注对象"}
-            />
+            <p className="field-help">创建后，列表会出现在这里。</p>
           )}
         </nav>
       )}

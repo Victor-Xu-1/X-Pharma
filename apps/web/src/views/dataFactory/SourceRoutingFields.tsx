@@ -39,7 +39,7 @@ export function SourceRoutingFields({
         <input
           type="number"
           min={1}
-          max={1000}
+          max={sourceType === "chembl" && draft.includeActivities ? 25 : 1000}
           value={draft.maxRecords}
           onChange={(event) => onChange({ maxRecords: Number(event.target.value) })}
           required
@@ -144,6 +144,38 @@ export function SourceRoutingFields({
             <option value="StudyFirstPostDate:asc">最早首次发布优先</option>
           </select>
         </label>
+      ) : sourceType === "chembl" ? (
+        <>
+          <label className="source-checkbox-field">
+            <input
+              type="checkbox"
+              checked={draft.includeActivities}
+              onChange={(event) =>
+                onChange({
+                  includeActivities: event.target.checked,
+                  ...(event.target.checked ? { maxRecords: Math.min(draft.maxRecords, 25) } : {}),
+                })
+              }
+            />
+            <span>补充该靶点的药物实验活性</span>
+          </label>
+          {draft.includeActivities ? (
+            <label>
+              <span>每个药物的活性样本上限</span>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={draft.activityLimit}
+                onChange={(event) => onChange({ activityLimit: Number(event.target.value) })}
+                required
+              />
+            </label>
+          ) : null}
+          <p className="field-help source-path-field">
+            结构随药物元数据采集。活性保留单条实验值、关系符和来源，不合并重复实验；有界样本不代表完整活性覆盖。
+          </p>
+        </>
       ) : null}
     </>
   );

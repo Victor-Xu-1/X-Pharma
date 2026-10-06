@@ -287,7 +287,11 @@ def run() -> None:
     parser.add_argument("--page-size", type=int, default=100)
     parser.add_argument("--scan-interval-seconds", type=int, default=86_400)
     parser.add_argument("--include-abstract", action="store_true")
+    parser.add_argument("--include-activities", action="store_true")
+    parser.add_argument("--activity-limit", type=int, default=10)
     args = parser.parse_args()
+    if args.mode != "register-chembl" and (args.include_activities or args.activity_limit != 10):
+        parser.error("Activity enrichment flags require register-chembl")
     settings = get_settings()
     logging.basicConfig(level=settings.log_level.upper())
     if args.mode == "readiness":
@@ -363,6 +367,8 @@ def run() -> None:
                 page_size=args.page_size,
                 scan_interval_seconds=args.scan_interval_seconds,
                 sync_mode=args.sync_mode,
+                include_activities=args.include_activities,
+                activity_limit=args.activity_limit,
             )
         except ValueError as exc:
             parser.error(str(exc))

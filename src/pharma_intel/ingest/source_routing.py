@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any
 
 from pharma_intel.ingest.chembl import ChemblRoutingRule
@@ -30,3 +32,10 @@ def routing_scope_identity(source_type: DataSourceType, rules: list[dict[str, An
     if keys is None:
         return canonical
     return {key: canonical[0].get(key) for key in keys}
+
+
+def source_scope_digest(source_type: DataSourceType, rules: list[dict[str, Any]]) -> str:
+    if source_type not in {DataSourceType.CHEMBL, DataSourceType.CLINICALTRIALS_GOV, DataSourceType.PUBMED}:
+        return "root"
+    document = {"source_type": source_type.value, "scope": routing_scope_identity(source_type, rules)}
+    return hashlib.sha256(json.dumps(document, sort_keys=True, separators=(",", ":")).encode()).hexdigest()

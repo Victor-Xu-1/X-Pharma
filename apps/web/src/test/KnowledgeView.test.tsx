@@ -5,21 +5,22 @@ import {
   getKnowledgePage,
   getKnowledgePageCoverage,
   getKnowledgePageVersionDiff,
-  listKnowledgePages,
   listKnowledgePageVersions,
+  searchKnowledgePages,
 } from "../lib/contracts/knowledge";
 import { KnowledgeView } from "../views/KnowledgeView";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/knowledge", () => ({
   knowledgeKeys: {
-    pages: (query: string) => ["knowledge", "pages", { query }],
+    pages: (filters: unknown) => ["knowledge", "pages", filters],
     detail: (pageId: string) => ["knowledge", "pages", pageId],
     coverage: (pageId: string) => ["knowledge", "pages", pageId, "coverage"],
     versions: (pageId: string) => ["knowledge", "pages", pageId, "versions"],
     diff: (pageId: string, versionNumber: number) => ["knowledge", "pages", pageId, versionNumber, "diff"],
   },
-  listKnowledgePages: vi.fn(),
+  KNOWLEDGE_PAGE_SIZE: 50,
+  searchKnowledgePages: vi.fn(),
   getKnowledgePage: vi.fn(),
   getKnowledgePageCoverage: vi.fn(),
   listKnowledgePageVersions: vi.fn(),
@@ -34,7 +35,17 @@ const summary = {
 };
 
 beforeEach(() => {
-  vi.mocked(listKnowledgePages).mockResolvedValue([summary]);
+  vi.mocked(searchKnowledgePages).mockResolvedValue({
+    query_schema_version: "pharma.knowledge.search.v1",
+    items: [summary],
+    total: 1,
+    limit: 50,
+    offset: 0,
+    sort_by: "title",
+    sort_direction: "asc",
+    facets: { page_type: { target: 1 } },
+    as_of: "2026-07-18T11:00:00Z",
+  });
   vi.mocked(getKnowledgePage).mockResolvedValue({
     ...summary,
     rendered_markdown: [
@@ -127,7 +138,10 @@ it("loads a searchable page index and a separately cached immutable version", as
   fireEvent.change(screen.getByLabelText("检索知识专题"), { target: { value: " EGFR " } });
   fireEvent.submit(screen.getByLabelText("检索知识专题").closest("form") as HTMLFormElement);
   expect(await screen.findByText("1 个专题")).toBeInTheDocument();
-  expect(listKnowledgePages).toHaveBeenLastCalledWith("EGFR", expect.any(AbortSignal));
+  expect(searchKnowledgePages).toHaveBeenLastCalledWith(
+    { query: "EGFR", offset: 0, pageType: "", sortBy: "title", sortDirection: "asc" },
+    expect.any(AbortSignal),
+  );
 });
 
 it("shows source coverage and lets the user inspect traceable version differences", async () => {
@@ -163,6 +177,10 @@ it("emits stable location changes for search, page, panel and immutable version"
     pageId: "page-1",
     panel: "document",
     versionNumber: null,
+    offset: 0,
+    pageType: "",
+    sortBy: "title",
+    sortDirection: "asc",
   });
 
   rerender(<KnowledgeView initialQuery="EGFR" initialPageId="page-1" onLocationChange={onLocationChange} />);
@@ -172,6 +190,10 @@ it("emits stable location changes for search, page, panel and immutable version"
     pageId: "page-1",
     panel: "coverage",
     versionNumber: null,
+    offset: 0,
+    pageType: "",
+    sortBy: "title",
+    sortDirection: "asc",
   });
 
   rerender(
@@ -192,6 +214,10 @@ it("emits stable location changes for search, page, panel and immutable version"
     pageId: "page-1",
     panel: "coverage",
     versionNumber: 1,
+    offset: 0,
+    pageType: "",
+    sortBy: "title",
+    sortDirection: "asc",
   });
 });
 

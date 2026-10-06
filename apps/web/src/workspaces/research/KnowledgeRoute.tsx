@@ -10,6 +10,10 @@ export function KnowledgeRoute({ context }: { context: ResearchRouteContext }) {
   return (
     <KnowledgeView
       initialQuery={location.query}
+      initialOffset={location.offset ?? 0}
+      initialPageType={location.knowledgePageType ?? ""}
+      initialSortBy={location.knowledgeSortBy ?? "title"}
+      initialSortDirection={location.knowledgeSortDirection ?? "asc"}
       initialPageId={location.knowledgePageId}
       initialPanel={location.knowledgePanel ?? "document"}
       initialVersionNumber={location.knowledgeVersionNumber}
@@ -19,6 +23,10 @@ export function KnowledgeRoute({ context }: { context: ResearchRouteContext }) {
           ...location,
           view: "knowledge",
           query: next.query,
+          offset: next.offset,
+          knowledgePageType: next.pageType,
+          knowledgeSortBy: next.sortBy,
+          knowledgeSortDirection: next.sortDirection,
           entityId: null,
           invalidEntityId: false,
           knowledgePageId: next.pageId,
