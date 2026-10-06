@@ -1,5 +1,13 @@
 # Design QA: X-Pharma 工作台
 
+## Reproducible Chrome installation
+
+`apps/web/e2e/visual-baselines/manifest.json` remains the sole reviewed browser-version authority. Normal CI uses `playwright install-deps chrome` only for operating-system dependencies, then the existing `scripts/bootstrap-wsl-chrome.sh --reviewed` user-level installer. `deploy/browser/reviewed-google-chrome.json` binds the official archive's exact size, package/executable SHA-256 and filename to that visual manifest's digest. It is metadata only; no browser binary is redistributed. Drift, invalid paths or digest mismatch fail closed without selecting a newer release or updating references.
+
+The frozen official HTTPS artifact was compared byte-for-byte, including symlink values, with the existing signed-repository installation used for the reviewed captures. It is not claimed to remain listed in Google's current rolling signed package index. The installer's default latest mode retains its Google key fingerprint, signed InRelease/Packages and package-integrity validation. Only an explicit `workflow_dispatch` reference-review request selects that mode; accepting new references also requires reviewing and rebinding the frozen artifact metadata. The existing actual-version, font and visual-diff gates remain required.
+
+Pinned older Chrome is for isolated, controlled acceptance—not a recommendation to delay browser security updates or browse arbitrary sites. No current local/system browser is replaced by CI setup. Local source, browser caches and receipts remain on E-backed storage.
+
 ## Current iteration: comprehensive preview fidelity
 
 The user explicitly requested a closer, page-by-page match after the earlier

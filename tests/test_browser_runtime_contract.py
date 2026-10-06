@@ -314,7 +314,10 @@ def test_ci_installs_branded_chrome_instead_of_playwright_chromium() -> None:
     root = Path(__file__).parents[1]
     workflow = (root / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
-    assert "playwright install --with-deps chrome" in workflow
+    assert "playwright install-deps chrome" in workflow
+    assert "scripts/bootstrap-wsl-chrome.sh" in workflow and "--reviewed" in workflow
+    assert "E2E_BROWSER_EXECUTABLE" in workflow
+    assert "playwright install --with-deps chrome" not in workflow
     assert "playwright install --with-deps chromium" not in workflow
 
 
