@@ -12,6 +12,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "../components/common";
+import { DossierActivityTable as Activities } from "../components/DossierActivityTable";
 import { PatentTimeline } from "../components/PatentTimeline";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
@@ -25,6 +26,8 @@ import type { CompanyTimelineResult, EntityType } from "../lib/generated";
 import { publicEntityAttributeLabels, publicEntityAttributes } from "../lib/publicEntity";
 import type { Entity } from "../lib/types";
 import type { EntityDossierSection } from "../lib/workspaceRouting";
+
+export { Activities };
 
 const entityLabels: Record<string, string> = {
   drug: "药物",
@@ -723,48 +726,6 @@ export function Programs({
               <td>
                 <ProvenanceButton
                   selection={{ resourceType: "development_program", resourceId: item.id, label: item.drug_name }}
-                  onOpen={onOpen}
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </ScrollableTableRegion>
-  );
-}
-
-export function Activities({ data, onOpen }: DossierSectionProps) {
-  if (!data.activities.length) return <EmptyState title="暂无关联活性数据" />;
-  return (
-    <ScrollableTableRegion ariaLabel="关联活性数据">
-      <table aria-label="关联活性数据">
-        <thead>
-          <tr>
-            <th>化合物</th>
-            <th>靶点</th>
-            <th>类型</th>
-            <th>标准值</th>
-            <th>pChEMBL</th>
-            <th>来源</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {data.activities.map((item) => (
-            <tr key={item.id}>
-              <td className="mono-cell">{item.compound_entity_id}</td>
-              <td className="mono-cell">{item.target_entity_id ?? "--"}</td>
-              <td>{item.standard_type ?? item.reported_type}</td>
-              <td>
-                {item.standard_relation ?? item.reported_relation} {item.standard_value ?? item.reported_value}{" "}
-                {item.standard_units ?? item.reported_units}
-              </td>
-              <td>{item.pchembl_value ?? "--"}</td>
-              <td>{item.source_system}</td>
-              <td>
-                <ProvenanceButton
-                  selection={{ resourceType: "activity_measurement", resourceId: item.id, label: "活性记录" }}
                   onOpen={onOpen}
                 />
               </td>
