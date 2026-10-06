@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from pharma_intel.chemistry.standardization import STANDARDIZATION_VERSION
 from pharma_intel.governance.chembl_enrichment import (
     ChemblActivity,
     ChemblActivityCoverage,
@@ -40,7 +41,7 @@ from pharma_intel.program_semantics import (
 )
 
 ADAPTER_NAME = "chembl_mechanism_json"
-ADAPTER_VERSION = "1.3.1"
+ADAPTER_VERSION = "1.3.2"
 SNAPSHOT_SCHEMA = "pharma.chembl.mechanism.v2"
 
 
@@ -253,6 +254,7 @@ def adapter_policy_manifest() -> dict[str, object]:
         "automatic_source_updates": OFFICIAL_SOURCE_UPDATE_POLICY,
         "version": ADAPTER_VERSION,
         "snapshot_schema": SNAPSHOT_SCHEMA,
+        "normalization_policy": STANDARDIZATION_VERSION,
         "enrichment_policy": (
             "Reported molecular structure and explicitly requested bounded activity observations; no replicate pooling."
         ),
