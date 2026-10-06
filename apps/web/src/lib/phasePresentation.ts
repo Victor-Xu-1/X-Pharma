@@ -25,10 +25,11 @@ compactPhaseLabels.__missing__ = "未披露";
 export const fullPhaseLabels: Record<string, string> = Object.fromEntries(
   Object.entries(phaseNames).map(([phase, names]) => [phase, names.full]),
 );
+export const spacedPhaseLabels: Record<string, string> = Object.fromEntries(
+  Object.entries(compactPhaseLabels).map(([phase, label]) => [phase, label.replace(/([IV])期/g, "$1 期")]),
+);
 export const targetPhaseLabels: Record<string, string> = {
-  ...Object.fromEntries(
-    Object.entries(compactPhaseLabels).map(([phase, label]) => [phase, label.replace(/([IV])期/g, "$1 期")]),
-  ),
+  ...spacedPhaseLabels,
   discovery: "药物发现",
   filed: "申报上市",
   discontinued: "已终止",

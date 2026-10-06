@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from pharma_intel.config import Settings
 from pharma_intel.governance.chembl import parse_chembl_snapshot
+from pharma_intel.governance.schemas import ActivityFact, StructureFact
 from pharma_intel.governance.service import GovernanceService
 from pharma_intel.ingest.chembl import ChemblRoutingRule
 from pharma_intel.ingest.chembl_enrichment import activity_page, molecule_structure
@@ -46,9 +47,11 @@ def _enriched_snapshot() -> bytes:
 def test_v2_retains_reported_structure_and_individual_activity_without_claiming_exhaustive_coverage() -> None:
     record = parse_chembl_snapshot(_enriched_snapshot())
     assert [fact.fact_kind for fact in record.enrichment] == ["structure", "activity"]
-    assert record.enrichment[0].canonical_smiles == "CCO"
-    assert record.enrichment[1].reported_relation == "<"
-    assert record.enrichment[1].citation.locator == "activity:12"
+    structure, activity = record.enrichment
+    assert isinstance(structure, StructureFact) and isinstance(activity, ActivityFact)
+    assert structure.canonical_smiles == "CCO"
+    assert activity.reported_relation == "<"
+    assert activity.citation.locator == "activity:12"
     assert record.activity_coverage is not None and record.activity_coverage.reported_total == 100
     assert parse_chembl_snapshot(_snapshot()).enrichment == ()
 

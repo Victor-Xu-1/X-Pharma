@@ -8,7 +8,7 @@ import type {
   PipelineTargetAggregation,
 } from "../lib/contracts/pipeline";
 import type { PipelineLandscapeBucketRead, PipelineLandscapeRead } from "../lib/generated";
-import { phaseDisplayOrder, compactPhaseLabels as phaseLabels } from "../lib/phasePresentation";
+import { phaseDisplayOrder, spacedPhaseLabels as phaseLabels } from "../lib/phasePresentation";
 import { programModalityLabel } from "../lib/programDisplay";
 
 const LandscapeBarChart = lazy(() =>
