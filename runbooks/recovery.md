@@ -79,6 +79,8 @@ make restore-smoke BACKUP_DIR=backups/runtime-YYYYMMDD-HHMMSS
 
 备份目录和文件分别使用 `0700` 与 `0600` 权限，并以 partial 目录完成后原子发布。六个权威载荷是业务 PostgreSQL、全局角色、Temporal、Temporal visibility、对象证据卷和 Markdown 卷；manifest 同时记录镜像 ID、Alembic head、实际表的精确行数和 SHA-256 清单。备份前后业务表计数发生变化时脚本会失败，不发布不一致快照。
 
+新备份还记录实际 PostgreSQL 管理员和三个数据库各自的 owner。隔离演练与完整恢复共用已校验的清单解析器，不假定管理员或 owner 必须为 `pharma_app`；只接受安全标识符，拒绝保留库名和不完整元数据。原始 v1 备份仅保留已记录的默认 `pharma_intel/pharma_app` 合同；非默认旧部署缺少身份元数据时必须重新备份，不能猜测角色或修改原备份。完整恢复需要所有指定摘要镜像已在本机，缺失时失败，不自动联网拉取。
+
 隔离恢复演练只使用新临时容器/临时卷，并执行：
 
 1. 所有文件 SHA-256 校验。

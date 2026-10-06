@@ -66,9 +66,11 @@ def test_database_readiness_does_not_require_an_opensearch_projection(
     assert response.json() == {"status": "ready", "search": "database"}
 
 
+@pytest.mark.parametrize("include_activities", [False, True])
 def test_data_source_catalog_reads_chembl_routing_rules(
     session: Session,
     tenant: Tenant,
+    include_activities: bool,
 ) -> None:
     session.add(
         DataSource(
@@ -82,7 +84,10 @@ def test_data_source_catalog_reads_chembl_routing_rules(
             dataset_key="chembl",
             include_globs=["*"],
             exclude_globs=[],
-            routing_rules=[{"target_chembl_id": "chembl203", "max_records": 25, "page_size": 25}],
+            routing_rules=[
+                {"target_chembl_id": "chembl203", "max_records": 25, "page_size": 25}
+                | ({"include_activities": True} if include_activities else {})
+            ],
             stable_seconds=0,
         )
     )
@@ -104,7 +109,14 @@ def test_data_source_catalog_reads_chembl_routing_rules(
 
     assert response.status_code == 200
     assert response.json()[0]["routing_rules"] == [
-        {"sync_mode": "snapshot", "target_chembl_id": "CHEMBL203", "max_records": 25, "page_size": 25}
+        {
+            "sync_mode": "snapshot",
+            "target_chembl_id": "CHEMBL203",
+            "max_records": 25,
+            "page_size": 25,
+            "include_activities": include_activities,
+            "activity_limit": 10,
+        }
     ]
 
 

@@ -4,6 +4,7 @@ import { ProvenanceButton } from "../../components/RecordProvenanceDrawer";
 import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { ProvenanceSelection } from "../../lib/contracts/provenance";
 import type { TargetEvidence, TargetRelationship } from "../../lib/contracts/target";
+import { entityLabels, relationshipLabel } from "../../lib/entityPresentation";
 import type { TargetEntityOpener } from "./types";
 
 export function Relationships({
@@ -29,7 +30,7 @@ export function Relationships({
           {items.map((item) => (
             <tr key={item.id}>
               <td>{item.direction === "outgoing" ? "指向" : "来自"}</td>
-              <td className="mono-cell">{item.predicate}</td>
+              <td title={item.predicate}>{relationshipLabel(item.predicate)}</td>
               <td>
                 <button
                   className="table-link-button"
@@ -39,7 +40,7 @@ export function Relationships({
                   {item.related_entity.name}
                 </button>
               </td>
-              <td>{item.related_entity.entity_type}</td>
+              <td>{entityLabels[item.related_entity.entity_type] ?? item.related_entity.entity_type}</td>
             </tr>
           ))}
         </tbody>

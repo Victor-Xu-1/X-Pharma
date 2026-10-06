@@ -117,6 +117,8 @@ for required_database in "$database" temporal temporal_visibility; do
     exit 1
   }
 done
+database_owners=$(docker exec "$postgres_container" psql -X -U "$admin_user" -d postgres -At \
+  -v ON_ERROR_STOP=1 -c "SELECT json_object_agg(datname, pg_get_userbyid(datdba)) FROM pg_database WHERE datname IN ('$database', 'temporal', 'temporal_visibility')")
 
 collect_table_counts() {
   local destination=$1
@@ -194,7 +196,7 @@ api_image_id=$(docker image inspect --format '{{.Id}}' "$api_image")
 alembic_head=$(docker exec "$postgres_container" psql -X -U "$admin_user" -d "$database" -At   -v ON_ERROR_STOP=1 -c 'SELECT version_num FROM alembic_version')
 docker_server_version=$(docker version --format '{{.Server.Version}}')
 
-python3 -   "$partial_dir/manifest.json"   "$partial_dir/row-counts.tsv"   "$partial_dir"   "$project_name"   "$database"   "$alembic_head"   "$postgres_image"   "$postgres_image_id"   "$api_image"   "$api_image_id"   "$docker_server_version" <<'PY'
+python3 -   "$partial_dir/manifest.json"   "$partial_dir/row-counts.tsv"   "$partial_dir"   "$project_name"   "$database"   "$alembic_head"   "$postgres_image"   "$postgres_image_id"   "$api_image"   "$api_image_id"   "$docker_server_version" "$admin_user" "$database_owners" <<'PY'
 from __future__ import annotations
 
 import json
@@ -214,6 +216,8 @@ from pathlib import Path
     api_image,
     api_image_id,
     docker_server_version,
+    admin_user,
+    database_owners,
 ) = sys.argv[1:]
 
 authority = [
@@ -235,6 +239,8 @@ manifest = {
     "createdAtUtc": datetime.now(UTC).isoformat(),
     "project": project,
     "database": database,
+    "postgresAdminUser": admin_user,
+    "databaseOwners": json.loads(database_owners),
     "alembicHead": alembic_head,
     "postgresImage": postgres_image,
     "postgresImageId": postgres_image_id,
@@ -263,6 +269,7 @@ Path(manifest_path).write_text(
     encoding="utf-8",
 )
 PY
+python3 "$root/scripts/lib/runtime_backup_manifest.py" "$partial_dir/manifest.json" >/dev/null
 
 rm -f "$partial_dir/row-counts.tsv"
 (

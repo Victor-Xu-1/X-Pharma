@@ -20,6 +20,7 @@ import { companyKeys, loadCompanyTimeline } from "../lib/contracts/company";
 import { type EntityDossier, entityDossierKeys, loadEntityDossier } from "../lib/contracts/entityDossier";
 import type { ProvenanceSelection } from "../lib/contracts/provenance";
 import { directionLabels, partyRoleLabels, phaseLabels } from "../lib/dealDisplay";
+import { relationshipLabel } from "../lib/entityPresentation";
 import type { CompanyTimelineResult, EntityType } from "../lib/generated";
 import { publicEntityAttributeLabels, publicEntityAttributes } from "../lib/publicEntity";
 import type { Entity } from "../lib/types";
@@ -580,7 +581,7 @@ export function Relationships({
           {data.relationships.map((item) => (
             <tr key={item.id}>
               <td>{item.direction === "outgoing" ? "指向" : "来自"}</td>
-              <td className="mono-cell">{item.predicate}</td>
+              <td title={item.predicate}>{relationshipLabel(item.predicate)}</td>
               <td>
                 <button
                   className="table-link-button"

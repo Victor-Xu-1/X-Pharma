@@ -153,7 +153,7 @@ it("shows source coverage and lets the user inspect traceable version difference
   expect(await screen.findByText("3", { selector: ".knowledge-coverage-metrics strong" })).toBeInTheDocument();
   expect(screen.getByText("专题要点")).toBeInTheDocument();
   expect(document.body).not.toHaveTextContent("治理事实");
-  expect(screen.getByRole("cell", { name: "has_competitor" })).toBeInTheDocument();
+  expect(screen.getByRole("cell", { name: "竞品关系" })).toBeInTheDocument();
   expect(await screen.findByRole("heading", { name: "v1 → v2" })).toBeInTheDocument();
   expect(screen.getByText("Competitive landscape update")).toBeInTheDocument();
   expect(screen.getAllByText(/page=4/)).toHaveLength(2);
@@ -225,4 +225,15 @@ it("fails closed for an invalid knowledge page deep link", async () => {
   renderWithQueryClient(<KnowledgeView invalidPageId initialPageId={null} />);
   expect(await screen.findByText("知识专题链接无效")).toBeInTheDocument();
   expect(getKnowledgePage).not.toHaveBeenCalled();
+});
+
+it.each(["pending", "failed"])("preserves a later-page deep link while the index is %s", async (state) => {
+  if (state === "pending") vi.mocked(searchKnowledgePages).mockImplementation(() => new Promise(() => {}));
+  else vi.mocked(searchKnowledgePages).mockRejectedValue(new Error("Index unavailable"));
+  const onLocationChange = vi.fn();
+  renderWithQueryClient(<KnowledgeView initialOffset={500} onLocationChange={onLocationChange} />);
+  if (state === "pending") await screen.findByText("正在加载知识专题");
+  else await screen.findByRole("alert");
+  expect(onLocationChange).not.toHaveBeenCalled();
+  expect(screen.getByLabelText("专题类型")).toBeInTheDocument();
 });

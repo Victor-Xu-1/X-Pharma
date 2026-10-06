@@ -15,7 +15,7 @@ import {
   listKnowledgePageVersions,
   searchKnowledgePages,
 } from "../lib/contracts/knowledge";
-import { entityLabels } from "../lib/entityPresentation";
+import { entityLabels, relationshipLabel } from "../lib/entityPresentation";
 import type { KnowledgePanel } from "../lib/workspaceRouting";
 
 type KnowledgeLocation = {
@@ -71,7 +71,7 @@ function ChangeList({ diff, kind }: { diff: KnowledgeVersionDiff; kind: "added" 
           {facts.map((fact) => (
             <article key={fact.change_key}>
               <div>
-                <strong>{fact.predicate}</strong>
+                <strong title={fact.predicate}>{relationshipLabel(fact.predicate)}</strong>
                 <span>{fact.object_entity_name || formatFactValue(fact.value)}</span>
               </div>
               <small>
@@ -209,7 +209,7 @@ export function KnowledgeView({
     updateLocation({ query: submittedQuery, pageId, panel: "document", versionNumber: null });
   }
 
-  const result = pagesQuery.data;
+  const result = pagesQuery.isError ? undefined : pagesQuery.data;
   const pages = result?.items ?? [];
   const detail = detailQuery.data;
   const detailError = detailQuery.error instanceof Error ? detailQuery.error.message : "";
@@ -225,7 +225,9 @@ export function KnowledgeView({
             aria-label="检索知识专题"
           />
         </form>
-        <div className="knowledge-count">{result ? `${result.total} 个专题` : "正在统计专题…"}</div>
+        <div className="knowledge-count">
+          {result ? `${result.total} 个专题` : pagesQuery.isError ? "专题总量未知" : "正在统计专题…"}
+        </div>
         <div className="knowledge-index-filters">
           <label>
             专题类型
@@ -309,13 +311,15 @@ export function KnowledgeView({
             <EmptyState title="暂无知识专题" />
           )}
         </div>
-        <ResultPagination
-          totalRows={result?.total ?? 0}
-          offset={location.offset}
-          pageSize={KNOWLEDGE_PAGE_SIZE}
-          ariaLabel="知识专题分页"
-          onPageChange={(offset) => updateLocation({ offset, pageId: null, panel: "document", versionNumber: null })}
-        />
+        {result ? (
+          <ResultPagination
+            totalRows={result.total}
+            offset={location.offset}
+            pageSize={KNOWLEDGE_PAGE_SIZE}
+            ariaLabel="知识专题分页"
+            onPageChange={(offset) => updateLocation({ offset, pageId: null, panel: "document", versionNumber: null })}
+          />
+        ) : null}
       </aside>
       <article className="knowledge-document">
         {invalidPageId ? (
@@ -430,7 +434,7 @@ export function KnowledgeView({
                             <tbody>
                               {coverageQuery.data.predicates.map((item) => (
                                 <tr key={item.predicate}>
-                                  <td className="mono-cell">{item.predicate}</td>
+                                  <td title={item.predicate}>{relationshipLabel(item.predicate)}</td>
                                   <td>{item.fact_count}</td>
                                   <td>{item.cited_fact_count}</td>
                                 </tr>

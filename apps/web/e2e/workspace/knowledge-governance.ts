@@ -169,7 +169,7 @@ export async function verifyKnowledgeGovernance({ page }: Pick<PlaywrightTestArg
   await expect(page.getByRole("heading", { name: "EGFR competitive landscape" })).toBeVisible();
   await page.getByRole("tab", { name: "覆盖与版本" }).click();
   await expect(page.getByRole("region", { name: "专题覆盖摘要" })).toContainText("3专题要点");
-  await expect(page.getByRole("cell", { name: "has_competitor" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "竞品关系" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "v1 → v2" })).toBeVisible();
   await expect(page.getByText("Competitive landscape update", { exact: true })).toBeVisible();
   await expect(page.getByText("page=8", { exact: true })).toBeVisible();

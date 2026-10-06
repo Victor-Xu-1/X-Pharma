@@ -2,6 +2,7 @@
 set -euo pipefail
 
 umask 077
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 backup=${1:-}
 if [[ -z "$backup" || $# -ne 1 ]]; then
@@ -17,6 +18,9 @@ done
 
 backup=$(realpath "$backup")
 manifest="$backup/manifest.json"
+identity=$(python3 "$root/scripts/lib/runtime_backup_manifest.py" "$manifest")
+mapfile -t database_records <<< "$identity"
+IFS=$'\t' read -r database postgres_admin <<< "${database_records[0]}"
 [[ -f "$manifest" && -f "$backup/checksums.sha256" ]] || {
   echo "backup manifest or checksums are missing: $backup" >&2
   exit 1
@@ -105,7 +109,8 @@ postgres_volume="pharma-restore-smoke-postgres-$suffix"
 object_volume="pharma-restore-smoke-object-$suffix"
 markdown_volume="pharma-restore-smoke-markdown-$suffix"
 temporary_volumes=("$postgres_volume" "$object_volume" "$markdown_volume")
-bootstrap_user=restore_admin
+bootstrap_user="restore_admin_${suffix//-/_}"
+probe_role="restore_probe_${suffix//-/_}"
 bootstrap_password=$(openssl rand -hex 32)
 probe_password=$(openssl rand -hex 32)
 work_dir=$(mktemp -d)
@@ -149,12 +154,11 @@ for file in postgres-globals.sql postgres.dump temporal.dump temporal-visibility
   docker exec -u 0 "$container" chown postgres:postgres "/tmp/$file"
 done
 docker exec "$container" psql -X -U "$bootstrap_user" -d bootstrap -v ON_ERROR_STOP=1 -f /tmp/postgres-globals.sql >/dev/null
-for database in pharma_intel temporal temporal_visibility; do
-  docker exec "$container" createdb -U "$bootstrap_user" -O pharma_app "$database"
+for record in "${database_records[@]:1}"; do
+  IFS=$'\t' read -r target_database owner dump <<< "$record"
+  docker exec "$container" createdb -U "$bootstrap_user" -O "$owner" "$target_database"
+  docker exec "$container" pg_restore -U "$bootstrap_user" -d "$target_database" --exit-on-error "/tmp/$dump" >/dev/null
 done
-docker exec "$container" pg_restore -U "$bootstrap_user" -d pharma_intel --exit-on-error /tmp/postgres.dump >/dev/null
-docker exec "$container" pg_restore -U "$bootstrap_user" -d temporal --exit-on-error /tmp/temporal.dump >/dev/null
-docker exec "$container" pg_restore -U "$bootstrap_user" -d temporal_visibility --exit-on-error /tmp/temporal-visibility.dump >/dev/null
 
 expected_counts="$work_dir/expected-counts.tsv"
 actual_counts="$work_dir/actual-counts.tsv"
@@ -175,7 +179,7 @@ for table, count in sorted(document["rowCounts"].items()):
 Path(sys.argv[2]).write_text("\n".join(lines) + "\n", encoding="utf-8")
 PY
 
-table_list=$(docker exec "$container" psql -X -U "$bootstrap_user" -d pharma_intel -At -F $'\t' -v ON_ERROR_STOP=1 -c "SELECT schemaname, tablename FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema') ORDER BY 1, 2")
+table_list=$(docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At -F $'\t' -v ON_ERROR_STOP=1 -c "SELECT schemaname, tablename FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema') ORDER BY 1, 2")
 : > "$actual_counts"
 while IFS=$'\t' read -r schema relation; do
   [[ -n "$schema" && -n "$relation" ]] || continue
@@ -183,7 +187,7 @@ while IFS=$'\t' read -r schema relation; do
     echo "unsafe restored table identifier: $schema.$relation" >&2
     exit 1
   }
-  count=$(docker exec "$container" psql -X -U "$bootstrap_user" -d pharma_intel -At -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM \"$schema\".\"$relation\"")
+  count=$(docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM \"$schema\".\"$relation\"")
   printf '%s.%s\t%s\n' "$schema" "$relation" "$count" >> "$actual_counts"
 done <<< "$table_list"
 if ! cmp --silent "$expected_counts" "$actual_counts"; then
@@ -199,12 +203,12 @@ from pathlib import Path
 print(json.loads(Path(sys.argv[1]).read_text(encoding="utf-8-sig"))["alembicHead"])
 PY
 )
-actual_head=$(docker exec "$container" psql -X -U "$bootstrap_user" -d pharma_intel -At -v ON_ERROR_STOP=1 -c 'SELECT version_num FROM alembic_version')
+actual_head=$(docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At -v ON_ERROR_STOP=1 -c 'SELECT version_num FROM alembic_version')
 [[ "$actual_head" == "$expected_head" ]] || {
   echo "Alembic head mismatch: expected=$expected_head actual=$actual_head" >&2
   exit 1
 }
-rdkit_version=$(docker exec "$container" psql -X -U "$bootstrap_user" -d pharma_intel -At -v ON_ERROR_STOP=1 -c "SELECT extversion FROM pg_extension WHERE extname = 'rdkit'")
+rdkit_version=$(docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At -v ON_ERROR_STOP=1 -c "SELECT extversion FROM pg_extension WHERE extname = 'rdkit'")
 [[ -n "$rdkit_version" ]] || {
   echo "RDKit extension is missing from the restored database" >&2
   exit 1
@@ -217,13 +221,13 @@ for temporal_database in temporal temporal_visibility; do
   }
 done
 
-docker exec "$container" psql -X -U "$bootstrap_user" -d pharma_intel -v ON_ERROR_STOP=1 -c "CREATE ROLE restore_probe LOGIN PASSWORD '$probe_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS; GRANT pharma_runtime TO restore_probe" >/dev/null
-tenant_signing_secret=$(docker exec "$container" psql -X -U "$bootstrap_user" -d pharma_intel -At -v ON_ERROR_STOP=1 -c "SELECT secret_value FROM platform_private.runtime_secrets WHERE secret_name = 'tenant_context'")
+docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -v ON_ERROR_STOP=1 -c "CREATE ROLE $probe_role LOGIN PASSWORD '$probe_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS; GRANT pharma_runtime TO $probe_role" >/dev/null
+tenant_signing_secret=$(docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At -v ON_ERROR_STOP=1 -c "SELECT secret_value FROM platform_private.runtime_secrets WHERE secret_name = 'tenant_context'")
 [[ -n "$tenant_signing_secret" ]] || {
   echo "restored tenant-context signing secret is missing" >&2
   exit 1
 }
-probe_url="postgresql+psycopg://restore_probe:$probe_password@127.0.0.1:5432/pharma_intel"
+probe_url="postgresql+psycopg://$probe_role:$probe_password@127.0.0.1:5432/$database"
 docker run --rm --network "container:$container" --read-only --tmpfs /tmp -e "DATABASE_URL=$probe_url" -e "TENANT_CONTEXT_SIGNING_SECRET=$tenant_signing_secret" "$api_image" pharma-verify-rls >/dev/null
 
 busybox_image='busybox:1.36.1@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662'

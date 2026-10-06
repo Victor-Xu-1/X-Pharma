@@ -17,10 +17,18 @@ export const entityLabels: Record<string, string> = {
 
 const relationshipLabels: Record<string, string> = {
   has_target: "作用靶点",
+  has_competitor: "竞品关系",
+  has_target_class: "靶点分类",
+  has_indication: "关联适应症",
+  developed_by: "研发机构",
   trial_studies_condition: "登记研究条件",
   trial_lead_sponsor: "登记主申办方",
   trial_collaborator: "登记合作方",
 };
+
+export function relationshipLabel(predicate: string): string {
+  return relationshipLabels[predicate] ?? predicate;
+}
 
 type EntityIdentity = Pick<Entity, "entity_type" | "attributes">;
 
@@ -63,7 +71,7 @@ export function matchExplanation(entity: IntelligenceEntity | Entity): string | 
   if (!("match" in entity) || !entity.match) return null;
   if (entity.match.match_type === "relationship")
     return `关联命中：${entity.match.matched_value ?? "已发布对象"} · ${
-      relationshipLabels[entity.match.predicate ?? ""] ?? entity.match.predicate ?? "已验证关系"
+      entity.match.predicate ? relationshipLabel(entity.match.predicate) : "已验证关系"
     }`;
   const relation =
     entity.match.match_relation === "exact"

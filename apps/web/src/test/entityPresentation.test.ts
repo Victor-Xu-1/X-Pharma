@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { entityIdentityNote, entityTypeLabel, isProviderLabel, matchExplanation } from "../lib/entityPresentation";
+import {
+  entityIdentityNote,
+  entityTypeLabel,
+  isProviderLabel,
+  matchExplanation,
+  relationshipLabel,
+} from "../lib/entityPresentation";
 import type { Entity } from "../lib/types";
 
 const identity = { entity_type: "disease", attributes: {} } as Pick<Entity, "entity_type" | "attributes">;
@@ -37,5 +43,7 @@ describe("source-scoped identity presentation", () => {
       match: { match_type: "relationship", matched_value: "EGFR", predicate: "has_target" },
     } as unknown as Entity;
     expect(matchExplanation(entity)).toBe("关联命中：EGFR · 作用靶点");
+    expect(relationshipLabel("has_competitor")).toBe("竞品关系");
+    expect(relationshipLabel("custom_predicate")).toBe("custom_predicate");
   });
 });

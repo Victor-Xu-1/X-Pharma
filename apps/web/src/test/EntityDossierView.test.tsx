@@ -202,7 +202,7 @@ it("loads a governed multi-domain dossier with explicit coverage and controlled 
 
   fireEvent.click(screen.getByRole("tab", { name: "关系网络" }));
   expect(screen.queryByRole("columnheader", { name: "状态" })).not.toBeInTheDocument();
-  expect(screen.getByText("has_target")).toBeInTheDocument();
+  expect(screen.getByText("作用靶点")).toBeInTheDocument();
   expect(screen.getByText("EGFR")).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("tab", { name: "研发管线" }));
