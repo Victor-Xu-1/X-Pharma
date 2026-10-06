@@ -59,10 +59,12 @@ def native_chembl_program(
     if not identifiers:
         return True, None
     program = context.session.scalar(
-        select(DevelopmentProgram).where(
+        select(DevelopmentProgram)
+        .where(
             DevelopmentProgram.tenant_id == context.tenant_id,
             DevelopmentProgram.id == identifiers[0],
         )
+        .with_for_update()
     )
     if program is None:
         raise GovernanceError("ChEMBL mechanism program provenance is incomplete")

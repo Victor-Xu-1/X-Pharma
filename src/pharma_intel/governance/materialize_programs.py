@@ -85,12 +85,14 @@ def materialize_program(
     native_record, program = native_chembl_program(context, staged)
     if not native_record:
         program = context.session.scalar(
-            select(DevelopmentProgram).where(
+            select(DevelopmentProgram)
+            .where(
                 DevelopmentProgram.tenant_id == context.tenant_id,
                 DevelopmentProgram.drug_entity_id == drug.id,
                 DevelopmentProgram.disease_entity_id == (disease.id if disease else None),
                 DevelopmentProgram.organization_entity_id == (organization.id if organization else None),
             )
+            .with_for_update()
         )
     if program is None:
         program = DevelopmentProgram(
