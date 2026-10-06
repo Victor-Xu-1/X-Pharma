@@ -5,7 +5,7 @@ import { SVGRenderer } from "echarts/renderers";
 import { useEffect, useRef } from "react";
 
 import type { PipelineLandscapeBucketRead } from "../lib/generated";
-import { compactPhaseLabels as phaseLabels, phaseDisplayOrder as phaseOrder } from "../lib/phasePresentation";
+import { spacedPhaseLabels as phaseLabels, phaseDisplayOrder as phaseOrder } from "../lib/phasePresentation";
 import { chartPalette } from "./chartPalette";
 
 use([BarChart, DataZoomComponent, GridComponent, LegendComponent, TooltipComponent, SVGRenderer]);
