@@ -1,6 +1,7 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs, TestInfo } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
+import type { PublicKnowledgePageSearchResult } from "../../src/lib/generated";
 
 export async function verifyKnowledgeResearchContinuity(
   { page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">,
@@ -18,13 +19,16 @@ export async function verifyKnowledgeResearchContinuity(
 
   const pagesResponsePromise = page.waitForResponse((response) => {
     const url = new URL(response.url());
-    return response.request().method() === "GET" && url.pathname === "/api/v1/knowledge/pages";
+    return response.request().method() === "GET" && url.pathname === "/api/v1/knowledge/pages/search";
   });
   await page.goto("/workspace/research?view=knowledge");
   const pagesResponse = await pagesResponsePromise;
   expect(pagesResponse.ok()).toBe(true);
-  const pages = (await pagesResponse.json()) as Array<{ id: string; title: string }>;
-  const topic = pages.find((item) => /^[0-9a-f-]{36}$/i.test(item.id));
+  const pages = (await pagesResponse.json()) as PublicKnowledgePageSearchResult;
+  expect(pages.limit).toBe(50);
+  expect(pages.offset).toBe(0);
+  expect(pages.total).toBeGreaterThanOrEqual(pages.items.length);
+  const topic = pages.items.find((item) => /^[0-9a-f-]{36}$/i.test(item.id));
   expect(topic, "the authenticated tenant must expose at least one governed knowledge topic").toBeTruthy();
   if (!topic) return;
 
