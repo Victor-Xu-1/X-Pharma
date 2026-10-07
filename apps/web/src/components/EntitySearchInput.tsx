@@ -2,6 +2,7 @@ import { hashKey, useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { type KeyboardEvent, type Ref, useEffect, useId, useImperativeHandle, useRef, useState } from "react";
 import { intelligenceKeys, suggestEntities } from "../lib/contracts/intelligence";
+import { useSearchShortcut } from "../lib/useSearchShortcut";
 
 /** Name suggestions are optional; an unselected Enter always submits the typed search. */
 export function EntitySearchInput({
@@ -26,6 +27,7 @@ export function EntitySearchInput({
   const [selection, setSelection] = useState<{ owner: string; index: number } | null>(null);
   const activeIndex = selection?.owner === selectionOwner ? selection.index : -1;
   const inputRef = useRef<HTMLInputElement>(null);
+  useSearchShortcut(inputRef);
   const groupRef = useRef<HTMLDivElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const listId = `entity-suggestions-${useId().replaceAll(":", "")}`;
@@ -124,12 +126,16 @@ export function EntitySearchInput({
         }}
         placeholder={`输入${domainLabel === "全部情报" ? "药物、靶点、机构或外部标识" : `${domainLabel}名称、别名或外部标识`}`}
         aria-label="情报检索词"
+        aria-keyshortcuts="/"
         role="combobox"
         aria-autocomplete="list"
         aria-expanded={expanded}
         aria-controls={expanded ? listId : undefined}
         aria-activedescendant={active ? `${listId}-option-${activeIndex}` : undefined}
       />
+      <span className="search-shortcut" aria-hidden="true">
+        <kbd>/</kbd>
+      </span>
       {expanded ? (
         <div className="query-suggestions">
           {pending ? (

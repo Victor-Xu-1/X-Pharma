@@ -1,4 +1,5 @@
 import { EmptyState, formatDate, Spinner, StatusBadge } from "../../components/common";
+import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { EnterpriseAuditFilters, loadEnterpriseAudit } from "../../lib/contracts/enterprise";
 
 export function AuditPanel({
@@ -63,8 +64,8 @@ export function AuditPanel({
       </form>
       {loading && !page ? <Spinner label="正在读取审计日志" /> : null}
       {page?.items.length ? (
-        <div className="table-frame enterprise-table">
-          <table>
+        <ScrollableTableRegion className="enterprise-table" ariaLabel="企业审计事件滚动区域">
+          <table aria-label="企业审计事件">
             <thead>
               <tr>
                 <th>时间</th>
@@ -96,7 +97,7 @@ export function AuditPanel({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       ) : page ? (
         <EmptyState title="没有符合条件的审计事件" />
       ) : null}

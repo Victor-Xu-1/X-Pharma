@@ -846,7 +846,7 @@ tbody tr:last-child td {
   display: inline-flex;
   align-items: center;
   min-height: 22px;
-  border-radius: 3px;
+  border-radius: var(--ds-radius-control);
   padding: 3px 7px;
   font-size: 9px;
   font-weight: 700;

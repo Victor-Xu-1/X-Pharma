@@ -7,6 +7,7 @@ import { joinOrganization, loadOrganizations, organizationKeys } from "../lib/co
 import { useModalFocus } from "../lib/useModalFocus";
 import { EmptyState, ErrorState, Spinner } from "./common";
 import { type OrganizationControls, useOrganizationControls } from "./OrganizationContext";
+import "./OrganizationPanel.css";
 
 export function OrganizationPanel() {
   const controls = useOrganizationControls();
@@ -84,7 +85,7 @@ function MembershipPanel({ controls }: { controls: OrganizationControls }) {
             <div className="modal-backdrop">
               <div
                 ref={focus}
-                className="modal-panel"
+                className="modal-panel organization-panel"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="organization-title"

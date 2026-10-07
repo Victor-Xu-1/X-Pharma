@@ -14,6 +14,7 @@ import {
   loadDataQualitySnapshots,
 } from "../lib/contracts/governance";
 import { EmptyState, formatDate, Spinner, StatusBadge, statusLabel } from "./common";
+import { ScrollableTableRegion } from "./ScrollableTableRegion";
 
 const METRIC_ORDER = [
   "completeness",
@@ -164,8 +165,8 @@ export function QualityOperationsPanel() {
         </header>
         {coverage.isPending ? <Spinner label="正在读取来源覆盖" /> : null}
         {!coverage.isPending && coverage.data?.length ? (
-          <div className="quality-table-scroll">
-            <table>
+          <ScrollableTableRegion className="quality-table-scroll" ariaLabel="来源覆盖与授权滚动区域">
+            <table aria-label="来源覆盖与授权">
               <thead>
                 <tr>
                   <th>来源 / 数据集</th>
@@ -218,7 +219,7 @@ export function QualityOperationsPanel() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableTableRegion>
         ) : null}
         {!coverage.isPending && !coverage.data?.length ? (
           <EmptyState title="尚无注册来源" detail="来源接入后将在这里显示质量和授权状态。" />
@@ -230,31 +231,35 @@ export function QualityOperationsPanel() {
           <h3 id="quality-trend-title">最近 12 次趋势</h3>
           <small>{latest ? `最近评估 ${formatDate(latest.measured_at, true)}` : "等待首个快照"}</small>
         </header>
-        <div className="quality-table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>评估时间</th>
-                {METRIC_ORDER.map((key) => (
-                  <th key={key}>{String(latest?.metrics[key]?.label ?? key)}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {trend.map((snapshot) => (
-                <tr key={snapshot.id}>
-                  <td>{formatDate(snapshot.measured_at, true)}</td>
-                  {METRIC_ORDER.map((key) => {
-                    const metric = snapshot.metrics[key];
-                    return (
-                      <td key={key}>{metric?.applicable ? `${(Number(metric.value) * 100).toFixed(1)}%` : "-"}</td>
-                    );
-                  })}
+        {trend.length ? (
+          <ScrollableTableRegion className="quality-table-scroll" ariaLabel="数据质量历史趋势滚动区域">
+            <table aria-label="数据质量历史趋势">
+              <thead>
+                <tr>
+                  <th>评估时间</th>
+                  {METRIC_ORDER.map((key) => (
+                    <th key={key}>{String(latest?.metrics[key]?.label ?? key)}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {trend.map((snapshot) => (
+                  <tr key={snapshot.id}>
+                    <td>{formatDate(snapshot.measured_at, true)}</td>
+                    {METRIC_ORDER.map((key) => {
+                      const metric = snapshot.metrics[key];
+                      return (
+                        <td key={key}>{metric?.applicable ? `${(Number(metric.value) * 100).toFixed(1)}%` : "-"}</td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ScrollableTableRegion>
+        ) : (
+          <EmptyState title="趋势尚未建立" detail="评估后按时间呈现质量变化。" />
+        )}
       </section>
 
       <section className="quality-issues" aria-labelledby="quality-issues-title">

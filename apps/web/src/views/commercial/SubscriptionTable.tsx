@@ -1,11 +1,12 @@
 import { EmptyState, StatusBadge } from "../../components/common";
+import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { CommercialOverview } from "../../lib/contracts/commercial";
 
 export function SubscriptionTable({ items }: { items: CommercialOverview["subscriptions"] }) {
   if (!items.length) return <EmptyState title="暂无商业订阅" />;
   return (
-    <div className="table-frame commercial-table">
-      <table>
+    <ScrollableTableRegion className="commercial-table" ariaLabel="商业合同与额度滚动区域">
+      <table aria-label="商业合同与额度">
         <thead>
           <tr>
             <th>客户 / 订阅</th>
@@ -45,6 +46,6 @@ export function SubscriptionTable({ items }: { items: CommercialOverview["subscr
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollableTableRegion>
   );
 }

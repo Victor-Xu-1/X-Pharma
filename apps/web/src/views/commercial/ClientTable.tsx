@@ -1,5 +1,6 @@
 import { Ban, Power } from "lucide-react";
 import { EmptyState, formatDate, StatusBadge } from "../../components/common";
+import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { CommercialClient } from "../../lib/contracts/commercial";
 import type { ClientAction } from "./types";
 
@@ -12,9 +13,10 @@ export function ClientTable({
   busy: string;
   onAction: (action: ClientAction) => void;
 }) {
+  if (!items.length) return <EmptyState title="暂无 Agent 客户端" />;
   return (
-    <div className="table-frame commercial-table">
-      <table>
+    <ScrollableTableRegion className="commercial-table" ariaLabel="Agent 客户端滚动区域">
+      <table aria-label="Agent 客户端">
         <thead>
           <tr>
             <th>客户端</th>
@@ -30,13 +32,6 @@ export function ClientTable({
           </tr>
         </thead>
         <tbody>
-          {!items.length && (
-            <tr>
-              <td colSpan={10}>
-                <EmptyState title="暂无 Agent 客户端" />
-              </td>
-            </tr>
-          )}
           {items.map((item) => (
             <tr key={item.id}>
               <td>
@@ -69,6 +64,6 @@ export function ClientTable({
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollableTableRegion>
   );
 }

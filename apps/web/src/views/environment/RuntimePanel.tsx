@@ -7,12 +7,18 @@ export function EnvironmentRuntimePanel({ environment }: { environment: Environm
   const readiness = environmentReadiness(environment);
   return (
     <>
-      <section aria-label="依赖就绪概览">
+      <section className="environment-readiness" aria-label="依赖就绪概览">
         <h2>依赖就绪概览 · {dependencyReadinessLabels[readiness.overall]}</h2>
-        <p>
-          网关：{dependencyReadinessLabels[readiness.gateway]} · 项目环境：
-          {dependencyReadinessLabels[readiness.host]}
-        </p>
+        <dl className="environment-readiness-grid">
+          <div>
+            <dt>应用网关</dt>
+            <dd>{dependencyReadinessLabels[readiness.gateway]}</dd>
+          </div>
+          <div>
+            <dt>项目环境</dt>
+            <dd>{dependencyReadinessLabels[readiness.host]}</dd>
+          </div>
+        </dl>
         {readiness.issues.length ? (
           <p>
             {readiness.issues.length} 项需处理：{readiness.issues.map((probe) => probe.label).join("、")}
@@ -31,13 +37,13 @@ export function EnvironmentRuntimePanel({ environment }: { environment: Environm
           </p>
         ) : null}
       </section>
-      <details open={readiness.gateway !== "ready"}>
+      <details className="environment-disclosure" open={readiness.gateway !== "ready"}>
         <summary>查看网关依赖明细</summary>
         <p>网关进程的实际版本，不代表主机或其他容器已经健康。</p>
         <EnvironmentProbeTable probes={environment.runtime} label="网关依赖版本" />
       </details>
       {environment.host ? (
-        <details open={readiness.host !== "ready"}>
+        <details className="environment-disclosure" open={readiness.host !== "ready"}>
           <summary>查看主机与项目依赖明细</summary>
           <EnvironmentProbeTable probes={environment.host.probes} label="主机依赖版本" />
           {environment.host.latest_install ? (

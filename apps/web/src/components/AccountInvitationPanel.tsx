@@ -8,6 +8,7 @@ import type { AuthMode } from "../lib/contracts/session";
 import type { InvitationCreate, InvitationIssued } from "../lib/generated";
 import { useModalFocus } from "../lib/useModalFocus";
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "./common";
+import { ScrollableTableRegion } from "./ScrollableTableRegion";
 
 const key = ["enterprise", "account-invitations"] as const;
 const invitationLabels = { active: "有效", consumed: "已使用", revoked: "已撤销", expired: "已过期" } as const;
@@ -157,7 +158,7 @@ export function AccountInvitationPanel({ authMode }: { authMode: AuthMode }) {
       ) : invitations.error ? (
         <ErrorState message="注册邀请读取失败" retry={() => void invitations.refetch()} />
       ) : invitations.data?.length ? (
-        <div className="table-frame enterprise-table">
+        <ScrollableTableRegion className="enterprise-table" ariaLabel="注册邀请记录滚动区域">
           <table aria-label="注册邀请记录">
             <thead>
               <tr>
@@ -192,7 +193,7 @@ export function AccountInvitationPanel({ authMode }: { authMode: AuthMode }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       ) : (
         <EmptyState title="暂无注册邀请" detail="生成邀请码后，受邀用户可在内部工作台的注册入口设置自己的密码。" />
       )}

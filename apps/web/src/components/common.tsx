@@ -1,4 +1,4 @@
-import { RefreshCw } from "lucide-react";
+import { CircleAlert, Inbox, LockKeyhole, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 
 export function Spinner({ label = "加载中", cancel }: { label?: string; cancel?: () => void }) {
@@ -27,11 +27,15 @@ export function CancelledState({ retry }: { retry: () => void }) {
   );
 }
 
-export function EmptyState({ title, detail }: { title: string; detail?: string }) {
+export function EmptyState({ title, detail, children }: { title: string; detail?: string; children?: ReactNode }) {
   return (
     <div className="state-message empty-state" role="status" aria-live="polite" aria-atomic="true">
+      <span className="state-icon">
+        <Inbox size={25} strokeWidth={1.5} aria-hidden="true" />
+      </span>
       <strong>{title}</strong>
       {detail ? <span>{detail}</span> : null}
+      {children}
     </div>
   );
 }
@@ -39,6 +43,9 @@ export function EmptyState({ title, detail }: { title: string; detail?: string }
 export function ErrorState({ message, retry }: { message: string; retry?: () => void }) {
   return (
     <div className="state-message error-state" role="alert">
+      <span className="state-icon">
+        <CircleAlert size={25} strokeWidth={1.5} aria-hidden="true" />
+      </span>
       <strong>数据加载失败</strong>
       <span>{message}</span>
       {retry ? (
@@ -59,6 +66,9 @@ export function AccessDeniedState({
 }) {
   return (
     <div className="state-message error-state" role="alert">
+      <span className="state-icon">
+        <LockKeyhole size={25} strokeWidth={1.5} aria-hidden="true" />
+      </span>
       <strong>无权访问该工作区</strong>
       <span>当前企业角色没有此功能的访问权限。</span>
       <button className="text-button" type="button" onClick={onReturn}>
@@ -190,6 +200,7 @@ const defaultStatusLabels: Record<string, string> = {
   approved: "已批准",
   available: "可查看",
   blocked: "未启用或受阻",
+  conflict: "存在冲突",
   degraded: "存在异常",
   disabled: "未启用",
   done: "已完成",

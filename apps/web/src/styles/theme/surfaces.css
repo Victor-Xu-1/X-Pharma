@@ -1,4 +1,4 @@
-/* Operator surfaces share the same warm paper system without losing density. */
+/* Shared biomedical surfaces retain one palette and density authority. */
 :root button,
 :root input,
 :root select,
@@ -162,7 +162,7 @@
 .quality-table-scroll th,
 .quality-table-scroll td,
 .review-list-head,
-.review-list > button {
+.review-list :where(button) {
   border-color: var(--ds-border);
 }
 
@@ -184,8 +184,7 @@
 }
 
 .quality-issue-list > button.active,
-.review-list > button:hover,
-.review-list > button.active {
+.review-list :where(button:hover, button.active) {
   background: var(--ds-accent-soft);
 }
 

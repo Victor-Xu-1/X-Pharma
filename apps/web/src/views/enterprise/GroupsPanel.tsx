@@ -1,6 +1,7 @@
 import { Pencil, Plus, UsersRound } from "lucide-react";
 import { useState } from "react";
 import { EmptyState, StatusBadge } from "../../components/common";
+import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { EnterpriseGroup, EnterpriseOperation, EnterpriseUser } from "../../lib/contracts/enterprise";
 import { ModalShell } from "./ModalShell";
 import type { GroupAction } from "./types";
@@ -26,8 +27,8 @@ export function GroupsPanel({
         </button>
       </div>
       {groups.length ? (
-        <div className="table-frame enterprise-table">
-          <table>
+        <ScrollableTableRegion className="enterprise-table" ariaLabel="企业用户组滚动区域">
+          <table aria-label="企业用户组">
             <thead>
               <tr>
                 <th>用户组</th>
@@ -77,7 +78,7 @@ export function GroupsPanel({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       ) : (
         <EmptyState title="尚未建立用户组" detail="用户组用于集中维护组织成员，后续可绑定细粒度资源策略。" />
       )}

@@ -1,5 +1,6 @@
 import { Scale } from "lucide-react";
 import { EmptyState, formatDate, StatusBadge } from "../../components/common";
+import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { BillingDispute, BillingDisputeFilter } from "../../lib/contracts/commercial";
 
 export function BillingDisputeTable({
@@ -35,68 +36,65 @@ export function BillingDisputeTable({
           </select>
         </label>
       </div>
-      <div className="table-frame commercial-table">
-        <table>
-          <thead>
-            <tr>
-              <th>案件 / 主题</th>
-              <th>计费账户</th>
-              <th>账期单</th>
-              <th>争议额度</th>
-              <th>类别</th>
-              <th>状态</th>
-              <th>负责人</th>
-              <th>SLA</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {!items.length ? (
+      {items.length ? (
+        <ScrollableTableRegion className="commercial-table" ariaLabel="计费争议滚动区域">
+          <table aria-label="计费争议">
+            <thead>
               <tr>
-                <td colSpan={9}>
-                  <EmptyState title="暂无计费争议" />
-                </td>
+                <th>案件 / 主题</th>
+                <th>计费账户</th>
+                <th>账期单</th>
+                <th>争议额度</th>
+                <th>类别</th>
+                <th>状态</th>
+                <th>负责人</th>
+                <th>SLA</th>
+                <th>操作</th>
               </tr>
-            ) : null}
-            {items.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  <strong>{item.subject}</strong>
-                  <span className="cell-subtitle mono-cell">{item.dispute_key}</span>
-                </td>
-                <td>
-                  {item.billing_account_name}
-                  <span className="cell-subtitle mono-cell">{item.billing_account_key}</span>
-                </td>
-                <td className="mono-cell">{item.statement_key}</td>
-                <td>{item.disputed_units}</td>
-                <td>{item.category}</td>
-                <td>
-                  <StatusBadge value={item.status} />
-                </td>
-                <td>{item.assigned_to ?? "未分配"}</td>
-                <td className={item.overdue ? "danger-text" : ""}>{formatDate(item.due_at, true)}</td>
-                <td>
-                  {["resolved", "rejected", "cancelled"].includes(item.status) ? (
-                    "--"
-                  ) : (
-                    <button
-                      className="icon-button"
-                      type="button"
-                      disabled={busy === `dispute:${item.id}`}
-                      title="处理计费争议"
-                      aria-label={`处理计费争议 ${item.dispute_key}`}
-                      onClick={() => onAction(item)}
-                    >
-                      <Scale size={17} />
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.id}>
+                  <td>
+                    <strong>{item.subject}</strong>
+                    <span className="cell-subtitle mono-cell">{item.dispute_key}</span>
+                  </td>
+                  <td>
+                    {item.billing_account_name}
+                    <span className="cell-subtitle mono-cell">{item.billing_account_key}</span>
+                  </td>
+                  <td className="mono-cell">{item.statement_key}</td>
+                  <td>{item.disputed_units}</td>
+                  <td>{item.category}</td>
+                  <td>
+                    <StatusBadge value={item.status} />
+                  </td>
+                  <td>{item.assigned_to ?? "未分配"}</td>
+                  <td className={item.overdue ? "danger-text" : ""}>{formatDate(item.due_at, true)}</td>
+                  <td>
+                    {["resolved", "rejected", "cancelled"].includes(item.status) ? (
+                      "--"
+                    ) : (
+                      <button
+                        className="icon-button"
+                        type="button"
+                        disabled={busy === `dispute:${item.id}`}
+                        title="处理计费争议"
+                        aria-label={`处理计费争议 ${item.dispute_key}`}
+                        onClick={() => onAction(item)}
+                      >
+                        <Scale size={17} />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ScrollableTableRegion>
+      ) : (
+        <EmptyState title="暂无计费争议" />
+      )}
     </div>
   );
 }

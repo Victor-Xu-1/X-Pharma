@@ -120,7 +120,7 @@ export function CompanyView({
             <Building2 size={23} />
           </div>
           <div className="company-profile-identity">
-            <span>{providerLabel ? "登记申办方名称" : "公司专业档案"}</span>
+            {providerLabel ? <span>登记申办方名称</span> : null}
             <h2>{data.entity.name}</h2>
             {!providerLabel ? <p>{data.entity.description ?? "暂无公司简介"}</p> : null}
           </div>

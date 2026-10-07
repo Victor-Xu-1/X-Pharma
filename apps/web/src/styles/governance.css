@@ -614,7 +614,7 @@
   padding: 14px;
   font-size: 11px;
 }
-.review-list > button {
+.review-list :where(button) {
   width: 100%;
   border: 0;
   border-bottom: 1px solid var(--ds-border-subtle);
@@ -622,11 +622,19 @@
   padding: 13px 14px;
   text-align: left;
 }
-.review-list > button > div {
+.review-list :where(button) > div {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+.review-list > details > summary {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ds-border);
+  background: var(--ds-surface-muted);
+  color: var(--ds-ink-muted);
+  cursor: pointer;
+  font-size: var(--ds-text-xs);
 }
 .review-list p {
   display: -webkit-box;

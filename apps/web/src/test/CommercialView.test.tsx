@@ -303,7 +303,7 @@ it("manages the external workbench export policy only from internal commercial o
   expect(await screen.findByRole("status")).toHaveTextContent("导出策略 workspace-export-v2 已生效");
 });
 
-it("keeps the client table structure visible for an empty tenant", async () => {
+it("shows a visible empty client state without an off-screen wide table for an empty tenant", async () => {
   vi.mocked(loadCommercialOverview).mockResolvedValue({ ...overview, subscriptions: [] });
   vi.mocked(loadCommercialClients).mockResolvedValue([]);
   vi.mocked(loadCommercialBilling).mockResolvedValue({ accounts: [], deliveries: [] });
@@ -312,8 +312,8 @@ it("keeps the client table structure visible for an empty tenant", async () => {
 
   renderWithQueryClient(<CommercialView />);
   fireEvent.click(await screen.findByRole("tab", { name: "Agent 客户端" }));
-  expect(await screen.findByRole("columnheader", { name: "客户端" })).toBeInTheDocument();
-  expect(screen.getByText("暂无 Agent 客户端")).toBeInTheDocument();
+  expect(await screen.findByText("暂无 Agent 客户端")).toBeInTheDocument();
+  expect(screen.queryByRole("table", { name: "Agent 客户端" })).not.toBeInTheDocument();
 });
 
 it("forwards operator filters through the generated commercial query contract", async () => {

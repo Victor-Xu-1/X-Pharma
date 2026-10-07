@@ -3,6 +3,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { OPERATIONS_NAME, PRODUCT_NAME, PRODUCT_RELEASE } from "../lib/product";
 import type { User } from "../lib/types";
+import { useCompactNavigation } from "../lib/useCompactNavigation";
 import { useModalFocus } from "../lib/useModalFocus";
 import type { ViewKey, WorkbenchKey } from "../lib/workspaceRouting";
 import { BrandMark } from "./BrandMark";
@@ -63,16 +64,22 @@ export function WorkspaceShell({
   children: ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const compact = useCompactNavigation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [navigationClosing, setNavigationClosing] = useState(false);
   const mobileNavigationRef = useModalFocus<HTMLElement>(mobileOpen, () => setMobileOpen(false), {
     restoreFocus: !navigationClosing,
   });
   const pageHeadingRef = useRef<HTMLHeadingElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const previousView = useRef(activeView);
   const heading = titles[activeView];
   const navigationView = pendingView ?? activeView;
   const researchWorkbench = activeWorkbench === "research";
+  const recordPage = researchDetail || ["target", "drug", "company", "disease", "entity"].includes(activeView);
+  useEffect(() => {
+    if (!compact) setMobileOpen(false);
+  }, [compact]);
   useEffect(() => {
     if (previousView.current === activeView) return;
     previousView.current = activeView;
@@ -103,10 +110,23 @@ export function WorkspaceShell({
         collapsed ? "sidebar-collapsed" : ""
       }`}
     >
+      <button
+        className="skip-link"
+        type="button"
+        inert={mobileOpen}
+        onClick={() => {
+          mainRef.current?.focus();
+        }}
+      >
+        跳到主要内容
+      </button>
       <aside
+        id="workspace-navigation"
         ref={mobileNavigationRef}
         className={`workspace-sidebar ${mobileOpen ? "mobile-open" : ""}`}
         aria-label="工作台导航"
+        inert={compact && !mobileOpen}
+        aria-hidden={compact && !mobileOpen ? true : undefined}
         tabIndex={mobileOpen ? -1 : undefined}
       >
         <div className="sidebar-head">
@@ -152,7 +172,7 @@ export function WorkspaceShell({
       {mobileOpen ? (
         <button type="button" className="sidebar-scrim" aria-label="关闭导航" onClick={() => setMobileOpen(false)} />
       ) : null}
-      <div className="workspace-main">
+      <div className="workspace-main" inert={mobileOpen}>
         <header className={`topbar ${researchWorkbench ? "public-topbar" : ""}`}>
           <button
             className="icon-button mobile-only"
@@ -163,13 +183,25 @@ export function WorkspaceShell({
             }}
             title="打开导航"
             aria-label="打开导航"
+            aria-expanded={mobileOpen}
+            aria-controls="workspace-navigation"
           >
             <Menu size={20} />
           </button>
+          <span className="mobile-workspace-context" aria-hidden="true">
+            {researchWorkbench ? "X-Pharma · 研究工作台" : "X-Pharma · 内部管理"}
+          </span>
         </header>
-        <main className="workspace-content" aria-busy={pendingView ? "true" : undefined}>
-          <div className="page-heading">
-            <h1 ref={pageHeadingRef} tabIndex={-1} style={{ outline: "none" }}>
+        <main
+          ref={mainRef}
+          id="workspace-main"
+          tabIndex={-1}
+          className="workspace-content"
+          aria-labelledby="workspace-page-title"
+          aria-busy={pendingView ? "true" : undefined}
+        >
+          <div className={`page-heading${recordPage ? " record-page-heading" : ""}`}>
+            <h1 id="workspace-page-title" ref={pageHeadingRef} tabIndex={-1} style={{ outline: "none" }}>
               {heading}
             </h1>
           </div>

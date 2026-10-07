@@ -1,5 +1,5 @@
 :root {
-  --ds-font-sans: "Segoe UI", "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif;
+  --ds-font-sans: Inter, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif;
   --ds-font-display: var(--ds-font-sans);
   --ds-font-mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
   --ds-text-xs: 12px;
@@ -7,6 +7,7 @@
   --ds-text-md: 16px;
   --ds-leading-compact: 1.4;
   --ds-leading-body: 1.5;
+  --ds-motion-fast: 140ms;
   --ds-radius-control: 10px;
   --ds-radius-panel: 12px;
   --ds-control-height: 44px;

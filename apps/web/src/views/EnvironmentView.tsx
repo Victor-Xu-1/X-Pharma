@@ -8,6 +8,7 @@ import { environmentKeys, loadEnvironment } from "../lib/contracts/environment";
 import { EnvironmentInstallationPanel } from "./environment/InstallationPanel";
 import { PlatformOperationsPanel } from "./environment/PlatformPanel";
 import { EnvironmentRuntimePanel } from "./environment/RuntimePanel";
+import "./environment/environment.css";
 
 type Tab = "runtime" | "installation" | "operations";
 const tabs = [

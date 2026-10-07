@@ -130,6 +130,8 @@
   display: none;
 }
 .workspace-content {
+  max-width: 1680px;
+  margin-inline: auto;
   padding: 32px clamp(20px, 3vw, 32px) 48px;
 }
 .page-heading {
@@ -138,6 +140,32 @@
 .page-heading h1 {
   font-size: 32px;
   line-height: 1.35;
+}
+.page-heading.record-page-heading h1 {
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-sm);
+  font-weight: 500;
+}
+.page-heading.record-page-heading {
+  margin-bottom: 20px;
+}
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+  transform: translateY(-180%);
+  padding: 12px 18px;
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-action);
+  color: var(--ds-action-text);
+}
+.skip-link:focus {
+  transform: none;
+}
+.mobile-workspace-context {
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-xs);
 }
 .mobile-only {
   display: none;

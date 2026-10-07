@@ -123,7 +123,7 @@ export function CommercialView() {
       {commercialQuery.isError && tab !== "overview" ? (
         <ErrorState message={commercialQuery.error.message} retry={commercialQuery.refetch} />
       ) : null}
-      {overview && !commercialQuery.isError ? (
+      {tab === "overview" && overview && !commercialQuery.isError ? (
         <section className="commercial-metrics" aria-label="商业运营指标">
           <Metric icon={<CircleDollarSign size={18} />} label="可用额度" value={units(metrics.available)} />
           <Metric icon={<CircleDollarSign size={18} />} label="累计消耗" value={units(metrics.consumed)} />

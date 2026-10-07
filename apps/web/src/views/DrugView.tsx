@@ -179,7 +179,6 @@ export function DrugView({
             <Pill size={23} />
           </div>
           <div className="drug-profile-identity">
-            <span>药物专业档案</span>
             <h2>{data.entity.name}</h2>
             <p>{data.entity.description ?? "暂无药物摘要"}</p>
           </div>

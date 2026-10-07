@@ -112,3 +112,32 @@ it("does not carry keyboard selection into another cached domain's suggestions",
   fireEvent.keyDown(input, { key: "Enter" });
   expect(onSearch).toHaveBeenLastCalledWith("EGFR");
 });
+
+it("focuses search with slash without stealing text entry or modal focus", () => {
+  renderWithQueryClient(<Harness />);
+  const input = screen.getByRole("combobox");
+  fireEvent.keyDown(document.body, { key: "/" });
+  expect(input).toHaveFocus();
+  const editor = document.createElement("textarea");
+  document.body.append(editor);
+  editor.focus();
+  fireEvent.keyDown(editor, { key: "/" });
+  expect(editor).toHaveFocus();
+  const dialog = document.createElement("div");
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  document.body.append(dialog);
+  editor.blur();
+  fireEvent.keyDown(document.body, { key: "/" });
+  expect(input).not.toHaveFocus();
+  editor.remove();
+  dialog.remove();
+});
+
+it("removes its shortcut when leaving the search view", () => {
+  const { unmount } = renderWithQueryClient(<Harness />);
+  unmount();
+  const event = new KeyboardEvent("keydown", { key: "/", bubbles: true, cancelable: true });
+  document.body.dispatchEvent(event);
+  expect(event.defaultPrevented).toBe(false);
+});

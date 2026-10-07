@@ -37,13 +37,20 @@
   grid-template-columns: minmax(300px, 1.6fr) minmax(150px, 0.7fr) minmax(145px, 0.65fr) minmax(135px, 0.6fr) auto;
   align-items: end;
   gap: 10px;
-  border-bottom: 1px solid var(--ds-border);
-  padding: 14px;
+  border: 1px solid var(--ds-border);
+  padding: 20px;
 }
 
 .secondary-filter-panel {
   grid-column: 1 / -1;
   margin: 0;
+}
+.secondary-filter-panel .disclosure-chevron {
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+.secondary-filter-panel[open] .disclosure-chevron {
+  transform: rotate(180deg);
 }
 .secondary-filter-panel > summary {
   display: flex;
@@ -76,8 +83,8 @@
   display: grid;
   grid-template-columns: minmax(280px, 1.5fr) repeat(3, minmax(150px, 0.7fr));
   align-items: end;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 14px;
+  padding: 16px 20px;
 }
 .pipeline-entity-filters {
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -832,7 +839,10 @@
   font-weight: 600;
 }
 .trial-filter-bar {
-  grid-template-columns: minmax(280px, 1.45fr) repeat(4, minmax(128px, 0.68fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.trial-filter-bar > :where(.domain-query-field, .entity-multi-filter-select) {
+  grid-column: span 2;
 }
 
 @media (max-width: 1500px) {
@@ -843,12 +853,28 @@
     grid-template-columns: repeat(4, minmax(140px, 1fr));
   }
   .trial-filter-bar {
-    grid-template-columns: minmax(260px, 1.8fr) repeat(3, minmax(130px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
 .patent-filter-bar {
   grid-template-columns: minmax(360px, 1.7fr) repeat(2, minmax(180px, 0.7fr)) auto;
+}
+.filter-range-field {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: 8px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.filter-range-field legend {
+  margin-bottom: 7px;
+}
+.filter-range-field label > span {
+  font-size: var(--ds-text-xs);
+  color: var(--ds-ink-muted);
 }
 .deal-filter-bar {
   grid-template-columns: minmax(280px, 1.5fr) repeat(5, minmax(128px, 0.68fr));
@@ -1086,21 +1112,9 @@
   font-size: 10px;
   font-weight: 700;
 }
-.domain-filter-bar select,
-.domain-filter-bar input {
+.domain-filter-bar :where(input, select) {
   min-width: 0;
-  min-height: 38px;
-  border: 1px solid var(--ds-border-strong);
-  border-radius: 4px;
-  background: var(--ds-surface);
-  color: var(--ds-ink-strong);
-  padding: 7px 9px;
-}
-.domain-filter-bar select:focus,
-.domain-filter-bar input:focus {
-  border-color: var(--ds-border-strong);
-  outline: 2px solid var(--ds-border-subtle);
-  outline-offset: 0;
+  font-weight: 400;
 }
 .domain-query-field .input-with-icon {
   min-width: 0;
@@ -1108,7 +1122,7 @@
   align-items: center;
   gap: 7px;
   border: 1px solid var(--ds-border-strong);
-  border-radius: 4px;
+  border-radius: var(--ds-radius-control);
   background: var(--ds-surface);
   padding: 0 9px;
 }
@@ -1559,6 +1573,7 @@
 }
 .intelligence-query-panel {
   border: 1px solid;
+  padding-bottom: 12px;
 }
 .query-row {
   display: grid;
@@ -1567,7 +1582,7 @@
   gap: 10px;
   min-height: 64px;
   border-bottom: 1px solid var(--ds-border-subtle);
-  padding: 16px 18px;
+  padding: 20px;
 }
 .query-row:last-child {
   border-bottom: 0;
@@ -1576,7 +1591,7 @@
 .query-label {
   color: var(--ds-ink);
   font-size: var(--ds-text-sm);
-  font-weight: 800;
+  font-weight: 600;
   text-align: right;
 }
 .query-combobox {
@@ -1590,10 +1605,6 @@
   background: var(--ds-surface);
   padding: 0 10px;
 }
-.query-combobox:focus-within {
-  border-color: var(--ds-border-strong);
-  box-shadow: 0 0 0 2px var(--ds-border);
-}
 .query-combobox input {
   flex: 1 1 0;
   min-width: 0;
@@ -1603,6 +1614,18 @@
   background: transparent;
   padding: 7px 0;
   box-shadow: none;
+}
+.search-shortcut {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  min-width: 24px;
+  height: 24px;
+  border: 1px solid var(--ds-border);
+  border-radius: 5px;
+  color: var(--ds-ink-muted);
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-xs);
 }
 .query-suggestions {
   position: absolute;
@@ -1666,7 +1689,7 @@
   color: var(--ds-ink);
   padding: 8px 14px;
   font-size: var(--ds-text-sm);
-  font-weight: 700;
+  font-weight: 600;
   list-style-position: inside;
 }
 .advanced-filters summary:hover {
