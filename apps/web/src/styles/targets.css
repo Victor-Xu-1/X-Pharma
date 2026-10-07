@@ -39,8 +39,9 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   margin: 22px 0 0;
-  border-top: 1px solid var(--ds-border);
-  border-bottom: 1px solid var(--ds-border);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-panel);
+  background: var(--ds-surface-muted);
 }
 .dossier-metrics > div {
   border-right: 1px solid var(--ds-border-subtle);
@@ -51,13 +52,13 @@
 }
 .dossier-metrics dt {
   color: var(--ds-ink-muted);
-  font-size: 10px;
 }
 .dossier-metrics dd {
   margin: 5px 0 0;
   color: var(--ds-ink-strong);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 .tab-bar {
   display: flex;

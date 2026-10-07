@@ -57,9 +57,11 @@ export async function verifyResearchAppearance(context: AppearanceContext) {
       deferred_professional_assets_loaded: false,
     }),
   });
-  const researchNavigation = page.getByRole("navigation", { name: "主导航" });
+  const researchNavigation = page.getByRole("navigation", { name: "主导航", includeHidden: true });
   for (const internalView of ["数据工厂", "AI 审核", "商业运营", "企业管理"]) {
-    await expect(researchNavigation.getByRole("button", { name: internalView, exact: true })).toHaveCount(0);
+    await expect(
+      researchNavigation.getByRole("button", { name: internalView, exact: true, includeHidden: true }),
+    ).toHaveCount(0);
   }
   await openNavigation(page);
   const professionalLauncher = page.getByRole("navigation", { name: "主导航" });
@@ -78,7 +80,10 @@ export async function verifyResearchAppearance(context: AppearanceContext) {
   await expect(page.getByRole("heading", { name: "用户中心" })).toBeVisible();
   await openNavigation(page);
   await page.getByRole("button", { name: "情报检索" }).click();
-  await expect(page.getByRole("button", { name: "情报检索" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("button", { name: "情报检索", includeHidden: true })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
   await expect(page.getByRole("heading", { name: "全局情报检索" })).toBeFocused();
   await page.getByLabel("情报检索词").fill("visual-baseline-no-match");
   await page.getByLabel("情报检索词").press("Enter");

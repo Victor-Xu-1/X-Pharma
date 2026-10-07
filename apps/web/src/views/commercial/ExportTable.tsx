@@ -1,5 +1,6 @@
 import { Check, X } from "lucide-react";
 import { EmptyState, formatDate, humanBytes, StatusBadge } from "../../components/common";
+import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { DataExportJob } from "../../lib/contracts/commercial";
 
 export function ExportTable({
@@ -13,8 +14,8 @@ export function ExportTable({
 }) {
   if (!items.length) return <EmptyState title="暂无数据导出任务" />;
   return (
-    <div className="table-frame commercial-table">
-      <table>
+    <ScrollableTableRegion className="commercial-table" ariaLabel="数据导出任务滚动区域">
+      <table aria-label="数据导出任务">
         <thead>
           <tr>
             <th>数据集 / 任务</th>
@@ -76,6 +77,6 @@ export function ExportTable({
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollableTableRegion>
   );
 }

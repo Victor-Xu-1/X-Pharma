@@ -124,8 +124,8 @@ it("folds compatible gateway details without hiding source uncertainty or the in
   });
   renderWithQueryClient(<EnvironmentView />);
   const readiness = await screen.findByRole("region", { name: "依赖就绪概览" });
-  expect(readiness).toHaveTextContent("网关：依赖可用");
-  expect(readiness).toHaveTextContent("项目环境：待核对");
+  expect(within(readiness).getByText("应用网关").nextElementSibling).toHaveTextContent("依赖可用");
+  expect(within(readiness).getByText("项目环境").nextElementSibling).toHaveTextContent("待核对");
   expect(screen.getByRole("table", { name: "网关依赖版本", hidden: true })).not.toBeVisible();
   fireEvent.click(screen.getByText("查看网关依赖明细", { exact: true }));
   expect(screen.getByRole("table", { name: "网关依赖版本" })).toBeVisible();

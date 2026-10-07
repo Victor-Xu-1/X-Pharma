@@ -111,7 +111,7 @@
 }
 .commercial-metrics small {
   margin-top: 3px;
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .commercial-table {
   margin-top: 15px;
@@ -143,12 +143,12 @@
   display: grid;
   gap: 5px;
   color: var(--ds-ink-muted);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
   font-weight: 600;
 }
 .risk-queue-count {
   align-self: center;
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
 }
 .risk-queue-pagination {
   display: flex;
@@ -173,7 +173,7 @@
   font-weight: 700;
 }
 .commercial-modal-subject span {
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
   font-weight: 400;
   overflow-wrap: anywhere;
 }

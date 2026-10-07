@@ -3,16 +3,21 @@ import { researchWorkflows } from "../../src/lib/workspace/researchNavigation";
 import { navigateResearchView, openNavigation } from "./helpers";
 
 export async function verifyResearchNavigationHierarchy(page: Page) {
-  const primary = page.getByRole("navigation", { name: "主导航", exact: true });
-  await expect(primary.getByRole("button")).toHaveCount(5);
-  await expect(primary.getByRole("button")).toHaveText(["情报检索", "研发数据", "竞争情报", "研究动态", "我的研究"]);
+  const primary = page.getByRole("navigation", { name: "主导航", exact: true, includeHidden: true });
+  await expect(primary.getByRole("button", { includeHidden: true })).toHaveCount(5);
+  await expect(primary.getByRole("button", { includeHidden: true })).toHaveText([
+    "情报检索",
+    "研发数据",
+    "竞争情报",
+    "研究动态",
+    "我的研究",
+  ]);
   for (const workflow of researchWorkflows) {
     for (const destination of workflow.destinations) {
       await navigateResearchView(page, destination.view);
-      await expect(primary.getByRole("button", { name: workflow.label, exact: true })).toHaveAttribute(
-        "aria-current",
-        "page",
-      );
+      await expect(
+        primary.getByRole("button", { name: workflow.label, exact: true, includeHidden: true }),
+      ).toHaveAttribute("aria-current", "page");
       await expect(primary.locator("[aria-current=page]")).toHaveCount(1);
       await expect(page.locator("main .spinner")).toHaveCount(0);
       await expect(page.locator(".page-heading h1")).toBeVisible();
@@ -35,7 +40,10 @@ export async function verifyResearchNavigationHierarchy(page: Page) {
   await navigateResearchView(page, "trials");
   await page.reload();
   await expect(page.getByRole("heading", { name: "临床试验与结果", exact: true })).toBeVisible();
-  await expect(primary.getByRole("button", { name: "研发数据", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(primary.getByRole("button", { name: "研发数据", exact: true, includeHidden: true })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
   await page
     .getByRole("navigation", { name: "研发数据分类" })
     .getByRole("button", { name: "流行病学", exact: true })

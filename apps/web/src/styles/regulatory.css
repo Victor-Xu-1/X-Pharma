@@ -300,8 +300,6 @@
 }
 
 @media (max-width: 760px) {
-  .pipeline-primary-filters,
-  .pipeline-entity-filters,
   .pipeline-advanced-grid {
     grid-template-columns: 1fr;
   }

@@ -1,6 +1,15 @@
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { openNavigation } from "../helpers";
 import type { verifyIdentityAndQuality } from "./identity-and-quality";
+
+async function expectTableResult(page: Page, column: string, emptyTitle: string) {
+  const header = page.getByRole("columnheader", { name: column, exact: true });
+  const empty = page.getByText(emptyTitle, { exact: true });
+  // Either real rows or the explicit empty result must render, never a blank wide placeholder.
+  await expect(header.or(empty)).toBeVisible();
+  if (await empty.isVisible()) await expect(header).toHaveCount(0);
+  else await expect(empty).toHaveCount(0);
+}
 
 export async function verifyCrossWorkbenchReturn(context: Awaited<ReturnType<typeof verifyIdentityAndQuality>>) {
   const { page, credentials, pipelineTargetId, fixtureKey } = context;
@@ -41,18 +50,18 @@ export async function verifyCrossWorkbenchReturn(context: Awaited<ReturnType<typ
   await expect(page.getByRole("heading", { name: "到期导出对象" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "生命周期审计" })).toBeVisible();
   await page.getByRole("tab", { name: "Agent 客户端" }).click();
-  await expect(page.getByRole("columnheader", { name: "客户端" })).toBeVisible();
+  await expectTableResult(page, "客户端", "暂无 Agent 客户端");
   await page.getByRole("tab", { name: "账单投递" }).click();
   await expect(page.getByRole("heading", { name: "计费账户映射" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Provider 投递队列" })).toBeVisible();
-  await expect(page.getByRole("columnheader", { name: "Provider 客户编号" })).toBeVisible();
+  await expectTableResult(page, "Provider 客户编号", "暂无计费账户");
   await page.getByLabel("投递状态").selectOption("dead");
   await expect(page.getByLabel("投递状态")).toHaveValue("dead");
-  await expect(page.getByRole("columnheader", { name: "最近错误" })).toBeVisible();
+  await expectTableResult(page, "最近错误", "暂无账单投递记录");
   await page.getByRole("tab", { name: "计费争议" }).click();
   await expect(page.getByRole("heading", { name: "计费争议案件" })).toBeVisible();
   await expect(page.getByLabel("争议状态")).toHaveValue("all");
-  await expect(page.getByRole("columnheader", { name: "争议额度" })).toBeVisible();
+  await expectTableResult(page, "争议额度", "暂无计费争议");
   const hasOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );

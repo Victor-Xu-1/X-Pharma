@@ -26,7 +26,7 @@ def test_reviewed_browser_artifact_has_one_version_authority_and_exact_integrity
     ("key", "value"),
     [
         ("filename", "../../outside.deb"),
-        ("filename", "pool/main/g/google-chrome-stable/google-chrome-stable_155.0.8059.39-1_amd64.deb"),
+        ("filename", "pool/main/g/google-chrome-stable/google-chrome-stable_0.0.0.0-1_amd64.deb"),
         ("size_bytes", True),
         ("size_bytes", 500_000_001),
         ("sha256", "not-a-digest"),

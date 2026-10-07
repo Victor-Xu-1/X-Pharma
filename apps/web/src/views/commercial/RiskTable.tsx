@@ -1,5 +1,6 @@
 import { ShieldAlert } from "lucide-react";
 import { EmptyState, formatDate, StatusBadge } from "../../components/common";
+import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { CommercialRiskEvent } from "../../lib/contracts/commercial";
 import type { RiskAction } from "./types";
 
@@ -14,8 +15,8 @@ export function RiskTable({
 }) {
   if (!items.length) return <EmptyState title="暂无商业风险事件" />;
   return (
-    <div className="table-frame commercial-table">
-      <table>
+    <ScrollableTableRegion className="commercial-table" ariaLabel="商业风险事件滚动区域">
+      <table aria-label="商业风险事件">
         <thead>
           <tr>
             <th>客户端 / 主体</th>
@@ -72,6 +73,6 @@ export function RiskTable({
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollableTableRegion>
   );
 }

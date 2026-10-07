@@ -1,6 +1,7 @@
 import { KeyRound, Plus, ShieldCheck, UserRoundCog } from "lucide-react";
 import { useState } from "react";
 import { formatDate, StatusBadge } from "../../components/common";
+import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { EnterpriseOperation, EnterpriseUser } from "../../lib/contracts/enterprise";
 import type { AuthMode } from "../../lib/contracts/session";
 import type { UserRole } from "../../lib/types";
@@ -31,8 +32,8 @@ export function UsersPanel({
           新建用户
         </button>
       </div>
-      <div className="table-frame enterprise-table">
-        <table>
+      <ScrollableTableRegion className="enterprise-table" ariaLabel="企业用户滚动区域">
+        <table aria-label="企业用户">
           <thead>
             <tr>
               <th>用户</th>
@@ -84,7 +85,7 @@ export function UsersPanel({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollableTableRegion>
     </>
   );
 }

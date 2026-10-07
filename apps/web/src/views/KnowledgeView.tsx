@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BookOpenText, ChevronRight, FileText, History, Search, ShieldCheck } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import "./knowledge-pagination.css";
+import "../styles/knowledge.css";
 
 import { EmptyState, ErrorState, formatDate, Spinner } from "../components/common";
 import { ResultPagination } from "../components/ResultPagination";

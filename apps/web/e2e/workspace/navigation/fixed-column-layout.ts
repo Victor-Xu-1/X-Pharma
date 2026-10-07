@@ -12,12 +12,15 @@ async function readFixedColumns(shell: Locator) {
         const rect = cell.getBoundingClientRect();
         const text = document.createRange();
         text.selectNodeContents(cell);
+        // CSSOM may serialize `font` as empty with numeric variants such as
+        // tabular-nums. Select the actual face through its computed longhands.
+        const fontQuery = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
         return {
           x: rect.x,
           width: rect.width,
           position: style.position,
           contentRects: text.getClientRects().length,
-          fontReady: document.fonts.check(style.font),
+          fontReady: document.fonts.check(fontQuery),
         };
       });
     return {

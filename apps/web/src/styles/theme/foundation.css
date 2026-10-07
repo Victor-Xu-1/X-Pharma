@@ -9,6 +9,11 @@ body {
   font-family: var(--ds-font-sans);
   font-size: var(--ds-text-md);
   line-height: var(--ds-leading-body);
+  font-variant-numeric: tabular-nums;
+}
+
+:where(.workspace-shell) small {
+  font-size: var(--ds-text-xs);
 }
 
 :root code,
@@ -33,6 +38,13 @@ h1,
   letter-spacing: -0.02em;
 }
 
+:where(button, a, summary, input, select, textarea) {
+  transition:
+    background-color var(--ds-motion-fast) ease,
+    border-color var(--ds-motion-fast) ease,
+    color var(--ds-motion-fast) ease;
+}
+
 a,
 .text-button,
 .table-link-button,
@@ -52,6 +64,7 @@ a:hover,
 :root select,
 :root textarea {
   min-height: var(--ds-control-height);
+  font-weight: 400;
   border-color: var(--ds-border-strong);
   border-radius: var(--ds-radius-control);
   background: var(--ds-surface);
@@ -73,6 +86,10 @@ a:hover,
   padding: 0;
 }
 
+:root :is(.query-combobox, .entity-filter-combobox, .input-with-icon, .query-input, .inline-search) input:focus {
+  box-shadow: none;
+}
+
 :root input::placeholder,
 :root textarea::placeholder {
   color: var(--ds-ink-faint);
@@ -91,9 +108,16 @@ a:hover,
   outline: 0;
 }
 
+.query-combobox:focus-within {
+  border-color: var(--ds-focus);
+  box-shadow: 0 0 0 3px var(--ds-focus-ring);
+}
+
 :root button:focus-visible,
 :root a:focus-visible,
-:root summary:focus-visible {
+:root summary:focus-visible,
+:root .table-frame:focus-visible,
+:root .virtual-table-viewport:focus-visible {
   outline: 2px solid var(--ds-focus);
   outline-offset: 2px;
 }
@@ -212,6 +236,7 @@ a:hover,
 
 .nav-button {
   color: var(--ds-nav-muted);
+  font-size: var(--ds-text-sm);
 }
 
 .nav-button:hover {
@@ -524,6 +549,22 @@ tbody tr:hover,
   color: var(--ds-ink-muted);
 }
 
+.state-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 7px;
+  border-radius: 50%;
+  background: var(--ds-surface-soft);
+  color: var(--ds-accent-strong);
+}
+
+.error-state .state-icon {
+  background: var(--ds-danger-soft);
+  color: var(--ds-danger);
+}
+
 .state-message > span:not(.spinner) {
   max-width: 520px;
   line-height: var(--ds-leading-body);
@@ -531,6 +572,14 @@ tbody tr:hover,
 
 .state-message:not(.error-state) strong {
   color: var(--ds-ink-strong);
+}
+
+.state-message > strong {
+  font-size: 18px;
+  font-weight: 600;
+}
+.state-message > span:not(.spinner, .state-icon) {
+  font-size: var(--ds-text-sm);
 }
 
 .state-message .text-button {
@@ -576,6 +625,9 @@ tbody tr:hover,
 }
 
 @media (prefers-reduced-motion: reduce) {
+  :where(button, a, summary, input, select, textarea) {
+    transition: none;
+  }
   html {
     scroll-behavior: auto;
   }

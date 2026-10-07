@@ -85,7 +85,7 @@ export async function readBrowserQualityMetrics(page: Page): Promise<BrowserQual
 
 export async function openNavigation(page: Page) {
   const navigation = page.getByRole("navigation", { name: "主导航" });
-  await expect(navigation).toBeAttached();
+  await expect(page.getByRole("navigation", { name: "主导航", includeHidden: true })).toBeAttached();
   const sidebar = page.locator(".workspace-sidebar");
   const openButton = page.getByTitle("打开导航");
   if (
@@ -95,6 +95,7 @@ export async function openNavigation(page: Page) {
     await openButton.click();
     await expect(sidebar).toHaveClass(/mobile-open/);
   }
+  await expect(navigation).toBeVisible();
 }
 
 export async function navigateResearchView(page: Page, view: ViewKey) {

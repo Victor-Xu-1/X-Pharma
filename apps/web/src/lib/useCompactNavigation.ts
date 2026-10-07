@@ -1,0 +1,15 @@
+import { useEffect, useState } from "react";
+
+/** Matches the shell's 760px layout boundary; no browser storage or navigation state. */
+export function useCompactNavigation() {
+  const [compact, setCompact] = useState(() => window.matchMedia?.("(max-width: 760px)").matches ?? false);
+  useEffect(() => {
+    const query = window.matchMedia?.("(max-width: 760px)");
+    if (!query) return;
+    const update = () => setCompact(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  return compact;
+}

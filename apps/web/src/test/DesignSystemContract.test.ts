@@ -5,6 +5,11 @@ import { describe, expect, it } from "vitest";
 
 function source(relativePath: string) {
   const url = new URL(relativePath, import.meta.url);
+  // Include the real on-demand domain sheet in design checks, without making it initial payload.
+  if (relativePath === "../styles.css") {
+    const domainPath = "../styles/knowledge.css";
+    return `${stylesheetSource(url)}\n${stylesheetSource(new URL(domainPath, import.meta.url))}`;
+  }
   return url.pathname.endsWith(".css") ? stylesheetSource(url) : readFileSync(fileURLToPath(url), "utf8");
 }
 
@@ -360,9 +365,9 @@ describe("unified minimal biomedical light design system", () => {
     expect(queryTypography.body).toContain("line-height: var(--ds-leading-body);");
     expect(compactQueryModes.body).toContain("font-size: var(--ds-text-xs);");
     expect(compactQueryModes.body).toContain("line-height: var(--ds-leading-compact);");
-    expect(ruleBody(baseStyles, ".professional-query-builder > nav button")).toContain("font-size: 10px;");
-    expect(ruleBody(baseStyles, ".entity-search-candidate-heading strong")).toContain("font-size: 11px;");
-    expect(ruleBody(baseStyles, ".professional-more-fields > summary")).toContain("font-size: 10px;");
+    expect(ruleBody(baseStyles, ".professional-query-builder > nav button")).toContain("font-size: var(--ds-text-xs);");
+    expect(ruleBody(baseStyles, ".entity-search-candidate-heading strong")).toContain("font-size: var(--ds-text-xs);");
+    expect(ruleBody(baseStyles, ".professional-more-fields > summary")).toContain("font-size: var(--ds-text-xs);");
     expect(ruleBody(baseStyles, ".segmented-control button")).not.toContain("font-size: 10px;");
     expect(ruleBody(baseStyles, ".advanced-filter-panel > summary")).not.toContain("font-size: 11px;");
   });
@@ -642,12 +647,18 @@ describe("unified minimal biomedical light design system", () => {
   });
 
   it("bounds the mobile knowledge scroller instead of letting content overflow a capped parent", () => {
-    const responsive = source("../styles/chemistry.css");
-    const listBounds = ruleContainingSelectors(responsive, [".knowledge-page-list", ".review-list"]);
-    const indexBorders = ruleContainingSelectors(responsive, [".knowledge-index", ".review-list"]);
+    const responsive = source("../styles/knowledge.css");
+    const listBounds = ruleBody(
+      responsive.slice(responsive.indexOf("@media (max-width: 760px)")),
+      ".knowledge-page-list",
+    );
+    const indexBorders = ruleBody(
+      responsive.slice(responsive.indexOf("@media (max-width: 760px)")),
+      ".knowledge-index",
+    );
     const knowledge = source("../styles/knowledge.css");
-    expect(listBounds.body).toContain("max-height: 300px;");
-    expect(indexBorders.body).not.toContain("max-height:");
+    expect(listBounds).toContain("max-height: 300px;");
+    expect(indexBorders).not.toContain("max-height:");
     expect(ruleBody(knowledge, ".knowledge-page-list")).toContain("overflow-y: auto;");
     expect(ruleBody(knowledge, ".knowledge-count")).not.toContain("font-size:");
     expect(ruleBody(knowledge, ".knowledge-count")).not.toContain("text-transform:");

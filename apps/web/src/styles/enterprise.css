@@ -54,7 +54,7 @@
 }
 .enterprise-metrics small {
   margin-top: 4px;
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .enterprise-tenant-details {
   display: grid;
@@ -72,7 +72,7 @@
   border-right: 0;
 }
 .enterprise-tenant-details dt {
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .enterprise-tenant-details dd {
   min-width: 0;
@@ -92,12 +92,12 @@
   display: block;
   max-width: 270px;
   overflow: hidden;
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
   font-weight: 400;
   text-overflow: ellipsis;
 }
 .mono-value {
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .enterprise-audit-filter {
   display: grid;
@@ -121,8 +121,16 @@
   font-weight: 700;
 }
 .enterprise-modal-subject span {
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
   font-weight: 400;
+}
+fieldset.enterprise-modal-subject {
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-panel);
+  padding: 16px;
+}
+fieldset.enterprise-modal-subject legend {
+  padding-inline: 6px;
 }
 .enterprise-member-list {
   max-height: 280px;
@@ -151,7 +159,7 @@
   font-weight: 600;
 }
 .enterprise-member-list .check-control small {
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
   font-weight: 400;
 }
 .enterprise-access {
@@ -180,7 +188,7 @@
 }
 .enterprise-access header p {
   margin-top: 4px;
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .enterprise-lifecycle-summary dl {
   display: grid;
@@ -191,9 +199,6 @@
 .enterprise-lifecycle-summary dl > div {
   border-left: 3px solid;
   padding: 10px 12px;
-}
-.enterprise-lifecycle-summary dt {
-  font-size: 9px;
 }
 .enterprise-lifecycle-summary dd {
   margin: 4px 0 0;
@@ -228,7 +233,7 @@
 .platform-operations header p {
   margin-top: 4px;
   color: var(--ds-ink-muted);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .platform-queue-metrics {
   display: grid;
@@ -248,7 +253,6 @@
 .platform-queue-metrics dt,
 .platform-runtime-grid dt {
   color: var(--ds-ink-muted);
-  font-size: 9px;
 }
 .platform-queue-metrics dd {
   margin: 5px 0 0;
@@ -278,7 +282,7 @@
   margin: 0;
   overflow-wrap: anywhere;
   color: var(--ds-ink-strong);
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
   font-weight: 700;
   text-align: right;
 }
@@ -291,7 +295,7 @@
   border-left: 3px solid;
   padding: 10px 12px;
   color: var(--ds-ink);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .platform-migration code {
   overflow: hidden;
@@ -389,7 +393,7 @@
   align-items: center;
   gap: 8px;
   color: var(--ds-ink-muted);
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
 }
 .billing-section-heading select {
   min-width: 112px;
@@ -423,7 +427,7 @@
   display: grid;
   gap: 5px;
   color: var(--ds-ink);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
   font-weight: 700;
 }
 .target-evidence-filters select {
@@ -437,7 +441,7 @@
 .target-evidence-filters > span {
   justify-self: end;
   color: var(--ds-ink-muted);
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
 }
 
 .sar-panel {
@@ -542,7 +546,7 @@
 .landscape-grid dl div {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .landscape-grid dd {
   margin: 0;
@@ -560,7 +564,7 @@
   background: var(--ds-surface);
   padding: 13px;
   color: var(--ds-ink);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
@@ -588,7 +592,6 @@
 }
 .record-kicker {
   color: var(--ds-ink-muted);
-  font-size: 9px;
   text-transform: uppercase;
 }
 .record-list h3 {
@@ -597,7 +600,7 @@
 .record-list p {
   margin: 5px 0 0;
   color: var(--ds-ink-muted);
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
 }
 .record-meta {
   display: flex;
@@ -605,7 +608,7 @@
   gap: 12px;
   margin-top: 9px;
   color: var(--ds-ink-muted);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .structure-grid {
   display: grid;
@@ -632,14 +635,14 @@
 .structure-grid span,
 .structure-grid small {
   color: var(--ds-ink-muted);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .structure-grid strong {
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
 }
 .structure-grid code {
   overflow-wrap: anywhere;
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
   line-height: 1.5;
 }
 .environment-workbench > [role="tabpanel"] > section,

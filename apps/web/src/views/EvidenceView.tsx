@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Check, ExternalLink, FileSearch, LocateFixed, Search } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
+import "../styles/knowledge.css";
 
 import { EmptyState, ErrorState, Spinner } from "../components/common";
 import { type EvidenceChunk, evidenceKeys, listEvidenceDatasets, searchEvidence } from "../lib/contracts/evidence";

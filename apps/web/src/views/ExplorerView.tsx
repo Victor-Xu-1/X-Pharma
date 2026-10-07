@@ -23,6 +23,7 @@ import { EntityPreviewDrawer } from "../components/EntityPreviewDrawer";
 import { EntitySearchInput } from "../components/EntitySearchInput";
 import { ProfessionalQueryBuilder } from "../components/ProfessionalQueryBuilder";
 import { PublicResearchPanel } from "../components/PublicResearchPanel";
+import { ResearchStart } from "../components/ResearchStart";
 import { ResultPagination } from "../components/ResultPagination";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
 import { type ColumnDef, type SortingState, VirtualDataTable } from "../components/VirtualDataTable";
@@ -667,7 +668,7 @@ export function ExplorerView({
         onCancel={queryCancellation.cancel}
         onRetry={retrySearch}
         onDismissCancellation={queryCancellation.reset}
-        idle={<EmptyState title="输入检索条件" detail="支持药物、靶点、公司、疾病、临床试验、专利与交易" />}
+        idle={<ResearchStart onSearch={runSearch} />}
       >
         {result ? (
           <div className="explorer-results">

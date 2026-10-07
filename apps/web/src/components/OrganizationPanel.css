@@ -1,0 +1,52 @@
+.organization-panel > :is(p, ul) {
+  margin: 20px 24px;
+}
+.organization-panel > p {
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-sm);
+  line-height: 1.75;
+}
+.organization-panel .permission-list {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+}
+.organization-panel .permission-list li {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-control);
+}
+.organization-panel .permission-list li > span {
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-xs);
+}
+.organization-panel .permission-list li > button {
+  justify-self: start;
+}
+.organization-panel .modal-form {
+  padding: 24px;
+  border-top: 1px solid var(--ds-border);
+  border-radius: 0;
+}
+.organization-panel .modal-form label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--ds-text-xs);
+  line-height: 1.75;
+}
+.organization-panel input[type="checkbox"] {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+@media (max-width: 760px) {
+  .organization-panel > :is(p, ul) {
+    margin-inline: 20px;
+  }
+  .organization-panel .modal-form {
+    padding: 20px;
+  }
+}

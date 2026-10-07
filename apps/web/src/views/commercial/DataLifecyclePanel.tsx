@@ -1,6 +1,7 @@
 import { Check, DatabaseBackup, Gavel, RotateCcw, Trash2, X } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { EmptyState, formatDate, humanBytes, StatusBadge } from "../../components/common";
+import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type {
   DataExportJob,
   DataLifecycleEvent,
@@ -334,8 +335,8 @@ export function DataLifecyclePanel({
         {!holds.length ? (
           <EmptyState title="暂无法律保全记录" />
         ) : (
-          <div className="table-frame commercial-table">
-            <table>
+          <ScrollableTableRegion className="commercial-table" ariaLabel="法律保全记录滚动区域">
+            <table aria-label="法律保全记录">
               <thead>
                 <tr>
                   <th>事项</th>
@@ -383,7 +384,7 @@ export function DataLifecyclePanel({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableTableRegion>
         )}
       </section>
 
@@ -397,8 +398,8 @@ export function DataLifecyclePanel({
         {!sourceCandidates.length ? (
           <EmptyState title="暂无超过保留期的缺失源资料" />
         ) : (
-          <div className="table-frame commercial-table">
-            <table>
+          <ScrollableTableRegion className="commercial-table" ariaLabel="源资料撤回候选滚动区域">
+            <table aria-label="源资料撤回候选">
               <thead>
                 <tr>
                   <th>资料</th>
@@ -444,7 +445,7 @@ export function DataLifecyclePanel({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableTableRegion>
         )}
       </section>
 
@@ -458,8 +459,8 @@ export function DataLifecyclePanel({
         {!deletedSourceAssets.length ? (
           <EmptyState title="暂无等待重新授权的源资料" />
         ) : (
-          <div className="table-frame commercial-table">
-            <table>
+          <ScrollableTableRegion className="commercial-table" ariaLabel="已撤回源资料滚动区域">
+            <table aria-label="已撤回源资料">
               <thead>
                 <tr>
                   <th>资料</th>
@@ -498,7 +499,7 @@ export function DataLifecyclePanel({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableTableRegion>
         )}
       </section>
 
@@ -512,8 +513,8 @@ export function DataLifecyclePanel({
         {!candidates.length ? (
           <EmptyState title="暂无符合策略的清除候选项" />
         ) : (
-          <div className="table-frame commercial-table">
-            <table>
+          <ScrollableTableRegion className="commercial-table" ariaLabel="到期导出对象滚动区域">
+            <table aria-label="到期导出对象">
               <thead>
                 <tr>
                   <th>任务</th>
@@ -549,7 +550,7 @@ export function DataLifecyclePanel({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableTableRegion>
         )}
       </section>
 
@@ -563,8 +564,8 @@ export function DataLifecyclePanel({
         {!events.length ? (
           <EmptyState title="暂无生命周期执行事件" />
         ) : (
-          <div className="table-frame commercial-table">
-            <table>
+          <ScrollableTableRegion className="commercial-table" ariaLabel="生命周期审计滚动区域">
+            <table aria-label="生命周期审计">
               <thead>
                 <tr>
                   <th>时间</th>
@@ -590,7 +591,7 @@ export function DataLifecyclePanel({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableTableRegion>
         )}
       </section>
 

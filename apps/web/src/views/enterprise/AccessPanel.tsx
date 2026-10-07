@@ -1,6 +1,7 @@
 import { Ban, Database, Plus, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { EmptyState, formatDate, StatusBadge } from "../../components/common";
+import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { EnterpriseAccessWorkspace, EnterpriseOperation } from "../../lib/contracts/enterprise";
 import { apiKeyScopeLabel } from "./ApiKeys";
 import { ModalShell } from "./ModalShell";
@@ -29,8 +30,8 @@ export function AccessPanel({
           </div>
           <Database size={19} />
         </header>
-        <div className="table-frame enterprise-table">
-          <table>
+        <ScrollableTableRegion className="enterprise-table" ariaLabel="数据集与交付授权滚动区域">
+          <table aria-label="数据集与交付授权">
             <thead>
               <tr>
                 <th>数据集</th>
@@ -73,7 +74,7 @@ export function AccessPanel({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       </section>
 
       <section aria-labelledby="enterprise-sessions-title">
@@ -83,8 +84,8 @@ export function AccessPanel({
             <p>可单独撤销远程会话；角色或账户状态变化会使该用户全部会话失效。</p>
           </div>
         </header>
-        <div className="table-frame enterprise-table">
-          <table>
+        <ScrollableTableRegion className="enterprise-table" ariaLabel="登录会话滚动区域">
+          <table aria-label="登录会话">
             <thead>
               <tr>
                 <th>用户</th>
@@ -125,7 +126,7 @@ export function AccessPanel({
               })}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       </section>
 
       <section aria-labelledby="enterprise-api-keys-title">
@@ -144,8 +145,8 @@ export function AccessPanel({
             新建密钥
           </button>
         </header>
-        <div className="table-frame enterprise-table">
-          <table>
+        <ScrollableTableRegion className="enterprise-table" ariaLabel="Agent API 密钥滚动区域">
+          <table aria-label="Agent API 密钥">
             <thead>
               <tr>
                 <th>密钥</th>
@@ -216,7 +217,7 @@ export function AccessPanel({
               )}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       </section>
 
       <section aria-labelledby="enterprise-clients-title">
@@ -226,8 +227,8 @@ export function AccessPanel({
             <p>远程 Agent 身份与主体绑定状态。</p>
           </div>
         </header>
-        <div className="table-frame enterprise-table">
-          <table>
+        <ScrollableTableRegion className="enterprise-table" ariaLabel="API 与 MCP Clients 滚动区域">
+          <table aria-label="API 与 MCP Clients">
             <thead>
               <tr>
                 <th>Client</th>
@@ -263,7 +264,7 @@ export function AccessPanel({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       </section>
 
       <section className="enterprise-lifecycle-summary" aria-labelledby="enterprise-lifecycle-title">

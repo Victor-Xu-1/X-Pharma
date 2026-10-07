@@ -1,6 +1,7 @@
 import { BrainCircuit, Pencil, Plus, Star, TestTube2 } from "lucide-react";
 import { useState } from "react";
 import { EmptyState, formatDate, StatusBadge } from "../../components/common";
+import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { EnterpriseLLMProvider, EnterpriseLLMProviderOperation } from "../../lib/contracts/enterprise";
 import { ModalShell } from "./ModalShell";
 import type { LLMAction, LLMProviderPreset } from "./types";
@@ -79,7 +80,7 @@ export function LLMProvidersPanel({
         <span>{`\u4e3b\u6a21\u578b\u53d1\u751f\u8d85\u65f6\u3001 408\u3001 429\u3001 5xx \u6216\u7f51\u7edc\u6545\u969c\u65f6\uff0c\u7cfb\u7edf\u4f1a\u6309\u987a\u5e8f\u4f7f\u7528\u540e\u7eed\u6a21\u578b\u3002`}</span>
       </fieldset>
       {providers.length ? (
-        <div className="table-frame enterprise-table">
+        <ScrollableTableRegion className="enterprise-table" ariaLabel="LLM 供应商顺序滚动区域">
           <table aria-label="LLM 供应商顺序">
             <thead>
               <tr>
@@ -168,7 +169,7 @@ export function LLMProvidersPanel({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       ) : (
         <EmptyState
           title="尚未配置远程模型"

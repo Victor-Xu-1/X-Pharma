@@ -1,29 +1,29 @@
 {
-  "browser": "Google Chrome 154.0.8037.97",
+  "browser": "Google Chrome 155.0.8059.39",
   "contains_production_data": false,
   "contains_third_party_brand_assets": false,
   "files": {
     "research-deal-rights-desktop-1440.png": {
       "capture": "dossier-section",
-      "sha256": "7ebbdf1d4795b10b8ecd164cb560f9b5f40383a6a83f819f9d20f1cf67aa0e6f",
+      "sha256": "9689036dcf2fdb11649a21a39e295a3e1886f8bbbea74ac7936ac27fdcad9041",
       "state": "controlled-deal-rights",
       "viewport": "1440x900"
     },
     "research-deal-rights-desktop-1920.png": {
       "capture": "dossier-section",
-      "sha256": "a23e8cc0a84e566eee5d18ca611945f771db90a9a7b82a3e849d33f7f4ae8c79",
+      "sha256": "282191b913da8c711621318438b8e0a8d2f5d614c0e0dbd63c843ce198b38942",
       "state": "controlled-deal-rights",
       "viewport": "1920x1080"
     },
     "research-deal-rights-mobile-390.png": {
       "capture": "dossier-section",
-      "sha256": "b4d0f17a3580fce8c3fc374902a0531f846d5165e522cddafdf766522bbbec1e",
+      "sha256": "f2262d6927f9054c391ecab2cfaa354043a945fda882f47a3b4511215041339d",
       "state": "controlled-deal-rights",
       "viewport": "390x844"
     },
     "research-deal-rights-tablet-1024.png": {
       "capture": "dossier-section",
-      "sha256": "7ac87288588d735521e18c72fed3d6eaf625ec6b31bd7239e20eb719eac4ce01",
+      "sha256": "ba4d407cc0a651100a6363ed48cfa1abdcca6d873a0c17e392e0d446210a6656",
       "state": "controlled-deal-rights",
       "viewport": "1024x768"
     },
@@ -35,7 +35,7 @@
     },
     "research-dense-results-desktop-1920.png": {
       "capture": "table-shell",
-      "sha256": "9ccd08d8e7e79c1d3106436e28e5ad8679266b01340cc1451314611f996fffca",
+      "sha256": "77804c2b4ecbe6e5aa54e4638a7da60f5c9d6548fe85892f047bd3289fc5fd8e",
       "state": "controlled-dense-results",
       "viewport": "1920x1080"
     },
@@ -47,84 +47,84 @@
     },
     "research-dense-results-tablet-1024.png": {
       "capture": "table-shell",
-      "sha256": "308eb53a6f94712e4f02a2b8cd84d7c3f380ffc066d21f15c741a31be6737761",
+      "sha256": "2834c89873336adc887081696f999232cf7525b7c5866bd26c1c99d13164a024",
       "state": "controlled-dense-results",
       "viewport": "1024x768"
     },
     "research-patent-timeline-desktop-1440.png": {
       "capture": "dossier-section",
-      "sha256": "982add1bd3eabac9bb3b289a4fbac8d4dda24500dd5e7f3e590d829bca081ff6",
+      "sha256": "508c9e1e90cc72cdfeda185b5c02bbb02e3c3eff49ddd5e050bdfdef01dab386",
       "state": "controlled-patent-timeline",
       "viewport": "1440x900"
     },
     "research-patent-timeline-desktop-1920.png": {
       "capture": "dossier-section",
-      "sha256": "69626e2f870e7e7fe790cfeaf371067c145edcfc40f1d5f814fdef0cf1d29200",
+      "sha256": "c37e97539d68dfd8836d6a0cadfa621840271638a3b35135df3f41e1547c2f43",
       "state": "controlled-patent-timeline",
       "viewport": "1920x1080"
     },
     "research-patent-timeline-mobile-390.png": {
       "capture": "dossier-section",
-      "sha256": "3e4d5bb082bfab9c9ae23a8ca129c8befe53881b3134bb472c39a42da58db390",
+      "sha256": "105ba5a2a9b659bcaeac68d6633df3e2c0e3931368dff24f954687ded22993cb",
       "state": "controlled-patent-timeline",
       "viewport": "390x844"
     },
     "research-patent-timeline-tablet-1024.png": {
       "capture": "dossier-section",
-      "sha256": "e45ec3cd61b0bc70448f277ba77ce3f9032f945374c5db68e6f633828d81717f",
+      "sha256": "dea346158edb4d86a220417356121a5fa26e79820e089af3ebdc349c69c943bc",
       "state": "controlled-patent-timeline",
       "viewport": "1024x768"
     },
     "research-trial-outcomes-desktop-1440.png": {
       "capture": "dossier-section",
-      "sha256": "9b9640f5759e9ac93d6599d0ae7c8cdbd2e0122cdcd25249dc3ee60aacc66a66",
+      "sha256": "0c64dac9273b8e624815ebe41f7161bf0c7995d298726bd89b48c93a1e49480c",
       "state": "controlled-trial-outcomes",
       "viewport": "1440x900"
     },
     "research-trial-outcomes-desktop-1920.png": {
       "capture": "dossier-section",
-      "sha256": "310a34cc008794742596d6ee4abaaa3f2e69e625a5ea1e69045087a6ebdca147",
+      "sha256": "8b8eaa2ae223dc015d8ddb4db109537ed38de6f6d48981acc556a70db7d855ab",
       "state": "controlled-trial-outcomes",
       "viewport": "1920x1080"
     },
     "research-trial-outcomes-mobile-390.png": {
       "capture": "dossier-section",
-      "sha256": "f13ad8caf4f97d474b5e5139e17543799a492a7c7625db22873affc802ae2ecd",
+      "sha256": "6fca2ceab55c04382c3c94cea2628d8730548097e57c46b77c34b619925560d9",
       "state": "controlled-trial-outcomes",
       "viewport": "390x844"
     },
     "research-trial-outcomes-tablet-1024.png": {
       "capture": "dossier-section",
-      "sha256": "253bc675ae0b7e6c46455442ede87bf25241b0707f9339f3373b23ba921e2f4e",
+      "sha256": "2de7864816e8d4227e670d5cc25f03f231eda4a14d32c55a1e13bf03c0fd3347",
       "state": "controlled-trial-outcomes",
       "viewport": "1024x768"
     },
     "research-workbench-desktop-1440.png": {
       "capture": "full-page",
-      "sha256": "af3ecf4ecd799649b0227525fea520022619a4fd3d056eca582c33555339547b",
+      "sha256": "f96c8da9e35c04122af552369ad3dbe7e15cea57aba4ccddfb33400098c9660a",
       "state": "controlled-no-result",
       "viewport": "1440x900"
     },
     "research-workbench-desktop-1920.png": {
       "capture": "full-page",
-      "sha256": "cc417c2304658c4d5e277fac7474c7c68a08e1f9589d1fbd7d68b26034ea4882",
+      "sha256": "a3aedd37188ef11c73ca5cde96e2ba96b1af1b256002b5a804d8ee3f414ef25f",
       "state": "controlled-no-result",
       "viewport": "1920x1080"
     },
     "research-workbench-mobile-390.png": {
       "capture": "full-page",
-      "sha256": "adf967954d7cec38e71d965fbcb2d530119d883f28e98dfc6c107e72ef712985",
+      "sha256": "aef8c91b9670e5bb72fb88c410ba1cb2d2ccad87739a5e1a02e7b95cdf0e80c5",
       "state": "controlled-no-result",
       "viewport": "390x844"
     },
     "research-workbench-tablet-1024.png": {
       "capture": "full-page",
-      "sha256": "585db67aa6d401bcf154f1c9c1a694b6cc5d99d31a2d651add47f435ed236ea8",
+      "sha256": "ee1616b25cab59b63266fd4393484b14fcba7d200dde6ad733c346ad657d86b5",
       "state": "controlled-no-result",
       "viewport": "1024x768"
     }
   },
-  "generated_at": "2026-10-05",
+  "generated_at": "2026-10-07",
   "generator": "scripts/run-browser-acceptance.sh --update-snapshots",
   "license": "repository-owned-test-artifact",
   "schema": "pharma.workbench-visual-baselines.v3",

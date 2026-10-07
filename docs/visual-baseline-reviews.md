@@ -1,8 +1,48 @@
 # Visual baseline reviews
 
-The current reference inventory is the 20-image comprehensive preview-fidelity review below.
+The current reference inventory is the 20-image research-first frontend craft review below.
 It retains the bounded natural-flow table implementation, not either former
 transform-rendering paint phase. The manifest owns all current image hashes.
+
+## 2026-10-07: research-first frontend craft
+
+The production UI candidate526dd57 refines actual research entry, record
+identity, forms, status/empty states, internal table scrolling, environment
+and organization panels. Readable metadata and coverage caveats replace
+overridden tiny text and truncation. Shared keyboard/focus boundaries and
+two lazy knowledge/evidence stylesheet owners retain one implementation.
+Private real-data captures remain outside the public repository on E-backed
+storage; these references contain only the original controlled CI fixtures.
+
+The original font-column owner initially reproduced an invalid empty CSSOM
+font shorthand at all four viewports with tabular numbers. Candidate
+`4d16e2977181f3f88c454663f4c45fe5483f3cd5` queries computed font-face longhands
+and passes the original four-viewport readiness/alignment/scroll checks.
+No font check, geometry assertion, mask or pixel tolerance was removed.
+
+Reference [run37598677555](https://github.com/Victor-Xu-1/X-Pharma/actions/runs/37598677555)
+completed all144 update scenarios in26.1m, with snapshots_updated=true and
+zero remaining temporary accounts, entities, chemistry/activity, governed
+or ingestion fixtures. Its second readonly pass was interrupted at the
+existing60-minute job limit. The workflow is cancelled, not a successful
+full acceptance; downstream MCP checks were skipped. Only the completed
+generation phase supplies reference-review inputs. Earlier failed partial
+generations are not adopted.
+
+All20 PNGs and the original manifest from artifact11474258916 were downloaded
+to E, checked against their SHA-256 values and individually inspected at
+1440/1920/1024/390 CSS-pixel viewports. Eighteen binaries change; two remain
+byte-identical. The reviewed browser is Google Chrome155.0.8059.39; the
+signed package and executable identities are rebound to the manifest through
+the existing frozen-artifact metadata. The Noto font profile, natural-flow
+68/46px rows, 0.001 tolerance, all case/action/Web Vitals and build budgets
+remain unchanged. The former native154 installation is retained.
+
+Normal exact-head CI must still pass the complete original144-case readonly
+matrix, Web/MCP checks and all six required jobs before merge. Exact-main
+deployment and real-browser postdeployment checks remain separate gates.
+Reference generation, partial readonly execution and these synthetic assets
+are not scientific results, production certification or an award guarantee.
 
 ## 2026-10-05: comprehensive biomedical preview fidelity
 
