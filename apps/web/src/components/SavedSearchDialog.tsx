@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import type { FormEvent } from "react";
 import { useModalFocus } from "../lib/useModalFocus";
+import { FormStatus } from "./FormStatus";
 
 export function SavedSearchDialog({
   open,
@@ -9,7 +10,7 @@ export function SavedSearchDialog({
   shared,
   monitor,
   allowMonitor = true,
-  error = "",
+  error,
   pending,
   onNameChange,
   onSharedChange,
@@ -23,7 +24,7 @@ export function SavedSearchDialog({
   shared: boolean;
   monitor: boolean;
   allowMonitor?: boolean;
-  error?: string;
+  error: string;
   pending: boolean;
   onNameChange: (value: string) => void;
   onSharedChange: (value: boolean) => void;
@@ -41,8 +42,12 @@ export function SavedSearchDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="saved-search-dialog-title"
+        aria-busy={pending || undefined}
         tabIndex={-1}
-        onSubmit={onSubmit}
+        onSubmit={(event) => {
+          if (pending) event.preventDefault();
+          else onSubmit(event);
+        }}
       >
         <header>
           <h2 id="saved-search-dialog-title">保存当前{domainLabel}检索</h2>
@@ -50,15 +55,12 @@ export function SavedSearchDialog({
             <X size={18} />
           </button>
         </header>
-        {error ? (
-          <p className="inline-error" role="alert">
-            {error}
-          </p>
-        ) : null}
+        <FormStatus pending={pending} error={error} pendingLabel="正在保存检索" />
         <label>
           名称
           <input
             value={name}
+            disabled={pending}
             onChange={(event) => onNameChange(event.target.value)}
             data-modal-autofocus="true"
             maxLength={200}
@@ -66,12 +68,22 @@ export function SavedSearchDialog({
           />
         </label>
         <label className="check-control">
-          <input type="checkbox" checked={shared} onChange={(event) => onSharedChange(event.target.checked)} />
+          <input
+            type="checkbox"
+            disabled={pending}
+            checked={shared}
+            onChange={(event) => onSharedChange(event.target.checked)}
+          />
           企业内共享该检索
         </label>
         {allowMonitor ? (
           <label className="check-control">
-            <input type="checkbox" checked={monitor} onChange={(event) => onMonitorChange(event.target.checked)} />
+            <input
+              type="checkbox"
+              disabled={pending}
+              checked={monitor}
+              onChange={(event) => onMonitorChange(event.target.checked)}
+            />
             同时订阅相关数据变更
           </label>
         ) : null}

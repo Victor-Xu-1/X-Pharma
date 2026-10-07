@@ -659,6 +659,7 @@ export function EpidemiologyView({
                   onClick={() => {
                     setSaveName(initialFilters.query.trim() || "疾病负担监控");
                     setSaveMessage("");
+                    save.reset();
                     setSaveOpen(true);
                   }}
                 >
@@ -743,8 +744,8 @@ export function EpidemiologyView({
         ) : null}
       </ProfessionalQueryState>
 
-      {saveMessage ? (
-        <p className="inline-feedback" role="status">
+      {saveMessage && !saveOpen ? (
+        <p className={save.isError ? "inline-error" : "inline-feedback"} role={save.isError ? "alert" : "status"}>
           {saveMessage}
         </p>
       ) : null}
@@ -755,6 +756,7 @@ export function EpidemiologyView({
         shared={saveShared}
         monitor={saveMonitor}
         pending={save.isPending}
+        error={save.isError ? saveMessage : ""}
         onNameChange={setSaveName}
         onSharedChange={setSaveShared}
         onMonitorChange={setSaveMonitor}

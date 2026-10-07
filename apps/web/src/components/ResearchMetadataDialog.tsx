@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { type FormEvent, useId } from "react";
 import { useModalFocus } from "../lib/useModalFocus";
+import { FormStatus } from "./FormStatus";
 
 export function ResearchMetadataDialog({
   title,
@@ -36,8 +37,12 @@ export function ResearchMetadataDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        aria-busy={pending || undefined}
         tabIndex={-1}
-        onSubmit={onSubmit}
+        onSubmit={(event) => {
+          if (pending) event.preventDefault();
+          else onSubmit(event);
+        }}
       >
         <header>
           <h2 id={titleId}>{title}</h2>
@@ -45,15 +50,12 @@ export function ResearchMetadataDialog({
             <X size={18} />
           </button>
         </header>
-        {error ? (
-          <p className="inline-error" role="alert">
-            {error}
-          </p>
-        ) : null}
+        <FormStatus pending={pending} error={error} pendingLabel="正在保存研究信息" />
         <label>
           名称
           <input
             value={name}
+            disabled={pending}
             onChange={(event) => onNameChange(event.target.value)}
             data-modal-autofocus="true"
             maxLength={200}
@@ -64,6 +66,7 @@ export function ResearchMetadataDialog({
           业务说明
           <textarea
             value={description}
+            disabled={pending}
             onChange={(event) => onDescriptionChange(event.target.value)}
             maxLength={1000}
             rows={4}

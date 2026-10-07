@@ -591,6 +591,7 @@ export function PatentsView({
                     onClick={() => {
                       setSaveName(initialQuery.trim() || "专利情报监控");
                       setSaveMessage("");
+                      save.reset();
                       setSaveOpen(true);
                     }}
                   >
@@ -665,8 +666,8 @@ export function PatentsView({
           ) : null}
         </ProfessionalQueryState>
       </section>
-      {saveMessage ? (
-        <p className="inline-feedback" role="status">
+      {saveMessage && !saveOpen ? (
+        <p className={save.isError ? "inline-error" : "inline-feedback"} role={save.isError ? "alert" : "status"}>
           {saveMessage}
         </p>
       ) : null}
@@ -677,6 +678,7 @@ export function PatentsView({
         shared={saveShared}
         monitor={saveMonitor}
         pending={save.isPending}
+        error={save.isError ? saveMessage : ""}
         onNameChange={setSaveName}
         onSharedChange={setSaveShared}
         onMonitorChange={setSaveMonitor}

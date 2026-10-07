@@ -1,5 +1,6 @@
 import { CircleStop, RotateCcw, X } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { FormStatus } from "../../components/FormStatus";
 import type { IngestionRun } from "../../lib/contracts/dataFactory";
 import { useModalFocus } from "../../lib/useModalFocus";
 
@@ -33,6 +34,7 @@ export function ReplayRunDialog({
         className="modal-panel"
         role="dialog"
         aria-modal="true"
+        aria-busy={busy}
         aria-labelledby="replay-run-title"
         tabIndex={-1}
       >
@@ -63,6 +65,7 @@ export function ReplayRunDialog({
           <label>
             <span>重放原因</span>
             <textarea
+              disabled={busy}
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               minLength={3}
@@ -70,11 +73,7 @@ export function ReplayRunDialog({
               required
             />
           </label>
-          {error ? (
-            <div className="inline-error" role="alert">
-              {error}
-            </div>
-          ) : null}
+          <FormStatus pending={busy} error={error} pendingLabel="正在提交重放请求" />
           <div className="form-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={busy}>
               取消
@@ -120,6 +119,7 @@ export function CancelRunDialog({
         className="modal-panel"
         role="dialog"
         aria-modal="true"
+        aria-busy={busy}
         aria-labelledby="cancel-run-title"
         tabIndex={-1}
       >
@@ -150,6 +150,7 @@ export function CancelRunDialog({
           <label>
             <span>取消原因</span>
             <textarea
+              disabled={busy}
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               minLength={3}
@@ -157,11 +158,7 @@ export function CancelRunDialog({
               required
             />
           </label>
-          {error ? (
-            <div className="inline-error" role="alert">
-              {error}
-            </div>
-          ) : null}
+          <FormStatus pending={busy} error={error} pendingLabel="正在提交取消请求" />
           <div className="form-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={busy}>
               返回

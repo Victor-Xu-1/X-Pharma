@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ShieldAlert, X } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { ErrorState, formatDate, Spinner, StatusBadge } from "../../components/common";
+import { FormStatus } from "../../components/FormStatus";
 import type { QuarantineAction, QuarantineCase } from "../../lib/contracts/dataFactory";
 import { dataFactoryKeys, decideQuarantineCase, loadQuarantineCase } from "../../lib/contracts/dataFactory";
 import { useModalFocus } from "../../lib/useModalFocus";
@@ -92,6 +93,7 @@ export function QuarantineDecisionDialog({
         className="modal-panel quarantine-dialog"
         role="dialog"
         aria-modal="true"
+        aria-busy={busy}
         aria-labelledby="quarantine-dialog-title"
         tabIndex={-1}
       >
@@ -181,6 +183,7 @@ export function QuarantineDecisionDialog({
                 <label>
                   <span>处置动作</span>
                   <select
+                    disabled={busy}
                     value={action}
                     onChange={(event) => {
                       setAction(event.target.value as QuarantineAction);
@@ -198,6 +201,7 @@ export function QuarantineDecisionDialog({
                 <label>
                   <span>处置原因</span>
                   <textarea
+                    disabled={busy}
                     value={reason}
                     onChange={(event) => setReason(event.target.value)}
                     minLength={3}
@@ -216,11 +220,11 @@ export function QuarantineDecisionDialog({
                 {accepted}
               </div>
             ) : null}
-            {error ? (
-              <div className="inline-error" role="alert">
-                {error}
-              </div>
-            ) : null}
+            <FormStatus
+              pending={busy}
+              error={error}
+              pendingLabel={accepted ? "正在刷新隔离案件状态" : "正在提交隔离处置"}
+            />
             <div className="form-actions">
               <button className="secondary-button" type="button" onClick={onClose} disabled={busy}>
                 关闭

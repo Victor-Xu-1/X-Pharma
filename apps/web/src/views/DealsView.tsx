@@ -891,6 +891,7 @@ export function DealsView({
                   onClick={() => {
                     setSaveName(initialFilters.query.trim() || "交易情报监控");
                     setSaveMessage("");
+                    save.reset();
                     setSaveOpen(true);
                   }}
                 >
@@ -954,8 +955,8 @@ export function DealsView({
           </div>
         ) : null}
       </ProfessionalQueryState>
-      {saveMessage ? (
-        <p className="inline-feedback" role="status">
+      {saveMessage && !saveOpen ? (
+        <p className={save.isError ? "inline-error" : "inline-feedback"} role={save.isError ? "alert" : "status"}>
           {saveMessage}
         </p>
       ) : null}
@@ -966,6 +967,7 @@ export function DealsView({
         shared={saveShared}
         monitor={saveMonitor}
         pending={save.isPending}
+        error={save.isError ? saveMessage : ""}
         onNameChange={setSaveName}
         onSharedChange={setSaveShared}
         onMonitorChange={setSaveMonitor}
