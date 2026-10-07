@@ -1,4 +1,5 @@
 import { recordValue } from "./knowledgeReading";
+import { knowledgeTrialFieldText } from "./knowledgeTrialFields";
 
 const labels: Record<string, string> = {
   name: "名称",
@@ -89,7 +90,7 @@ export function knowledgeFields(value: unknown): { primary: KnowledgeField[]; re
   const fields = entries.map(([key, field]) => ({
     key,
     label: Object.hasOwn(labels, key) ? labels[key] : key,
-    value: fieldText(field, key),
+    value: (record.fact_kind === "trial" ? knowledgeTrialFieldText(field, key, record) : null) ?? fieldText(field, key),
   }));
   return {
     primary: primaryKeys.flatMap((key) => fields.filter((field) => field.key === key)),
