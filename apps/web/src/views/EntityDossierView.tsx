@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "../components/common";
 import { DossierActivityTable as Activities } from "../components/DossierActivityTable";
+import { EntityNames } from "../components/EntityNames";
 import { PatentTimeline } from "../components/PatentTimeline";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
@@ -181,6 +182,7 @@ export function EntityDossierView({
             <p>{data.entity.description ?? "暂无实体摘要"}</p>
           </div>
         </header>
+        <EntityNames entity={data.entity} />
 
         <dl className="dossier-metrics entity-dossier-metrics">
           <div>

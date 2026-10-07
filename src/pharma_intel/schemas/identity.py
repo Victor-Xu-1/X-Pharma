@@ -3,8 +3,9 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from pharma_intel.identity import normalize_name
 from pharma_intel.models.enums import (
     EntityType,
     ReviewStatus,
@@ -52,6 +53,7 @@ class EntityRead(BaseModel):
     id: str
     entity_type: EntityType
     name: str
+    aliases: list[str] = Field(default_factory=list)
     description: str | None
     external_ids: dict[str, str]
     attributes: dict[str, Any]
@@ -60,6 +62,19 @@ class EntityRead(BaseModel):
     identity_identifiers: list[EntityIdentifierRead] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("aliases", mode="before")
+    @classmethod
+    def read_alias_names(cls, values: Any) -> list[str]:
+        names: dict[str, str] = {}
+        for item in values:
+            alias = getattr(item, "alias", item)
+            if not isinstance(alias, str):
+                raise ValueError("Entity aliases must be text")
+            normalized = normalize_name(alias)
+            if normalized:
+                names.setdefault(normalized, alias.strip())
+        return [names[key] for key in sorted(names)]
 
 
 class EntitySearchMatchRead(BaseModel):

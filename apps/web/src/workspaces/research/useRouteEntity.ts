@@ -10,7 +10,7 @@ export function useRouteEntity(location: WorkspaceLocation, selectedEntityId?: s
     entityViews.has(location.view) &&
       !location.invalidEntityId &&
       location.entityId &&
-      selectedEntityId !== location.entityId,
+      (location.view === "explorer" || selectedEntityId !== location.entityId),
   );
   const navigationKey = `${location.view}:${location.entityId ?? ""}`;
   const previousNavigation = useRef(navigationKey);

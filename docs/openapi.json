@@ -13030,6 +13030,13 @@
       },
       "EntityRead": {
         "properties": {
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Aliases",
+            "type": "array"
+          },
           "attributes": {
             "additionalProperties": true,
             "title": "Attributes",

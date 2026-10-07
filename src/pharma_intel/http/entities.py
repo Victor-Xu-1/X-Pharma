@@ -76,24 +76,10 @@ def _entity_search_items(result: EntitySearchResultSet) -> list[EntitySearchItem
             if match is not None
             else None
         )
-        aliases: list[str] = []
-        seen_aliases: set[str] = set()
-        for entity_alias in sorted(
-            entity.aliases,
-            key=lambda item: (item.normalized_alias, item.alias.casefold(), item.id),
-        ):
-            alias = entity_alias.alias.strip()
-            normalized_alias = alias.casefold()
-            if not alias or normalized_alias in seen_aliases:
-                continue
-            aliases.append(alias)
-            seen_aliases.add(normalized_alias)
-            if len(aliases) == 20:
-                break
+        entity_read = _public_entity_read(entity)
         items.append(
             EntitySearchItemRead(
-                **_public_entity_read(entity).model_dump(),
-                aliases=aliases,
+                **{**entity_read.model_dump(), "aliases": entity_read.aliases[:20]},
                 match=match_payload,
             )
         )

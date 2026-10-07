@@ -68,6 +68,13 @@ class TargetProfileFact(StrictModel):
     citation: Citation
 
 
+class EntityAliasFact(StrictModel):
+    fact_kind: Literal["entity_alias"]
+    subject: EntityReference
+    alias: str = Field(min_length=1, max_length=500, pattern=r"\S")
+    citation: Citation
+
+
 class TargetEvidenceFact(StrictModel):
     fact_kind: Literal["target_evidence"]
     record_identifier: str = Field(min_length=1, max_length=240)
@@ -756,6 +763,7 @@ class NewsFact(StrictModel):
 
 ExtractedFact = Annotated[
     ClaimFact
+    | EntityAliasFact
     | TargetProfileFact
     | TargetEvidenceFact
     | StructureFact

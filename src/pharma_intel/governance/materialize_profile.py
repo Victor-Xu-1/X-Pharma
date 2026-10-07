@@ -7,8 +7,9 @@ from sqlalchemy import select
 
 from pharma_intel.governance.fact_identity import _projection
 from pharma_intel.governance.materialization_context import MaterializationContext
+from pharma_intel.governance.materialize_names import publish_alias
 from pharma_intel.identity import normalize_name
-from pharma_intel.models import EntityAlias, OutboxEvent, StagedFact, TargetProfile
+from pharma_intel.models import StagedFact, TargetProfile
 
 
 def materialize_target_profile(
@@ -35,27 +36,6 @@ def materialize_target_profile(
     # its drugs. It must be projected through the existing alias authority.
     gene = str(payload.get("gene_symbol") or "").strip()
     if gene and normalize_name(gene) != subject.normalized_name:
-        existing = context.session.scalar(
-            select(EntityAlias.id).where(
-                EntityAlias.tenant_id == context.tenant_id,
-                EntityAlias.entity_id == subject.id,
-                EntityAlias.normalized_alias == normalize_name(gene),
-            )
-        )
-        if existing is None:
-            context.session.add(
-                EntityAlias(
-                    tenant_id=context.tenant_id, entity_id=subject.id, alias=gene, normalized_alias=normalize_name(gene)
-                )
-            )
-            context.session.add(
-                OutboxEvent(
-                    tenant_id=context.tenant_id,
-                    aggregate_type="entity",
-                    aggregate_id=subject.id,
-                    event_type="canonical.entity.upserted",
-                    payload={"entity_id": subject.id, "schema_version": 1},
-                )
-            )
+        publish_alias(context, subject, gene)
     context.session.flush()
     return [_projection("target_profile", profile.id)]

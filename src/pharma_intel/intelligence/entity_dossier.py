@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from typing import Literal
 
 from sqlalchemy import and_, or_, select, true
+from sqlalchemy.orm import selectinload
 
 from pharma_intel.intelligence.bioactivity import bioactivities_for_entity, target_evidence_for_entity
 from pharma_intel.intelligence.clinical_filters import _clinical_trial_filters
@@ -162,6 +163,7 @@ def entity_dossier(context: QueryContext, entity_id: str, limit: int = 50) -> En
 def relationships(context: QueryContext, entity_id: str, limit: int, offset: int = 0) -> list[EntityRelationshipRead]:
     rows = context.session.execute(
         select(Relationship, Entity)
+        .options(selectinload(Entity.aliases))
         .join(
             Entity,
             and_(

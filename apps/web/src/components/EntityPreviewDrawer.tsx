@@ -6,6 +6,7 @@ import { publicEntityAttributeLabels, publicEntityAttributes } from "../lib/publ
 import type { Entity } from "../lib/types";
 import { useModalFocus } from "../lib/useModalFocus";
 import { EmptyState, ErrorState, formatDate, Spinner } from "./common";
+import { EntityNames } from "./EntityNames";
 
 function readableAttribute(value: unknown): string {
   if (value === null || value === undefined) return "-";
@@ -73,6 +74,7 @@ export function EntityPreviewDrawer({
               <span>更新于 {formatDate(entity.updated_at)}</span>
             </div>
             {explanation ? <p className="entity-match-detail">{explanation}</p> : null}
+            <EntityNames entity={entity} />
             <section>
               <h3>实体摘要</h3>
               <p>{entity.description || "暂无摘要"}</p>
@@ -93,22 +95,19 @@ export function EntityPreviewDrawer({
                 ) : null}
               </dl>
             </section>
-            <section>
-              <h3>补充信息</h3>
-              <dl>
-                {attributes.map(([key, value]) => (
-                  <div className="entity-detail-row" key={key}>
-                    <dt>{publicEntityAttributeLabels[key] ?? key}</dt>
-                    <dd>{readableAttribute(value)}</dd>
-                  </div>
-                ))}
-                {!attributes.length ? (
-                  <div className="entity-detail-row">
-                    <dd>暂无补充信息</dd>
-                  </div>
-                ) : null}
-              </dl>
-            </section>
+            {attributes.length ? (
+              <section>
+                <h3>补充信息</h3>
+                <dl>
+                  {attributes.map(([key, value]) => (
+                    <div className="entity-detail-row" key={key}>
+                      <dt>{publicEntityAttributeLabels[key] ?? key}</dt>
+                      <dd>{readableAttribute(value)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            ) : null}
             <footer>
               {entity.entity_type === "target" && onOpenTargetPipeline ? (
                 <>

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 from sqlalchemy import select
@@ -14,10 +14,12 @@ from pharma_intel.governance.chembl_enrichment import (
     ChemblStructure,
     enrichment_facts,
 )
+from pharma_intel.governance.chembl_names import name_facts
 from pharma_intel.governance.contracts import OFFICIAL_SOURCE_UPDATE_POLICY
 from pharma_intel.governance.schemas import (
     ActivityFact,
     Citation,
+    EntityAliasFact,
     EntityReference,
     ProgramFact,
     ProgramTargetFact,
@@ -41,8 +43,10 @@ from pharma_intel.program_semantics import (
 )
 
 ADAPTER_NAME = "chembl_mechanism_json"
-ADAPTER_VERSION = "1.3.2"
-SNAPSHOT_SCHEMA = "pharma.chembl.mechanism.v2"
+ADAPTER_VERSION = "1.4.0"
+SNAPSHOT_SCHEMA = "pharma.chembl.mechanism.v3"
+
+AliasName = Annotated[str, Field(min_length=1, max_length=500, pattern=r"\S")]
 
 
 class _SnapshotModel(BaseModel):
@@ -56,6 +60,7 @@ class ChemblTarget(_SnapshotModel):
     organism: str | None = Field(default=None, max_length=160)
     gene_symbol: str | None = Field(default=None, max_length=80)
     uniprot_accession: str | None = Field(default=None, pattern=r"^[A-Z0-9]{6,10}$")
+    aliases: list[AliasName] = Field(default_factory=list, max_length=200)
 
 
 class _PhasedSnapshotModel(_SnapshotModel):
@@ -72,6 +77,7 @@ class ChemblMolecule(_PhasedSnapshotModel):
     pref_name: str = Field(min_length=1, max_length=500)
     molecule_type: str | None = Field(default=None, max_length=120)
     structure: ChemblStructure | None = None
+    aliases: list[AliasName] = Field(default_factory=list, max_length=200)
 
 
 class ChemblMechanismReference(_SnapshotModel):
@@ -106,7 +112,7 @@ class ChemblSource(_SnapshotModel):
 
 
 class ChemblSnapshot(_SnapshotModel):
-    schema_version: Literal["pharma.chembl.mechanism.v1", "pharma.chembl.mechanism.v2"]
+    schema_version: Literal["pharma.chembl.mechanism.v1", "pharma.chembl.mechanism.v2", "pharma.chembl.mechanism.v3"]
     provider: Literal["ChEMBL"]
     target: ChemblTarget
     molecule: ChemblMolecule
@@ -118,6 +124,10 @@ class ChemblSnapshot(_SnapshotModel):
 
     @model_validator(mode="after")
     def validate_enrichment_scope(self) -> ChemblSnapshot:
+        if self.schema_version != SNAPSHOT_SCHEMA and (self.target.aliases or self.molecule.aliases):
+            raise ValueError("Source-reported names require v3 snapshots")
+        if self.target.aliases and self.target.target_type != "SINGLE PROTEIN":
+            raise ValueError("Component synonyms cannot name a non-single-protein target")
         if self.schema_version.endswith("v1") and (self.activities or self.molecule.structure):
             raise ValueError("Legacy snapshots cannot include v2 enrichment")
         if len(self.activities) != self.activity_coverage.fetched - self.activity_coverage.excluded:
@@ -136,6 +146,7 @@ class ChemblRecord:
     mechanism_id: int
     enrichment: tuple[StructureFact | ActivityFact, ...] = ()
     activity_coverage: ChemblActivityCoverage | None = None
+    names: tuple[EntityAliasFact, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -264,6 +275,7 @@ def adapter_policy_manifest() -> dict[str, object]:
         "phase_scope": "Reported maximum across indications; no regional approval or current status inference.",
         "status_policy": "ChEMBL mechanism records do not establish current active status; status remains unset.",
         "license": "CC BY-SA 3.0",
+        "name_policy": "Reported molecule synonyms and single-protein component names; no inferred aliases or merges.",
     }
 
 
@@ -355,4 +367,8 @@ def parse_chembl_snapshot(content: bytes) -> ChemblRecord:
             )
         ),
         activity_coverage=snapshot.activity_coverage,
+        names=(
+            *name_facts(target_profile.subject, snapshot.target.aliases, resource="target"),
+            *name_facts(fact.drug, snapshot.molecule.aliases, resource="molecule"),
+        ),
     )

@@ -25,7 +25,13 @@ export function ExplorerRoute({ context }: { context: ResearchRouteContext }) {
       initialAnalysisView={location.explorerAnalysisView ?? "chart"}
       initialSelectedEntityId={location.entityId}
       invalidSelectedEntityId={location.invalidEntityId}
-      selectedEntity={selectedEntity?.id === location.entityId ? selectedEntity : (routeEntity.data ?? null)}
+      selectedEntity={
+        routeEntity.data?.id === location.entityId
+          ? routeEntity.data
+          : selectedEntity?.id === location.entityId
+            ? selectedEntity
+            : null
+      }
       selectedEntityLoading={routeEntity.isFetching && selectedEntity?.id !== location.entityId}
       selectedEntityError={routeEntity.error instanceof Error ? routeEntity.error.message : ""}
       onSearchChange={(query, entityTypes, reviewStatus, sortBy, sortDirection, offset, sort, includeRelated) =>

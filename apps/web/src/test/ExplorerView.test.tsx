@@ -19,6 +19,7 @@ import { loadPipelineFacetCatalog } from "../lib/contracts/pipeline";
 import { loadRegulatoryFacetCatalog } from "../lib/contracts/regulatory";
 import { loadTargetProfile } from "../lib/contracts/target";
 import { resolveProfessionalDatePreset } from "../lib/professionalSearch";
+import type { Entity } from "../lib/types";
 import { ExplorerView } from "../views/ExplorerView";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
@@ -675,6 +676,38 @@ it("cancels an in-flight governed search and retries with the retained filters",
   fireEvent.click(screen.getByRole("button", { name: "重新查询" }));
   expect(await screen.findByRole("table", { name: "实体检索结果" })).toBeVisible();
   expect(searchEntities).toHaveBeenCalledTimes(2);
+});
+
+it("replaces a lightweight row snapshot with the authoritative full preview without losing match context", async () => {
+  const onSelectedEntityChange = vi.fn();
+  const renderPreview = (selectedEntity: Entity | null, initialSelectedEntityId: string | null) => (
+    <ExplorerView
+      initialQuery="EGFR"
+      initialEntityType="target"
+      initialReviewStatus="verified"
+      onSearchChange={vi.fn()}
+      onOpenEntity={vi.fn()}
+      onOpenSpecializedSearch={vi.fn()}
+      initialSelectedEntityId={initialSelectedEntityId}
+      selectedEntity={selectedEntity}
+      onSelectedEntityChange={onSelectedEntityChange}
+    />
+  );
+  const rendered = renderWithQueryClient(renderPreview(null, null));
+  await screen.findByRole("button", { name: "EGFR" });
+  fireEvent.click(screen.getByRole("button", { name: "查看 EGFR 实体详情" }));
+  const complete = {
+    ...target,
+    match: undefined,
+    description: "Full authoritative description",
+    aliases: Array.from({ length: 30 }, (_, index) => `CODE-${index}`),
+  };
+  rendered.rerender(renderPreview(complete, target.id));
+  const drawer = screen.getByRole("dialog", { name: "EGFR" });
+  expect(within(drawer).getByText("Full authoritative description")).toBeVisible();
+  fireEvent.click(within(drawer).getByText("更多别名（24）"));
+  expect(within(drawer).getByText("CODE-29")).toBeVisible();
+  expect(within(drawer).getByText("别名精确匹配：ERBB1")).toBeVisible();
 });
 
 it("restores, closes and reports states for a URL-controlled quick detail", async () => {

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from pharma_intel.accounts.identity import create_account
 from pharma_intel.config import Settings
 from pharma_intel.governance.citations import _quote_source_match
-from pharma_intel.governance.contracts import DocumentSegment
+from pharma_intel.governance.contracts import SCHEMA_VERSION, DocumentSegment
 from pharma_intel.governance.materialize_programs import materialize_program
 from pharma_intel.governance.model_gateway import (
     ExtractionResponse,
@@ -673,7 +673,7 @@ def test_ai_facts_are_quote_gated_reviewed_published_and_compiled(
     assert result["rejected"] == 1
     extraction_run = session.get(ExtractionRun, result["run_id"])
     assert extraction_run is not None
-    assert extraction_run.schema_version == "2.13.0"
+    assert extraction_run.schema_version == SCHEMA_VERSION
     assert float(extraction_run.estimated_cost or 0) == 0.0005
     assert extraction_run.structured_output is not None
     assert extraction_run.structured_output["segments"][0]["quote_verified_count"] == 12

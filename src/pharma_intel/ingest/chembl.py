@@ -20,6 +20,7 @@ from pydantic import ConfigDict, Field, ValidationError, field_validator, model_
 
 from pharma_intel.config import Settings
 from pharma_intel.ingest.chembl_enrichment import activity_page, molecule_structure
+from pharma_intel.ingest.chembl_names import provider_names
 from pharma_intel.ingest.chembl_sync import normalize_mechanism, prepare_mechanism_cycle
 from pharma_intel.ingest.connectors import (
     ConnectorCapabilities,
@@ -44,7 +45,7 @@ CHEMBL_TARGET_URL = f"{CHEMBL_API_ROOT}target/{{target_chembl_id}}.json"
 CHEMBL_MOLECULE_URL = f"{CHEMBL_API_ROOT}molecule.json"
 CHEMBL_ID_PATTERN = re.compile(r"^CHEMBL[0-9]+$")
 CHEMBL_MAX_PAGE_SIZE = 100
-CHEMBL_SNAPSHOT_SCHEMA = "pharma.chembl.mechanism.v2"
+CHEMBL_SNAPSHOT_SCHEMA = "pharma.chembl.mechanism.v3"
 CHEMBL_SNAPSHOT_TIME = datetime(1970, 1, 1, tzinfo=UTC)
 
 
@@ -479,13 +480,15 @@ def _target_summary(payload: dict[str, Any], expected_id: str) -> dict[str, Any]
         raise ConnectorTransportError("ChEMBL target response is missing pref_name")
     gene_symbol: str | None = None
     uniprot_accession: str | None = None
+    aliases: list[str] = []
     components = payload.get("target_components")
-    if isinstance(components, list):
-        component = next((item for item in components if isinstance(item, dict)), None)
+    if payload.get("target_type") == "SINGLE PROTEIN" and isinstance(components, list) and len(components) == 1:
+        component = components[0] if isinstance(components[0], dict) else None
         if component is not None:
             accession = str(component.get("accession") or "").strip().upper()
             uniprot_accession = accession[:20] or None
             synonyms = component.get("target_component_synonyms")
+            aliases = provider_names(synonyms, fields=("component_synonym",), canonical_name=pref_name, target=True)
             if isinstance(synonyms, list):
                 gene = next(
                     (
@@ -503,6 +506,7 @@ def _target_summary(payload: dict[str, Any], expected_id: str) -> dict[str, Any]
         "organism": str(payload.get("organism") or "")[:160] or None,
         "gene_symbol": gene_symbol,
         "uniprot_accession": uniprot_accession,
+        "aliases": aliases,
     }
 
 
@@ -514,9 +518,13 @@ def _molecule_summary(payload: dict[str, Any], expected_id: str) -> dict[str, An
         chembl_reported_phase_number(payload.get("max_phase"))
     except ValueError as exc:
         raise ConnectorTransportError("ChEMBL molecule response has an unsupported maximum phase") from exc
+    pref_name = str(payload.get("pref_name") or "").strip()[:500] or molecule_id
     return {
         "chembl_id": molecule_id,
-        "pref_name": str(payload.get("pref_name") or "").strip()[:500] or molecule_id,
+        "pref_name": pref_name,
+        "aliases": provider_names(
+            payload.get("molecule_synonyms"), fields=("molecule_synonym", "synonyms"), canonical_name=pref_name
+        ),
         "molecule_type": str(payload.get("molecule_type") or "")[:120] or None,
         "max_phase": payload.get("max_phase"),
         "structure": molecule_structure(payload),
