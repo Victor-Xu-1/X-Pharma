@@ -133,7 +133,7 @@ def govern_chembl(context: AdapterContext, version: SourceVersion) -> dict[str, 
                 source_locator=fact.citation.locator,
                 source_quote=fact.citation.quote,
             )
-            for index, fact in enumerate(record.enrichment, start=2)
+            for index, fact in enumerate((*record.enrichment, *record.names), start=2)
         )
     except ValueError as exc:
         error = GovernanceError(str(exc))

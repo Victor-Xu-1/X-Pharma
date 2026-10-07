@@ -87,6 +87,7 @@ from pharma_intel.governance.policy import (
 )
 from pharma_intel.governance.schemas import (
     ActivityFact,
+    EntityAliasFact,
     ExtractionEnvelope,
     ProgramFact,
     StructureFact,
@@ -619,7 +620,7 @@ class GovernanceService:
             and (
                 isinstance(fact, ProgramFact | TargetProfileFact)
                 or (
-                    isinstance(fact, StructureFact | ActivityFact)
+                    isinstance(fact, StructureFact | ActivityFact | EntityAliasFact)
                     and self._source_type_for_document(version.source_document_id) == DataSourceType.CHEMBL
                 )
             )

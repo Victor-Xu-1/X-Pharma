@@ -11,6 +11,7 @@ from pharma_intel.governance.materialize_events import (
     materialize_news,
     materialize_regulatory,
 )
+from pharma_intel.governance.materialize_names import materialize_entity_alias
 from pharma_intel.governance.materialize_profile import materialize_target_profile
 from pharma_intel.governance.materialize_programs import materialize_program
 from pharma_intel.governance.materialize_targets import materialize_target_evidence
@@ -26,6 +27,8 @@ def materialize_structured_fact(
     fact_kind = staged.fact_kind
     if fact_kind == "claim":
         return []
+    if fact_kind == "entity_alias":
+        return materialize_entity_alias(context, staged, payload)
     if fact_kind == "target_profile":
         return materialize_target_profile(context, staged, payload)
     if fact_kind == "target_evidence":

@@ -155,7 +155,8 @@ jobs:
       - name: Official source revision ordering and publication lock
         env:
           TEST_GOVERNANCE_PUBLICATION_DATABASE_URL: postgresql+psycopg://pharma_runtime:ci-runtime-password@127.0.0.1:5432/pharma_migration
-        run: uv run pytest -m integration tests/test_official_source_updates_postgres.py
+          TEST_ENTITY_NAMES_DATABASE_URL: postgresql+psycopg://pharma_runtime:ci-runtime-password@127.0.0.1:5432/pharma_migration
+        run: uv run pytest -m integration tests/test_official_source_updates_postgres.py tests/test_chembl_names_postgres.py
 
   frontend:
     runs-on: ubuntu-24.04

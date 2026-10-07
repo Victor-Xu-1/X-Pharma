@@ -10,6 +10,7 @@ from pharma_intel.governance.schemas import (
     ActivityFact,
     ClaimFact,
     DealFact,
+    EntityAliasFact,
     EpidemiologyFact,
     ExtractedFact,
     NewsFact,
@@ -47,6 +48,12 @@ def _hash_identity(identity: dict[str, Any]) -> str:
 
 
 def _fact_identity(fact: ExtractedFact) -> dict[str, Any]:
+    if isinstance(fact, EntityAliasFact):
+        return {
+            "kind": fact.fact_kind,
+            "subject": _entity_identity(fact.subject.model_dump(mode="json")),
+            "alias": " ".join(fact.alias.casefold().split()),
+        }
     if isinstance(fact, ClaimFact):
         return {
             "kind": fact.fact_kind,

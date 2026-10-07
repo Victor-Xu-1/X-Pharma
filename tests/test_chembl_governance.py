@@ -88,9 +88,10 @@ def _version(
     session: Session,
     tenant: Tenant,
     tmp_path: Path,
+    content: bytes | None = None,
 ) -> tuple[FileSystemObjectStore, SourceVersion]:
     store = FileSystemObjectStore(tmp_path / "objects")
-    content = _snapshot()
+    content = content if content is not None else _snapshot()
     digest = hashlib.sha256(content).hexdigest()
     raw = store.put_bytes(tenant.id, "raw", content, digest, ".json")
     extracted = b"chembl snapshot"

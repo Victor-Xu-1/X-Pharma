@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Dna } from "lucide-react";
 import { useState } from "react";
 import { EmptyState, ErrorState, formatDate, Spinner } from "../components/common";
+import { EntityNames } from "../components/EntityNames";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
 import type {
@@ -169,6 +170,7 @@ export function TargetView({
             />
           ) : null}
         </div>
+        <EntityNames entity={data.profile.entity} />
         <dl className="dossier-metrics">
           <div>
             <dt>基因符号</dt>

@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "../components/common";
 import { DossierCoverageDisclosure } from "../components/DossierCoverageDisclosure";
+import { EntityNames } from "../components/EntityNames";
 import { MoleculeDepiction } from "../components/MoleculeDepiction";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
@@ -184,6 +185,7 @@ export function DrugView({
           </div>
         </header>
 
+        <EntityNames entity={data.entity} />
         <dl className="dossier-metrics drug-profile-metrics">
           <div>
             <dt>最高阶段</dt>

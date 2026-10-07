@@ -30,6 +30,7 @@ export interface Entity {
   id: string;
   entity_type: EntityType;
   name: string;
+  aliases?: string[];
   description: string | null;
   external_ids: Record<string, string>;
   attributes: Record<string, unknown>;

@@ -6,6 +6,7 @@ import type { EntityIdentifierRead } from './EntityIdentifierRead';
 import type { EntityType } from './EntityType';
 import type { ReviewStatus } from './ReviewStatus';
 export type EntityRead = {
+  aliases?: Array<string>;
   attributes: Record<string, any>;
   canonical_entity_id: string;
   created_at: string;

@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import and_, case, func, select, union_all
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.elements import ColumnElement
 
 from pharma_intel.intelligence.context import QueryContext
@@ -160,7 +161,9 @@ def drug_comparison_profiles(context: QueryContext, entity_ids: Sequence[str]) -
     ]
     if not context.include_unpublished:
         entity_filters.append(Entity.review_status == ReviewStatus.VERIFIED)
-    entities = list(context.session.scalars(select(Entity).where(*entity_filters)))
+    entities = list(
+        context.session.scalars(select(Entity).options(selectinload(Entity.aliases)).where(*entity_filters))
+    )
     entities_by_id = {entity.id: entity for entity in entities}
 
     program_filters: list[ColumnElement[bool]] = [
