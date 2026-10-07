@@ -1509,6 +1509,7 @@ export function TrialsView({
                     onClick={() => {
                       setSaveName(initialQuery.trim() || "临床试验情报监控");
                       setSaveMessage("");
+                      save.reset();
                       setSaveOpen(true);
                     }}
                   >
@@ -1579,8 +1580,8 @@ export function TrialsView({
           ) : null}
         </ProfessionalQueryState>
       </section>
-      {saveMessage ? (
-        <p className="inline-feedback" role="status">
+      {saveMessage && !saveOpen ? (
+        <p className={save.isError ? "inline-error" : "inline-feedback"} role={save.isError ? "alert" : "status"}>
           {saveMessage}
         </p>
       ) : null}
@@ -1591,6 +1592,7 @@ export function TrialsView({
         shared={saveShared}
         monitor={saveMonitor}
         pending={save.isPending}
+        error={save.isError ? saveMessage : ""}
         onNameChange={setSaveName}
         onSharedChange={setSaveShared}
         onMonitorChange={setSaveMonitor}

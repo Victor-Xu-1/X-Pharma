@@ -145,7 +145,7 @@ it("loads a searchable page index and a separately cached immutable version", as
   fireEvent.click(await screen.findByRole("button", { name: /EGFR landscape/ }));
   expect(await screen.findByRole("heading", { name: "EGFR landscape" })).toBeInTheDocument();
   expect(getKnowledgePage).toHaveBeenCalledWith("page-1", expect.any(AbortSignal));
-  expect(screen.getByText(/EGFR knowledge with citations/)).toBeInTheDocument();
+  expect(screen.getByText(/EGFR knowledge with citations/, { selector: ".knowledge-reading > p" })).toBeInTheDocument();
   expect(document.body).not.toHaveTextContent("internal-entity-id");
   expect(document.body).not.toHaveTextContent("schema_version");
   expect(document.body).not.toHaveTextContent("knowledge-compiler-v2");
@@ -158,6 +158,83 @@ it("loads a searchable page index and a separately cached immutable version", as
     { query: "EGFR", offset: 0, pageType: "", sortBy: "title", sortDirection: "asc" },
     expect.any(AbortSignal),
   );
+});
+
+it("renders readable document structure, traceable references and safe public links instead of raw Markdown", async () => {
+  vi.mocked(getKnowledgePage).mockResolvedValue({
+    ...summary,
+    rendered_markdown: [
+      "# EGFR landscape",
+      "## 研究摘要",
+      "**已记录的证据** [原始来源](https://example.org/public-source).[^1]",
+      "",
+      "| 指标 | 数值 |",
+      "| --- | --- |",
+      "| 已记录项目 | 0 |",
+      "",
+      "[危险链接](javascript:alert(1))",
+      "![远程图像](https://invalid.example/tracker.png)",
+      "<script>alert('untrusted')</script>",
+      "",
+      "[^1]: 原始来源 · 定位 page=4",
+    ].join("\n"),
+    source_snapshot_at: "2026-07-18T10:00:00Z",
+    version_number: 2,
+  });
+  renderWithQueryClient(<KnowledgeView initialPageId="page-1" />);
+  const panel = await screen.findByRole("tabpanel", { name: "专题正文" });
+  expect(within(panel).getByRole("heading", { name: "研究摘要", level: 3 })).toBeVisible();
+  expect(within(panel).getByRole("link", { name: "原始来源" })).toHaveAttribute(
+    "href",
+    "https://example.org/public-source",
+  );
+  const table = within(panel).getByRole("table", { name: "专题表格" });
+  expect(within(table).getByRole("cell", { name: "已记录项目" })).toBeVisible();
+  expect(within(table).getByRole("cell", { name: "0" })).toBeVisible();
+  expect(within(panel).getByRole("heading", { name: "引用与来源" })).toBeVisible();
+  expect(within(panel).queryByRole("link", { name: "危险链接" })).not.toBeInTheDocument();
+  expect(panel.querySelector("script,img,iframe")).toBeNull();
+  expect(screen.getAllByRole("heading", { name: "EGFR landscape" })).toHaveLength(1);
+});
+
+it("presents a structured alias change without dropping its literal original value or embedded locator", async () => {
+  const value = {
+    fact_kind: "entity_alias",
+    subject: { entity_type: "drug", name: "Reviewed Drug" },
+    alias: "AC-0010",
+    citation: { locator: "molecule:reviewed:alias:1", quote: "Exact submitted public quote", confidence: 0 },
+  };
+  vi.mocked(getKnowledgePageVersionDiff).mockResolvedValue({
+    added_fact_count: 1,
+    added_facts: [
+      {
+        change_key: "alias-change",
+        object_entity_name: null,
+        predicate: "has_entity_alias",
+        source_title: null,
+        source_locator: null,
+        value,
+      },
+    ],
+    added_source_count: 0,
+    added_sources: [],
+    from_version_number: 1,
+    to_version_number: 2,
+    removed_fact_count: 0,
+    removed_facts: [],
+    removed_source_count: 0,
+    removed_sources: [],
+    truncated: false,
+  });
+  renderWithQueryClient(<KnowledgeView initialPageId="page-1" initialPanel="coverage" />);
+  const change = await screen.findByRole("region", { name: "新增要点" });
+  expect(within(change).getByText("别名")).toBeVisible();
+  expect(within(change).getByText("AC-0010 · Reviewed Drug")).toBeVisible();
+  expect(within(change).getByText(/molecule:reviewed:alias:1/, { selector: "small" })).toBeVisible();
+  const original = within(change).getByText("原始结构化记录", { selector: "summary" });
+  fireEvent.click(original);
+  expect(within(change).getByLabelText("完整原始结构化值")).toHaveValue(JSON.stringify(value, null, 2));
+  expect(document.body).not.toHaveTextContent("无来源标题");
 });
 
 it("shows source coverage and lets the user inspect traceable version differences", async () => {

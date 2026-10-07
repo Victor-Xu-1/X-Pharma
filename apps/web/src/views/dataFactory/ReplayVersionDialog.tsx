@@ -1,5 +1,6 @@
 import { RotateCcw, X } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { FormStatus } from "../../components/FormStatus";
 import type { SourceVersionReplayStage } from "../../lib/contracts/dataFactory";
 import { useModalFocus } from "../../lib/useModalFocus";
 
@@ -45,6 +46,7 @@ export function ReplayVersionDialog({
         className="modal-panel"
         role="dialog"
         aria-modal="true"
+        aria-busy={busy}
         aria-labelledby="replay-version-title"
         tabIndex={-1}
       >
@@ -72,6 +74,7 @@ export function ReplayVersionDialog({
           <label>
             <span>恢复起点</span>
             <select
+              disabled={busy}
               value={fromStage}
               onChange={(event) => setFromStage(event.target.value as SourceVersionReplayStage)}
             >
@@ -85,6 +88,7 @@ export function ReplayVersionDialog({
           <label>
             <span>重放原因</span>
             <textarea
+              disabled={busy}
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               minLength={3}
@@ -92,11 +96,7 @@ export function ReplayVersionDialog({
               required
             />
           </label>
-          {error ? (
-            <div className="inline-error" role="alert">
-              {error}
-            </div>
-          ) : null}
+          <FormStatus pending={busy} error={error} pendingLabel="正在提交版本重放请求" />
           <div className="form-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={busy}>
               取消

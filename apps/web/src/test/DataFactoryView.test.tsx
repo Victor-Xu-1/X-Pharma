@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import {
@@ -295,7 +295,12 @@ it("requires an audited decision and keeps malware rescans behind ClamAV", async
     quarantineCases: [quarantineCase],
   });
   vi.mocked(loadQuarantineCase).mockResolvedValue(quarantineCase);
-  vi.mocked(decideQuarantineCase).mockResolvedValue({
+  let resolveDecision!: (result: Awaited<ReturnType<typeof decideQuarantineCase>>) => void;
+  const decision = new Promise<Awaited<ReturnType<typeof decideQuarantineCase>>>((resolve) => {
+    resolveDecision = resolve;
+  });
+  vi.mocked(decideQuarantineCase).mockReturnValue(decision);
+  const acceptedDecision: Awaited<ReturnType<typeof decideQuarantineCase>> = {
     decision_id: "decision-rescan-1",
     source_version_id: quarantineCase.source_version_id,
     action: "rescan",
@@ -303,7 +308,7 @@ it("requires an audited decision and keeps malware rescans behind ClamAV", async
     quarantine_version: 2,
     workflow_id: "source-version-reprocess-version-quarantine-1",
     status: "accepted",
-  });
+  };
 
   renderWithQueryClient(<DataFactoryView user={user} />);
 
@@ -329,6 +334,17 @@ it("requires an audited decision and keeps malware rescans behind ClamAV", async
       reason: "Updated signatures require a complete controlled rescan",
     }),
   );
+  expect(screen.getByLabelText("处置动作")).toBeDisabled();
+  expect(screen.getByLabelText("处置原因")).toBeDisabled();
+  expect(screen.getByRole("dialog", { name: "隔离案件处置" })).toHaveAttribute("aria-busy", "true");
+  const pendingDialog = screen.getByRole("dialog", { name: "隔离案件处置" });
+  expect(within(pendingDialog).getByRole("status")).toHaveTextContent("正在提交隔离处置");
+  fireEvent.keyDown(document, { key: "Escape" });
+  const pendingForm = pendingDialog.querySelector("form");
+  if (!pendingForm) throw new Error("Expected a quarantine decision form");
+  fireEvent.submit(pendingForm);
+  expect(decideQuarantineCase).toHaveBeenCalledOnce();
+  await act(async () => resolveDecision(acceptedDecision));
   expect(await screen.findByText(/复扫工作流已提交/)).toBeInTheDocument();
 });
 

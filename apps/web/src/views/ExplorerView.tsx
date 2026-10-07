@@ -547,6 +547,7 @@ export function ExplorerView({
             title="保存当前已执行的查询条件"
             onClick={() => {
               setSaveName(initialQuery.trim() || "已执行检索监控");
+              save.reset();
               setSaveOpen(true);
               setSaveMessage("");
             }}
@@ -638,8 +639,8 @@ export function ExplorerView({
         }}
       />
 
-      {saveMessage ? (
-        <p className="inline-feedback" role="status">
+      {saveMessage && !saveOpen ? (
+        <p className={save.isError ? "inline-error" : "inline-feedback"} role={save.isError ? "alert" : "status"}>
           {saveMessage}
         </p>
       ) : null}
@@ -650,6 +651,7 @@ export function ExplorerView({
         shared={shared}
         monitor={monitor}
         pending={save.isPending}
+        error={save.isError ? saveMessage : ""}
         onNameChange={setSaveName}
         onSharedChange={setShared}
         onMonitorChange={setMonitor}

@@ -12,6 +12,7 @@
 | 数据工厂 | `ingest/commands/`、`ingest/` | 应用写入、来源、快照、安全解析、Temporal 和恢复 |
 | AI 治理 | `governance/`、`enterprise/llm_providers.py` | 模型访问、暂存、验证、审核与发布 |
 | 检索与知识 | `search/`、`knowledge/` | outbox delivery、搜索投影和版本知识 |
+| 知识阅读层 | `apps/web/src/views/knowledge/` | 安全的正文与引用、结构化字段渐进披露、不可变版本差异；保留完整公开原文，不取得事实发布或科学推断权威 |
 | 商业与协作 | `commercial/`、`comparison/`、`monitoring/` | 账本、权益、导出和团队工作流 |
 | 前端 | `apps/web/src/workspaces/research/`、`lib/contracts`、`components`、`views` | 导航状态、分域路由、传输和独立功能面板 |
 | 部署与工具 | `deploy/`、`services/`、`scripts/release/`、`scripts/`、`runbooks/` | 安装、隔离组件、发布证据、门禁、恢复与运维 |

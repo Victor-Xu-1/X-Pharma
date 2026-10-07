@@ -250,12 +250,6 @@
   margin: 4px 0 0;
   font-size: var(--ds-text-xs);
 }
-.markdown-document {
-  font-size: var(--ds-text-sm);
-  line-height: 1.75;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
 .knowledge-tabs {
   margin-top: 2px;
 }

@@ -1003,6 +1003,42 @@ it("saves the statistics presentation state with the entity query", async () => 
   });
 });
 
+it("presents a rejected save in the active dialog and retains the same query for an explicit retry", async () => {
+  vi.mocked(saveEntitySearch)
+    .mockRejectedValueOnce(new Error("暂时无法保存，请重试"))
+    .mockResolvedValueOnce({ message: "检索已保存" });
+  renderWithQueryClient(
+    <ExplorerView
+      initialQuery="EGFR"
+      initialEntityType="target"
+      initialReviewStatus="verified"
+      onSearchChange={vi.fn()}
+      onOpenEntity={vi.fn()}
+      onOpenSpecializedSearch={vi.fn()}
+    />,
+  );
+  await screen.findByRole("table", { name: "实体检索结果" });
+  const opener = screen.getByRole("button", { name: "保存检索" });
+  fireEvent.click(opener);
+  const dialog = screen.getByRole("dialog", { name: "保存当前检索" });
+  fireEvent.change(within(dialog).getByLabelText("名称"), { target: { value: "Reviewed EGFR query" } });
+  fireEvent.click(within(dialog).getByLabelText("企业内共享该检索"));
+  fireEvent.click(within(dialog).getByRole("button", { name: "确认保存" }));
+
+  expect(await within(dialog).findByRole("alert")).toHaveTextContent("暂时无法保存，请重试");
+  expect(screen.getAllByRole("alert")).toHaveLength(1);
+  expect(within(dialog).getByLabelText("名称")).toHaveValue("Reviewed EGFR query");
+  expect(within(dialog).getByLabelText("企业内共享该检索")).toBeChecked();
+  expect(saveEntitySearch).toHaveBeenCalledOnce();
+  const submitted = vi.mocked(saveEntitySearch).mock.calls[0];
+  fireEvent.click(within(dialog).getByRole("button", { name: "确认保存" }));
+  expect(await screen.findByText("检索已保存")).toBeVisible();
+  expect(saveEntitySearch).toHaveBeenCalledTimes(2);
+  expect(vi.mocked(saveEntitySearch).mock.calls[1]).toEqual(submitted);
+  fireEvent.click(opener);
+  expect(within(screen.getByRole("dialog", { name: "保存当前检索" })).queryByRole("alert")).not.toBeInTheDocument();
+});
+
 it("never commits another query's rows while restoring applied conditions", async () => {
   const previousResult = await searchEntities("EGFR", ["target"], "verified");
   let releaseNext: ((value: EntitySearchResult) => void) | undefined;
