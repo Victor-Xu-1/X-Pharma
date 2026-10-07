@@ -23,13 +23,55 @@ export function useDismissibleDetails({ dismissible = true }: { dismissible?: bo
         details.open = false;
       }
     };
-    // Check native open synchronously: toggle is deferred and can otherwise
-    // miss a quick outside gesture. Closing never resets selections or drafts.
-    document.addEventListener("pointerdown", dismissOutside, true);
-    document.addEventListener("focusin", dismissOutside);
+    let pointerActive = false;
+    let releaseTimer: number | undefined;
+    function releasePointer() {
+      window.clearTimeout(releaseTimer);
+      releaseTimer = undefined;
+      pointerActive = false;
+    }
+    function beginPointer() {
+      window.clearTimeout(releaseTimer);
+      pointerActive = true;
+    }
+    const finishPointer = () => {
+      window.clearTimeout(releaseTimer);
+      // Click follows pointer-up. Defer the fallback for canceled/non-clicking
+      // gestures until the intended target has completed its activation.
+      releaseTimer = window.setTimeout(() => {
+        releasePointer();
+        if (details.open && !details.contains(document.activeElement)) details.open = false;
+      }, 0);
+    };
+    function dismissOnClick(event: Event) {
+      const userActivation = pointerActive || event.isTrusted || (event instanceof MouseEvent && event.detail > 0);
+      releasePointer();
+      // A managed blob download also dispatches an untrusted click from outside
+      // the form. It must not hide the completed operation's feedback.
+      if (userActivation) dismissOutside(event);
+    }
+    function dismissOnFocus(event: Event) {
+      if (!pointerActive) dismissOutside(event);
+    }
+    // Closing an in-flow disclosure on pointer-down/focus can move the next
+    // summary before pointer-up and swallow its click. Keep geometry stable for
+    // that gesture; keyboard focus departure still dismisses immediately.
+    document.addEventListener("pointerdown", beginPointer, true);
+    document.addEventListener("pointerup", finishPointer, true);
+    document.addEventListener("pointercancel", finishPointer, true);
+    document.addEventListener("click", dismissOnClick);
+    document.addEventListener("contextmenu", dismissOnClick);
+    document.addEventListener("keydown", releasePointer, true);
+    document.addEventListener("focusin", dismissOnFocus);
     return () => {
-      document.removeEventListener("pointerdown", dismissOutside, true);
-      document.removeEventListener("focusin", dismissOutside);
+      releasePointer();
+      document.removeEventListener("pointerdown", beginPointer, true);
+      document.removeEventListener("pointerup", finishPointer, true);
+      document.removeEventListener("pointercancel", finishPointer, true);
+      document.removeEventListener("click", dismissOnClick);
+      document.removeEventListener("contextmenu", dismissOnClick);
+      document.removeEventListener("keydown", releasePointer, true);
+      document.removeEventListener("focusin", dismissOnFocus);
     };
   }, [details, dismissible]);
 
