@@ -11,25 +11,14 @@ import {
   loadEntityDossier,
 } from "../lib/contracts/entityDossier";
 import { phaseLabels } from "../lib/dealDisplay";
+import { entityTypeLabel } from "../lib/entityPresentation";
 import { programModalityLabel } from "../lib/programDisplay";
 import { isPublicEntityIdentifierNamespace } from "../lib/publicEntity";
 import { EmptyState, ErrorState, formatDate, Spinner } from "./common";
+import { EntityIdentityLabel } from "./EntityIdentityLabel";
 import { ScrollableTableRegion } from "./ScrollableTableRegion";
 
 type CoverageDomain = EntityDossier["coverage"][number]["domain"];
-
-const entityTypeLabels: Record<CollectionEntity["entity_type"], string> = {
-  target: "靶点",
-  drug: "药物",
-  organization: "机构",
-  disease: "疾病",
-  clinical_trial: "临床试验",
-  patent: "专利",
-  transaction: "交易",
-  product: "产品",
-  technology: "技术",
-  person: "人员",
-};
 
 const coverageRows: ReadonlyArray<{ domain: CoverageDomain; label: string }> = [
   { domain: "relationships", label: "关联信息" },
@@ -377,7 +366,7 @@ export function CollectionComparisonMatrix({
                 >
                   <span>
                     <strong>{dossier.entity.name}</strong>
-                    <small>{entityTypeLabels[dossier.entity.entity_type]}</small>
+                    <small>{entityTypeLabel(dossier.entity)}</small>
                   </span>
                   <ExternalLink size={15} aria-hidden="true" />
                 </button>
@@ -392,7 +381,7 @@ export function CollectionComparisonMatrix({
           <ComparisonRow
             label="类型"
             dossiers={dossiers}
-            render={(dossier) => entityTypeLabels[dossier.entity.entity_type]}
+            render={(dossier) => <EntityIdentityLabel entity={dossier.entity} />}
           />
           <ComparisonRow
             label="说明"

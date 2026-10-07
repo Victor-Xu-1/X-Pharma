@@ -3,6 +3,7 @@ import { Columns3, Plus, Search, Trash2, X } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { CollectionComparisonMatrix } from "../../components/CollectionComparisonMatrix";
 import { EmptyState, ErrorState, formatDate, Spinner } from "../../components/common";
+import { EntityIdentityLabel } from "../../components/EntityIdentityLabel";
 import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import {
   type CollectionDetail,
@@ -10,22 +11,11 @@ import {
   collectionsKeys,
   searchCollectionEntities,
 } from "../../lib/contracts/collections";
+import { entityTypeLabel } from "../../lib/entityPresentation";
 import { isPublicEntityIdentifierNamespace } from "../../lib/publicEntity";
 
 const maxCompared = 4;
 const helpId = "collection-comparison-selection-help";
-const labels: Record<CollectionEntity["entity_type"], string> = {
-  target: "靶点",
-  drug: "药物",
-  organization: "研发机构",
-  disease: "适应症",
-  clinical_trial: "临床试验",
-  patent: "专利",
-  transaction: "交易",
-  product: "产品",
-  technology: "技术",
-  person: "人员",
-};
 
 export function CollectionMembers({
   detail,
@@ -132,7 +122,7 @@ export function CollectionMembers({
                 <Plus size={14} />
                 <span>
                   <strong>{entity.name}</strong>
-                  <small>{labels[entity.entity_type]}</small>
+                  <small>{entityTypeLabel(entity)}</small>
                 </span>
               </button>
             ))}
@@ -214,7 +204,9 @@ export function CollectionMembers({
                           <small>{member.entity.description}</small>
                         </button>
                       </td>
-                      <td>{labels[member.entity.entity_type]}</td>
+                      <td>
+                        <EntityIdentityLabel entity={member.entity} />
+                      </td>
                       <td>{identifiers || "未记录公共编号"}</td>
                       <td>{formatDate(member.entity.updated_at)}</td>
                       <td>

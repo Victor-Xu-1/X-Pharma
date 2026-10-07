@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Pencil, RefreshCw, Share2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type RefObject, useEffect, useState } from "react";
 import { EmptyState, ErrorState, formatDate, Spinner } from "../components/common";
 import { ResearchMetadataDialog } from "../components/ResearchMetadataDialog";
 import { ApiError } from "../lib/api";
@@ -15,6 +15,7 @@ import {
   updateComparisonSet,
 } from "../lib/contracts/collections";
 import { useCollectionCatalog } from "../lib/useCollectionCatalog";
+import { useSelectedRecordFocus } from "../lib/useSelectedRecordFocus";
 import { CollectionCatalog } from "./collections/CollectionCatalog";
 import { CollectionExport } from "./collections/CollectionExport";
 import { CollectionHistory } from "./collections/CollectionHistory";
@@ -41,12 +42,20 @@ export function CollectionsView({
     queryFn: ({ signal }) => getComparisonSet(activeId, signal),
     enabled: Boolean(activeId),
   });
-  const writes = useCollectionWrites(activeId, onLocationChange);
+  const selected = detailQuery.data;
+  const accessDenied = detailQuery.error instanceof ApiError && [401, 403, 404].includes(detailQuery.error.status);
+  const { headingRef, requestFocus } = useSelectedRecordFocus(
+    activeId || null,
+    Boolean(selected?.id === activeId && !detailQuery.isFetching && !detailQuery.error),
+  );
+  const navigate: Navigation = (id, entityIds, replace) => {
+    if (id && !replace) requestFocus(id);
+    onLocationChange(id, entityIds, replace);
+  };
+  const writes = useCollectionWrites(activeId, navigate);
   useEffect(() => {
     if (!activeCollectionId && activeId) onLocationChange(activeId, [], true);
   }, [activeCollectionId, activeId, onLocationChange]);
-  const selected = detailQuery.data;
-  const accessDenied = detailQuery.error instanceof ApiError && [401, 403, 404].includes(detailQuery.error.status);
   return (
     <section className="data-section collections-section">
       {writes.error ? (
@@ -64,7 +73,7 @@ export function CollectionsView({
           catalog={catalog}
           activeId={activeId}
           pending={writes.pending}
-          onSelect={(id) => onLocationChange(id, [], false)}
+          onSelect={(id) => navigate(id, [], false)}
           onCreate={(name, visibility) =>
             writes.write(() => createComparisonSet({ name, visibility }), "对比列表已创建", true)
           }
@@ -89,11 +98,12 @@ export function CollectionsView({
                 key={selected.id}
                 detail={selected}
                 comparedEntityIds={comparedEntityIds}
-                onLocationChange={onLocationChange}
+                onLocationChange={navigate}
                 onOpenEntity={onOpenEntity}
                 writes={writes}
                 refreshing={detailQuery.isFetching}
                 refresh={() => void detailQuery.refetch()}
+                headingRef={headingRef}
               />
             </>
           ) : (
@@ -116,6 +126,7 @@ function CollectionContent({
   writes,
   refreshing,
   refresh,
+  headingRef,
 }: {
   detail: CollectionDetail;
   comparedEntityIds: string[];
@@ -124,6 +135,7 @@ function CollectionContent({
   writes: ReturnType<typeof useCollectionWrites>;
   refreshing: boolean;
   refresh: () => void;
+  headingRef: RefObject<HTMLHeadingElement | null>;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
@@ -137,7 +149,9 @@ function CollectionContent({
     <>
       <div className="section-toolbar collection-heading" style={{ flexWrap: "wrap" }}>
         <span style={{ flex: "1 1 180px", minWidth: 0 }}>
-          <strong>{detail.name}</strong>
+          <h2 ref={headingRef} tabIndex={-1}>
+            {detail.name}
+          </h2>
           <small>{detail.description || `更新于 ${formatDate(detail.updated_at)}`}</small>
         </span>
         <div className="row-actions">

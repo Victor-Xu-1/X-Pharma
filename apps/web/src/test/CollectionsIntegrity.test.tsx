@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../lib/api";
 import {
   type CollectionDetail,
@@ -48,6 +48,45 @@ const first: CollectionDetail = {
   updated_at: "2026-10-04T00:00:00Z",
 };
 const second: CollectionDetail = { ...first, id: "22222222-2222-4222-8222-222222222222", name: "Second list" };
+
+describe("compact research directory", () => {
+  let previous: PropertyDescriptor | undefined;
+  beforeEach(() => {
+    previous = Object.getOwnPropertyDescriptor(window, "matchMedia");
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    });
+  });
+  afterEach(() => {
+    if (previous) Object.defineProperty(window, "matchMedia", previous);
+    else Reflect.deleteProperty(window, "matchMedia");
+  });
+  it("prioritizes the selected list and keeps its directory form draft reachable", async () => {
+    setup(first.id);
+    expect(await screen.findByRole("heading", { name: first.name })).toBeVisible();
+    const draft = screen.getByLabelText("列表名称");
+    expect(draft).not.toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "展开列表目录" }));
+    expect(draft).toBeVisible();
+    fireEvent.change(draft, { target: { value: "Retained new-list draft" } });
+    fireEvent.click(screen.getByRole("button", { name: "收起列表目录" }));
+    expect(draft).not.toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "展开列表目录" }));
+    expect(draft).toHaveValue("Retained new-list draft");
+  });
+  it("keeps one navigation authority and moves selection focus to the resulting list heading", async () => {
+    const result = setup(first.id);
+    await screen.findByRole("heading", { name: first.name });
+    fireEvent.click(screen.getByRole("button", { name: "展开列表目录" }));
+    fireEvent.click(screen.getByRole("button", { name: /Second list/ }));
+    expect(result.navigate).toHaveBeenLastCalledWith(second.id, [], false);
+    result.switchTo(second.id);
+    const heading = await screen.findByRole("heading", { name: second.name });
+    await waitFor(() => expect(heading).toHaveFocus());
+    expect(screen.getByLabelText("列表名称")).not.toBeVisible();
+  });
+});
 
 beforeEach(() => {
   vi.mocked(loadCollectionCatalog).mockResolvedValue({
