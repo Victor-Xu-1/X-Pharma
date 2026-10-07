@@ -46,4 +46,11 @@ describe("source-scoped identity presentation", () => {
     expect(relationshipLabel("has_competitor")).toBe("竞品关系");
     expect(relationshipLabel("custom_predicate")).toBe("custom_predicate");
   });
+
+  it.each(["constructor", "__proto__", "toString"])(
+    "treats an unknown inherited name as literal evidence: %s",
+    (predicate) => {
+      expect(relationshipLabel(predicate)).toBe(predicate);
+    },
+  );
 });

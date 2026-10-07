@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { BookOpenText, ChevronRight, FileText, History, Search, ShieldCheck } from "lucide-react";
+import { BookOpenText, ChevronRight, History, Search, ShieldCheck } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import "./knowledge-pagination.css";
 import "../styles/knowledge.css";
@@ -13,13 +13,15 @@ import {
   getKnowledgePageCoverage,
   getKnowledgePageVersionDiff,
   KNOWLEDGE_PAGE_SIZE,
-  type KnowledgeVersionDiff,
   knowledgeKeys,
   listKnowledgePageVersions,
   searchKnowledgePages,
 } from "../lib/contracts/knowledge";
-import { entityLabels, relationshipLabel } from "../lib/entityPresentation";
+import { entityLabels } from "../lib/entityPresentation";
 import type { KnowledgePanel } from "../lib/workspaceRouting";
+import { KnowledgeChangeList } from "./knowledge/KnowledgeChangeList";
+import { KnowledgeDocument } from "./knowledge/KnowledgeDocument";
+import { knowledgePredicateLabel } from "./knowledge/knowledgeReading";
 
 type KnowledgeLocation = {
   query: string;
@@ -32,72 +34,10 @@ type KnowledgeLocation = {
   sortDirection: "asc" | "desc";
 };
 
-function formatFactValue(value: unknown): string {
-  if (value === null || value === undefined) return "-";
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return "无法显示的结构化值";
-  }
-}
-
 function knowledgeTypeLabel(type: string): string {
   return type === "disease"
     ? "疾病/登记条件"
     : (entityLabels[type] ?? { topic: "研究专题", entity: "对象档案" }[type as "topic" | "entity"] ?? type);
-}
-
-function publicKnowledgeMarkdown(markdown: string): string {
-  const lines = markdown.replace(/\r\n?/g, "\n").split("\n");
-  if (lines[0]?.trim() !== "---") return markdown;
-  const closingDelimiter = lines.findIndex((line, index) => index > 0 && line.trim() === "---");
-  if (closingDelimiter < 2) return markdown;
-  const frontMatter = lines.slice(1, closingDelimiter);
-  if (!frontMatter.some((line) => /^[A-Za-z_][\w-]*\s*:/.test(line))) return markdown;
-  return lines
-    .slice(closingDelimiter + 1)
-    .join("\n")
-    .trimStart();
-}
-
-function ChangeList({ diff, kind }: { diff: KnowledgeVersionDiff; kind: "added" | "removed" }) {
-  const facts = kind === "added" ? diff.added_facts : diff.removed_facts;
-  const sources = kind === "added" ? diff.added_sources : diff.removed_sources;
-  const title = kind === "added" ? "新增" : "移除";
-  if (!facts.length && !sources.length) return null;
-  return (
-    <section className={`knowledge-change-group ${kind}`}>
-      <h4>{title}</h4>
-      {facts.length ? (
-        <div className="knowledge-change-list">
-          {facts.map((fact) => (
-            <article key={fact.change_key}>
-              <div>
-                <strong title={fact.predicate}>{relationshipLabel(fact.predicate)}</strong>
-                <span>{fact.object_entity_name || formatFactValue(fact.value)}</span>
-              </div>
-              <small>
-                {fact.source_title || "无来源标题"}
-                {fact.source_locator ? ` · ${fact.source_locator}` : ""}
-              </small>
-            </article>
-          ))}
-        </div>
-      ) : null}
-      {sources.length ? (
-        <div className="knowledge-source-changes">
-          {sources.map((source) => (
-            <p key={`${source.title}:${source.locator ?? ""}`}>
-              <FileText size={14} />
-              <span>{source.title}</span>
-              {source.locator ? <small>{source.locator}</small> : null}
-            </p>
-          ))}
-        </div>
-      ) : null}
-    </section>
-  );
 }
 
 export function KnowledgeView({
@@ -374,12 +314,12 @@ export function KnowledgeView({
             />
             {panel === "document" ? (
               <div
-                className="markdown-document"
+                className="knowledge-document-panel"
                 role="tabpanel"
                 id="knowledge-active-panel"
                 aria-labelledby="knowledge-tab-document"
               >
-                {publicKnowledgeMarkdown(detail.rendered_markdown)}
+                <KnowledgeDocument markdown={detail.rendered_markdown} title={detail.title} />
               </div>
             ) : (
               <div
@@ -436,7 +376,7 @@ export function KnowledgeView({
                             <tbody>
                               {coverageQuery.data.predicates.map((item) => (
                                 <tr key={item.predicate}>
-                                  <td title={item.predicate}>{relationshipLabel(item.predicate)}</td>
+                                  <td title={item.predicate}>{knowledgePredicateLabel(item.predicate)}</td>
                                   <td>{item.fact_count}</td>
                                   <td>{item.cited_fact_count}</td>
                                 </tr>
@@ -522,8 +462,8 @@ export function KnowledgeView({
                               <EmptyState title="与上一版本无内容差异" />
                             ) : (
                               <>
-                                <ChangeList diff={diffQuery.data} kind="added" />
-                                <ChangeList diff={diffQuery.data} kind="removed" />
+                                <KnowledgeChangeList diff={diffQuery.data} kind="added" />
+                                <KnowledgeChangeList diff={diffQuery.data} kind="removed" />
                                 {diffQuery.data.truncated ? (
                                   <p className="inline-warning">差异过多，当前仅展示每类前 100 条。</p>
                                 ) : null}

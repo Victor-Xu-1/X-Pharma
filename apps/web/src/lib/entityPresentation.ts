@@ -27,7 +27,7 @@ const relationshipLabels: Record<string, string> = {
 };
 
 export function relationshipLabel(predicate: string): string {
-  return relationshipLabels[predicate] ?? predicate;
+  return Object.hasOwn(relationshipLabels, predicate) ? relationshipLabels[predicate] : predicate;
 }
 
 type EntityIdentity = Pick<Entity, "entity_type" | "attributes">;

@@ -24,6 +24,11 @@ Paramiko, lxml, OpenTelemetry and document parsers. Their license metadata and
 license files remain inside installed distributions and must be retained when
 redistributing those dependencies.
 
+Knowledge document rendering uses `react-markdown` and `remark-gfm` from the
+unified/remark community under MIT. Exact versions are pinned in the frontend
+lockfile. Retain their installed license files when redistributing this renderer;
+X-Pharma's Apache-2.0 license does not replace these upstream licenses.
+
 Docker/Kubernetes components include PostgreSQL/RDKit, OpenSearch, Temporal,
 Valkey, ClamAV, OpenTelemetry and optional OCR. These programs and their bundled
 dependencies retain their upstream identities and licenses. Source licensing

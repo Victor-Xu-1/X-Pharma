@@ -269,11 +269,6 @@
   color: var(--ds-accent-strong);
 }
 
-.markdown-document {
-  color: var(--ds-ink);
-  font-family: var(--ds-font-sans);
-}
-
 .section-toolbar,
 .query-input,
 .select-control,
