@@ -278,7 +278,6 @@ tbody tr:last-child td {
   height: 31px;
   flex: 0 0 31px;
 }
-.domain-export-disabled,
 .domain-export-menu summary {
   min-height: 31px;
   display: inline-flex;
@@ -292,10 +291,6 @@ tbody tr:last-child td {
   font-size: 10px;
   font-weight: 700;
   white-space: nowrap;
-}
-.domain-export-disabled:disabled {
-  color: var(--ds-ink-faint);
-  cursor: not-allowed;
 }
 .domain-export-menu {
   position: relative;
