@@ -340,8 +340,8 @@ it("identifies and replays patent and deal saved queries", async () => {
   expect(screen.getByText("专利情报")).toBeVisible();
   expect(screen.getByText("交易与公司")).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "运行 Active EGFR patents" }));
-  fireEvent.click(screen.getByRole("button", { name: "运行 Outbound licenses" }));
   await waitFor(() => expect(openSearch).toHaveBeenNthCalledWith(1, patentSaved));
+  fireEvent.click(screen.getByRole("button", { name: "运行 Outbound licenses" }));
   await waitFor(() => expect(openSearch).toHaveBeenNthCalledWith(2, dealSaved));
 });
 
@@ -437,10 +437,10 @@ it("identifies and replays epidemiology and research-news queries", async () => 
   expect(screen.queryByText("CC(=O)Oc1ccccc1C(=O)O")).not.toBeInTheDocument();
   expect(screen.getByText("时间线")).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "运行 China NSCLC burden" }));
-  fireEvent.click(screen.getByRole("button", { name: "运行 ASCO research watch" }));
-  fireEvent.click(screen.getByRole("button", { name: "运行 Aspirin similarity" }));
   await waitFor(() => expect(openSearch).toHaveBeenNthCalledWith(1, epidemiologySaved));
+  fireEvent.click(screen.getByRole("button", { name: "运行 ASCO research watch" }));
   await waitFor(() => expect(openSearch).toHaveBeenNthCalledWith(2, newsSaved));
+  fireEvent.click(screen.getByRole("button", { name: "运行 Aspirin similarity" }));
   await waitFor(() => expect(openSearch).toHaveBeenNthCalledWith(3, chemistrySaved));
 });
 

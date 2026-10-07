@@ -138,3 +138,47 @@ it("labels monitoring lifecycle without confusing it with account health", async
   expect(await screen.findByText("监控中")).toBeVisible();
   expect(screen.getByText("已暂停")).toBeVisible();
 });
+
+it("honors the latest replay intent when a different earlier record finishes first", async () => {
+  const second = { ...saved, id: "second-search", name: "Second research", query_json: { q: "ALK" } };
+  vi.mocked(loadMonitoring).mockResolvedValue({ searches: [saved, second], topics: [], alerts: [] });
+  let first!: (value: SavedSearch) => void;
+  let latest!: (value: SavedSearch) => void;
+  vi.mocked(loadSavedSearch).mockImplementation(
+    (id) =>
+      new Promise((resolve) => {
+        if (id === saved.id) first = resolve;
+        else latest = resolve;
+      }),
+  );
+  const open = vi.fn();
+  renderWithQueryClient(<MonitoringView user={user} activeTab="searches" onOpenEntity={vi.fn()} onOpenSearch={open} />);
+  fireEvent.click(await screen.findByRole("button", { name: "运行 Shared research" }));
+  fireEvent.click(screen.getByRole("button", { name: "运行 Second research" }));
+  await act(async () => first(saved));
+  expect(open).not.toHaveBeenCalled();
+  await act(async () => latest(second));
+  expect(open).toHaveBeenCalledExactlyOnceWith(second);
+});
+
+it("does not surface an obsolete replay error over a newer pending choice", async () => {
+  const second = { ...saved, id: "second-search", name: "Second research", query_json: { q: "ALK" } };
+  vi.mocked(loadMonitoring).mockResolvedValue({ searches: [saved, second], topics: [], alerts: [] });
+  let rejectFirst!: (reason: Error) => void;
+  let latest!: (value: SavedSearch) => void;
+  vi.mocked(loadSavedSearch).mockImplementation(
+    (id) =>
+      new Promise((resolve, reject) => {
+        if (id === saved.id) rejectFirst = reject;
+        else latest = resolve;
+      }),
+  );
+  const open = vi.fn();
+  renderWithQueryClient(<MonitoringView user={user} activeTab="searches" onOpenEntity={vi.fn()} onOpenSearch={open} />);
+  fireEvent.click(await screen.findByRole("button", { name: "运行 Shared research" }));
+  fireEvent.click(screen.getByRole("button", { name: "运行 Second research" }));
+  await act(async () => rejectFirst(new Error("Obsolete access rejection")));
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  await act(async () => latest(second));
+  expect(open).toHaveBeenCalledExactlyOnceWith(second);
+});
