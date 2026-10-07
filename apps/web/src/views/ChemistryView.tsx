@@ -4,6 +4,7 @@ import { Component, type FormEvent, lazy, type ReactNode, Suspense, useCallback,
 
 import { EmptyState, formatDate, Spinner } from "../components/common";
 import { MoleculeDepiction } from "../components/MoleculeDepiction";
+import { ResearchTabList } from "../components/ResearchTabList";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
 import {
   type ChemistrySearchHit,
@@ -241,75 +242,70 @@ export function ChemistryView({
               ))}
             </div>
           </fieldset>
-          <div className="structure-input-tabs" role="tablist" aria-label="结构输入方式">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={inputMode === "draw"}
-              className={inputMode === "draw" ? "active" : ""}
-              onClick={() => {
-                changeInputMode("draw");
-                setEditorActive(true);
-              }}
-            >
-              <PencilLine size={16} />
-              绘制结构
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={inputMode === "text"}
-              className={inputMode === "text" ? "active" : ""}
-              onClick={() => changeInputMode("text")}
-            >
-              <Code2 size={16} />
-              高级输入
-            </button>
-          </div>
+          <ResearchTabList
+            idPrefix="chemistry-input"
+            ariaLabel="结构输入方式"
+            className="structure-input-tabs"
+            activeTab={inputMode}
+            tabs={[
+              {
+                key: "draw",
+                label: "绘制结构",
+                icon: <PencilLine size={16} />,
+                panelId: "chemistry-input-active-panel",
+              },
+              { key: "text", label: "高级输入", icon: <Code2 size={16} />, panelId: "chemistry-input-active-panel" },
+            ]}
+            onChange={(next) => {
+              changeInputMode(next);
+              if (next === "draw") setEditorActive(true);
+            }}
+          />
         </div>
 
-        {inputMode === "draw" && !editorActive ? (
-          <section className="structure-editor-gate" aria-label="结构画板">
-            <PencilLine size={22} aria-hidden="true" />
-            <strong>结构画板尚未打开</strong>
-            <button className="primary-button" type="button" onClick={() => setEditorActive(true)}>
-              <PencilLine size={16} />
-              打开结构画板
-            </button>
-          </section>
-        ) : inputMode === "draw" ? (
-          <StructureEditorBoundary onFallback={() => changeInputMode("text")}>
-            <Suspense
-              fallback={
-                <div className="structure-editor-loading">
-                  <Spinner label="正在加载结构画板" />
-                </div>
-              }
-            >
-              <StructureEditor
+        <div role="tabpanel" id="chemistry-input-active-panel" aria-labelledby={`chemistry-input-tab-${inputMode}`}>
+          {inputMode === "draw" && !editorActive ? (
+            <section className="structure-editor-gate" aria-label="结构画板">
+              <PencilLine size={22} aria-hidden="true" />
+              <strong>结构画板尚未打开</strong>
+              <button className="primary-button" type="button" onClick={() => setEditorActive(true)}>
+                <PencilLine size={16} />
+                打开结构画板
+              </button>
+            </section>
+          ) : inputMode === "draw" ? (
+            <StructureEditorBoundary onFallback={() => changeInputMode("text")}>
+              <Suspense
+                fallback={
+                  <div className="structure-editor-loading">
+                    <Spinner label="正在加载结构画板" />
+                  </div>
+                }
+              >
+                <StructureEditor
+                  value={query}
+                  format={mode === "substructure" ? "smarts" : "smiles"}
+                  onApply={applyEditorStructure}
+                  onError={handleEditorError}
+                />
+              </Suspense>
+            </StructureEditorBoundary>
+          ) : (
+            <label className="structure-query-input">
+              <span>{mode === "substructure" ? "SMARTS" : "SMILES"}</span>
+              <textarea
+                rows={4}
                 value={query}
-                format={mode === "substructure" ? "smarts" : "smiles"}
-                onApply={applyEditorStructure}
-                onError={handleEditorError}
+                onChange={(event) => {
+                  changeQuery(event.target.value);
+                }}
+                placeholder={mode === "substructure" ? "输入 SMARTS" : "输入 SMILES"}
+                maxLength={20_000}
+                spellCheck={false}
               />
-            </Suspense>
-          </StructureEditorBoundary>
-        ) : (
-          <label className="structure-query-input">
-            <span>{mode === "substructure" ? "SMARTS" : "SMILES"}</span>
-            <textarea
-              rows={4}
-              value={query}
-              onChange={(event) => {
-                changeQuery(event.target.value);
-              }}
-              placeholder={mode === "substructure" ? "输入 SMARTS" : "输入 SMILES"}
-              maxLength={20_000}
-              spellCheck={false}
-            />
-          </label>
-        )}
-
+            </label>
+          )}
+        </div>
         <form className="chemistry-options" onSubmit={submit}>
           {mode === "similarity" ? (
             <label className="threshold-control">

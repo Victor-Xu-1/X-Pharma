@@ -13,12 +13,13 @@ import {
   Split,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "../components/common";
 import { FactQualityFindings } from "../components/FactQualityFindings";
 import { FactReviewComparison } from "../components/FactReviewComparison";
 import { QualityOperationsPanel } from "../components/QualityOperationsPanel";
+import { ResearchTabList } from "../components/ResearchTabList";
 import {
   commitPublicationBatch,
   decideEntityResolution,
@@ -154,69 +155,42 @@ export function GovernanceView() {
     return <ErrorState message={message} retry={() => void queues.refetch()} />;
   }
   const tabs = (
-    <div className="governance-tabs" role="tablist" aria-label="治理队列">
-      <button
-        type="button"
-        role="tab"
-        aria-selected={mode === "facts"}
-        onClick={() => {
-          setMode("facts");
-          setNotes("");
-          clearFeedback();
-        }}
-      >
-        事实审核 {facts?.length ?? 0}
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={mode === "identity"}
-        onClick={() => {
-          setMode("identity");
-          setNotes("");
-          clearFeedback();
-        }}
-      >
-        实体消歧 {identityCases?.length ?? 0}
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={mode === "quality"}
-        onClick={() => {
-          setMode("quality");
-          setNotes("");
-          clearFeedback();
-        }}
-      >
-        质量运营
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={mode === "runs"}
-        onClick={() => {
-          setMode("runs");
-          setNotes("");
-          clearFeedback();
-        }}
-      >
-        运行追踪{runs.data ? ` ${runs.data.total}` : ""}
-      </button>
-    </div>
+    <ResearchTabList
+      idPrefix="governance"
+      ariaLabel="治理队列"
+      className="governance-tabs"
+      activeTab={mode}
+      onChange={(next) => {
+        setMode(next);
+        setNotes("");
+        clearFeedback();
+      }}
+      tabs={[
+        { key: "facts", label: `事实审核 ${facts.length}`, panelId: "governance-active-panel" },
+        { key: "identity", label: `实体消歧 ${identityCases.length}`, panelId: "governance-active-panel" },
+        { key: "quality", label: "质量运营", panelId: "governance-active-panel" },
+        {
+          key: "runs",
+          label: `运行追踪${runs.data ? ` ${runs.data.total}` : ""}`,
+          panelId: "governance-active-panel",
+        },
+      ]}
+    />
+  );
+  const renderPanel = (content: ReactNode) => (
+    <>
+      {tabs}
+      <div role="tabpanel" id="governance-active-panel" aria-labelledby={`governance-tab-${mode}`}>
+        {content}
+      </div>
+    </>
   );
   if (mode === "quality") {
-    return (
-      <>
-        {tabs}
-        <QualityOperationsPanel />
-      </>
-    );
+    return renderPanel(<QualityOperationsPanel />);
   }
   if (mode === "runs") {
-    return (
+    return renderPanel(
       <>
-        {tabs}
         <GovernanceRunsPanel
           page={runs.data ?? null}
           loading={!runs.data && !runs.error}
@@ -233,223 +207,223 @@ export function GovernanceView() {
           onSelect={setSelectedRunId}
           onRetry={() => void runs.refetch()}
         />
-      </>
+      </>,
     );
   }
   if (mode === "identity") {
     const identityLoading = identityScope === "history" && identityHistory.isPending;
     const identityError = identityHistory.error instanceof Error ? identityHistory.error.message : "";
-    return (
+    return renderPanel(
       <>
-        {tabs}
         <div className="identity-scope-toolbar">
-          <div className="identity-scope-control" role="tablist" aria-label="实体消歧范围">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={identityScope === "pending"}
-              onClick={() => {
-                setIdentityScope("pending");
-                setSelectedIdentityId("");
-                setNotes("");
-                clearFeedback();
-              }}
-            >
-              <GitMerge size={15} />
-              待处理 {identityCases.length}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={identityScope === "history"}
-              onClick={() => {
-                setIdentityScope("history");
-                setSelectedIdentityId("");
-                setNotes("");
-                clearFeedback();
-              }}
-            >
-              <History size={15} />
-              历史与回滚 {identityHistory.data?.length ?? 0}
-            </button>
-          </div>
+          <ResearchTabList
+            idPrefix="identity-scope"
+            ariaLabel="实体消歧范围"
+            className="identity-scope-control"
+            activeTab={identityScope}
+            onChange={(next) => {
+              setIdentityScope(next);
+              setSelectedIdentityId("");
+              setNotes("");
+              clearFeedback();
+            }}
+            tabs={[
+              {
+                key: "pending",
+                label: `待处理 ${identityCases.length}`,
+                icon: <GitMerge size={15} />,
+                panelId: "identity-results-panel",
+              },
+              {
+                key: "history",
+                label: `历史与回滚 ${identityHistory.data?.length ?? 0}`,
+                icon: <History size={15} />,
+                panelId: "identity-results-panel",
+              },
+            ]}
+          />
           <p>规范实体合并不迁移或覆盖领域事实；拆分通过停用可逆 canonical link 恢复独立身份。</p>
         </div>
-        {identityLoading ? <Spinner label="正在读取实体消歧历史" /> : null}
-        {identityError && !identityHistory.data ? (
-          <ErrorState message={identityError} retry={() => void identityHistory.refetch()} />
-        ) : null}
-        {!identityLoading && !identityError && !visibleIdentityCases.length ? (
-          <EmptyState title={identityScope === "pending" ? "当前没有待审核实体冲突" : "当前没有实体消歧历史"} />
-        ) : null}
-        {visibleIdentityCases.length ? (
-          <section className="governance-layout">
-            <aside className="review-list">
-              <div className="review-list-head">
-                {identityScope === "pending" ? <GitMerge size={19} /> : <History size={19} />}
-                <span>
-                  <strong>{visibleIdentityCases.length}</strong>
-                  {identityScope === "pending" ? " 项待消歧" : " 项历史决策"}
-                </span>
-              </div>
-              {visibleIdentityCases.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={selectedIdentity?.id === item.id ? "active" : ""}
-                  onClick={() => {
-                    setSelectedIdentityId(item.id);
-                    setNotes("");
-                    clearFeedback();
-                  }}
-                >
-                  <div>
-                    <strong>{item.source_entity_name}</strong>
-                    <StatusBadge value={identityScope === "pending" ? item.risk_tier : item.status} />
-                  </div>
-                  <p>候选规范实体：{item.candidate_entity_name}</p>
-                  <small>
-                    匹配分 {(item.score * 100).toFixed(1)}% · {formatDate(item.created_at, true)}
-                  </small>
-                </button>
-              ))}
-            </aside>
-            <article className="review-detail">
-              {selectedIdentity ? (
-                <>
-                  <header>
+        <div role="tabpanel" id="identity-results-panel" aria-labelledby={`identity-scope-tab-${identityScope}`}>
+          {identityLoading ? <Spinner label="正在读取实体消歧历史" /> : null}
+          {identityError && !identityHistory.data ? (
+            <ErrorState message={identityError} retry={() => void identityHistory.refetch()} />
+          ) : null}
+          {!identityLoading && !identityError && !visibleIdentityCases.length ? (
+            <EmptyState title={identityScope === "pending" ? "当前没有待审核实体冲突" : "当前没有实体消歧历史"} />
+          ) : null}
+          {visibleIdentityCases.length ? (
+            <section className="governance-layout">
+              <aside className="review-list">
+                <div className="review-list-head">
+                  {identityScope === "pending" ? <GitMerge size={19} /> : <History size={19} />}
+                  <span>
+                    <strong>{visibleIdentityCases.length}</strong>
+                    {identityScope === "pending" ? " 项待消歧" : " 项历史决策"}
+                  </span>
+                </div>
+                {visibleIdentityCases.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={selectedIdentity?.id === item.id ? "active" : ""}
+                    onClick={() => {
+                      setSelectedIdentityId(item.id);
+                      setNotes("");
+                      clearFeedback();
+                    }}
+                  >
                     <div>
-                      <p className="eyebrow">ENTITY RESOLUTION</p>
-                      <h2>{selectedIdentity.source_entity_name}</h2>
+                      <strong>{item.source_entity_name}</strong>
+                      <StatusBadge value={identityScope === "pending" ? item.risk_tier : item.status} />
                     </div>
-                    <span className="confidence-score">
-                      {(selectedIdentity.score * 100).toFixed(1)}
-                      <small>%</small>
-                    </span>
-                  </header>
-                  <section>
-                    <h3>规范实体候选</h3>
-                    <dl className="review-source">
+                    <p>候选规范实体：{item.candidate_entity_name}</p>
+                    <small>
+                      匹配分 {(item.score * 100).toFixed(1)}% · {formatDate(item.created_at, true)}
+                    </small>
+                  </button>
+                ))}
+              </aside>
+              <article className="review-detail">
+                {selectedIdentity ? (
+                  <>
+                    <header>
                       <div>
-                        <dt>来源实体</dt>
-                        <dd>{selectedIdentity.source_entity_name}</dd>
+                        <p className="eyebrow">ENTITY RESOLUTION</p>
+                        <h2>{selectedIdentity.source_entity_name}</h2>
                       </div>
-                      <div>
-                        <dt>候选实体</dt>
-                        <dd>{selectedIdentity.candidate_entity_name}</dd>
-                      </div>
-                      <div>
-                        <dt>风险等级</dt>
-                        <dd>
-                          <StatusBadge value={selectedIdentity.risk_tier} />
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>当前状态</dt>
-                        <dd>
-                          <StatusBadge value={selectedIdentity.status} />
-                        </dd>
-                      </div>
-                    </dl>
-                  </section>
-                  <section>
-                    <h3>判定依据</h3>
-                    <pre className="json-preview compact">{JSON.stringify(selectedIdentity.reasons, null, 2)}</pre>
-                  </section>
-                  {identityImpact.isPending ? <Spinner label="正在分析跨域引用" /> : null}
-                  {identityImpact.error instanceof Error ? (
-                    <ErrorState message={identityImpact.error.message} retry={() => void identityImpact.refetch()} />
-                  ) : null}
-                  {identityImpact.data ? <IdentityImpactPanel impact={identityImpact.data} /> : null}
-                  {selectedIdentity.status === "pending" && identityImpact.data ? (
-                    <label className="canonical-choice">
-                      <span>规范实体保留</span>
-                      <select value={canonicalEntityId} onChange={(event) => setCanonicalEntityId(event.target.value)}>
-                        <option value={selectedIdentity.source_entity_id}>{selectedIdentity.source_entity_name}</option>
-                        <option value={selectedIdentity.candidate_entity_id}>
-                          {selectedIdentity.candidate_entity_name}
-                        </option>
-                      </select>
-                      <small>
-                        系统建议：
-                        {identityImpact.data.recommended_canonical_entity_id === selectedIdentity.source_entity_id
-                          ? selectedIdentity.source_entity_name
-                          : selectedIdentity.candidate_entity_name}
-                        。建议只提供决策依据，不自动批准。
-                      </small>
-                    </label>
-                  ) : null}
-                  {selectedIdentity.status === "pending" || selectedIdentity.status === "approved" ? (
-                    <>
-                      <label className="review-notes">
-                        <span>{selectedIdentity.status === "approved" ? "拆分恢复依据" : "审核意见"}</span>
-                        <textarea
-                          rows={4}
-                          value={notes}
-                          onChange={(event) => setNotes(event.target.value)}
-                          maxLength={4000}
-                        />
+                      <span className="confidence-score">
+                        {(selectedIdentity.score * 100).toFixed(1)}
+                        <small>%</small>
+                      </span>
+                    </header>
+                    <section>
+                      <h3>规范实体候选</h3>
+                      <dl className="review-source">
+                        <div>
+                          <dt>来源实体</dt>
+                          <dd>{selectedIdentity.source_entity_name}</dd>
+                        </div>
+                        <div>
+                          <dt>候选实体</dt>
+                          <dd>{selectedIdentity.candidate_entity_name}</dd>
+                        </div>
+                        <div>
+                          <dt>风险等级</dt>
+                          <dd>
+                            <StatusBadge value={selectedIdentity.risk_tier} />
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>当前状态</dt>
+                          <dd>
+                            <StatusBadge value={selectedIdentity.status} />
+                          </dd>
+                        </div>
+                      </dl>
+                    </section>
+                    <section>
+                      <h3>判定依据</h3>
+                      <pre className="json-preview compact">{JSON.stringify(selectedIdentity.reasons, null, 2)}</pre>
+                    </section>
+                    {identityImpact.isPending ? <Spinner label="正在分析跨域引用" /> : null}
+                    {identityImpact.error instanceof Error ? (
+                      <ErrorState message={identityImpact.error.message} retry={() => void identityImpact.refetch()} />
+                    ) : null}
+                    {identityImpact.data ? <IdentityImpactPanel impact={identityImpact.data} /> : null}
+                    {selectedIdentity.status === "pending" && identityImpact.data ? (
+                      <label className="canonical-choice">
+                        <span>规范实体保留</span>
+                        <select
+                          value={canonicalEntityId}
+                          onChange={(event) => setCanonicalEntityId(event.target.value)}
+                        >
+                          <option value={selectedIdentity.source_entity_id}>
+                            {selectedIdentity.source_entity_name}
+                          </option>
+                          <option value={selectedIdentity.candidate_entity_id}>
+                            {selectedIdentity.candidate_entity_name}
+                          </option>
+                        </select>
+                        <small>
+                          系统建议：
+                          {identityImpact.data.recommended_canonical_entity_id === selectedIdentity.source_entity_id
+                            ? selectedIdentity.source_entity_name
+                            : selectedIdentity.candidate_entity_name}
+                          。建议只提供决策依据，不自动批准。
+                        </small>
                       </label>
-                      {error ? (
-                        <p className="form-error" role="alert">
-                          {error}
-                        </p>
-                      ) : null}
-                      {selectedIdentity.status === "pending" ? (
-                        <div className="decision-bar">
-                          <button
-                            className="danger-button"
-                            type="button"
-                            disabled={busy}
-                            onClick={() => void decideIdentity("reject")}
-                          >
-                            <X size={17} />
-                            保持独立
-                          </button>
-                          <button
-                            className="primary-button"
-                            type="button"
-                            disabled={busy || !identityImpact.data}
-                            onClick={() => void decideIdentity("approve")}
-                          >
-                            <Check size={17} />
-                            设为同一实体
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="decision-bar">
-                          <button
-                            className="danger-button"
-                            type="button"
-                            disabled={busy || !identityImpact.data?.rollback_available}
-                            onClick={() => void decideIdentity("revert")}
-                          >
-                            <Split size={17} />
-                            拆分并恢复独立实体
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  ) : null}
-                </>
-              ) : null}
-            </article>
-          </section>
-        ) : null}
-      </>
+                    ) : null}
+                    {selectedIdentity.status === "pending" || selectedIdentity.status === "approved" ? (
+                      <>
+                        <label className="review-notes">
+                          <span>{selectedIdentity.status === "approved" ? "拆分恢复依据" : "审核意见"}</span>
+                          <textarea
+                            rows={4}
+                            value={notes}
+                            onChange={(event) => setNotes(event.target.value)}
+                            maxLength={4000}
+                          />
+                        </label>
+                        {error ? (
+                          <p className="form-error" role="alert">
+                            {error}
+                          </p>
+                        ) : null}
+                        {selectedIdentity.status === "pending" ? (
+                          <div className="decision-bar">
+                            <button
+                              className="danger-button"
+                              type="button"
+                              disabled={busy}
+                              onClick={() => void decideIdentity("reject")}
+                            >
+                              <X size={17} />
+                              保持独立
+                            </button>
+                            <button
+                              className="primary-button"
+                              type="button"
+                              disabled={busy || !identityImpact.data}
+                              onClick={() => void decideIdentity("approve")}
+                            >
+                              <Check size={17} />
+                              设为同一实体
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="decision-bar">
+                            <button
+                              className="danger-button"
+                              type="button"
+                              disabled={busy || !identityImpact.data?.rollback_available}
+                              onClick={() => void decideIdentity("revert")}
+                            >
+                              <Split size={17} />
+                              拆分并恢复独立实体
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    ) : null}
+                  </>
+                ) : null}
+              </article>
+            </section>
+          ) : null}
+        </div>
+      </>,
     );
   }
   if (!facts?.length)
-    return (
+    return renderPanel(
       <>
-        {tabs}
         <PublicationBatchPanel facts={facts} onQueuesChanged={() => void queues.refetch()} />
         <EmptyState title="当前没有待审核事实" />
-      </>
+      </>,
     );
-  return (
+  return renderPanel(
     <>
-      {tabs}
       <PublicationBatchPanel facts={facts} onQueuesChanged={() => void queues.refetch()} />
       <section className="governance-layout">
         <aside className="review-list">
@@ -535,7 +509,7 @@ export function GovernanceView() {
           ) : null}
         </article>
       </section>
-    </>
+    </>,
   );
 }
 

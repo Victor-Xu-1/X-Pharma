@@ -58,6 +58,21 @@ beforeEach(() => {
   vi.mocked(saveChemistrySearch).mockReset();
 });
 
+it("switches structural input with the shared keyboard tab contract and named panel", async () => {
+  renderWithQueryClient(<ChemistryView onInspectEntity={vi.fn()} />);
+  const draw = screen.getByRole("tab", { name: "绘制结构" });
+  draw.focus();
+  fireEvent.keyDown(draw, { key: "End" });
+  const text = screen.getByRole("tab", { name: "高级输入" });
+  expect(text).toHaveFocus();
+  expect(text).toHaveAttribute("aria-selected", "true");
+  expect(screen.getByRole("tabpanel")).toHaveAccessibleName("高级输入");
+  fireEvent.keyDown(text, { key: "Home" });
+  expect(draw).toHaveFocus();
+  expect(draw).toHaveAttribute("aria-selected", "true");
+  expect(screen.getByRole("tabpanel")).toHaveAccessibleName("绘制结构");
+});
+
 it("keeps expert text input available and submits a bounded similarity search", async () => {
   vi.mocked(searchChemistry).mockResolvedValue(result);
   const inspect = vi.fn();

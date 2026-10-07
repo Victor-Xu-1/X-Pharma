@@ -10,6 +10,7 @@ import {
   exportDomainQuery,
 } from "../lib/contracts/domainExports";
 import { downloadBlob, type ExportFormat } from "../lib/download";
+import { useDismissibleDetails } from "../lib/useDismissibleDetails";
 
 export function DomainExportControl({ dataset, totalRows }: { dataset: DomainExportDataset; totalRows: number }) {
   const [format, setFormat] = useState<ExportFormat>("xlsx");
@@ -44,6 +45,7 @@ export function DomainExportControl({ dataset, totalRows }: { dataset: DomainExp
         idempotency_key: crypto.randomUUID(),
       }),
   });
+  const popover = useDismissibleDetails({ dismissible: !mutation.isPending });
 
   useEffect(() => {
     if (!policy) return;
@@ -80,8 +82,8 @@ export function DomainExportControl({ dataset, totalRows }: { dataset: DomainExp
   }
 
   return (
-    <details className="domain-export-menu">
-      <summary>
+    <details className="domain-export-menu" {...popover}>
+      <summary aria-disabled={mutation.isPending || undefined}>
         <Download size={14} />
         导出
       </summary>
@@ -92,7 +94,11 @@ export function DomainExportControl({ dataset, totalRows }: { dataset: DomainExp
         </header>
         <label>
           格式
-          <select value={format} onChange={(event) => setFormat(event.target.value as ExportFormat)}>
+          <select
+            value={format}
+            disabled={mutation.isPending}
+            onChange={(event) => setFormat(event.target.value as ExportFormat)}
+          >
             {policy?.allowed_formats.map((value) => (
               <option value={value} key={value}>
                 {value.toUpperCase()}
@@ -100,7 +106,7 @@ export function DomainExportControl({ dataset, totalRows }: { dataset: DomainExp
             ))}
           </select>
         </label>
-        <fieldset className="domain-export-fields">
+        <fieldset className="domain-export-fields" disabled={mutation.isPending}>
           <legend>导出字段</legend>
           {licensedFields.map((field) => (
             <label className="check-control domain-export-field" key={field.value}>

@@ -20,6 +20,18 @@ import type { DataSource, User } from "../lib/types";
 import { DataFactoryView } from "../views/DataFactoryView";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
+async function verifyDialogKeyboard(opener: HTMLElement, title: string | RegExp) {
+  opener.focus();
+  fireEvent.click(opener);
+  const dialog = await screen.findByRole("dialog", { name: title });
+  await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(screen.queryByRole("dialog", { name: title })).not.toBeInTheDocument();
+  await waitFor(() => expect(opener).toHaveFocus());
+  fireEvent.click(opener);
+  await waitFor(() => expect(screen.getByRole("dialog", { name: title }).contains(document.activeElement)).toBe(true));
+}
+
 vi.mock("../lib/contracts/dataFactory", () => ({
   dataFactoryKeys: {
     all: ["data-factory"],
@@ -297,7 +309,7 @@ it("requires an audited decision and keeps malware rescans behind ClamAV", async
 
   expect(await screen.findByLabelText("1 个待处置案件")).toBeInTheDocument();
   expect(screen.getByText("Win.Test.EICAR_HDB-1")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "处置" }));
+  await verifyDialogKeyboard(screen.getByRole("button", { name: "处置" }), "隔离案件处置");
   expect(await screen.findByRole("dialog", { name: "隔离案件处置" })).toBeInTheDocument();
   expect(await screen.findByText(/仍强制经过 ClamAV/)).toBeInTheDocument();
   expect(screen.getByText("扫描发现威胁")).toBeInTheDocument();
@@ -440,7 +452,7 @@ it("requires an operator reason before replaying a terminal ingestion run", asyn
 
   renderWithQueryClient(<DataFactoryView user={user} />);
 
-  fireEvent.click(await screen.findByRole("button", { name: "重放 workflow-failed" }));
+  await verifyDialogKeyboard(await screen.findByRole("button", { name: "重放 workflow-failed" }), "重放入库运行");
   const confirm = screen.getByRole("button", { name: "确认重放" });
   expect(confirm).toBeDisabled();
   fireEvent.change(screen.getByLabelText("重放原因"), {
@@ -604,11 +616,11 @@ it("shows the real stage graph and requires a reason before canceling an active 
   renderWithQueryClient(<DataFactoryView user={user} />);
 
   expect(await screen.findByText("58%")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "运行详情" }));
+  await verifyDialogKeyboard(screen.getByRole("button", { name: "运行详情" }), "运行发现项");
   expect(screen.getByRole("heading", { name: "逐阶段运行图" })).toBeInTheDocument();
   expect(screen.getByText("1 完成 / 0 失败 / 2 总计")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "关闭" }));
-  fireEvent.click(screen.getByRole("button", { name: "取消 workflow-active-correlation" }));
+  await verifyDialogKeyboard(screen.getByRole("button", { name: "取消 workflow-active-correlation" }), "取消入库运行");
   const confirm = screen.getByRole("button", { name: "确认取消" });
   expect(confirm).toBeDisabled();
   fireEvent.change(screen.getByLabelText("取消原因"), {
@@ -774,14 +786,14 @@ it("opens immutable source versions and previews only parsed text", async () => 
 
   renderWithQueryClient(<DataFactoryView user={user} />);
 
-  fireEvent.click(await screen.findByRole("button", { name: "查看 egfr.pdf 版本" }));
+  await verifyDialogKeyboard(await screen.findByRole("button", { name: "查看 egfr.pdf 版本" }), "egfr.pdf");
   expect(await screen.findByRole("dialog", { name: "egfr.pdf" })).toBeInTheDocument();
   expect(screen.getByText("Parser rejected the document")).toBeInTheDocument();
   expect(screen.getAllByRole("button", { name: "查看解析文本" })).toHaveLength(1);
   fireEvent.click(screen.getByRole("button", { name: "查看解析文本" }));
   expect(await screen.findByText("[[page:1]] EGFR evidence")).toBeInTheDocument();
   expect(loadSourceVersionPreview).toHaveBeenCalledWith("version-1", expect.any(AbortSignal));
-  fireEvent.click(screen.getByRole("button", { name: "选择恢复阶段" }));
+  await verifyDialogKeyboard(screen.getByRole("button", { name: "选择恢复阶段" }), /^重放源版本 /);
   expect(screen.getByLabelText("恢复起点")).toHaveValue("parse");
   expect(screen.getByRole("button", { name: "确认重放" })).toBeDisabled();
   fireEvent.change(screen.getByLabelText("重放原因"), {

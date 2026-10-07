@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import { DomainExportControl } from "../components/DomainExportControl";
@@ -75,4 +75,42 @@ it("renders an explicit locked state when the policy disables exports", async ()
   const locked = await screen.findByRole("button", { name: "导出" });
   expect(locked).toBeDisabled();
   await waitFor(() => expect(locked).toHaveAttribute("title", "当前账号或数据许可未开放该领域导出"));
+});
+
+it("keeps an in-flight export visible and immutable, then allows recovery from its error", async () => {
+  let rejectExport: (error: Error) => void = () => {};
+  vi.mocked(exportDomainQuery).mockReturnValue(
+    new Promise<Blob>((_resolve, reject) => {
+      rejectExport = reject;
+    }),
+  );
+  renderWithQueryClient(
+    <>
+      <DomainExportControl dataset="entities" totalRows={5} />
+      <button type="button">外部操作</button>
+    </>,
+  );
+  const summary = await screen.findByText("导出", { selector: "summary" });
+  fireEvent.click(summary);
+  const details = summary.closest("details") as HTMLDetailsElement;
+  const field = screen.getByRole("checkbox", { name: "名称" });
+  fireEvent.click(screen.getByRole("button", { name: "下载" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "生成中" })).toBeDisabled());
+  expect(screen.getByRole("combobox", { name: "格式" })).toBeDisabled();
+  expect(field).toBeDisabled();
+  fireEvent.keyDown(field, { key: "Escape" });
+  fireEvent.click(summary);
+  fireEvent.pointerDown(screen.getByRole("button", { name: "外部操作" }));
+  expect(details.open).toBe(true);
+  await act(async () => rejectExport(new Error("导出服务暂时不可用")));
+  expect(await screen.findByRole("alert")).toHaveTextContent("导出服务暂时不可用");
+  expect(screen.getByRole("button", { name: "下载" })).toBeEnabled();
+  expect(field).toBeEnabled();
+  expect(field).toBeChecked();
+  field.focus();
+  fireEvent.keyDown(field, { key: "Escape" });
+  expect(details.open).toBe(false);
+  expect(summary).toHaveFocus();
+  expect(exportDomainQuery).toHaveBeenCalledOnce();
+  expect(downloadBlob).not.toHaveBeenCalled();
 });

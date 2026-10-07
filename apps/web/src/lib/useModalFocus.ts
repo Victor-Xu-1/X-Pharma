@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { type RefObject, useEffect, useRef } from "react";
 
 const focusableSelector = [
   "a[href]",
@@ -12,11 +12,63 @@ const focusableSelector = [
 ].join(",");
 
 const modalStack: HTMLElement[] = [];
+const backgroundLocks = new Map<HTMLElement, { count: number; original: string | null }>();
+
+function isolateBackground(container: HTMLElement, exceptions: ReadonlyArray<HTMLElement | null>) {
+  const locked: HTMLElement[] = [];
+  for (let branch: HTMLElement | null = container; branch?.parentElement; branch = branch.parentElement) {
+    for (const sibling of branch.parentElement.children) {
+      if (
+        sibling === branch ||
+        !(sibling instanceof HTMLElement) ||
+        exceptions.includes(sibling) ||
+        sibling.matches("script, style, link")
+      )
+        continue;
+      const lock = backgroundLocks.get(sibling);
+      if (lock) lock.count += 1;
+      else {
+        backgroundLocks.set(sibling, { count: 1, original: sibling.getAttribute("inert") });
+        sibling.setAttribute("inert", "");
+      }
+      locked.push(sibling);
+    }
+    if (branch.parentElement === document.body) break;
+  }
+  return () => {
+    for (const element of locked) {
+      const lock = backgroundLocks.get(element);
+      if (!lock || --lock.count > 0) continue;
+      if (lock.original === null) element.removeAttribute("inert");
+      else element.setAttribute("inert", lock.original);
+      backgroundLocks.delete(element);
+    }
+  };
+}
+
+function isReachable(element: HTMLElement): boolean {
+  if (
+    !element.isConnected ||
+    element.matches(":disabled") ||
+    element.closest('[hidden], [inert], [aria-hidden="true"]')
+  ) {
+    return false;
+  }
+  const style = getComputedStyle(element);
+  if (style.visibility === "hidden" || style.visibility === "collapse") return false;
+  for (let ancestor: HTMLElement | null = element; ancestor; ancestor = ancestor.parentElement) {
+    if (getComputedStyle(ancestor).display === "none") return false;
+    if (ancestor instanceof HTMLDetailsElement && !ancestor.open) {
+      const summary = Array.from(ancestor.children).find((child) => child.tagName === "SUMMARY");
+      if (!summary?.contains(element)) return false;
+    }
+  }
+  return true;
+}
 
 function focusableElements(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>(focusableSelector)).filter(
-    (element) =>
-      element.tabIndex >= 0 && element.getAttribute("aria-hidden") !== "true" && !element.closest("[hidden], [inert]"),
+    (element) => element.tabIndex >= 0 && isReachable(element),
   );
 }
 
@@ -28,15 +80,26 @@ function removeFromStack(container: HTMLElement) {
 export function useModalFocus<T extends HTMLElement>(
   active: boolean,
   onClose: () => void,
-  { closeOnEscape = true, restoreFocus = true }: { closeOnEscape?: boolean; restoreFocus?: boolean } = {},
+  {
+    closeOnEscape = true,
+    restoreFocus = true,
+    backgroundExceptions = [],
+  }: {
+    closeOnEscape?: boolean;
+    restoreFocus?: boolean;
+    /** Exact, caller-owned pointer-dismissal controls; never an entire branch. */
+    backgroundExceptions?: ReadonlyArray<RefObject<HTMLElement | null>>;
+  } = {},
 ) {
   const containerRef = useRef<T>(null);
   const onCloseRef = useRef(onClose);
   const closeOnEscapeRef = useRef(closeOnEscape);
   const restoreFocusRef = useRef(restoreFocus);
+  const backgroundExceptionsRef = useRef(backgroundExceptions);
   onCloseRef.current = onClose;
   closeOnEscapeRef.current = closeOnEscape;
   restoreFocusRef.current = restoreFocus;
+  backgroundExceptionsRef.current = backgroundExceptions;
 
   useEffect(() => {
     if (!active) return;
@@ -44,6 +107,10 @@ export function useModalFocus<T extends HTMLElement>(
     if (!container) return;
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     modalStack.push(container);
+    const restoreBackground = isolateBackground(
+      container,
+      backgroundExceptionsRef.current.map((ref) => ref.current),
+    );
 
     const focusFrame = window.requestAnimationFrame(() => {
       // A user can choose a destination before this deferred frame runs. Do not
@@ -59,15 +126,23 @@ export function useModalFocus<T extends HTMLElement>(
       initialFocus.focus();
     });
 
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleEscape = (event: KeyboardEvent) => {
       if (modalStack.at(-1) !== container) return;
-      if (event.key === "Escape" && closeOnEscapeRef.current) {
+      if (
+        event.key === "Escape" &&
+        closeOnEscapeRef.current &&
+        !event.defaultPrevented &&
+        !event.isComposing &&
+        !event.repeat
+      ) {
         event.preventDefault();
         event.stopPropagation();
         onCloseRef.current();
-        return;
       }
-      if (event.key !== "Tab") return;
+    };
+
+    const handleTab = (event: KeyboardEvent) => {
+      if (modalStack.at(-1) !== container || event.key !== "Tab") return;
 
       const focusable = focusableElements(container);
       if (!focusable.length) {
@@ -87,14 +162,22 @@ export function useModalFocus<T extends HTMLElement>(
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown, true);
+    // Trap traversal in capture, but let editors and child popovers consume
+    // Escape before the topmost modal handles it in the bubble phase.
+    document.addEventListener("keydown", handleTab, true);
+    document.addEventListener("keydown", handleEscape);
     return () => {
       window.cancelAnimationFrame(focusFrame);
-      document.removeEventListener("keydown", handleKeyDown, true);
+      document.removeEventListener("keydown", handleTab, true);
+      document.removeEventListener("keydown", handleEscape);
       removeFromStack(container);
+      restoreBackground();
       if (!restoreFocusRef.current) return;
       window.requestAnimationFrame(() => {
-        if (previousFocus?.isConnected && !(previousFocus as HTMLButtonElement).disabled) previousFocus.focus();
+        const activeModal = modalStack.at(-1);
+        if (previousFocus && isReachable(previousFocus) && (!activeModal || activeModal.contains(previousFocus))) {
+          previousFocus.focus();
+        }
       });
     };
   }, [active]);

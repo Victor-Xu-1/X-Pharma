@@ -1,5 +1,7 @@
 import { X } from "lucide-react";
 import type { FormEvent } from "react";
+import { FormStatus } from "../../components/FormStatus";
+import { useModalFocus } from "../../lib/useModalFocus";
 import type { MappingAction } from "./types";
 
 export function CustomerMappingModal({
@@ -7,6 +9,7 @@ export function CustomerMappingModal({
   externalReference,
   reason,
   busy,
+  error = "",
   onExternalReference,
   onReason,
   onClose,
@@ -16,20 +19,29 @@ export function CustomerMappingModal({
   externalReference: string;
   reason: string;
   busy: boolean;
+  error?: string;
   onExternalReference: (value: string) => void;
   onReason: (value: string) => void;
   onClose: () => void;
   onSubmit: (event: FormEvent) => void;
 }) {
+  const dialogRef = useModalFocus<HTMLElement>(true, onClose, { closeOnEscape: !busy });
   return (
     <div className="modal-backdrop" role="presentation">
-      <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="customer-mapping-title">
+      <section
+        ref={dialogRef}
+        className="modal-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="customer-mapping-title"
+        tabIndex={-1}
+      >
         <header>
           <div>
             <p className="eyebrow">BILLING PROVIDER</p>
             <h2 id="customer-mapping-title">配置客户编号</h2>
           </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="关闭">
+          <button className="icon-button" type="button" onClick={onClose} aria-label="关闭" disabled={busy}>
             <X size={18} />
           </button>
         </header>
@@ -41,6 +53,7 @@ export function CustomerMappingModal({
           <label>
             <span>Provider 客户编号</span>
             <input
+              disabled={busy}
               required
               minLength={1}
               maxLength={500}
@@ -53,6 +66,7 @@ export function CustomerMappingModal({
           <label>
             <span>变更原因</span>
             <textarea
+              disabled={busy}
               rows={4}
               required
               minLength={3}
@@ -61,8 +75,9 @@ export function CustomerMappingModal({
               onChange={(event) => onReason(event.target.value)}
             />
           </label>
+          <FormStatus pending={busy} error={error} />
           <div className="form-actions">
-            <button className="text-button" type="button" onClick={onClose}>
+            <button className="text-button" type="button" onClick={onClose} disabled={busy}>
               取消
             </button>
             <button

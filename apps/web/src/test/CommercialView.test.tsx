@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import {
   type CollectionPolicy,
@@ -265,6 +265,49 @@ beforeEach(() => {
   });
 });
 
+it.each([
+  { tab: "Agent 客户端", opener: "停用 Discovery Agent", title: "停用客户端" },
+  { tab: "账单投递", opener: "配置 Research 的 Provider 客户编号", title: "配置客户编号" },
+  { tab: "账单投递", opener: "重放账期单 statement-2026-07", title: "重放账单投递" },
+  { tab: "账单投递", opener: "对账期单 statement-2026-07 发起计费争议", title: "发起计费争议" },
+  { tab: "计费争议", opener: "处理计费争议 dispute.customer.0001", title: "处理计费争议" },
+  { tab: "风险事件", opener: "处置风险事件 Discovery Agent", title: "处置风险事件" },
+])("keeps $title keyboard focus inside the modal and returns to its opener", async ({ tab, opener, title }) => {
+  renderWithQueryClient(<CommercialView />);
+  fireEvent.click(await screen.findByRole("tab", { name: tab }));
+  const trigger = await screen.findByRole("button", { name: opener });
+  trigger.focus();
+  fireEvent.click(trigger);
+  const dialog = await screen.findByRole("dialog", { name: title });
+  const close = within(dialog).getByRole("button", { name: "关闭" });
+  await waitFor(() => expect(close).toHaveFocus());
+  fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
+  expect(dialog.contains(document.activeElement)).toBe(true);
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  await waitFor(() => expect(trigger).toHaveFocus());
+  expect(executeCommercialOperation).not.toHaveBeenCalled();
+});
+
+it("navigates every commercial panel with Arrow keys, Home and End through one keyboard tab stop", async () => {
+  renderWithQueryClient(<CommercialView />);
+  const overviewTab = await screen.findByRole("tab", { name: "合同与额度" });
+  overviewTab.focus();
+  fireEvent.keyDown(overviewTab, { key: "ArrowRight" });
+  const clientsTab = screen.getByRole("tab", { name: "Agent 客户端" });
+  expect(clientsTab).toHaveAttribute("aria-selected", "true");
+  expect(clientsTab).toHaveFocus();
+  fireEvent.keyDown(clientsTab, { key: "End" });
+  const lifecycleTab = screen.getByRole("tab", { name: "数据生命周期" });
+  expect(lifecycleTab).toHaveAttribute("aria-selected", "true");
+  expect(lifecycleTab).toHaveFocus();
+  expect(screen.getAllByRole("tab").filter((tab) => tab.tabIndex === 0)).toHaveLength(1);
+  fireEvent.keyDown(lifecycleTab, { key: "Home" });
+  expect(overviewTab).toHaveAttribute("aria-selected", "true");
+  expect(overviewTab).toHaveFocus();
+  expect(screen.getByRole("tabpanel")).toHaveAccessibleName("合同与额度");
+});
+
 it("loads commercial metrics and all eight operations tabs", async () => {
   renderWithQueryClient(<CommercialView />);
   expect((await screen.findAllByText("860")).length).toBe(2);
@@ -282,6 +325,97 @@ it("loads commercial metrics and all eight operations tabs", async () => {
   expect(screen.getByRole("tab", { name: "风险事件" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "数据生命周期" })).toBeInTheDocument();
   expect(screen.getByText("enterprise-001")).toBeInTheDocument();
+});
+
+it("keeps pending and rejected client operations visible in their dialog without losing the entered reason", async () => {
+  let rejectOperation: (error: Error) => void = () => undefined;
+  vi.mocked(executeCommercialOperation).mockImplementation(
+    () =>
+      new Promise((_resolve, reject) => {
+        rejectOperation = reject;
+      }),
+  );
+  renderWithQueryClient(<CommercialView />);
+  fireEvent.click(await screen.findByRole("tab", { name: "Agent 客户端" }));
+  fireEvent.click(await screen.findByRole("button", { name: "停用 Discovery Agent" }));
+  const dialog = screen.getByRole("dialog", { name: "停用客户端" });
+  const reason = within(dialog).getByLabelText("操作原因");
+  fireEvent.change(reason, { target: { value: "Controlled operator decision" } });
+  fireEvent.click(within(dialog).getByRole("button", { name: "确认停用" }));
+  await waitFor(() => expect(executeCommercialOperation).toHaveBeenCalledOnce());
+  expect(reason).toBeDisabled();
+  expect(within(dialog).getByRole("button", { name: "关闭" })).toBeDisabled();
+  expect(within(dialog).getByRole("status")).toHaveTextContent("正在提交操作");
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(dialog).toBeInTheDocument();
+  rejectOperation(new Error("Operator authorization changed"));
+  expect(await within(dialog).findByRole("alert")).toHaveTextContent("Operator authorization changed");
+  expect(screen.getAllByRole("alert")).toHaveLength(1);
+  expect(reason).toHaveValue("Controlled operator decision");
+  expect(reason).toBeEnabled();
+  expect(executeCommercialOperation).toHaveBeenCalledOnce();
+  fireEvent.keyDown(reason, { key: "Escape" });
+  fireEvent.click(screen.getByRole("button", { name: "停用 Discovery Agent" }));
+  const newDialog = screen.getByRole("dialog", { name: "停用客户端" });
+  expect(within(newDialog).queryByRole("alert")).not.toBeInTheDocument();
+  expect(within(newDialog).getByLabelText("操作原因")).toHaveValue("");
+});
+
+it("preserves a pending lifecycle confirmation and its reason after rejection, without duplicate execution", async () => {
+  let rejectOperation: (error: Error) => void = () => {};
+  vi.mocked(executeCommercialOperation).mockReturnValue(
+    new Promise((_resolve, reject) => {
+      rejectOperation = reject;
+    }),
+  );
+  vi.mocked(loadLifecycleWorkspace).mockResolvedValue({
+    retentionPolicies: [],
+    lifecycleEvents: [],
+    purgeCandidates: [],
+    sourcePurgeCandidates: [],
+    deletedSourceAssets: [],
+    legalHolds: [
+      {
+        id: "hold-error-1",
+        scope_type: "tenant",
+        scope_id: null,
+        matter_reference: "MATTER-ERROR",
+        reason: "Preserve evidence",
+        status: "active",
+        placed_by_user_id: "admin-1",
+        placed_at: "2026-07-16T00:00:00Z",
+        released_by_user_id: null,
+        released_at: null,
+        release_reason: null,
+      },
+    ],
+  });
+  renderWithQueryClient(<CommercialView />);
+  fireEvent.click(await screen.findByRole("tab", { name: "数据生命周期" }));
+  const opener = await screen.findByRole("button", { name: "解除法律保全 MATTER-ERROR" });
+  opener.focus();
+  fireEvent.click(opener);
+  const dialog = screen.getByRole("dialog", { name: "解除法律保全" });
+  const reason = within(dialog).getByLabelText("生命周期操作原因");
+  fireEvent.change(reason, { target: { value: "matter closed with reviewed authority" } });
+  fireEvent.click(within(dialog).getByRole("button", { name: "确认执行" }));
+  await waitFor(() => expect(executeCommercialOperation).toHaveBeenCalledOnce());
+  expect(dialog).toBeInTheDocument();
+  expect(reason).toBeDisabled();
+  expect(within(dialog).getByRole("button", { name: "确认执行" })).toBeDisabled();
+  expect(within(dialog).getByRole("status")).toHaveTextContent("正在提交操作");
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(dialog).toBeInTheDocument();
+  rejectOperation(new Error("Hold release was not authorized"));
+  expect(await within(dialog).findByRole("alert")).toHaveTextContent("Hold release was not authorized");
+  expect(screen.getAllByRole("alert")).toHaveLength(1);
+  expect(reason).toHaveValue("matter closed with reviewed authority");
+  expect(reason).toBeEnabled();
+  expect(executeCommercialOperation).toHaveBeenCalledOnce();
+  fireEvent.keyDown(reason, { key: "Escape" });
+  await waitFor(() => expect(opener).toHaveFocus());
+  fireEvent.click(opener);
+  expect(within(screen.getByRole("dialog")).queryByRole("alert")).not.toBeInTheDocument();
 });
 
 it("manages the external workbench export policy only from internal commercial operations", async () => {
@@ -649,7 +783,17 @@ it("governs retention, legal holds, and verified purge from the lifecycle tab", 
     }),
   );
 
-  fireEvent.click(screen.getByRole("button", { name: "解除法律保全 MATTER-001" }));
+  const releaseHold = screen.getByRole("button", { name: "解除法律保全 MATTER-001" });
+  releaseHold.focus();
+  fireEvent.click(releaseHold);
+  const holdDialog = screen.getByRole("dialog", { name: "解除法律保全" });
+  await waitFor(() => expect(holdDialog.contains(document.activeElement)).toBe(true));
+  const operationsBeforeDismissal = vi.mocked(executeCommercialOperation).mock.calls.length;
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(executeCommercialOperation).toHaveBeenCalledTimes(operationsBeforeDismissal);
+  await waitFor(() => expect(releaseHold).toHaveFocus());
+  fireEvent.click(releaseHold);
   fireEvent.change(screen.getByLabelText("生命周期操作原因"), { target: { value: "matter closed" } });
   fireEvent.click(screen.getByRole("button", { name: "确认执行" }));
   await waitFor(() =>

@@ -1,0 +1,19 @@
+.form-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface-soft);
+  color: var(--ds-ink);
+  font-size: var(--ds-text-sm);
+  overflow-wrap: anywhere;
+}
+.form-status > svg,
+.form-status > .spinner {
+  flex-shrink: 0;
+}
+.form-status-error {
+  background: var(--ds-danger-soft);
+  color: var(--ds-danger);
+}

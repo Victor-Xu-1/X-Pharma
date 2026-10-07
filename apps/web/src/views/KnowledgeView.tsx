@@ -5,6 +5,7 @@ import "./knowledge-pagination.css";
 import "../styles/knowledge.css";
 
 import { EmptyState, ErrorState, formatDate, Spinner } from "../components/common";
+import { ResearchTabList } from "../components/ResearchTabList";
 import { ResultPagination } from "../components/ResultPagination";
 import { ScrollableTableRegion } from "../components/ScrollableTableRegion";
 import {
@@ -348,46 +349,45 @@ export function KnowledgeView({
                 <dd>{formatDate(detail.source_snapshot_at, true)}</dd>
               </div>
             </dl>
-            <div className="view-tabs knowledge-tabs" role="tablist" aria-label="知识专题视图">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={panel === "document"}
-                className={panel === "document" ? "active" : ""}
-                onClick={() =>
-                  updateLocation({
-                    query: submittedQuery,
-                    pageId: selectedPageId,
-                    panel: "document",
-                    versionNumber: null,
-                  })
-                }
-              >
-                <BookOpenText size={16} />
-                专题正文
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={panel === "coverage"}
-                className={panel === "coverage" ? "active" : ""}
-                onClick={() =>
-                  updateLocation({
-                    query: submittedQuery,
-                    pageId: selectedPageId,
-                    panel: "coverage",
-                    versionNumber: null,
-                  })
-                }
-              >
-                <History size={16} />
-                覆盖与版本
-              </button>
-            </div>
+            <ResearchTabList
+              idPrefix="knowledge"
+              ariaLabel="知识专题视图"
+              className="view-tabs knowledge-tabs"
+              activeTab={panel}
+              tabs={[
+                {
+                  key: "document",
+                  label: "专题正文",
+                  icon: <BookOpenText size={16} />,
+                  panelId: "knowledge-active-panel",
+                },
+                {
+                  key: "coverage",
+                  label: "覆盖与版本",
+                  icon: <History size={16} />,
+                  panelId: "knowledge-active-panel",
+                },
+              ]}
+              onChange={(next) =>
+                updateLocation({ query: submittedQuery, pageId: selectedPageId, panel: next, versionNumber: null })
+              }
+            />
             {panel === "document" ? (
-              <div className="markdown-document">{publicKnowledgeMarkdown(detail.rendered_markdown)}</div>
+              <div
+                className="markdown-document"
+                role="tabpanel"
+                id="knowledge-active-panel"
+                aria-labelledby="knowledge-tab-document"
+              >
+                {publicKnowledgeMarkdown(detail.rendered_markdown)}
+              </div>
             ) : (
-              <div className="knowledge-governance">
+              <div
+                className="knowledge-governance"
+                role="tabpanel"
+                id="knowledge-active-panel"
+                aria-labelledby="knowledge-tab-coverage"
+              >
                 {coverageQuery.isPending ? (
                   <Spinner label="正在计算专题覆盖" />
                 ) : coverageQuery.error ? (

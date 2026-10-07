@@ -42,6 +42,115 @@ function NestedDialogHarness() {
   );
 }
 
+it.each([
+  {
+    name: "collapsed disclosure",
+    wrap: (child: ReactNode) => (
+      <details>
+        <summary>高级选项</summary>
+        {child}
+      </details>
+    ),
+  },
+  { name: "hidden ancestor", wrap: (child: ReactNode) => <div aria-hidden="true">{child}</div> },
+  { name: "display none ancestor", wrap: (child: ReactNode) => <div style={{ display: "none" }}>{child}</div> },
+  {
+    name: "visibility hidden ancestor",
+    wrap: (child: ReactNode) => <div style={{ visibility: "hidden" }}>{child}</div>,
+  },
+  { name: "disabled fieldset", wrap: (child: ReactNode) => <fieldset disabled>{child}</fieldset> },
+])("skips an autofocus request inside $name", async ({ wrap }) => {
+  render(
+    <FocusScope label="可操作控件" onClose={vi.fn()}>
+      <button type="button">首个可用操作</button>
+      {wrap(
+        <button type="button" data-modal-autofocus="true">
+          不可用操作
+        </button>,
+      )}
+    </FocusScope>,
+  );
+  await waitFor(() => expect(screen.getByRole("button", { name: "首个可用操作" })).toHaveFocus());
+});
+
+it("wraps Tab around visible controls instead of a hidden trailing button", async () => {
+  render(
+    <FocusScope label="可见焦点环" onClose={vi.fn()}>
+      <button type="button">第一个</button>
+      <button type="button">最后一个</button>
+      <div aria-hidden="true">
+        <button type="button">隐藏的末尾</button>
+      </div>
+    </FocusScope>,
+  );
+  const first = screen.getByRole("button", { name: "第一个" });
+  const last = screen.getByRole("button", { name: "最后一个" });
+  last.focus();
+  fireEvent.keyDown(last, { key: "Tab" });
+  expect(first).toHaveFocus();
+  fireEvent.keyDown(first, { key: "Tab", shiftKey: true });
+  expect(last).toHaveFocus();
+});
+
+it.each(["preventDefault", "stopPropagation"] as const)(
+  "lets a child consume Escape with %s before dismissing the dialog",
+  async (consume) => {
+    const onClose = vi.fn();
+    render(
+      <FocusScope label="输入层级" onClose={onClose}>
+        <input aria-label="输入框" onKeyDown={(event) => event[consume]()} />
+      </FocusScope>,
+    );
+    const input = screen.getByRole("textbox", { name: "输入框" });
+    await waitFor(() => expect(input).toHaveFocus());
+    fireEvent.keyDown(input, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(input).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledOnce();
+  },
+);
+
+it.each([
+  { name: "input-method composition", options: { isComposing: true } },
+  { name: "held-key repetition", options: { repeat: true } },
+])("does not dismiss on Escape during $name", async ({ options }) => {
+  const onClose = vi.fn();
+  render(
+    <FocusScope label="输入保护" onClose={onClose}>
+      <input aria-label="输入框" />
+    </FocusScope>,
+  );
+  const input = screen.getByRole("textbox", { name: "输入框" });
+  await waitFor(() => expect(input).toHaveFocus());
+  fireEvent.keyDown(input, { key: "Escape", ...options });
+  expect(onClose).not.toHaveBeenCalled();
+  fireEvent.keyDown(input, { key: "Escape" });
+  expect(onClose).toHaveBeenCalledOnce();
+});
+
+it("makes sibling branches inert while open and restores their original state on unmount", () => {
+  const { unmount } = render(
+    <>
+      <button type="button">背景操作</button>
+      <div inert data-testid="already-inert">
+        原本禁用的分区
+      </div>
+      <FocusScope label="交互隔离" onClose={vi.fn()}>
+        <button type="button">弹窗操作</button>
+      </FocusScope>
+    </>,
+  );
+  const background = screen.getByRole("button", { name: "背景操作" });
+  const alreadyInert = screen.getByTestId("already-inert");
+  expect(background).toHaveAttribute("inert");
+  expect(screen.getByRole("dialog")).not.toHaveAttribute("inert");
+  expect(screen.getByRole("button", { name: "弹窗操作" })).not.toHaveAttribute("inert");
+  unmount();
+  expect(background).not.toHaveAttribute("inert");
+  expect(alreadyInert).toHaveAttribute("inert");
+});
+
 it("preserves an intentional focus move before the modal autofocus frame runs", () => {
   const frames = new Map<number, FrameRequestCallback>();
   let nextFrame = 0;

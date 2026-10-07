@@ -10,6 +10,22 @@ const tabs = [
   { key: "patents", label: "专利" },
 ] as const;
 
+it("links alternate views to an explicitly shared panel without changing stable tab identifiers", () => {
+  render(
+    <ResearchTabList
+      tabs={tabs.map((tab) => ({ ...tab, panelId: "shared-research-panel" }))}
+      activeTab="overview"
+      onChange={vi.fn()}
+      ariaLabel="共享研究分区"
+      idPrefix="shared-research"
+    />,
+  );
+  for (const tab of screen.getAllByRole("tab")) {
+    expect(tab).toHaveAttribute("aria-controls", "shared-research-panel");
+    expect(tab.id).toBe(`shared-research-tab-${tab.dataset.tabKey}`);
+  }
+});
+
 function Harness({ onChange }: { onChange: (tab: (typeof tabs)[number]["key"]) => void }) {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]["key"]>("overview");
   return (

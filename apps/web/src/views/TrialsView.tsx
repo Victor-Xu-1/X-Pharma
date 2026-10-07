@@ -28,6 +28,7 @@ import { DomainExportControl } from "../components/DomainExportControl";
 import { EmptyQueryResult } from "../components/EmptyQueryResult";
 import { EntityMultiFilterSelect } from "../components/EntityMultiFilterSelect";
 import { FacetMultiSelect } from "../components/FacetMultiSelect";
+import { InlineEntityLinks } from "../components/InlineEntityLinks";
 import { QueryResultSummary } from "../components/QueryResultSummary";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
@@ -196,25 +197,27 @@ function RoleEntityLinks({
   roles,
   acceptedRoles,
   onOpenEntity,
+  compact = false,
+  label,
 }: {
   roles: ClinicalTrialSearchItemRead["entity_roles"];
   acceptedRoles: string[];
   onOpenEntity: TrialEntityOpener;
+  compact?: boolean;
+  label?: string;
 }) {
   const items = (roles ?? []).filter((item) => acceptedRoles.includes(item.role));
-  if (!items.length) return <span>--</span>;
   return (
-    <span className="domain-linked-entities trial-role-links">
-      {items.map((item) => (
-        <button
-          type="button"
-          key={`${item.role}-${item.entity_id}`}
-          onClick={() => onOpenEntity(item.entity_type, item.entity_id)}
-        >
-          {trialRoleLabels[item.role]}: {item.name}
-        </button>
-      ))}
-    </span>
+    <InlineEntityLinks
+      label={label ?? acceptedRoles.map((role) => trialRoleLabels[role]).join("与")}
+      compact={compact}
+      items={items.map((item) => ({
+        ...item,
+        key: `${item.role}-${item.entity_id}`,
+        label: `${trialRoleLabels[item.role]}: ${item.name}`,
+      }))}
+      onSelect={(item) => onOpenEntity(item.entity_type, item.entity_id)}
+    />
   );
 }
 
@@ -863,6 +866,8 @@ export function TrialsView({
             roles={row.original.entity_roles}
             acceptedRoles={["investigational_drug", "combination_drug"]}
             onOpenEntity={openTrialEntity}
+            compact
+            label={`${row.original.registry_id} 的药物关联`}
           />
         ),
       },
@@ -876,6 +881,8 @@ export function TrialsView({
             roles={row.original.entity_roles}
             acceptedRoles={["investigational_target", "combination_target"]}
             onOpenEntity={openTrialEntity}
+            compact
+            label={`${row.original.registry_id} 的靶点关联`}
           />
         ),
       },
@@ -946,18 +953,13 @@ export function TrialsView({
         header: "关联实体",
         size: 165,
         enableSorting: false,
-        cell: ({ row }) =>
-          row.original.linked_entities.length ? (
-            <span className="domain-linked-entities">
-              {row.original.linked_entities.slice(0, 3).map((entity) => (
-                <button type="button" key={entity.id} onClick={() => openTrialEntity(entity.entity_type, entity.id)}>
-                  {entity.name}
-                </button>
-              ))}
-            </span>
-          ) : (
-            "--"
-          ),
+        cell: ({ row }) => (
+          <InlineEntityLinks
+            label={`${row.original.registry_id} 的关联实体`}
+            items={row.original.linked_entities.map((entity) => ({ ...entity, key: entity.id, label: entity.name }))}
+            onSelect={(entity) => openTrialEntity(entity.entity_type, entity.id)}
+          />
+        ),
       },
       {
         id: "open",

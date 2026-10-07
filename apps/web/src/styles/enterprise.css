@@ -410,40 +410,6 @@ fieldset.enterprise-modal-subject legend {
   padding-top: 22px;
 }
 
-.target-evidence-panel {
-  display: grid;
-  gap: 12px;
-}
-.target-evidence-filters {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(150px, 220px)) minmax(80px, 1fr);
-  align-items: end;
-  gap: 10px;
-  border-bottom: 1px solid var(--ds-border);
-  background: var(--ds-surface);
-  padding: 12px 14px;
-}
-.target-evidence-filters label {
-  display: grid;
-  gap: 5px;
-  color: var(--ds-ink);
-  font-size: var(--ds-text-xs);
-  font-weight: 700;
-}
-.target-evidence-filters select {
-  min-height: 36px;
-  border: 1px solid var(--ds-border-strong);
-  border-radius: 4px;
-  background: var(--ds-surface);
-  color: var(--ds-ink-strong);
-  padding: 6px 9px;
-}
-.target-evidence-filters > span {
-  justify-self: end;
-  color: var(--ds-ink-muted);
-  font-size: var(--ds-text-xs);
-}
-
 .sar-panel {
   display: grid;
   gap: 12px;
