@@ -52,7 +52,6 @@
 }
 .dossier-metrics dt {
   color: var(--ds-ink-muted);
-  font-size: 10px;
 }
 .dossier-metrics dd {
   margin: 5px 0 0;

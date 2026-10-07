@@ -11,6 +11,27 @@ function style(file: string) {
 }
 
 describe("frontend craft regression boundaries", () => {
+  it("keeps evidence metadata and pagination caveats readable rather than inheriting tiny text", () => {
+    expect(style("knowledge.css")).not.toMatch(/font-size:\s*(?:9|10|11)px;/);
+    expect(style("dossiers.css")).not.toMatch(/font-size:\s*(?:[6-9]|10|11)px;/);
+    for (const file of [
+      "base.css",
+      "research.css",
+      "targets.css",
+      "commercial.css",
+      "enterprise.css",
+      "governance.css",
+    ]) {
+      expect(style(file), `${file} metadata has a readable authority`).not.toMatch(/font-size:\s*(?:[1-9]|1[01])px;/);
+    }
+    const research = style("research.css");
+    const pagination = research.match(/\.domain-pagination\s*\{([^}]*)\}/)?.[1];
+    const caveat = research.match(/\.domain-pagination-context small\s*\{([^}]*)\}/)?.[1];
+    expect(pagination).toContain("font-size: var(--ds-text-xs);");
+    expect(caveat).toContain("font-size: var(--ds-text-xs);");
+    expect(caveat).toContain("white-space: normal;");
+    expect(caveat).not.toContain("text-overflow: ellipsis;");
+  });
   it("keeps a conflicting fact explicit and never presents it as approved", () => {
     render(<StatusBadge value="conflict" />);
     expect(screen.getByText("存在冲突")).toHaveClass("badge-danger");

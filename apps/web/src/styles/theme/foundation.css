@@ -12,6 +12,10 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+:where(.workspace-shell) small {
+  font-size: var(--ds-text-xs);
+}
+
 :root code,
 :root pre,
 .mono-value {

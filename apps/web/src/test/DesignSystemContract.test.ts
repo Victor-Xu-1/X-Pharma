@@ -365,9 +365,9 @@ describe("unified minimal biomedical light design system", () => {
     expect(queryTypography.body).toContain("line-height: var(--ds-leading-body);");
     expect(compactQueryModes.body).toContain("font-size: var(--ds-text-xs);");
     expect(compactQueryModes.body).toContain("line-height: var(--ds-leading-compact);");
-    expect(ruleBody(baseStyles, ".professional-query-builder > nav button")).toContain("font-size: 10px;");
-    expect(ruleBody(baseStyles, ".entity-search-candidate-heading strong")).toContain("font-size: 11px;");
-    expect(ruleBody(baseStyles, ".professional-more-fields > summary")).toContain("font-size: 10px;");
+    expect(ruleBody(baseStyles, ".professional-query-builder > nav button")).toContain("font-size: var(--ds-text-xs);");
+    expect(ruleBody(baseStyles, ".entity-search-candidate-heading strong")).toContain("font-size: var(--ds-text-xs);");
+    expect(ruleBody(baseStyles, ".professional-more-fields > summary")).toContain("font-size: var(--ds-text-xs);");
     expect(ruleBody(baseStyles, ".segmented-control button")).not.toContain("font-size: 10px;");
     expect(ruleBody(baseStyles, ".advanced-filter-panel > summary")).not.toContain("font-size: 11px;");
   });

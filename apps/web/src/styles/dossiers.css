@@ -284,7 +284,7 @@
   align-items: center;
   gap: 6px;
   color: var(--ds-ink-muted);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .drug-profile-attribute-strip dd {
   margin: 7px 0 0;
@@ -316,7 +316,7 @@
 }
 .drug-profile-structure-content dt {
   color: var(--ds-ink-muted);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .drug-profile-structure-content dd {
   margin: 3px 0 0;
@@ -341,7 +341,7 @@
 }
 .drug-profile-milestones time {
   color: var(--ds-ink);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .drug-profile-milestones strong,
 .drug-profile-milestones li span {
@@ -354,7 +354,7 @@
 .drug-profile-milestones li span {
   margin-top: 3px;
   color: var(--ds-ink-muted);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .drug-profile-coverage > header > span {
   text-align: right;
@@ -428,7 +428,7 @@
   align-items: center;
   gap: 11px;
   color: var(--ds-ink);
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
 }
 .company-phase-distribution li > div {
   height: 8px;
@@ -450,7 +450,7 @@
   border-top: 1px solid var(--ds-border-subtle);
   padding-top: 11px;
   color: var(--ds-ink);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .company-asset-list {
   border-top: 1px solid var(--ds-border);
@@ -477,7 +477,7 @@
 .company-asset-list > li > span:not(.badge) {
   overflow: hidden;
   color: var(--ds-ink);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -500,12 +500,12 @@
 .company-profile-recent-events time,
 .company-profile-recent-events span {
   color: var(--ds-ink-muted);
-  font-size: 9px;
+  font-size: var(--ds-text-xs);
 }
 .company-profile-recent-events strong {
   overflow-wrap: anywhere;
   color: var(--ds-ink-strong);
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
   line-height: 1.45;
 }
 .company-profile-coverage > header > span {
@@ -537,7 +537,7 @@
 }
 .entity-attribute-grid dt {
   color: var(--ds-ink-muted);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
 }
 .entity-attribute-grid dd {
   margin: 6px 0 0;
@@ -595,7 +595,7 @@
   background: transparent;
   color: var(--ds-accent-strong);
   padding: 2px 0;
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
   font-weight: 650;
 }
 .coverage-open-button:hover:not(:disabled) {
@@ -655,7 +655,7 @@
 }
 .company-intelligence-section > header span {
   color: var(--ds-accent-strong);
-  font-size: 9px;
+  font-size: var(--ds-text-xs);
   font-weight: 800;
 }
 .company-intelligence-section > header h3 {
@@ -666,7 +666,7 @@
 .company-intelligence-section > header small {
   max-width: 420px;
   color: var(--ds-ink-muted);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
   text-align: right;
 }
 .company-event-timeline {
@@ -685,7 +685,7 @@
 }
 .company-event-timeline time {
   color: var(--ds-ink-muted);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
   font-variant-numeric: tabular-nums;
 }
 .company-event-marker {
@@ -699,7 +699,7 @@
 }
 .company-event-timeline li > div > span {
   color: var(--ds-ink-muted);
-  font-size: 9px;
+  font-size: var(--ds-text-xs);
   font-weight: 700;
 }
 .company-event-timeline h4 {
@@ -710,7 +710,7 @@
 .company-event-timeline p {
   margin: 0;
   color: var(--ds-ink-muted);
-  font-size: 10px;
+  font-size: var(--ds-text-xs);
   line-height: 1.55;
 }
 .company-event-timeline p button {

@@ -12,13 +12,17 @@ async function login(page: Page, email: string, password: string) {
   await page.getByLabel("工作邮箱").fill(email);
   await page.getByLabel("密码", { exact: true }).fill(password);
   await page.getByRole("button", { name: "进入工作台", exact: true }).click();
-  await expect(page.getByRole("navigation", { name: "主导航" })).toBeAttached();
+  await expect(page.getByLabel("工作邮箱")).toHaveCount(0);
+  await expect(page.getByRole("main")).toBeVisible();
+  // A closed mobile drawer is deliberately absent from the accessible tree.
+  await expect(page.getByRole("navigation", { name: "主导航", includeHidden: true })).toBeAttached();
 }
 
 async function openNavigation(page: Page) {
-  await expect(page.getByRole("navigation", { name: "主导航" })).toBeAttached();
+  await expect(page.getByRole("navigation", { name: "主导航", includeHidden: true })).toBeAttached();
   const opener = page.getByRole("button", { name: "打开导航", exact: true });
   if (await opener.isVisible()) await opener.click();
+  await expect(page.getByRole("navigation", { name: "主导航" })).toBeVisible();
 }
 
 async function logout(page: Page, workbench: "research" | "internal") {
@@ -90,7 +94,8 @@ test("[account-registration][human-session] independently registers researchers 
   expect(invited.tenant_id).toBe(administrator.tenant_id);
   expect(invited.tenant_id).not.toBe(independent.tenant_id);
   await login(page, employee, password);
-  await expect(page.getByRole("button", { name: "数据工厂", exact: true })).toBeAttached();
+  await expect(page.getByRole("heading", { name: "自动数据工厂", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "数据工厂", exact: true, includeHidden: true })).toBeAttached();
   expect((await page.request.get("/api/v1/enterprise/account-invitations")).status()).toBe(403);
   await page.reload();
   expect((await page.request.get("/api/v1/auth/me")).status()).toBe(200);

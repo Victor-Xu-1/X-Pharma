@@ -65,7 +65,7 @@
 .policy-form header small,
 .entity-add-strip small {
   color: var(--ds-ink-muted);
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
 }
 
 .collections-main {
@@ -140,7 +140,7 @@
 
 .comparison-selection-copy > small {
   color: var(--ds-ink-muted);
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
 }
 
 .export-panel {
@@ -305,7 +305,7 @@ h3 {
   text-transform: uppercase;
 }
 .mono-cell {
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
   overflow-wrap: anywhere;
 }
 
