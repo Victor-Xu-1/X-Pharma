@@ -1,5 +1,39 @@
 # Design QA: X-Pharma 工作台
 
+## 2026-10-07: research-first frontend craft
+
+The award-inspired quality target is assessed through task clarity, visual
+coherence, readable evidence, responsive behavior, keyboard access and
+performance, not decorative payloads or a self-certified award. The original
+X-Pharma identity, v0.1.0, permissions and scientific coverage boundaries remain.
+
+Candidate `526dd57ab7cbdce3db5e55d0b10c88d28d58504a` passes 184 focused UI tests
+across 21 files, strict application/E2E types and the unchanged build boundary.
+Initial CSS is 192298 bytes against the original 196608-byte limit. Eight
+isolated registration/organization scenarios pass across four viewports.
+Chrome154 and signed, project-local Chrome155.0.8059.39 both pass 58 settled
+desktop/mobile page scans and 69 focused interaction-state captures / 14 checks
+across 320/390/1024/1440/1920 widths. The latter set covers representative
+intermediate widths, not every route at every width. Desktop and mobile
+computed-font reviews each cover 42 surfaces without sub-12px body metadata.
+Automated scans are not complete WCAG certification or scientific acceptance.
+
+The first reference workflows failed and are not release evidence. Closed
+mobile navigation required structural assertions distinct from visible actions;
+then all four staged flows exposed an empty CSSOM `font` shorthand with
+`tabular-nums`. The original fixed-column owner reproduces that failure on the
+real table at all four viewports. Composing the font-face query from actual
+computed longhands passes all four without removing font readiness, column
+alignment or scrolling assertions. No partial reference artifact is adopted.
+
+Review corrected grouped governance choices, inaccessible wide empty tables,
+composed-input borders, mobile focus boundaries and truncated coverage caveats.
+Knowledge/evidence rules now load through their two lazy owners; overridden
+tiny declarations and competing responsive rules are removed. Private real-data
+captures remain on E-backed storage, outside the public repository. Reviewed
+synthetic references, normal exact-head CI and exact-main deployment retain
+their independent gates; no masks, tolerances or resource budgets are relaxed.
+
 ## Reproducible Chrome installation
 
 `apps/web/e2e/visual-baselines/manifest.json` remains the sole reviewed browser-version authority. Normal CI uses `playwright install-deps chrome` only for operating-system dependencies, then the existing `scripts/bootstrap-wsl-chrome.sh --reviewed` user-level installer. `deploy/browser/reviewed-google-chrome.json` binds the official archive's exact size, package/executable SHA-256 and filename to that visual manifest's digest. It is metadata only; no browser binary is redistributed. Drift, invalid paths or digest mismatch fail closed without selecting a newer release or updating references.
@@ -8,7 +42,7 @@ The frozen official HTTPS artifact was compared byte-for-byte, including symlink
 
 Pinned older Chrome is for isolated, controlled acceptance—not a recommendation to delay browser security updates or browse arbitrary sites. No current local/system browser is replaced by CI setup. Local source, browser caches and receipts remain on E-backed storage.
 
-## Current iteration: comprehensive preview fidelity
+## 2026-10-05: comprehensive preview fidelity
 
 The user explicitly requested a closer, page-by-page match after the earlier
 lightweight adaptation. The earlier acceptance does not waive this iteration's
