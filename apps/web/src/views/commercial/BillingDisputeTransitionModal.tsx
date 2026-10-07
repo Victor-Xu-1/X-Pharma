@@ -1,7 +1,8 @@
 import { X } from "lucide-react";
 import type { FormEvent } from "react";
+import { FormStatus } from "../../components/FormStatus";
 import type { BillingDisputeAction } from "../../lib/contracts/commercial";
-import { units } from "./format";
+import { useModalFocus } from "../../lib/useModalFocus";
 import type { DisputeCaseAction } from "./types";
 
 export function BillingDisputeTransitionModal({
@@ -11,6 +12,7 @@ export function BillingDisputeTransitionModal({
   units,
   adjustmentKey,
   busy,
+  error = "",
   onAction,
   onNotes,
   onAssignee,
@@ -25,6 +27,7 @@ export function BillingDisputeTransitionModal({
   units: string;
   adjustmentKey: string;
   busy: boolean;
+  error?: string;
   onAction: (value: BillingDisputeAction) => void;
   onNotes: (value: string) => void;
   onAssignee: (value: string) => void;
@@ -33,17 +36,25 @@ export function BillingDisputeTransitionModal({
   onClose: () => void;
   onSubmit: (event: FormEvent) => void;
 }) {
+  const dialogRef = useModalFocus<HTMLElement>(true, onClose, { closeOnEscape: !busy });
   const credit = action.action === "resolve_credit";
   const valid = notes.trim().length >= 3 && (!credit || (Number(units) > 0 && adjustmentKey.trim().length >= 8));
   return (
     <div className="modal-backdrop" role="presentation">
-      <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="transition-dispute-title">
+      <section
+        ref={dialogRef}
+        className="modal-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="transition-dispute-title"
+        tabIndex={-1}
+      >
         <header>
           <div>
             <p className="eyebrow">BILLING DISPUTE</p>
             <h2 id="transition-dispute-title">处理计费争议</h2>
           </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="关闭">
+          <button className="icon-button" type="button" onClick={onClose} aria-label="关闭" disabled={busy}>
             <X size={18} />
           </button>
         </header>
@@ -59,6 +70,7 @@ export function BillingDisputeTransitionModal({
             <span>处理动作</span>
             <select
               aria-label="争议处理动作"
+              disabled={busy}
               value={action.action}
               onChange={(event) => onAction(event.target.value as BillingDisputeAction)}
             >
@@ -71,7 +83,12 @@ export function BillingDisputeTransitionModal({
           </label>
           <label>
             <span>负责人</span>
-            <input maxLength={500} value={assignee} onChange={(event) => onAssignee(event.target.value)} />
+            <input
+              disabled={busy}
+              maxLength={500}
+              value={assignee}
+              onChange={(event) => onAssignee(event.target.value)}
+            />
           </label>
           {credit ? (
             <>
@@ -79,6 +96,7 @@ export function BillingDisputeTransitionModal({
                 <span>退款额度</span>
                 <input
                   aria-label="退款额度"
+                  disabled={busy}
                   type="number"
                   min="0.00000001"
                   max={action.dispute.disputed_units}
@@ -92,6 +110,7 @@ export function BillingDisputeTransitionModal({
                 <span>账本调整键</span>
                 <input
                   aria-label="账本调整键"
+                  disabled={busy}
                   minLength={8}
                   maxLength={199}
                   required
@@ -105,6 +124,7 @@ export function BillingDisputeTransitionModal({
             <span>处理记录</span>
             <textarea
               aria-label="争议处理记录"
+              disabled={busy}
               rows={4}
               minLength={3}
               maxLength={4000}
@@ -113,8 +133,9 @@ export function BillingDisputeTransitionModal({
               onChange={(event) => onNotes(event.target.value)}
             />
           </label>
+          <FormStatus pending={busy} error={error} />
           <div className="form-actions">
-            <button className="text-button" type="button" onClick={onClose}>
+            <button className="text-button" type="button" onClick={onClose} disabled={busy}>
               取消
             </button>
             <button className="primary-button" type="submit" disabled={busy || !valid}>

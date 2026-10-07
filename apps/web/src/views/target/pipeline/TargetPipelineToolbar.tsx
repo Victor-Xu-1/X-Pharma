@@ -1,5 +1,6 @@
 import { Columns3, RotateCcw } from "lucide-react";
 import { AddToComparisonControl } from "../../../components/AddToComparisonControl";
+import { useDismissibleDetails } from "../../../lib/useDismissibleDetails";
 import { defaultTargetDrugColumns, targetDrugColumnOptions } from "./presentation";
 import type { TargetPipelineProps } from "./types";
 import type { TargetPipelineState } from "./useTargetPipeline";
@@ -30,6 +31,7 @@ export function TargetPipelineToolbar({
   pageDrugIds: string[];
   allPageDrugsSelected: boolean;
 }) {
+  const columnPopover = useDismissibleDetails();
   const {
     displayMode,
     updateDisplayMode,
@@ -65,7 +67,7 @@ export function TargetPipelineToolbar({
           </button>
         </fieldset>
         {displayMode === "drug" ? (
-          <details className="table-column-menu">
+          <details className="table-column-menu" {...columnPopover}>
             <summary>
               <Columns3 size={15} />列
             </summary>

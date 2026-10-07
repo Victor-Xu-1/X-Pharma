@@ -1,5 +1,6 @@
 import { CircleDollarSign, DatabaseBackup, ReceiptText, RefreshCw, Scale, ShieldAlert, Users } from "lucide-react";
 import { ErrorState, formatDate, Spinner } from "../components/common";
+import { ResearchTabList } from "../components/ResearchTabList";
 import { commercialKeys } from "../lib/contracts/commercial";
 import { BillingDisputeTable } from "./commercial/BillingDisputeTable";
 import { BillingDisputeTransitionModal } from "./commercial/BillingDisputeTransitionModal";
@@ -115,7 +116,9 @@ export function CommercialView() {
           刷新
         </button>
       </div>
-      {visibleError ? (
+      {visibleError &&
+      tab !== "lifecycle" &&
+      !(clientAction || riskAction || mappingAction || replayAction || createDisputeAction || disputeCaseAction) ? (
         <p className="inline-error" role="alert">
           {visibleError}
         </p>
@@ -149,157 +152,157 @@ export function CommercialView() {
           <Metric icon={<DatabaseBackup size={18} />} label="执行中导出" value={String(metrics.pendingExports)} />
         </section>
       ) : null}
-      <div className="tab-bar" role="tablist" aria-label="商业运营视图">
-        {(
-          ["overview", "clients", "billing", "disputes", "exports", "export-policy", "risks", "lifecycle"] as const
-        ).map((key) => (
-          <button
-            key={key}
-            className={tab === key ? "active" : ""}
-            type="button"
-            role="tab"
-            aria-selected={tab === key}
-            onClick={() => setTab(key)}
-          >
-            {
-              {
-                overview: "合同与额度",
-                clients: "Agent 客户端",
-                billing: "账单投递",
-                disputes: "计费争议",
-                exports: "数据导出",
-                "export-policy": "导出策略",
-                risks: "风险事件",
-                lifecycle: "数据生命周期",
-              }[key]
-            }
-          </button>
-        ))}
+      <ResearchTabList
+        idPrefix="commercial"
+        ariaLabel="商业运营视图"
+        activeTab={tab}
+        onChange={setTab}
+        tabs={[
+          { key: "overview", label: "合同与额度", panelId: "commercial-active-panel" },
+          { key: "clients", label: "Agent 客户端", panelId: "commercial-active-panel" },
+          { key: "billing", label: "账单投递", panelId: "commercial-active-panel" },
+          { key: "disputes", label: "计费争议", panelId: "commercial-active-panel" },
+          { key: "exports", label: "数据导出", panelId: "commercial-active-panel" },
+          { key: "export-policy", label: "导出策略", panelId: "commercial-active-panel" },
+          { key: "risks", label: "风险事件", panelId: "commercial-active-panel" },
+          { key: "lifecycle", label: "数据生命周期", panelId: "commercial-active-panel" },
+        ]}
+      />
+      <div role="tabpanel" id="commercial-active-panel" aria-labelledby={`commercial-tab-${tab}`}>
+        {paneError ? (
+          <ErrorState
+            message={paneError}
+            retry={() => {
+              void paneQuery?.refetch();
+            }}
+          />
+        ) : panePending ? (
+          <Spinner label="正在读取商业运营数据" />
+        ) : (
+          <>
+            {tab === "overview" && overview ? <SubscriptionTable items={overview.subscriptions} /> : null}
+            {tab === "clients" ? (
+              <ClientTable
+                items={clients}
+                busy={busy}
+                onAction={(action) => {
+                  setActionError("");
+                  setClientAction(action);
+                  setReason("");
+                }}
+              />
+            ) : null}
+            {tab === "billing" ? (
+              <BillingOperations
+                accounts={billingAccounts}
+                deliveries={billingDeliveries}
+                deliveryFilter={deliveryFilter}
+                busy={busy}
+                onDeliveryFilter={setDeliveryFilter}
+                onMapping={(account) => {
+                  setActionError("");
+                  setMappingAction({ account });
+                  setExternalReference("");
+                  setReason("");
+                }}
+                onReplay={(delivery) => {
+                  setActionError("");
+                  setReplayAction({ delivery });
+                  setReason("");
+                }}
+                onDispute={(delivery) => {
+                  setActionError("");
+                  setCreateDisputeAction({
+                    delivery,
+                    disputeKey: `dispute.${Date.now()}.${delivery.statement_id.slice(0, 8)}`,
+                  });
+                  setDisputeCategory("usage");
+                  setDisputedUnits("");
+                  setDisputeSubject("");
+                  setReason("");
+                }}
+              />
+            ) : null}
+            {tab === "disputes" ? (
+              <BillingDisputeTable
+                items={billingDisputes}
+                filter={disputeFilter}
+                busy={busy}
+                onFilter={setDisputeFilter}
+                onAction={(dispute) => {
+                  setActionError("");
+                  setDisputeCaseAction({
+                    dispute,
+                    action: dispute.status === "open" ? "investigate" : "resolve_no_credit",
+                    operationKey: `dispute.operation.${Date.now()}.${dispute.id.slice(0, 8)}`,
+                  });
+                  setReason("");
+                  setAssignee(dispute.assigned_to ?? "");
+                  setDisputedUnits("");
+                  setAdjustmentKey(`dispute.credit.${Date.now()}.${dispute.id.slice(0, 8)}`);
+                }}
+              />
+            ) : null}
+            {tab === "exports" ? (
+              <ExportTable items={exports} busy={busy} onAction={(job, action) => void actOnExport(job, action)} />
+            ) : null}
+            {tab === "export-policy" ? <WorkspaceExportPolicyPanel /> : null}
+            {tab === "risks" ? (
+              <RiskPanel
+                items={risks}
+                totalItems={riskQuery.data?.total_items ?? 0}
+                nextCursor={riskQuery.data?.next_cursor ?? null}
+                filter={riskFilter}
+                isPending={riskQuery.isPending}
+                canGoPrevious={riskCursorHistory.length > 0}
+                busy={busy}
+                onFilter={(value) => {
+                  setRiskFilter(value);
+                  setRiskCursor(null);
+                  setRiskCursorHistory([]);
+                }}
+                onPrevious={() => {
+                  const previousIndex = riskCursorHistory.length - 1;
+                  if (previousIndex < 0) return;
+                  setRiskCursor(riskCursorHistory[previousIndex] ?? null);
+                  setRiskCursorHistory(riskCursorHistory.slice(0, previousIndex));
+                }}
+                onNext={(nextCursor) => {
+                  setRiskCursorHistory([...riskCursorHistory, riskCursor]);
+                  setRiskCursor(nextCursor);
+                }}
+                onAction={(action) => {
+                  setActionError("");
+                  setRiskAction(action);
+                  setReason(action.event.case_notes);
+                }}
+              />
+            ) : null}
+            {tab === "lifecycle" && lifecycleQuery.data ? (
+              <DataLifecyclePanel
+                policies={retentionPolicies}
+                holds={legalHolds}
+                events={lifecycleEvents}
+                candidates={purgeCandidates}
+                sourceCandidates={sourcePurgeCandidates}
+                deletedSourceAssets={deletedSourceAssets}
+                busy={busy}
+                error={visibleError}
+                onActionStart={() => setActionError("")}
+                onSavePolicy={saveRetentionPolicy}
+                onPlaceHold={placeLegalHold}
+                onReleaseHold={releaseLegalHold}
+                onPurge={purgeExport}
+                onPurgeSource={purgeSourceAsset}
+                onReauthorizeSource={reauthorizeSourceAsset}
+              />
+            ) : null}
+          </>
+        )}
       </div>
-      {paneError ? (
-        <ErrorState
-          message={paneError}
-          retry={() => {
-            void paneQuery?.refetch();
-          }}
-        />
-      ) : panePending ? (
-        <Spinner label="正在读取商业运营数据" />
-      ) : (
-        <>
-          {tab === "overview" && overview ? <SubscriptionTable items={overview.subscriptions} /> : null}
-          {tab === "clients" ? (
-            <ClientTable
-              items={clients}
-              busy={busy}
-              onAction={(action) => {
-                setClientAction(action);
-                setReason("");
-              }}
-            />
-          ) : null}
-          {tab === "billing" ? (
-            <BillingOperations
-              accounts={billingAccounts}
-              deliveries={billingDeliveries}
-              deliveryFilter={deliveryFilter}
-              busy={busy}
-              onDeliveryFilter={setDeliveryFilter}
-              onMapping={(account) => {
-                setMappingAction({ account });
-                setExternalReference("");
-                setReason("");
-              }}
-              onReplay={(delivery) => {
-                setReplayAction({ delivery });
-                setReason("");
-              }}
-              onDispute={(delivery) => {
-                setCreateDisputeAction({
-                  delivery,
-                  disputeKey: `dispute.${Date.now()}.${delivery.statement_id.slice(0, 8)}`,
-                });
-                setDisputeCategory("usage");
-                setDisputedUnits("");
-                setDisputeSubject("");
-                setReason("");
-              }}
-            />
-          ) : null}
-          {tab === "disputes" ? (
-            <BillingDisputeTable
-              items={billingDisputes}
-              filter={disputeFilter}
-              busy={busy}
-              onFilter={setDisputeFilter}
-              onAction={(dispute) => {
-                setDisputeCaseAction({
-                  dispute,
-                  action: dispute.status === "open" ? "investigate" : "resolve_no_credit",
-                  operationKey: `dispute.operation.${Date.now()}.${dispute.id.slice(0, 8)}`,
-                });
-                setReason("");
-                setAssignee(dispute.assigned_to ?? "");
-                setDisputedUnits("");
-                setAdjustmentKey(`dispute.credit.${Date.now()}.${dispute.id.slice(0, 8)}`);
-              }}
-            />
-          ) : null}
-          {tab === "exports" ? (
-            <ExportTable items={exports} busy={busy} onAction={(job, action) => void actOnExport(job, action)} />
-          ) : null}
-          {tab === "export-policy" ? <WorkspaceExportPolicyPanel /> : null}
-          {tab === "risks" ? (
-            <RiskPanel
-              items={risks}
-              totalItems={riskQuery.data?.total_items ?? 0}
-              nextCursor={riskQuery.data?.next_cursor ?? null}
-              filter={riskFilter}
-              isPending={riskQuery.isPending}
-              canGoPrevious={riskCursorHistory.length > 0}
-              busy={busy}
-              onFilter={(value) => {
-                setRiskFilter(value);
-                setRiskCursor(null);
-                setRiskCursorHistory([]);
-              }}
-              onPrevious={() => {
-                const previousIndex = riskCursorHistory.length - 1;
-                if (previousIndex < 0) return;
-                setRiskCursor(riskCursorHistory[previousIndex] ?? null);
-                setRiskCursorHistory(riskCursorHistory.slice(0, previousIndex));
-              }}
-              onNext={(nextCursor) => {
-                setRiskCursorHistory([...riskCursorHistory, riskCursor]);
-                setRiskCursor(nextCursor);
-              }}
-              onAction={(action) => {
-                setRiskAction(action);
-                setReason(action.event.case_notes);
-              }}
-            />
-          ) : null}
-          {tab === "lifecycle" && lifecycleQuery.data ? (
-            <DataLifecyclePanel
-              policies={retentionPolicies}
-              holds={legalHolds}
-              events={lifecycleEvents}
-              candidates={purgeCandidates}
-              sourceCandidates={sourcePurgeCandidates}
-              deletedSourceAssets={deletedSourceAssets}
-              busy={busy}
-              onSavePolicy={(input) => void saveRetentionPolicy(input)}
-              onPlaceHold={(input) => void placeLegalHold(input)}
-              onReleaseHold={(hold, releaseReason) => void releaseLegalHold(hold, releaseReason)}
-              onPurge={(job, purgeReason) => void purgeExport(job, purgeReason)}
-              onPurgeSource={(asset, purgeReason) => void purgeSourceAsset(asset, purgeReason)}
-              onReauthorizeSource={(asset, actionReason) => void reauthorizeSourceAsset(asset, actionReason)}
-            />
-          ) : null}
-        </>
-      )}
       {clientAction ? (
         <ClientStatusModal
+          error={visibleError}
           action={clientAction}
           reason={reason}
           busy={Boolean(busy)}
@@ -310,6 +313,7 @@ export function CommercialView() {
       ) : null}
       {riskAction ? (
         <RiskReviewModal
+          error={visibleError}
           action={riskAction}
           reason={reason}
           busy={Boolean(busy)}
@@ -321,6 +325,7 @@ export function CommercialView() {
       ) : null}
       {mappingAction ? (
         <CustomerMappingModal
+          error={visibleError}
           action={mappingAction}
           externalReference={externalReference}
           reason={reason}
@@ -333,6 +338,7 @@ export function CommercialView() {
       ) : null}
       {replayAction ? (
         <BillingReplayModal
+          error={visibleError}
           action={replayAction}
           reason={reason}
           busy={Boolean(busy)}
@@ -343,6 +349,7 @@ export function CommercialView() {
       ) : null}
       {createDisputeAction ? (
         <CreateBillingDisputeModal
+          error={visibleError}
           action={createDisputeAction}
           category={disputeCategory}
           units={disputedUnits}
@@ -359,6 +366,7 @@ export function CommercialView() {
       ) : null}
       {disputeCaseAction ? (
         <BillingDisputeTransitionModal
+          error={visibleError}
           action={disputeCaseAction}
           notes={reason}
           assignee={assignee}

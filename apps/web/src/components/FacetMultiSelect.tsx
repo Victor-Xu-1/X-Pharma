@@ -1,4 +1,5 @@
 import { ChevronDown, X } from "lucide-react";
+import { useDismissibleDetails } from "../lib/useDismissibleDetails";
 
 export interface FacetMultiSelectOption {
   value: string;
@@ -17,6 +18,7 @@ export function FacetMultiSelect({
   selected: readonly string[];
   onChange: (values: string[]) => void;
 }) {
+  const popover = useDismissibleDetails();
   const selectedSet = new Set(selected);
   const selectedLabels = options.filter((option) => selectedSet.has(option.value)).map((option) => option.label);
   const summary = selectedLabels.length
@@ -33,7 +35,7 @@ export function FacetMultiSelect({
   return (
     <fieldset className="facet-multi-select">
       <legend>{label}</legend>
-      <details>
+      <details {...popover}>
         <summary aria-label={`${label}：${summary}`}>
           <span>{summary}</span>
           <ChevronDown size={15} aria-hidden="true" />

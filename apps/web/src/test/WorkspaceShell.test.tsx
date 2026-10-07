@@ -340,9 +340,18 @@ it("moves focus into the mobile navigation and restores it after closing", async
 
   const mobileNavigation = screen.getByRole("complementary", { name: "工作台导航" });
   expect(mobileNavigation).toHaveClass("mobile-open");
+  expect(openNavigation.closest(".workspace-main")).toHaveAttribute("inert");
+  expect(screen.getByRole("button", { name: "跳到主要内容" })).toHaveAttribute("inert");
+  expect(document.querySelector(".sidebar-scrim")).not.toHaveAttribute("inert");
   await waitFor(() => expect(within(mobileNavigation).getByRole("button", { name: "关闭导航" })).toHaveFocus());
 
   fireEvent.keyDown(document, { key: "Escape" });
   await waitFor(() => expect(mobileNavigation).not.toHaveClass("mobile-open"));
   await waitFor(() => expect(openNavigation).toHaveFocus());
+  expect(openNavigation.closest(".workspace-main")).not.toHaveAttribute("inert");
+  expect(screen.getByRole("button", { name: "跳到主要内容" })).not.toHaveAttribute("inert");
+  fireEvent.click(openNavigation);
+  fireEvent.click(document.querySelector(".sidebar-scrim") as HTMLButtonElement);
+  await waitFor(() => expect(openNavigation).toHaveFocus());
+  expect(openNavigation.closest(".workspace-main")).not.toHaveAttribute("inert");
 });

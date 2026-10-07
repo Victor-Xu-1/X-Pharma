@@ -1,6 +1,7 @@
 import { Check, DatabaseBackup, Gavel, RotateCcw, Trash2, X } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { EmptyState, formatDate, humanBytes, StatusBadge } from "../../components/common";
+import { FormStatus } from "../../components/FormStatus";
 import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type {
   DataExportJob,
@@ -11,6 +12,7 @@ import type {
   LegalHoldScope,
   SourceAssetImpact,
 } from "../../lib/contracts/commercial";
+import { useModalFocus } from "../../lib/useModalFocus";
 
 export function DataLifecyclePanel({
   policies,
@@ -20,6 +22,8 @@ export function DataLifecyclePanel({
   sourceCandidates,
   deletedSourceAssets,
   busy,
+  error,
+  onActionStart,
   onSavePolicy,
   onPlaceHold,
   onReleaseHold,
@@ -34,23 +38,25 @@ export function DataLifecyclePanel({
   sourceCandidates: SourceAssetImpact[];
   deletedSourceAssets: DeletedSourceAsset[];
   busy: string;
+  error: string;
+  onActionStart: () => void;
   onSavePolicy: (input: {
     dataClass: DataRetentionPolicy["data_class"];
     retentionSeconds: number;
     legalBasis: string;
     geographicScope: string[];
     active: boolean;
-  }) => void;
+  }) => Promise<boolean>;
   onPlaceHold: (input: {
     scopeType: LegalHoldScope;
     scopeId: string | null;
     matterReference: string;
     reason: string;
-  }) => void;
-  onReleaseHold: (hold: LegalHold, reason: string) => void;
-  onPurge: (job: DataExportJob, reason: string) => void;
-  onPurgeSource: (asset: SourceAssetImpact, reason: string) => void;
-  onReauthorizeSource: (asset: DeletedSourceAsset, reason: string) => void;
+  }) => Promise<boolean>;
+  onReleaseHold: (hold: LegalHold, reason: string) => Promise<boolean>;
+  onPurge: (job: DataExportJob, reason: string) => Promise<boolean>;
+  onPurgeSource: (asset: SourceAssetImpact, reason: string) => Promise<boolean>;
+  onReauthorizeSource: (asset: DeletedSourceAsset, reason: string) => Promise<boolean>;
 }) {
   const currentPolicy = policies.find((policy) => policy.data_class === "commercial_export_artifact");
   const sourcePolicy = policies.find((policy) => policy.data_class === "source_asset_snapshot");
@@ -74,6 +80,16 @@ export function DataLifecyclePanel({
     | null
   >(null);
   const [actionReason, setActionReason] = useState("");
+  const closeAction = () => {
+    if (!busy) setPendingAction(null);
+  };
+  const dialogRef = useModalFocus<HTMLElement>(Boolean(pendingAction), closeAction, { closeOnEscape: !busy });
+
+  function beginAction(action: NonNullable<typeof pendingAction>) {
+    onActionStart();
+    setPendingAction(action);
+    setActionReason("");
+  }
 
   useEffect(() => {
     if (!currentPolicy) return;
@@ -93,6 +109,7 @@ export function DataLifecyclePanel({
 
   function submitPolicy(event: FormEvent) {
     event.preventDefault();
+    if (busy) return;
     const hours = Number(retentionHours);
     if (!Number.isFinite(hours) || hours < 5 / 60 || legalBasis.trim().length < 3) return;
     onSavePolicy({
@@ -109,6 +126,7 @@ export function DataLifecyclePanel({
 
   function submitSourcePolicy(event: FormEvent) {
     event.preventDefault();
+    if (busy) return;
     const hours = Number(sourceRetentionHours);
     if (!Number.isFinite(hours) || hours < 5 / 60 || sourceLegalBasis.trim().length < 3) return;
     onSavePolicy({
@@ -123,37 +141,45 @@ export function DataLifecyclePanel({
     });
   }
 
-  function submitHold(event: FormEvent) {
+  async function submitHold(event: FormEvent) {
     event.preventDefault();
+    if (busy) return;
     if (
       matterReference.trim().length < 3 ||
       holdReason.trim().length < 3 ||
       (scopeType !== "tenant" && !scopeId.trim())
     )
       return;
-    onPlaceHold({
+    const succeeded = await onPlaceHold({
       scopeType,
       scopeId: scopeType === "tenant" ? null : scopeId.trim(),
       matterReference: matterReference.trim(),
       reason: holdReason.trim(),
     });
+    if (!succeeded) return;
     setMatterReference("");
     setHoldReason("");
   }
 
-  function confirmAction(event: FormEvent) {
+  async function confirmAction(event: FormEvent) {
     event.preventDefault();
-    if (!pendingAction || actionReason.trim().length < 3) return;
-    if (pendingAction.kind === "release") onReleaseHold(pendingAction.hold, actionReason.trim());
-    else if (pendingAction.kind === "purge") onPurge(pendingAction.job, actionReason.trim());
-    else if (pendingAction.kind === "source-purge") onPurgeSource(pendingAction.asset, actionReason.trim());
-    else onReauthorizeSource(pendingAction.asset, actionReason.trim());
+    if (busy || !pendingAction || actionReason.trim().length < 3) return;
+    const succeeded =
+      pendingAction.kind === "release"
+        ? await onReleaseHold(pendingAction.hold, actionReason.trim())
+        : pendingAction.kind === "purge"
+          ? await onPurge(pendingAction.job, actionReason.trim())
+          : pendingAction.kind === "source-purge"
+            ? await onPurgeSource(pendingAction.asset, actionReason.trim())
+            : await onReauthorizeSource(pendingAction.asset, actionReason.trim());
+    if (!succeeded) return;
     setPendingAction(null);
     setActionReason("");
   }
 
   return (
     <section className="lifecycle-workbench" aria-label="数据生命周期治理">
+      {!pendingAction ? <FormStatus pending={Boolean(busy)} error={error} /> : null}
       <div className="lifecycle-config-grid">
         <form className="operations-form" onSubmit={submitPolicy}>
           <header>
@@ -167,6 +193,7 @@ export function DataLifecyclePanel({
             保留时长（小时）
             <input
               aria-label="保留时长（小时）"
+              disabled={Boolean(busy)}
               type="number"
               min="0.0834"
               step="0.25"
@@ -178,6 +205,7 @@ export function DataLifecyclePanel({
             法律与合同依据
             <input
               aria-label="法律与合同依据"
+              disabled={Boolean(busy)}
               value={legalBasis}
               onChange={(event) => setLegalBasis(event.target.value)}
               maxLength={500}
@@ -187,20 +215,22 @@ export function DataLifecyclePanel({
             地域范围
             <input
               aria-label="地域范围"
+              disabled={Boolean(busy)}
               value={geography}
               onChange={(event) => setGeography(event.target.value)}
               placeholder="CN, SG"
             />
           </label>
           <label className="check-control">
-            <input type="checkbox" checked={policyActive} onChange={(event) => setPolicyActive(event.target.checked)} />
+            <input
+              type="checkbox"
+              disabled={Boolean(busy)}
+              checked={policyActive}
+              onChange={(event) => setPolicyActive(event.target.checked)}
+            />
             启用策略
           </label>
-          <button
-            className="primary-button"
-            type="submit"
-            disabled={busy === "lifecycle:policy:commercial_export_artifact" || legalBasis.trim().length < 3}
-          >
+          <button className="primary-button" type="submit" disabled={Boolean(busy) || legalBasis.trim().length < 3}>
             <DatabaseBackup size={16} />
             保存策略
           </button>
@@ -219,6 +249,7 @@ export function DataLifecyclePanel({
             缺失后保留时长（小时）
             <input
               aria-label="源资料保留时长（小时）"
+              disabled={Boolean(busy)}
               type="number"
               min="0.0834"
               step="1"
@@ -230,6 +261,7 @@ export function DataLifecyclePanel({
             法律与合同依据
             <input
               aria-label="源资料法律与合同依据"
+              disabled={Boolean(busy)}
               value={sourceLegalBasis}
               onChange={(event) => setSourceLegalBasis(event.target.value)}
               maxLength={500}
@@ -239,6 +271,7 @@ export function DataLifecyclePanel({
             地域范围
             <input
               aria-label="源资料地域范围"
+              disabled={Boolean(busy)}
               value={sourceGeography}
               onChange={(event) => setSourceGeography(event.target.value)}
               placeholder="CN, SG"
@@ -247,6 +280,7 @@ export function DataLifecyclePanel({
           <label className="check-control">
             <input
               type="checkbox"
+              disabled={Boolean(busy)}
               checked={sourcePolicyActive}
               onChange={(event) => setSourcePolicyActive(event.target.checked)}
             />
@@ -255,7 +289,7 @@ export function DataLifecyclePanel({
           <button
             className="primary-button"
             type="submit"
-            disabled={busy === "lifecycle:policy:source_asset_snapshot" || sourceLegalBasis.trim().length < 3}
+            disabled={Boolean(busy) || sourceLegalBasis.trim().length < 3}
           >
             <DatabaseBackup size={16} />
             保存策略
@@ -275,6 +309,7 @@ export function DataLifecyclePanel({
             保全范围
             <select
               aria-label="保全范围"
+              disabled={Boolean(busy)}
               value={scopeType}
               onChange={(event) => setScopeType(event.target.value as LegalHoldScope)}
             >
@@ -288,13 +323,19 @@ export function DataLifecyclePanel({
           {scopeType !== "tenant" ? (
             <label>
               范围 ID
-              <input aria-label="保全范围 ID" value={scopeId} onChange={(event) => setScopeId(event.target.value)} />
+              <input
+                aria-label="保全范围 ID"
+                disabled={Boolean(busy)}
+                value={scopeId}
+                onChange={(event) => setScopeId(event.target.value)}
+              />
             </label>
           ) : null}
           <label>
             事项编号
             <input
               aria-label="事项编号"
+              disabled={Boolean(busy)}
               value={matterReference}
               onChange={(event) => setMatterReference(event.target.value)}
               maxLength={200}
@@ -304,6 +345,7 @@ export function DataLifecyclePanel({
             保全原因
             <textarea
               aria-label="保全原因"
+              disabled={Boolean(busy)}
               value={holdReason}
               onChange={(event) => setHoldReason(event.target.value)}
               maxLength={2000}
@@ -313,7 +355,7 @@ export function DataLifecyclePanel({
             className="primary-button"
             type="submit"
             disabled={
-              busy === "lifecycle:hold" ||
+              Boolean(busy) ||
               matterReference.trim().length < 3 ||
               holdReason.trim().length < 3 ||
               (scopeType !== "tenant" && !scopeId.trim())
@@ -368,11 +410,8 @@ export function DataLifecyclePanel({
                           type="button"
                           title="解除法律保全"
                           aria-label={`解除法律保全 ${hold.matter_reference}`}
-                          disabled={busy === `lifecycle:hold:${hold.id}`}
-                          onClick={() => {
-                            setPendingAction({ kind: "release", hold });
-                            setActionReason("");
-                          }}
+                          disabled={Boolean(busy)}
+                          onClick={() => beginAction({ kind: "release", hold })}
                         >
                           <Check size={17} />
                         </button>
@@ -432,11 +471,8 @@ export function DataLifecyclePanel({
                         type="button"
                         title={asset.blockers.length ? "存在业务依赖，执行后将记录阻断事件" : "撤回源资料"}
                         aria-label={`撤回源资料 ${asset.file_name}`}
-                        disabled={busy === `lifecycle:source-purge:${asset.id}`}
-                        onClick={() => {
-                          setPendingAction({ kind: "source-purge", asset });
-                          setActionReason("");
-                        }}
+                        disabled={Boolean(busy)}
+                        onClick={() => beginAction({ kind: "source-purge", asset })}
                       >
                         <Trash2 size={17} />
                       </button>
@@ -486,11 +522,8 @@ export function DataLifecyclePanel({
                         type="button"
                         title="重新授权并等待自动扫描"
                         aria-label={`重新授权源资料 ${asset.file_name}`}
-                        disabled={busy === `lifecycle:source-reauthorize:${asset.id}`}
-                        onClick={() => {
-                          setPendingAction({ kind: "source-reauthorize", asset });
-                          setActionReason("");
-                        }}
+                        disabled={Boolean(busy)}
+                        onClick={() => beginAction({ kind: "source-reauthorize", asset })}
                       >
                         <RotateCcw size={17} />
                       </button>
@@ -537,11 +570,8 @@ export function DataLifecyclePanel({
                         type="button"
                         title="清除到期对象"
                         aria-label={`清除到期对象 ${job.id}`}
-                        disabled={busy === `lifecycle:purge:${job.id}`}
-                        onClick={() => {
-                          setPendingAction({ kind: "purge", job });
-                          setActionReason("");
-                        }}
+                        disabled={Boolean(busy)}
+                        onClick={() => beginAction({ kind: "purge", job })}
                       >
                         <Trash2 size={17} />
                       </button>
@@ -597,7 +627,14 @@ export function DataLifecyclePanel({
 
       {pendingAction ? (
         <div className="modal-backdrop" role="presentation">
-          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="lifecycle-action-title">
+          <section
+            ref={dialogRef}
+            className="modal-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lifecycle-action-title"
+            tabIndex={-1}
+          >
             <header>
               <div>
                 <p className="eyebrow">CONTROLLED ACTION</p>
@@ -611,7 +648,13 @@ export function DataLifecyclePanel({
                         : "清除到期导出对象"}
                 </h2>
               </div>
-              <button className="icon-button" type="button" onClick={() => setPendingAction(null)} aria-label="关闭">
+              <button
+                className="icon-button"
+                type="button"
+                onClick={closeAction}
+                aria-label="关闭"
+                disabled={Boolean(busy)}
+              >
                 <X size={18} />
               </button>
             </header>
@@ -623,13 +666,19 @@ export function DataLifecyclePanel({
                   value={actionReason}
                   onChange={(event) => setActionReason(event.target.value)}
                   maxLength={2000}
+                  disabled={Boolean(busy)}
                 />
               </label>
+              <FormStatus pending={Boolean(busy)} error={error} />
               <div className="form-actions">
-                <button className="text-button" type="button" onClick={() => setPendingAction(null)}>
+                <button className="text-button" type="button" onClick={closeAction} disabled={Boolean(busy)}>
                   取消
                 </button>
-                <button className="primary-button" type="submit" disabled={actionReason.trim().length < 3}>
+                <button
+                  className="primary-button"
+                  type="submit"
+                  disabled={Boolean(busy) || actionReason.trim().length < 3}
+                >
                   确认执行
                 </button>
               </div>

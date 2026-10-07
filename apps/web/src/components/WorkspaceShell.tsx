@@ -67,8 +67,10 @@ export function WorkspaceShell({
   const compact = useCompactNavigation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [navigationClosing, setNavigationClosing] = useState(false);
+  const sidebarScrimRef = useRef<HTMLButtonElement>(null);
   const mobileNavigationRef = useModalFocus<HTMLElement>(mobileOpen, () => setMobileOpen(false), {
     restoreFocus: !navigationClosing,
+    backgroundExceptions: [sidebarScrimRef],
   });
   const pageHeadingRef = useRef<HTMLHeadingElement>(null);
   const mainRef = useRef<HTMLElement>(null);
@@ -113,7 +115,6 @@ export function WorkspaceShell({
       <button
         className="skip-link"
         type="button"
-        inert={mobileOpen}
         onClick={() => {
           mainRef.current?.focus();
         }}
@@ -170,9 +171,15 @@ export function WorkspaceShell({
         />
       </aside>
       {mobileOpen ? (
-        <button type="button" className="sidebar-scrim" aria-label="关闭导航" onClick={() => setMobileOpen(false)} />
+        <button
+          ref={sidebarScrimRef}
+          type="button"
+          className="sidebar-scrim"
+          aria-label="关闭导航"
+          onClick={() => setMobileOpen(false)}
+        />
       ) : null}
-      <div className="workspace-main" inert={mobileOpen}>
+      <div className="workspace-main">
         <header className={`topbar ${researchWorkbench ? "public-topbar" : ""}`}>
           <button
             className="icon-button mobile-only"

@@ -7,6 +7,7 @@ export type ResearchTabOption<Tab extends string> = {
   count?: number;
   disabled?: boolean;
   disabledReason?: string;
+  panelId?: string;
 };
 
 export function ResearchTabList<Tab extends string>({
@@ -70,7 +71,7 @@ export function ResearchTabList<Tab extends string>({
           data-tab-key={tab.key}
           type="button"
           role="tab"
-          aria-controls={`${idPrefix}-panel-${tab.key}`}
+          aria-controls={tab.panelId ?? `${idPrefix}-panel-${tab.key}`}
           aria-selected={activeTab === tab.key}
           aria-disabled={tab.disabled || undefined}
           disabled={Boolean(tab.disabled && activeTab !== tab.key)}

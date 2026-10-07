@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import {
@@ -33,6 +33,22 @@ const summary = {
   title: "EGFR landscape",
   updated_at: "2026-07-18T11:00:00Z",
 };
+
+it("keeps knowledge document and coverage switching keyboard-operable without losing the selected page", async () => {
+  renderWithQueryClient(<KnowledgeView />);
+  fireEvent.click(await screen.findByRole("button", { name: /EGFR landscape/ }));
+  const documentTab = await screen.findByRole("tab", { name: "专题正文" });
+  documentTab.focus();
+  fireEvent.keyDown(documentTab, { key: "End" });
+  const coverageTab = screen.getByRole("tab", { name: "覆盖与版本" });
+  expect(coverageTab).toHaveFocus();
+  expect(coverageTab).toHaveAttribute("aria-selected", "true");
+  await waitFor(() => expect(screen.getByRole("tabpanel")).toHaveAccessibleName("覆盖与版本"));
+  fireEvent.keyDown(coverageTab, { key: "Home" });
+  expect(documentTab).toHaveFocus();
+  expect(documentTab).toHaveAttribute("aria-selected", "true");
+  expect(screen.getByRole("tabpanel")).toHaveAccessibleName("专题正文");
+});
 
 beforeEach(() => {
   vi.mocked(searchKnowledgePages).mockResolvedValue({

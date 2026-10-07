@@ -315,7 +315,7 @@ export function useCommercialWorkspace() {
     geographicScope: string[];
     active: boolean;
   }) {
-    await runOperation(
+    return runOperation(
       `lifecycle:policy:${input.dataClass}`,
       {
         kind: "save-retention-policy",
@@ -337,7 +337,7 @@ export function useCommercialWorkspace() {
     matterReference: string;
     reason: string;
   }) {
-    await runOperation(
+    return runOperation(
       "lifecycle:hold",
       {
         kind: "place-legal-hold",
@@ -353,7 +353,7 @@ export function useCommercialWorkspace() {
   }
 
   async function releaseLegalHold(hold: LegalHold, reason: string) {
-    await runOperation(
+    return runOperation(
       `lifecycle:hold:${hold.id}`,
       { kind: "release-legal-hold", holdId: hold.id, requestBody: { reason } },
       "Legal hold 解除失败",
@@ -361,7 +361,7 @@ export function useCommercialWorkspace() {
   }
 
   async function purgeExport(job: DataExportJob, reason: string) {
-    await runOperation(
+    return runOperation(
       `lifecycle:purge:${job.id}`,
       {
         kind: "purge-export",
@@ -373,7 +373,7 @@ export function useCommercialWorkspace() {
   }
 
   async function purgeSourceAsset(asset: SourceAssetImpact, reason: string) {
-    await runOperation(
+    return runOperation(
       `lifecycle:source-purge:${asset.id}`,
       {
         kind: "purge-source",
@@ -385,7 +385,7 @@ export function useCommercialWorkspace() {
   }
 
   async function reauthorizeSourceAsset(asset: DeletedSourceAsset, reason: string) {
-    await runOperation(
+    return runOperation(
       `lifecycle:source-reauthorize:${asset.id}`,
       {
         kind: "reauthorize-source",

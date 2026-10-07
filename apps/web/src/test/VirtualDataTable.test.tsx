@@ -52,6 +52,15 @@ it("renders a keyboard-scrollable table and exposes deterministic sorting state"
   fireEvent.click(screen.getByRole("checkbox", { name: "显示列：评分" }));
   expect(within(table).queryByRole("columnheader", { name: /评分/ })).not.toBeInTheDocument();
 
+  const columnsSummary = screen.getByText("列", { exact: true });
+  const columnCheckbox = screen.getByRole("checkbox", { name: "显示列：评分" });
+  columnCheckbox.focus();
+  fireEvent.keyDown(columnCheckbox, { key: "Escape" });
+  expect(columnsSummary.closest("details")).not.toHaveAttribute("open");
+  expect(columnsSummary).toHaveFocus();
+  fireEvent.click(columnsSummary);
+  expect(screen.getByRole("checkbox", { name: "显示列：评分" })).not.toBeChecked();
+
   fireEvent.click(screen.getByRole("button", { name: "紧凑" }));
   expect(screen.getByRole("button", { name: "紧凑" })).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByRole("table", { name: "测试结果" }).closest(".virtual-table-shell")).toHaveClass(
@@ -223,6 +232,15 @@ it("delegates all-results sorting without reordering the current page locally", 
   expect(screen.getByLabelText("第 2 排序字段")).toHaveValue("name");
   fireEvent.click(screen.getByRole("button", { name: "第 2 排序方向：降序" }));
   fireEvent.click(screen.getByRole("button", { name: "上移第 2 排序字段" }));
+  const sortSummary = screen.getByText("排序", { exact: true });
+  const sortField = screen.getByLabelText("第 1 排序字段");
+  sortField.focus();
+  fireEvent.keyDown(sortField, { key: "Escape" });
+  expect(sortSummary.closest("details")).not.toHaveAttribute("open");
+  expect(sortSummary).toHaveFocus();
+  fireEvent.click(sortSummary);
+  expect(screen.getByLabelText("第 1 排序字段")).toHaveValue("name");
+  expect(screen.getByLabelText("第 2 排序字段")).toHaveValue("score");
   expect(onSortingChange).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "应用排序" }));
   expect(onSortingChange).toHaveBeenCalledWith([

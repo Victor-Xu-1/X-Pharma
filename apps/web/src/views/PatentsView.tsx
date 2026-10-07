@@ -13,6 +13,7 @@ import {
 import { DomainExportControl } from "../components/DomainExportControl";
 import { EmptyQueryResult } from "../components/EmptyQueryResult";
 import { EntityFilterSelect } from "../components/EntityFilterSelect";
+import { InlineEntityLinks } from "../components/InlineEntityLinks";
 import { PatentLandscape } from "../components/PatentLandscape";
 import { PatentTimeline } from "../components/PatentTimeline";
 import { PublicResearchPanel } from "../components/PublicResearchPanel";
@@ -374,18 +375,13 @@ export function PatentsView({
         header: "关联实体",
         size: 165,
         enableSorting: false,
-        cell: ({ row }) =>
-          row.original.linked_entities.length ? (
-            <span className="domain-linked-entities">
-              {row.original.linked_entities.slice(0, 3).map((entity) => (
-                <button type="button" key={entity.id} onClick={() => openPatentEntity(entity.entity_type, entity.id)}>
-                  {entity.name}
-                </button>
-              ))}
-            </span>
-          ) : (
-            "--"
-          ),
+        cell: ({ row }) => (
+          <InlineEntityLinks
+            label={`${row.original.family_identifier} 的关联实体`}
+            items={row.original.linked_entities.map((entity) => ({ ...entity, key: entity.id, label: entity.name }))}
+            onSelect={(entity) => openPatentEntity(entity.entity_type, entity.id)}
+          />
+        ),
       },
       {
         id: "open",

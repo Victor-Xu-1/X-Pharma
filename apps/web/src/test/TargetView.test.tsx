@@ -860,6 +860,14 @@ it("queries the complete target program set with authoritative facets and pagina
   fireEvent.click(screen.getByText("列"));
   fireEvent.click(screen.getByRole("checkbox", { name: "显示列：临床结果" }));
   expect(screen.queryByRole("columnheader", { name: "临床结果" })).not.toBeInTheDocument();
+  const columnsSummary = screen.getByText("列");
+  const resultColumn = screen.getByRole("checkbox", { name: "显示列：临床结果" });
+  resultColumn.focus();
+  fireEvent.keyDown(resultColumn, { key: "Escape" });
+  expect(columnsSummary.closest("details")).not.toHaveAttribute("open");
+  expect(columnsSummary).toHaveFocus();
+  fireEvent.click(columnsSummary);
+  expect(screen.getByRole("checkbox", { name: "显示列：临床结果" })).not.toBeChecked();
   fireEvent.click(screen.getByRole("button", { name: "恢复默认列" }));
   expect(screen.getByRole("columnheader", { name: "临床结果" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "加入列表" })).toBeDisabled();

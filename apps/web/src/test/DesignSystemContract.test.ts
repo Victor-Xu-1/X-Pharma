@@ -13,6 +13,21 @@ function source(relativePath: string) {
   return url.pathname.endsWith(".css") ? stylesheetSource(url) : readFileSync(fileURLToPath(url), "utf8");
 }
 
+it("keeps target primary filters bounded and readable instead of a fixed three-column minimum", () => {
+  const layout = source("../styles.css");
+  const filters = ruleBody(layout, ".target-evidence-filters");
+  expect(filters).toContain("min-width: 0;");
+  expect(filters).toContain("repeat(auto-fit, minmax(min(100%, 150px), 1fr))");
+  expect(ruleBody(layout, ".target-evidence-filters select")).toContain("min-height: var(--ds-control-height);");
+});
+
+it("bounds knowledge coverage and version tracks while their tables and history remain scrollable", () => {
+  const layout = source("../styles/knowledge.css");
+  expect(ruleBody(layout, ".knowledge-governance")).toContain("grid-template-columns: minmax(0, 1fr);");
+  expect(ruleBody(layout, ".knowledge-version-list")).toContain("overflow-y: auto;");
+  expect(layout).toMatch(/\.knowledge-version-list\s*\{[^}]*overflow-x:\s*auto;/);
+});
+
 function stylesheetSource(url: URL, parents = new Set<string>()): string {
   if (parents.has(url.href)) throw new Error(`Circular stylesheet import: ${url.href}`);
   const ancestry = new Set(parents).add(url.href);

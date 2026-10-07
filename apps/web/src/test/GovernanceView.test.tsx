@@ -106,6 +106,36 @@ beforeEach(() => {
   vi.mocked(decideEntityResolution).mockReset();
 });
 
+it("uses keyboard tabs for governance and nested identity scope without changing decisions", async () => {
+  vi.mocked(loadGovernanceQueues).mockResolvedValue({ facts: [], identityCases: [] });
+  vi.mocked(loadGovernanceRuns).mockResolvedValue({
+    items: [],
+    total: 0,
+    limit: 30,
+    offset: 0,
+    current_policy_sha256: "f".repeat(64),
+  });
+  renderWithQueryClient(<GovernanceView />);
+  const factsTab = await screen.findByRole("tab", { name: /^事实审核/ });
+  factsTab.focus();
+  fireEvent.keyDown(factsTab, { key: "ArrowRight" });
+  const identityTab = screen.getByRole("tab", { name: /^实体消歧/ });
+  expect(identityTab).toHaveFocus();
+  expect(identityTab).toHaveAttribute("aria-selected", "true");
+  const pending = screen.getByRole("tab", { name: /^待处理/ });
+  pending.focus();
+  fireEvent.keyDown(pending, { key: "ArrowRight" });
+  expect(screen.getByRole("tab", { name: /^历史与回滚/ })).toHaveAttribute("aria-selected", "true");
+  fireEvent.keyDown(identityTab, { key: "End" });
+  const runsTab = screen.getByRole("tab", { name: /^运行追踪/ });
+  expect(runsTab).toHaveAttribute("aria-selected", "true");
+  fireEvent.keyDown(runsTab, { key: "Home" });
+  expect(factsTab).toHaveFocus();
+  expect(factsTab).toHaveAttribute("aria-selected", "true");
+  expect(decideStagedFact).not.toHaveBeenCalled();
+  expect(decideEntityResolution).not.toHaveBeenCalled();
+});
+
 it("shows auditable AI governance runs without exposing structured model output", async () => {
   vi.mocked(loadGovernanceQueues).mockResolvedValue({ facts: [], identityCases: [] });
   vi.mocked(loadGovernanceRuns).mockResolvedValue({

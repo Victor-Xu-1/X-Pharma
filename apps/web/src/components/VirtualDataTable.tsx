@@ -38,6 +38,7 @@ import {
   type WorkspaceTablePreferences,
   workspacePreferenceKeys,
 } from "../lib/contracts/workspacePreferences";
+import { useDismissibleDetails } from "../lib/useDismissibleDetails";
 import { useSessionIdentity } from "./SessionIdentityContext";
 
 type TablePreferences = WorkspaceTablePreferences;
@@ -158,6 +159,8 @@ export function VirtualDataTable<T>({
   const [columnOrderAnnouncement, setColumnOrderAnnouncement] = useState("");
   const lastServerPreferenceFingerprint = useRef<string | null>(null);
   const scrollElement = useRef<HTMLDivElement>(null);
+  const sortPopover = useDismissibleDetails();
+  const columnPopover = useDismissibleDetails();
   const table = useReactTable({
     data,
     columns,
@@ -524,7 +527,7 @@ export function VirtualDataTable<T>({
           </span>
         ) : null}
         {serverSorting && sortableColumns.length ? (
-          <details className="table-sort-menu">
+          <details className="table-sort-menu" {...sortPopover}>
             <summary title="自定义排序">
               <ChevronsUpDown size={15} />
               排序
@@ -659,7 +662,7 @@ export function VirtualDataTable<T>({
             <span>紧凑</span>
           </button>
         </fieldset>
-        <details className="table-column-menu">
+        <details className="table-column-menu" {...columnPopover}>
           <summary>
             <Columns3 size={15} />列
           </summary>
