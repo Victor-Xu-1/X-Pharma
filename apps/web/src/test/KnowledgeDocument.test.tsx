@@ -9,6 +9,30 @@ import {
 } from "../views/knowledge/knowledgeReading";
 
 describe("public knowledge reading", () => {
+  it("reads registered clinical enums and date precision without manufacturing exact dates or changing the original", () => {
+    const value = {
+      fact_kind: "trial",
+      registry_id: "NCT1002",
+      overall_status: "COMPLETED",
+      phases: ["PHASE1", "PHASE2", "FUTURE_PHASE"],
+      enrollment: 0,
+      enrollment_type: "ACTUAL",
+      start_date: "2015-12-11T00:00:00Z",
+      start_date_precision: "day",
+      completion_date: "2028-02-01T00:00:00Z",
+      completion_date_precision: "month",
+    };
+    const source = `## Evidence\n\n- **has_trial**: \`${JSON.stringify(value)}\``;
+    render(<KnowledgeDocument markdown={source} title="Exact trial snapshot" />);
+    expect(screen.getByText("已完成", { selector: ".knowledge-value-field-value" })).toBeVisible();
+    expect(screen.getByText("I 期、II 期、FUTURE_PHASE", { selector: ".knowledge-value-field-value" })).toBeVisible();
+    expect(screen.getByText("实际人数", { selector: ".knowledge-value-field-value" })).toBeVisible();
+    expect(screen.getByText("2015年12月11日", { selector: ".knowledge-value-field-value" })).toBeVisible();
+    expect(screen.getByText("2028年02月", { selector: ".knowledge-value-field-value" })).toBeVisible();
+    expect(screen.getByText("月", { selector: ".knowledge-value-field-value" })).toBeVisible();
+    fireEvent.click(screen.getByText("查看公开原文 Markdown", { selector: "summary" }));
+    expect(screen.getByLabelText("此版本的完整公开原文")).toHaveValue(source);
+  });
   it("presents a trial snapshot as labelled researcher-facing fields and keeps zero and supplementary values", () => {
     const value = {
       fact_kind: "trial",
@@ -23,7 +47,7 @@ describe("public knowledge reading", () => {
     render(<KnowledgeDocument markdown={source} title="Reviewed trial" />);
     expect(screen.getByText("临床试验记录", { selector: "strong" })).toBeVisible();
     expect(screen.getByText("试验状态")).toBeVisible();
-    expect(screen.getByText("COMPLETED", { selector: ".knowledge-value-field-value" })).toBeVisible();
+    expect(screen.getByText("已完成", { selector: ".knowledge-value-field-value" })).toBeVisible();
     expect(screen.getByText("0", { selector: ".knowledge-value-field-value" })).toBeVisible();
     expect(screen.getByText("Asthma", { selector: ".knowledge-value-field-value" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "展开其余 1 个字段" }));

@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   getKnowledgePage,
@@ -33,6 +33,60 @@ const summary = {
   title: "EGFR landscape",
   updated_at: "2026-07-18T11:00:00Z",
 };
+
+describe("compact knowledge reading", () => {
+  let previous: PropertyDescriptor | undefined;
+  beforeEach(() => {
+    previous = Object.getOwnPropertyDescriptor(window, "matchMedia");
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    });
+  });
+  afterEach(() => {
+    if (previous) Object.defineProperty(window, "matchMedia", previous);
+    else Reflect.deleteProperty(window, "matchMedia");
+  });
+  it("prioritizes the selected document while keeping the searchable catalogue and its draft reachable", async () => {
+    renderWithQueryClient(<KnowledgeView initialPageId="page-1" />);
+    expect(await screen.findByRole("heading", { name: "EGFR landscape" })).toBeVisible();
+    expect(screen.getByLabelText("检索知识专题")).not.toBeVisible();
+    const opener = screen.getByRole("button", { name: "展开专题目录" });
+    expect(opener).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(opener);
+    const search = screen.getByLabelText("检索知识专题");
+    expect(search).toBeVisible();
+    fireEvent.change(search, { target: { value: "retained research draft" } });
+    fireEvent.click(screen.getByRole("button", { name: "收起专题目录" }));
+    expect(search).not.toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "展开专题目录" }));
+    expect(search).toHaveValue("retained research draft");
+    expect(getKnowledgePage).toHaveBeenCalledWith("page-1", expect.any(AbortSignal));
+  });
+  it("keeps an unselected catalogue visible and transfers selection focus to the complete document title", async () => {
+    renderWithQueryClient(<KnowledgeView />);
+    const selected = await screen.findByRole("button", { name: /EGFR landscape/ });
+    expect(screen.getByLabelText("检索知识专题")).toBeVisible();
+    selected.focus();
+    fireEvent.click(selected);
+    const heading = await screen.findByRole("heading", { name: "EGFR landscape" });
+    await waitFor(() => expect(heading).toHaveFocus());
+    expect(screen.getByLabelText("检索知识专题")).not.toBeVisible();
+    expect(screen.getByRole("button", { name: "展开专题目录" })).toBeVisible();
+  });
+  it("keeps a failed selection recoverable without stranding focus in the hidden catalogue", async () => {
+    vi.mocked(getKnowledgePage).mockRejectedValueOnce(new Error("专题暂时无法读取"));
+    renderWithQueryClient(<KnowledgeView />);
+    const selected = await screen.findByRole("button", { name: /EGFR landscape/ });
+    selected.focus();
+    fireEvent.click(selected);
+    expect(await screen.findByRole("alert")).toHaveTextContent("专题暂时无法读取");
+    expect(screen.getByRole("button", { name: "展开专题目录" })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
+    const heading = await screen.findByRole("heading", { name: "EGFR landscape" });
+    await waitFor(() => expect(heading).toHaveFocus());
+  });
+});
 
 it("keeps knowledge document and coverage switching keyboard-operable without losing the selected page", async () => {
   renderWithQueryClient(<KnowledgeView />);

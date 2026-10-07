@@ -1,44 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
-import { BookOpenText, ChevronRight, History, Search, ShieldCheck } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import { BookOpenText, History, ShieldCheck } from "lucide-react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import "./knowledge-pagination.css";
 import "../styles/knowledge.css";
 
 import { EmptyState, ErrorState, formatDate, Spinner } from "../components/common";
 import { ResearchTabList } from "../components/ResearchTabList";
-import { ResultPagination } from "../components/ResultPagination";
 import { ScrollableTableRegion } from "../components/ScrollableTableRegion";
 import {
   getKnowledgePage,
   getKnowledgePageCoverage,
   getKnowledgePageVersionDiff,
-  KNOWLEDGE_PAGE_SIZE,
   knowledgeKeys,
   listKnowledgePageVersions,
   searchKnowledgePages,
 } from "../lib/contracts/knowledge";
-import { entityLabels } from "../lib/entityPresentation";
 import type { KnowledgePanel } from "../lib/workspaceRouting";
+import { KnowledgeCatalog } from "./knowledge/KnowledgeCatalog";
 import { KnowledgeChangeList } from "./knowledge/KnowledgeChangeList";
 import { KnowledgeDocument } from "./knowledge/KnowledgeDocument";
 import { knowledgePredicateLabel } from "./knowledge/knowledgeReading";
-
-type KnowledgeLocation = {
-  query: string;
-  pageId: string | null;
-  panel: KnowledgePanel;
-  versionNumber: number | null;
-  offset: number;
-  pageType: string;
-  sortBy: "title" | "updated_at";
-  sortDirection: "asc" | "desc";
-};
-
-function knowledgeTypeLabel(type: string): string {
-  return type === "disease"
-    ? "疾病/登记条件"
-    : (entityLabels[type] ?? { topic: "研究专题", entity: "对象档案" }[type as "topic" | "entity"] ?? type);
-}
+import { type KnowledgeLocation, knowledgeTypeLabel } from "./knowledge/knowledgeTypes";
 
 export function KnowledgeView({
   initialQuery = "",
@@ -64,6 +46,8 @@ export function KnowledgeView({
   onLocationChange?: (location: KnowledgeLocation) => void;
 }) {
   const controlled = Boolean(onLocationChange);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const pendingFocus = useRef<string | null>(null);
   const [query, setQuery] = useState(initialQuery);
   const [localLocation, setLocalLocation] = useState<KnowledgeLocation>({
     offset: initialOffset,
@@ -149,121 +133,42 @@ export function KnowledgeView({
   }
 
   function selectPage(pageId: string) {
+    pendingFocus.current = pageId;
+    if (detail?.id === pageId && !detailQuery.isFetching) {
+      headingRef.current?.focus();
+      pendingFocus.current = null;
+    }
     updateLocation({ query: submittedQuery, pageId, panel: "document", versionNumber: null });
   }
 
   const result = pagesQuery.isError ? undefined : pagesQuery.data;
-  const pages = result?.items ?? [];
   const detail = detailQuery.data;
   const detailError = detailQuery.error instanceof Error ? detailQuery.error.message : "";
+  useEffect(() => {
+    if (
+      pendingFocus.current === selectedPageId &&
+      detail?.id === selectedPageId &&
+      !detailQuery.isFetching &&
+      !detailError
+    ) {
+      headingRef.current?.focus();
+      pendingFocus.current = null;
+    }
+  }, [selectedPageId, detail?.id, detailQuery.isFetching, detailError]);
   return (
     <section className="knowledge-layout">
-      <aside className="knowledge-index">
-        <form className="inline-search" onSubmit={search}>
-          <Search size={16} />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="检索专题"
-            aria-label="检索知识专题"
-          />
-        </form>
-        <div className="knowledge-count">
-          {result ? `${result.total} 个专题` : pagesQuery.isError ? "专题总量未知" : "正在统计专题…"}
-        </div>
-        <div className="knowledge-index-filters">
-          <label>
-            专题类型
-            <select
-              aria-label="专题类型"
-              value={location.pageType}
-              onChange={(event) =>
-                updateLocation({
-                  pageType: event.target.value,
-                  offset: 0,
-                  pageId: null,
-                  panel: "document",
-                  versionNumber: null,
-                })
-              }
-            >
-              <option value="">全部类型</option>
-              {[
-                ...new Set([
-                  ...Object.keys(result?.facets.page_type ?? {}),
-                  ...(location.pageType ? [location.pageType] : []),
-                ]),
-              ]
-                .sort()
-                .map((kind) => (
-                  <option key={kind} value={kind}>
-                    {knowledgeTypeLabel(kind)}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <label>
-            排序
-            <select
-              aria-label="知识专题排序"
-              value={`${location.sortBy}:${location.sortDirection}`}
-              onChange={(event) => {
-                const latest = event.target.value === "updated_at:desc";
-                updateLocation({
-                  sortBy: latest ? "updated_at" : "title",
-                  sortDirection: latest ? "desc" : "asc",
-                  offset: 0,
-                  pageId: null,
-                  panel: "document",
-                  versionNumber: null,
-                });
-              }}
-            >
-              <option value="title:asc">名称 A–Z</option>
-              <option value="updated_at:desc">最近更新</option>
-            </select>
-          </label>
-        </div>
-        <div className="knowledge-page-list">
-          {pagesQuery.isPending ? (
-            <Spinner label="正在加载知识专题" />
-          ) : pagesQuery.error && !result ? (
-            <ErrorState
-              message={pagesQuery.error instanceof Error ? pagesQuery.error.message : "知识专题加载失败"}
-              retry={() => void pagesQuery.refetch()}
-            />
-          ) : pages.length ? (
-            pages.map((page) => (
-              <button
-                key={page.id}
-                type="button"
-                className={selectedPageId === page.id ? "active" : ""}
-                onClick={() => selectPage(page.id)}
-              >
-                <BookOpenText size={17} />
-                <span>
-                  <strong>{page.title}</strong>
-                  <small>
-                    {knowledgeTypeLabel(page.page_type)} · {formatDate(page.updated_at)}
-                  </small>
-                </span>
-                <ChevronRight size={16} />
-              </button>
-            ))
-          ) : (
-            <EmptyState title="暂无知识专题" />
-          )}
-        </div>
-        {result ? (
-          <ResultPagination
-            totalRows={result.total}
-            offset={location.offset}
-            pageSize={KNOWLEDGE_PAGE_SIZE}
-            ariaLabel="知识专题分页"
-            onPageChange={(offset) => updateLocation({ offset, pageId: null, panel: "document", versionNumber: null })}
-          />
-        ) : null}
-      </aside>
+      <KnowledgeCatalog
+        query={query}
+        location={location}
+        result={result}
+        pending={pagesQuery.isPending}
+        error={pagesQuery.error}
+        onQueryChange={setQuery}
+        onSearch={search}
+        onRetry={() => void pagesQuery.refetch()}
+        onSelect={selectPage}
+        onLocationChange={updateLocation}
+      />
       <article className="knowledge-document">
         {invalidPageId ? (
           <ErrorState message="知识专题链接无效" />
@@ -276,7 +181,9 @@ export function KnowledgeView({
             <header>
               <div>
                 <p className="eyebrow">{knowledgeTypeLabel(detail.page_type)}</p>
-                <h2>{detail.title}</h2>
+                <h2 ref={headingRef} tabIndex={-1}>
+                  {detail.title}
+                </h2>
               </div>
             </header>
             <dl className="document-metadata">
