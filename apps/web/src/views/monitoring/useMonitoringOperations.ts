@@ -1,5 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { loadMonitoringAlertReplay, loadMonitoringTopicReplay, type SavedSearch } from "../../lib/contracts/monitoring";
+import {
+  loadMonitoringAlertReplay,
+  loadMonitoringTopicReplay,
+  loadSavedSearch,
+  type SavedSearch,
+} from "../../lib/contracts/monitoring";
 
 export function useMonitoringOperations(tab: string, onOpenSearch: (saved: SavedSearch) => void) {
   const live = useRef({ mounted: true, tab, generation: 0, open: onOpenSearch });
@@ -35,10 +40,15 @@ export function useMonitoringOperations(tab: string, onOpenSearch: (saved: Saved
       if (live.current.mounted) setPending(new Set(locks.current));
     }
   }
-  function replay(kind: "topic" | "alert", id: string) {
+  function replay(kind: "topic" | "alert" | "saved", id: string) {
     const generation = live.current.generation;
     return run(`replay:${kind}:${id}`, async () => {
-      const saved = kind === "topic" ? await loadMonitoringTopicReplay(id) : await loadMonitoringAlertReplay(id);
+      const saved =
+        kind === "topic"
+          ? await loadMonitoringTopicReplay(id)
+          : kind === "alert"
+            ? await loadMonitoringAlertReplay(id)
+            : await loadSavedSearch(id);
       if (live.current.mounted && live.current.generation === generation) live.current.open(saved);
     });
   }

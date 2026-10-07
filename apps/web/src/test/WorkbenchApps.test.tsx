@@ -96,6 +96,15 @@ function mockAuthenticated(
         headers: { "Content-Type": "application/json" },
       });
     }
+    if (path.includes("/api/v1/monitoring/saved-searches/")) {
+      const current = savedSearches.find(
+        (item) => item && typeof item === "object" && "id" in item && path.endsWith(`/saved-searches/${item.id}`),
+      );
+      return new Response(JSON.stringify(current ?? { detail: "Saved search unavailable" }), {
+        status: current ? 200 : 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     if (path.endsWith("/api/v1/admin/ingestion-capabilities")) {
       return new Response(
         JSON.stringify({
