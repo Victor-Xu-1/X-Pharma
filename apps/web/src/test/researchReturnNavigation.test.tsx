@@ -230,6 +230,29 @@ it("shares a successful entity read across dossier and preview navigation withou
   expect(getSessionEntity).toHaveBeenCalledTimes(1);
 });
 
+it("reads the full preview even when a lightweight search hit with the same ID is selected", async () => {
+  vi.mocked(getSessionEntity).mockClear();
+  const full = {
+    ...(await getSessionEntity(entityId)),
+    aliases: Array.from({ length: 30 }, (_, index) => `CODE-${index}`),
+  };
+  vi.mocked(getSessionEntity).mockClear();
+  vi.mocked(getSessionEntity).mockReset().mockResolvedValue(full);
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+  window.history.replaceState(null, "", "/workspace/research?view=explorer&q=EGFR");
+  const { result } = renderHook(() => useResearchNavigation(), {
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    ),
+  });
+  act(() => {
+    result.current.setSelectedEntity({ ...full, aliases: full.aliases.slice(0, 20) });
+    result.current.navigate({ ...result.current.location, entityId }, true, true);
+  });
+  await waitFor(() => expect(result.current.routeEntity.data?.aliases).toHaveLength(30));
+  expect(getSessionEntity).toHaveBeenCalledTimes(1);
+});
+
 it("does not turn an unsuccessful navigation recovery into an automatic retry loop", async () => {
   vi.mocked(getSessionEntity).mockClear();
   vi.mocked(getSessionEntity).mockRejectedValueOnce(new Error("Still unavailable"));

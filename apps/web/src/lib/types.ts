@@ -2,6 +2,7 @@ import type {
   DataSourceDatasetRead,
   DataSourceRead,
   DataSourceReadinessRead,
+  EntitySearchMatchRead,
   IngestionFindingRead,
   IngestionRunRead,
   MonitoringAlertRead,
@@ -31,6 +32,7 @@ export interface Entity {
   entity_type: EntityType;
   name: string;
   aliases?: string[];
+  match?: EntitySearchMatchRead | null;
   description: string | null;
   external_ids: Record<string, string>;
   attributes: Record<string, unknown>;

@@ -458,6 +458,7 @@ export function ExplorerView({
       selectedEntityLoading ||
       selectedEntityError,
   );
+  const selectedSearchHit = result?.items.find((item) => item.id === selectedEntity?.id);
   const canSubmit = Boolean(query.trim() || selectedEntityTypes.length);
   const activeDomain =
     selectedEntityTypes.length === 0
@@ -807,7 +808,11 @@ export function ExplorerView({
 
       <EntityPreviewDrawer
         active={selectedEntityRequested}
-        entity={selectedEntity}
+        entity={
+          selectedEntity && selectedSearchHit?.match
+            ? { ...selectedEntity, match: selectedSearchHit.match }
+            : selectedEntity
+        }
         invalidId={invalidSelectedEntityId}
         loading={selectedEntityLoading}
         error={selectedEntityError}
