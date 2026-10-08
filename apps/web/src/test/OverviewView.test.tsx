@@ -129,3 +129,64 @@ it("keeps logout inside account operations", () => {
   fireEvent.click(screen.getByRole("button", { name: "退出当前账号" }));
   expect(onLogout).toHaveBeenCalledOnce();
 });
+
+it("retries the preview when an unavailable avatar is replaced with a different URL", () => {
+  const { container } = renderOverview();
+  const field = screen.getByLabelText("头像图片地址");
+  fireEvent.change(field, { target: { value: "https://avatar.example.test/missing.png" } });
+  const failedImage = container.querySelector(".user-center-avatar img");
+  if (!failedImage) throw new Error("Preview image is missing before its controlled failure");
+  fireEvent.error(failedImage);
+  expect(container.querySelector(".user-center-avatar img")).not.toBeInTheDocument();
+  fireEvent.change(field, { target: { value: "https://avatar.example.test/available.png" } });
+  expect(container.querySelector(".user-center-avatar img")).toHaveAttribute(
+    "src",
+    "https://avatar.example.test/available.png",
+  );
+  expect(updateCurrentUser).not.toHaveBeenCalled();
+});
+
+it("recovers a saved avatar when refreshed account props supply a different URL", () => {
+  const { container, rerender } = renderOverview({
+    user: { ...user, avatar_url: "https://avatar.example.test/missing.png" },
+  });
+  const failedImage = container.querySelector(".user-center-identity-avatar img");
+  if (!failedImage) throw new Error("Saved avatar is missing before its controlled failure");
+  fireEvent.error(failedImage);
+  expect(container.querySelector(".user-center-identity-avatar img")).not.toBeInTheDocument();
+  rerender(
+    <OverviewView user={{ ...user, avatar_url: "https://avatar.example.test/available.png" }} onLogout={vi.fn()} />,
+  );
+  expect(container.querySelector(".user-center-identity-avatar img")).toHaveAttribute(
+    "src",
+    "https://avatar.example.test/available.png",
+  );
+  expect(updateCurrentUser).not.toHaveBeenCalled();
+});
+
+it("starts a fresh image attempt when a failed avatar URL is deliberately revisited", () => {
+  const { container } = renderOverview();
+  const field = screen.getByLabelText("头像图片地址");
+  fireEvent.change(field, { target: { value: "https://avatar.example.test/retry.png" } });
+  const failedImage = container.querySelector(".user-center-avatar img");
+  if (!failedImage) throw new Error("Preview image is missing before its controlled failure");
+  fireEvent.error(failedImage);
+  expect(container.querySelector(".user-center-avatar img")).not.toBeInTheDocument();
+  fireEvent.change(field, { target: { value: "" } });
+  fireEvent.change(field, { target: { value: "https://avatar.example.test/retry.png" } });
+  expect(container.querySelector(".user-center-avatar img")).toHaveAttribute(
+    "src",
+    "https://avatar.example.test/retry.png",
+  );
+  expect(updateCurrentUser).not.toHaveBeenCalled();
+});
+
+it.each([
+  ["𠮷野研究员", "𠮷"],
+  ["A\u0301lex", "A\u0301"],
+])("preserves the complete first avatar grapheme in %s", (displayName, initial) => {
+  renderOverview();
+  fireEvent.change(screen.getByLabelText("用户名"), { target: { value: displayName } });
+  expect(screen.getByRole("img", { name: `${displayName}的头像` })).toHaveTextContent(initial);
+  expect(updateCurrentUser).not.toHaveBeenCalled();
+});

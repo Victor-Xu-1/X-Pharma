@@ -1,26 +1,9 @@
 import { CheckCircle2, KeyRound, LogOut, Mail, Save } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { UserAvatar } from "../components/UserAvatar";
 import type { AuthMode } from "../lib/contracts/session";
 import { changeCurrentUserPassword, updateCurrentUser } from "../lib/contracts/session";
 import type { User } from "../lib/types";
-
-function accountInitial(user: User): string {
-  return (user.display_name.trim() || user.email.trim()).slice(0, 1).toUpperCase();
-}
-
-function UserAvatar({ user, className }: { user: User; className: string }) {
-  const [imageFailed, setImageFailed] = useState(false);
-  const imageUrl = user.avatar_url?.trim() || "";
-  return (
-    <span className={className} role="img" aria-label={`${user.display_name}的头像`}>
-      {imageUrl && !imageFailed ? (
-        <img src={imageUrl} alt="" onError={() => setImageFailed(true)} referrerPolicy="no-referrer" />
-      ) : (
-        <span aria-hidden="true">{accountInitial(user)}</span>
-      )}
-    </span>
-  );
-}
 
 type ProfileDraft = {
   displayName: string;

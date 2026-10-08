@@ -90,6 +90,20 @@
 .login-form label {
   display: block;
 }
+.login-form label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+.login-form label:has(input[type="checkbox"]) > input {
+  flex: 0 0 auto;
+  margin-top: 3px;
+}
+.login-form label:has(input[type="checkbox"]) > span {
+  margin: 0;
+  line-height: 1.7;
+}
 .login-button {
   width: 100%;
   margin-top: 2px;
