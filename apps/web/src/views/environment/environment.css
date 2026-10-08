@@ -1,7 +1,12 @@
 .environment-workbench > [role="tabpanel"] {
+  min-width: 0;
   display: grid;
   gap: 20px;
   padding-top: 20px;
+}
+.environment-workbench > .enterprise-toolbar .secondary-button {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .environment-readiness {
   padding: 24px;
@@ -63,6 +68,7 @@
   border-radius: 0 0 var(--ds-radius-panel) var(--ds-radius-panel);
 }
 .environment-installation {
+  min-width: 0;
   display: grid;
   gap: 20px;
 }
@@ -73,6 +79,7 @@
   line-height: 1.75;
 }
 .environment-recipes {
+  min-width: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 12px;
@@ -105,7 +112,12 @@
   min-width: 0;
 }
 .environment-recipes .cell-subtitle {
+  max-width: none;
   margin-top: 7px;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
   font-weight: 400;
   line-height: 1.7;
 }

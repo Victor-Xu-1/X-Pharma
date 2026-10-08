@@ -632,3 +632,44 @@ it("separates live platform signals from external release evidence", async () =>
   expect(screen.getByRole("table", { name: "平台发布证据" })).toHaveTextContent("backup_restore");
   expect(screen.getByText("fc5e8a1b3d72", { exact: true })).toBeInTheDocument();
 });
+
+it.each([
+  ["平台服务状态明细", "平台服务状态"],
+  ["平台 SLO 明细", "平台 SLO"],
+  ["平台发布证据明细", "平台发布证据"],
+])("makes %s keyboard reachable without removing table fields", (regionName, tableName) => {
+  renderWithQueryClient(<PlatformOperationsPanel platform={workspace.platform} />);
+  const region = screen.getByRole("region", { name: regionName });
+  expect(region).toHaveAttribute("tabindex", "0");
+  region.focus();
+  expect(region).toHaveFocus();
+  expect(screen.getByRole("table", { name: tableName })).toBeVisible();
+});
+
+it("keeps complete platform audit event fields in a named keyboard scroll region", () => {
+  const requestId = "browser-only-layout-trace-00000000-0000-4000-8000-000000000001";
+  renderWithQueryClient(
+    <PlatformOperationsPanel
+      platform={{
+        ...workspace.platform,
+        recent_events: [
+          {
+            id: "browser-only-event",
+            action: "platform.report.viewed",
+            occurred_at: "2026-10-08T00:00:00Z",
+            outcome: "success",
+            request_id: requestId,
+            resource_type: "environment-report",
+          },
+        ],
+      }}
+    />,
+  );
+  const region = screen.getByRole("region", { name: "最近平台审计事件明细" });
+  expect(region).toHaveAttribute("tabindex", "0");
+  region.focus();
+  expect(region).toHaveFocus();
+  expect(region).toHaveTextContent(requestId);
+  expect(region).toHaveTextContent("platform.report.viewed");
+  expect(region).toHaveTextContent("environment-report");
+});
