@@ -139,3 +139,6 @@ packages = ["pharma_intel"]
 required-version = "==0.11.28"
 package = true
 constraint-dependencies = ["soupsieve==2.9.0", "urllib3==2.8.0"]
+
+[tool.x-pharma.versioning]
+processed-through = "02dca0ce8ad7e2519b2d50419e7369318a76039b"
