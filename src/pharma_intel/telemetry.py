@@ -21,6 +21,7 @@ from sqlalchemy.engine import Engine
 
 from pharma_intel.config import Settings, get_settings
 from pharma_intel.db import get_engine
+from pharma_intel.product import PRODUCT_VERSION
 
 
 @dataclass(frozen=True)
@@ -56,7 +57,7 @@ def initialize_telemetry(
                 SERVICE_NAME: service_name,
                 SERVICE_NAMESPACE: "pharma-intelligence",
                 "deployment.environment.name": runtime_settings.app_env,
-                "service.version": "0.1.0",
+                "service.version": PRODUCT_VERSION,
             }
         )
         span_exporter = OTLPSpanExporter(

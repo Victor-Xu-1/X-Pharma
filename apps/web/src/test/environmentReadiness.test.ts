@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import { environmentReadiness, probeReadiness } from "../lib/environmentReadiness";
 import type { EnvironmentProbeRead, EnvironmentRead } from "../lib/generated";
+import { PRODUCT_VERSION } from "../lib/product";
 
 const probe: EnvironmentProbeRead = {
   id: "project-python",
@@ -13,7 +14,7 @@ const probe: EnvironmentProbeRead = {
 };
 const environment: EnvironmentRead = {
   generated_at: "2026-10-07T00:00:00Z",
-  product_version: "0.1.0",
+  product_version: PRODUCT_VERSION,
   environment: "development",
   host_status: "current",
   host_detail: "报告有效",
@@ -21,7 +22,7 @@ const environment: EnvironmentRead = {
   runtime: [probe],
   host: {
     generated_at: "2026-10-07T00:00:00Z",
-    product_version: "0.1.0",
+    product_version: PRODUCT_VERSION,
     revision: "a".repeat(40),
     clean_source: true,
     manifest_sha256: "b".repeat(64),
