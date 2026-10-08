@@ -1,8 +1,9 @@
-import { waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { loadRecordProvenance } from "../lib/contracts/provenance";
+import { setLocale } from "../lib/i18n";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/provenance", async (importOriginal) => {
@@ -64,5 +65,58 @@ describe("RecordProvenanceDrawer", () => {
     expect(document.body).toHaveTextContent("部分技术字段因来源许可限制未展示。");
     expect(document.body).toHaveTextContent("部分来源信息暂未展示。");
     expect(document.body).toHaveTextContent("用户提供的来源材料");
+  });
+
+  it("localizes evidence headings without changing the original quote, locator or cached read", async () => {
+    const selection = { resourceType: "target_evidence" as const, resourceId: "record-1", label: "原始记录 EGFR" };
+    const { rerender } = renderWithQueryClient(<RecordProvenanceDrawer selection={selection} onClose={vi.fn()} />);
+    await screen.findByText("EGFR study");
+    const reads = vi.mocked(loadRecordProvenance).mock.calls.length;
+    act(() => setLocale("en"));
+    rerender(<RecordProvenanceDrawer selection={selection} onClose={vi.fn()} />);
+    expect(screen.getByRole("dialog", { name: "Original evidence" })).toBeVisible();
+    expect(screen.getByText("Original text excerpt provided")).toBeVisible();
+    expect(screen.getByText("EGFR activity was observed.")).toBeVisible();
+    expect(screen.getByText("page=7;paragraph=2")).toBeVisible();
+    expect(screen.getByText("原始记录 EGFR")).toBeVisible();
+    expect(loadRecordProvenance).toHaveBeenCalledTimes(reads);
+  });
+
+  it("retains complete non-boilerplate attribution instead of discarding a required credit", async () => {
+    const selection = { resourceType: "target_evidence" as const, resourceId: "record-1", label: "Evidence" };
+    const seed = await vi.mocked(loadRecordProvenance).getMockImplementation()?.(selection);
+    if (!seed) throw new Error("Expected controlled provenance fixture");
+    const credit = "Tenant-provided source material; required credit: 原始作者 Research Institute";
+    vi.mocked(loadRecordProvenance).mockResolvedValueOnce({
+      ...seed,
+      items: [{ ...seed.items[0], license: { ...seed.items[0].license, attribution: credit } }],
+    });
+    renderWithQueryClient(<RecordProvenanceDrawer selection={selection} onClose={vi.fn()} />);
+    expect(await screen.findByText(credit)).toBeVisible();
+  });
+
+  it("does not invent a licensing reason when document names, excerpts and attribution are absent", async () => {
+    const selection = { resourceType: "target_evidence" as const, resourceId: "record-1", label: "Evidence" };
+    const seed = await vi.mocked(loadRecordProvenance).getMockImplementation()?.(selection);
+    if (!seed) throw new Error("Expected controlled provenance fixture");
+    vi.mocked(loadRecordProvenance).mockResolvedValueOnce({
+      ...seed,
+      warnings: [],
+      items: [
+        {
+          ...seed.items[0],
+          document_name: "",
+          quote: "",
+          warnings: [],
+          license: { ...seed.items[0].license, attribution: null },
+        },
+      ],
+    });
+    act(() => setLocale("en"));
+    renderWithQueryClient(<RecordProvenanceDrawer selection={selection} onClose={vi.fn()} />);
+    expect(await screen.findByText("Document name not provided")).toBeVisible();
+    expect(screen.getByText("Source attribution not provided")).toBeVisible();
+    expect(screen.getByText("No original text excerpt is available for display.")).toBeVisible();
+    expect(screen.queryByText(/license restriction/i)).not.toBeInTheDocument();
   });
 });
