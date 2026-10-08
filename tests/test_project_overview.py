@@ -1,5 +1,6 @@
 from html.parser import HTMLParser
 
+from pharma_intel.product import PRODUCT_RELEASE
 from scripts.project_overview import ROOT, build_document, escape
 
 
@@ -23,7 +24,7 @@ def test_architecture_overview_is_self_contained_and_preserves_honest_readiness_
     inspector = SourceInspector()
     inspector.feed(document)
     assert inspector.domains == 22 and not inspector.external_sources
-    assert "X-Pharma v0.1.0" in document
+    assert f"X-Pharma {PRODUCT_RELEASE}" in document
     assert "GOAL.md 契约版本" in document
     assert "OrganizationMembership" in document and "仅源码 ZIP" in document
     assert "不共享原数据" in document and "不提交 GitHub" in document

@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { expect, it, vi } from "vitest";
 
 import { WorkspaceShell } from "../components/WorkspaceShell";
+import { PRODUCT_RELEASE } from "../lib/product";
 
 it.each(["research", "internal"] as const)(
   "keeps the %s account actions together without an invented online status",
@@ -93,7 +94,7 @@ it.each(["research", "internal"] as const)("uses the same supplied logo in the %
   expect(mark?.querySelector("img")).toHaveAttribute("src", expect.stringContaining("X-Pharma-logo-128.png"));
   expect(mark?.querySelector("svg")).toBeNull();
   expect(screen.getByText("X-Pharma")).toBeInTheDocument();
-  expect(screen.getByText("v0.1.0")).toBeInTheDocument();
+  expect(screen.getByText(PRODUCT_RELEASE)).toBeInTheDocument();
 });
 
 it("keeps the external workbench focused while retaining progressive access to specialist databases", () => {

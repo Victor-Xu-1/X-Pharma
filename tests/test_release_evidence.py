@@ -17,6 +17,7 @@ from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
 
 import scripts.release as release_evidence
 import scripts.release.capture as release_capture
+from pharma_intel.product import PRODUCT_VERSION
 from scripts.release import (
     SECURITY_REQUIRED_FILES,
     ReleaseEvidenceError,
@@ -2161,7 +2162,7 @@ def _mcp_interoperability_statement(
         "protocol_version": "2025-11-25",
         "query_sha256": query_digest,
         "server_name": "X-Pharma",
-        "server_version": "0.1.0",
+        "server_version": PRODUCT_VERSION,
         "status": "passed",
         "target_id": target_id,
         "tool_contract_sha256": contract_digest,

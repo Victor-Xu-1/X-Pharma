@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { loadEnvironment, prepareEnvironmentPlan } from "../lib/contracts/environment";
 import type { EnvironmentRead } from "../lib/generated";
+import { PRODUCT_VERSION } from "../lib/product";
 import { EnvironmentView } from "../views/EnvironmentView";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
@@ -12,7 +13,7 @@ vi.mock("../lib/contracts/environment", () => ({
 }));
 const environment: EnvironmentRead = {
   generated_at: "2026-10-04T00:00:00Z",
-  product_version: "0.1.0",
+  product_version: PRODUCT_VERSION,
   environment: "development",
   host_status: "not_configured",
   host: null,
@@ -83,7 +84,7 @@ it.each([null, "d".repeat(40)])(
       host_status: "current",
       host: {
         generated_at: "2026-10-04T00:00:00Z",
-        product_version: "0.1.0",
+        product_version: PRODUCT_VERSION,
         revision: "a".repeat(40),
         clean_source: true,
         manifest_sha256: "b".repeat(64),
@@ -137,7 +138,7 @@ it("generates an offline-bound plan but never executes it in the browser", async
     host_status: "current",
     host: {
       generated_at: "2026-10-04T00:00:00Z",
-      product_version: "0.1.0",
+      product_version: PRODUCT_VERSION,
       revision: "a".repeat(40),
       clean_source: true,
       manifest_sha256: "b".repeat(64),
@@ -150,7 +151,7 @@ it("generates an offline-bound plan but never executes it in the browser", async
   vi.mocked(prepareEnvironmentPlan).mockResolvedValue({
     generated_at: "2026-10-04T00:00:00Z",
     expires_at: "2026-10-05T00:00:00Z",
-    product_version: "0.1.0",
+    product_version: PRODUCT_VERSION,
     revision: "a".repeat(40),
     manifest_sha256: "b".repeat(64),
     recipe_id: "frontend-dependencies",
@@ -174,7 +175,7 @@ it("shows a failed plan request without claiming installation success", async ()
     host_status: "current",
     host: {
       generated_at: "2026-10-04T00:00:00Z",
-      product_version: "0.1.0",
+      product_version: PRODUCT_VERSION,
       revision: "a".repeat(40),
       clean_source: true,
       manifest_sha256: "b".repeat(64),
