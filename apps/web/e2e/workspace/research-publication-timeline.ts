@@ -1,5 +1,6 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs } from "@playwright/test";
 import { expect } from "@playwright/test";
+import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyResearchPublicationTimeline({
   page,
@@ -67,6 +68,7 @@ export async function verifyResearchPublicationTimeline({
   });
 
   await page.goto("/workspace/research?view=news");
+  await selectInterfaceLanguage(page, "zh-CN");
   await expect(page.getByRole("heading", { name: "新闻、公告与会议动态" })).toBeVisible();
   await expect(page.getByRole("table", { name: "新闻与会议结果" })).toBeVisible();
   await page.getByRole("button", { name: "研究发布时间线" }).click();

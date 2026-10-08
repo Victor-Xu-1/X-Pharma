@@ -1,5 +1,6 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs, TestInfo } from "@playwright/test";
 import { expect } from "@playwright/test";
+import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyMonitoring(
   { page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">,
@@ -102,6 +103,7 @@ export async function verifyMonitoring(
   });
 
   await page.goto("/workspace/research?view=monitoring");
+  await selectInterfaceLanguage(page, "zh-CN");
   await expect(page.getByRole("heading", { name: "情报监控与变更提醒" })).toBeVisible();
   await expect(page.getByText("EGFR changes", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "将 EGFR 提醒标记已读" }).click();
