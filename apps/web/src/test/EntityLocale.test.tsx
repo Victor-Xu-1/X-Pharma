@@ -1,6 +1,8 @@
 import { act, render, screen } from "@testing-library/react";
 import { expect, it } from "vitest";
 import { EntityIdentityLabel } from "../components/EntityIdentityLabel";
+import { EntitySearchOption } from "../components/EntitySearchOption";
+import type { IntelligenceEntity } from "../lib/contracts/intelligence";
 import {
   entityIdentityNote,
   entityResultContext,
@@ -23,6 +25,26 @@ it("localizes controlled entity identity while preserving researcher names and s
   expect(screen.getByText("来源原文，不能当作获批适应症。")).toBeInTheDocument();
   expect(screen.getByLabelText("Identity details for 原始登记条件 EGFR")).toBeInTheDocument();
   expect(entityIdentityNote(entity)).toBe("来源原文，不能当作获批适应症。");
+});
+
+it("keeps registry-condition candidate identities distinct from verified indications", () => {
+  const entity: IntelligenceEntity = {
+    id: "label-1",
+    canonical_entity_id: "label-1",
+    description: null,
+    entity_type: "disease",
+    name: "来源中文条件",
+    external_ids: {},
+    attributes: { identity_scope: "provider_label" },
+    review_status: "verified",
+    created_at: "2026-10-08T00:00:00Z",
+    updated_at: "2026-10-08T00:00:00Z",
+  };
+  render(<EntitySearchOption entity={entity} />);
+  act(() => setLocale("en"));
+  expect(screen.getByText("Registry condition")).toBeInTheDocument();
+  expect(screen.getByText("来源中文条件")).toBeInTheDocument();
+  expect(screen.queryByText("Indication")).not.toBeInTheDocument();
 });
 
 it("distinguishes generic organizations from registry sponsor labels in English", () => {

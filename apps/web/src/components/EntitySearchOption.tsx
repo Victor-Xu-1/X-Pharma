@@ -1,4 +1,7 @@
+import { entityTypeLabel, hasDistinctEntityMatch } from "../lib/entityPresentation";
 import type { EntitySearchItemRead } from "../lib/generated";
+import { useLocale } from "../lib/i18n";
+import { entitySearchOptionText as t } from "../lib/i18n/entitySearchOption";
 import { programModalityLabel } from "../lib/programDisplay";
 import { isPublicEntityIdentifierNamespace } from "../lib/publicEntity";
 
@@ -10,19 +13,6 @@ const attributeLabels = {
   organization_type: "机构类型",
   country_region: "国家/地区",
 } as const;
-
-const entityTypeLabels: Record<EntitySearchItemRead["entity_type"], string> = {
-  drug: "药物",
-  target: "靶点",
-  disease: "适应症",
-  organization: "研发机构",
-  clinical_trial: "临床试验",
-  patent: "专利",
-  transaction: "交易",
-  product: "产品",
-  technology: "技术",
-  person: "人物",
-};
 
 const identifierNamespaceLabels: Record<string, string> = {
   cas: "CAS",
@@ -41,18 +31,14 @@ function identifierNamespaceLabel(namespace: string): string {
 
 export function entityMatchExplanation(entity: EntitySearchItemRead): string | null {
   if (!entity.match) return null;
-  if (
-    entity.match.matched_value?.trim().toLocaleLowerCase() === entity.name.trim().toLocaleLowerCase() &&
-    entity.match.match_type !== "external_id"
-  ) {
-    return null;
-  }
+  if (!hasDistinctEntityMatch(entity)) return null;
   const relation = {
     exact: "精确匹配",
     partial: "部分匹配",
     semantic: "相关结果",
     related: "关联命中",
-  }[entity.match.match_relation];
+  } as const;
+  const relationLabel = t(relation[entity.match.match_relation]);
   const source = {
     canonical_name: "名称",
     alias: "别名",
@@ -60,20 +46,23 @@ export function entityMatchExplanation(entity: EntitySearchItemRead): string | n
     description: "简介",
     semantic: "相关内容",
     relationship: "已验证关联",
-  }[entity.match.match_type];
+  } as const;
+  const sourceLabel = t(source[entity.match.match_type]);
   const namespace =
     entity.match.namespace && isPublicEntityIdentifierNamespace(entity.match.namespace)
       ? `${identifierNamespaceLabel(entity.match.namespace)} · `
       : "";
-  const value = entity.match.matched_value ? `：${namespace}${entity.match.matched_value}` : "";
-  return `${source}${relation}${value}`;
+  const value = entity.match.matched_value
+    ? t("：{value}", { value: `${namespace}${entity.match.matched_value}` })
+    : "";
+  return t("{source}{relation}{value}", { source: sourceLabel, relation: relationLabel, value });
 }
 
 function entityIdentifier(entity: EntitySearchItemRead): string {
   const [namespace, value] = Object.entries(entity.external_ids)
     .filter(([candidate]) => isPublicEntityIdentifierNamespace(candidate))
     .sort(([left], [right]) => left.localeCompare(right))[0] ?? ["", ""];
-  return value ? `${identifierNamespaceLabel(namespace)} · ${value}` : entityTypeLabels[entity.entity_type];
+  return value ? `${identifierNamespaceLabel(namespace)} · ${value}` : entityTypeLabel(entity);
 }
 
 function curatedAttributes(entity: EntitySearchItemRead): Array<[string, string]> {
@@ -82,7 +71,7 @@ function curatedAttributes(entity: EntitySearchItemRead): Array<[string, string]
     const value = entity.attributes[key];
     if ((typeof value === "string" || typeof value === "number") && String(value).trim()) {
       const displayValue = key === "modality" ? programModalityLabel(String(value)) : String(value).trim();
-      entries.push([label, displayValue]);
+      entries.push([t(label), displayValue]);
     }
     if (entries.length === 3) break;
   }
@@ -90,6 +79,7 @@ function curatedAttributes(entity: EntitySearchItemRead): Array<[string, string]
 }
 
 export function EntitySearchOption({ entity }: { entity: EntitySearchItemRead }) {
+  useLocale();
   const match = entityMatchExplanation(entity);
   const normalizedName = entity.name.trim().toLocaleLowerCase();
   const matchedAlias =
@@ -111,7 +101,7 @@ export function EntitySearchOption({ entity }: { entity: EntitySearchItemRead })
       {match ? <span className="entity-search-match">{match}</span> : null}
       {aliases.length ? (
         <span className="entity-search-aliases">
-          别名：{aliases.join(" / ")}
+          {t("别名：{aliases}", { aliases: aliases.join(" / ") })}
           {remainingAliases ? ` / +${remainingAliases}` : ""}
         </span>
       ) : null}

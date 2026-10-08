@@ -1,8 +1,9 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import { EntityFilterSelect } from "../components/EntityFilterSelect";
 import { getEntity, lookupEntities, lookupEntityTypes } from "../lib/contracts/intelligence";
+import { setLocale } from "../lib/i18n";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/intelligence", () => ({
@@ -40,6 +41,27 @@ beforeEach(() => {
   vi.mocked(lookupEntities).mockResolvedValue([target]);
   vi.mocked(lookupEntityTypes).mockResolvedValue([target]);
   vi.mocked(getEntity).mockResolvedValue(target);
+});
+
+it("retains candidate input and cached entity results while switching owned labels to English", async () => {
+  const onChange = vi.fn();
+  const { rerender } = renderWithQueryClient(
+    <EntityFilterSelect label="Target" entityType="target" value="" onChange={onChange} placeholder="Search target" />,
+  );
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "EGFR" } });
+  await screen.findByRole("option", { name: /EGFR/ });
+  const calls = vi.mocked(lookupEntities).mock.calls.length;
+  act(() => setLocale("en"));
+  rerender(
+    <EntityFilterSelect label="Target" entityType="target" value="" onChange={onChange} placeholder="Search target" />,
+  );
+  expect(screen.getByRole("combobox", { name: "Target filter" })).toHaveValue("EGFR");
+  const option = screen.getByRole("option", { name: /EGFR/ });
+  expect(option).toHaveTextContent("English name Epidermal growth factor receptor");
+  expect(option).toHaveTextContent("Alias · Exact match: ERBB1");
+  expect(option).toHaveTextContent("HGNC · 3236");
+  expect(lookupEntities).toHaveBeenCalledTimes(calls);
+  expect(onChange).not.toHaveBeenCalled();
 });
 
 it.each(["", "x", "unresolved"])(
