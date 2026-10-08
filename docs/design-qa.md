@@ -7,8 +7,6 @@ current-deployment evidence merely because the product version advances.
 
 ## 2026-10-07: research-first frontend craft
 
-### 2026-10-09: target dossier language continuity (candidate, not deployed)
-
 ### 2026-10-09: readable bilingual navigation and unobscured language control
 
 Real rendering exposed English primary/organization labels clipped by nowrap and
@@ -34,6 +32,8 @@ The first internal selector used the navigation label instead of the source-owne
 page title; it was corrected to the exact canonical title, not broadened. Native
 launch failures before process startup are retained separately from test results.
 Normal PR/CI/main-version/deployment closure and whole-site quality remain pending.
+
+### 2026-10-09: target dossier language continuity (candidate, not deployed)
 
 The target shell, overview and relationship/translational-evidence panels use
 the same English-first locale owner. Controlled classification, phases, counts,
