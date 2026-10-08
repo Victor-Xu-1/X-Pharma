@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import type { EntityRead } from "../../../src/lib/generated";
 import { openNavigation } from "../helpers";
 import { verifyDenseResultsVisual } from "./dense-results-visual";
 import type { verifyQueryCancellationAndPagination } from "./query-cancellation-and-pagination";
@@ -135,7 +136,20 @@ export async function verifyDenseResultAndLandscape(
   await expect(page.locator("tbody").getByText(fixtureName, { exact: true })).toBeVisible();
   await expect(page.locator("tbody").getByText(companyName, { exact: true })).toBeVisible();
   await expect(page.getByText(`外部标识精确匹配：acceptance · ${fixtureKey}`, { exact: true })).toBeVisible();
-  await expect(page.getByText(`名称相关匹配：${companyName}`, { exact: true })).toBeVisible();
+  const companyNameButton = page.locator("tbody").getByRole("button", { name: companyName, exact: true });
+  await expect(companyNameButton).toBeVisible();
+  expect(await companyNameButton.getAttribute("aria-description")).toContain(`名称相关匹配：${companyName}`);
+  // A match repeating the canonical name is retained in the accessible context,
+  // not duplicated in the bounded visible summary line. The actual source summary
+  // must remain visible and agree with the same authorized entity response.
+  await expect(companyNameButton.locator(".entity-match-context")).toHaveCount(0);
+  const companyResponse = await page.request.get(`/api/v1/entities/${searchCompanyId}`);
+  expect(companyResponse.ok()).toBe(true);
+  const companySource = (await companyResponse.json()) as EntityRead;
+  expect(companySource.id).toBe(searchCompanyId);
+  expect(typeof companySource.description).toBe("string");
+  await expect(companyNameButton.locator(".cell-subtitle")).toBeVisible();
+  await expect(companyNameButton.locator(".cell-subtitle")).toHaveText(companySource.description ?? "");
   await page.getByRole("button", { name: "统计", exact: true }).click();
   await expect(page).toHaveURL(/display=landscape/);
   const entityLandscape = page.getByRole("region", { name: "实体检索统计分析" });
