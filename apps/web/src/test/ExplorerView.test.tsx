@@ -120,6 +120,37 @@ function openAdvancedQuery(): void {
   fireEvent.click(screen.getByText(/^高级条件查询/, { selector: "summary" }));
 }
 
+it("keeps a preview opener's DOM identity when route callbacks change and uses the latest handler", async () => {
+  const first = vi.fn();
+  const latest = vi.fn();
+  function RouteOwner() {
+    const [updated, setUpdated] = useState(false);
+    return (
+      <>
+        <button type="button" onClick={() => setUpdated(true)}>
+          Commit new route callbacks
+        </button>
+        <ExplorerView
+          initialQuery="EGFR"
+          initialEntityType="target"
+          initialReviewStatus="verified"
+          onSearchChange={vi.fn()}
+          onOpenEntity={vi.fn()}
+          onSelectedEntityChange={(entity) => (updated ? latest : first)(entity)}
+          onOpenSpecializedSearch={vi.fn()}
+        />
+      </>
+    );
+  }
+  renderWithQueryClient(<RouteOwner />);
+  const opener = await screen.findByRole("button", { name: "查看 EGFR 实体详情" });
+  fireEvent.click(screen.getByRole("button", { name: "Commit new route callbacks" }));
+  expect(screen.getByRole("button", { name: "查看 EGFR 实体详情" })).toBe(opener);
+  fireEvent.click(opener);
+  expect(latest).toHaveBeenCalledWith(target);
+  expect(first).not.toHaveBeenCalled();
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   // Mirrors what the server echoes for the standard render props used across this file

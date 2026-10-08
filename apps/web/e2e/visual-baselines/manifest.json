@@ -41,7 +41,7 @@
     },
     "research-dense-results-mobile-390.png": {
       "capture": "table-shell",
-      "sha256": "a0f28b4235276d6a80dc24cb2a21935be99e5e3e3488d9286939ba9ff7ba1213",
+      "sha256": "1bf9a466caa765fb9425de8412bbb2cced4f03140da399e528ffc426259e6977",
       "state": "controlled-dense-results",
       "viewport": "390x844"
     },
@@ -124,7 +124,7 @@
       "viewport": "1024x768"
     }
   },
-  "generated_at": "2026-10-07",
+  "generated_at": "2026-10-08",
   "generator": "scripts/run-browser-acceptance.sh --update-snapshots",
   "license": "repository-owned-test-artifact",
   "schema": "pharma.workbench-visual-baselines.v3",

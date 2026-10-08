@@ -25,6 +25,7 @@ async function readFixedColumns(shell: Locator) {
       });
     return {
       left: viewport.getBoundingClientRect().left + viewport.clientLeft,
+      width: viewport.clientWidth,
       scroll: viewport.scrollLeft,
       maximumScroll: viewport.scrollWidth - viewport.clientWidth,
       header: read(header),
@@ -38,13 +39,16 @@ export async function verifyFixedColumnLayout(shell: Locator) {
   const initial = await readFixedColumns(shell);
   expect(initial.header).toHaveLength(3);
   expect(initial.row).toHaveLength(3);
+  const pinnedCount = initial.width <= 640 ? 1 : 2;
   for (const cells of [initial.header, initial.row]) {
     for (const [index, cell] of cells.entries()) {
       expect(cell.fontReady).toBe(true);
       expect(cell.contentRects).toBeGreaterThan(0);
-      if (index < 2) {
+      if (index < pinnedCount) {
         expect(cell.position).toBe("sticky");
         expect(cell.x).toBe(initial.left + (index === 0 ? 0 : cells[0].width));
+      } else if (index === 1) {
+        expect(cell.position).toBe("static");
       }
     }
   }
@@ -64,10 +68,12 @@ export async function verifyFixedColumnLayout(shell: Locator) {
     await expect.poll(async () => (await readFixedColumns(shell)).scroll).toBeGreaterThan(0);
     const scrolled = await readFixedColumns(shell);
     for (const field of ["header", "row"] as const) {
-      expect(scrolled[field].slice(0, 2).map((cell) => cell.x)).toEqual(
-        initial[field].slice(0, 2).map((cell) => cell.x),
+      expect(scrolled[field].slice(0, pinnedCount).map((cell) => cell.x)).toEqual(
+        initial[field].slice(0, pinnedCount).map((cell) => cell.x),
       );
-      expect(scrolled[field][2].x).toBe(initial[field][2].x - scrolled.scroll + initial.scroll);
+      for (let index = pinnedCount; index < 3; index += 1) {
+        expect(scrolled[field][index].x).toBe(initial[field][index].x - scrolled.scroll + initial.scroll);
+      }
     }
   } finally {
     await viewport.evaluate((element, scroll) => {

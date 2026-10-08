@@ -43,14 +43,18 @@ export async function installBrowserQualityProbe(page: Page) {
         if (!shift.hadRecentInput) metrics.cls += shift.value ?? 0;
       }
     }).observe({ type: "layout-shift", buffered: true });
-    new PerformanceObserver((list) => {
+    const recordInteractions = (list: PerformanceObserverEntryList) => {
       for (const entry of list.getEntries()) {
         const interaction = entry as PerformanceEntry & { duration: number; interactionId?: number };
         if (!interaction.interactionId) continue;
         metrics.interaction_ids.add(interaction.interactionId);
         metrics.inp_ms = Math.max(metrics.inp_ms, interaction.duration);
       }
-    }).observe(eventOptions);
+    };
+    new PerformanceObserver(recordInteractions).observe(eventOptions);
+    // The first-input entry reports the real first interaction even below the
+    // ordinary EventTiming 16ms floor. Shared handling deduplicates its ID.
+    new PerformanceObserver(recordInteractions).observe({ type: "first-input", buffered: true });
   });
 }
 

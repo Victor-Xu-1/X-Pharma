@@ -15,6 +15,10 @@ def test_dense_visual_has_one_owner_and_preserves_original_quality_thresholds() 
     assert "inp_ms).toBeLessThanOrEqual(200)" in owner
     assert "cls).toBeLessThanOrEqual(0.1)" in owner
     assert 'maskColor: "#dce4e7"' in owner
+    probe = (ROOT / "apps/web/e2e/workspace/helpers.ts").read_text(encoding="utf-8")
+    assert 'new PerformanceObserver(recordInteractions).observe({ type: "first-input", buffered: true })' in probe
+    assert "new PerformanceObserver(recordInteractions).observe(eventOptions)" in probe
+    assert "durationThreshold: 16" in probe
 
 
 def test_dense_capture_uses_one_bounded_natural_flow_without_scroll_workarounds() -> None:
