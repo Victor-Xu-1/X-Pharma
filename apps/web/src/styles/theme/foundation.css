@@ -479,8 +479,7 @@ tbody tr:hover,
 }
 
 .factory-warning svg,
-.pipeline-pending,
-.pipeline-stages > div.pending .pipeline-icon {
+.pipeline-stages > li.pending .pipeline-icon {
   color: var(--ds-warning);
 }
 
@@ -493,12 +492,8 @@ tbody tr:hover,
   color: var(--ds-ink-strong);
 }
 
-.pipeline-stages > div.pending .pipeline-icon {
+.pipeline-stages > li.pending .pipeline-icon {
   background: var(--ds-warning-soft);
-}
-
-.pipeline-stages > div > svg {
-  color: var(--ds-success);
 }
 
 .quarantine-safety-note,

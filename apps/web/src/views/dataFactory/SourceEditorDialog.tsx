@@ -133,7 +133,6 @@ export function SourceEditorDialog({
       >
         <header>
           <div>
-            <p className="eyebrow">DATA SOURCE</p>
             <h2 id="create-source-title">{source ? "编辑数据源治理配置" : "接入自动数据源"}</h2>
           </div>
           <button

@@ -5,6 +5,7 @@ import { ErrorState, formatDate, Spinner, StatusBadge } from "../../components/c
 import { FormStatus } from "../../components/FormStatus";
 import type { QuarantineAction, QuarantineCase } from "../../lib/contracts/dataFactory";
 import { dataFactoryKeys, decideQuarantineCase, loadQuarantineCase } from "../../lib/contracts/dataFactory";
+import { quarantineStatusLabel } from "../../lib/quarantinePresentation";
 import { useModalFocus } from "../../lib/useModalFocus";
 
 const QUARANTINE_ACTION_LABELS: Record<QuarantineAction, string> = {
@@ -129,7 +130,10 @@ export function QuarantineDecisionDialog({
               <div>
                 <dt>状态</dt>
                 <dd>
-                  <StatusBadge value={caseData.quarantine_status} />
+                  <StatusBadge
+                    value={caseData.quarantine_status}
+                    label={quarantineStatusLabel(caseData.quarantine_status)}
+                  />
                 </dd>
               </div>
               <div>

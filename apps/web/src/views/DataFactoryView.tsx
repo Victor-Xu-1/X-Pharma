@@ -1,25 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-  BrainCircuit,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   CircleStop,
   CloudDownload,
   Eye,
-  FileCheck2,
   FileText,
-  FolderCog,
   FolderSync,
-  type LucideIcon,
   Pause,
   Pencil,
   Play,
   Plus,
   RefreshCw,
   RotateCcw,
-  ScanSearch,
-  ShieldAlert,
   ShieldCheck,
   Workflow,
 } from "lucide-react";
@@ -39,9 +32,12 @@ import {
 } from "../lib/contracts/dataFactory";
 import type { User } from "../lib/types";
 import { FindingsDrawer } from "./dataFactory/FindingsDrawer";
+import { IngestionFlowOverview } from "./dataFactory/IngestionFlowOverview";
 import { CancelRunDialog, ReplayRunDialog } from "./dataFactory/IngestionRunDialogs";
+import { QuarantineCasesPanel } from "./dataFactory/QuarantineCasesPanel";
 import { QuarantineDecisionDialog } from "./dataFactory/QuarantineDecisionDialog";
 import { RunStageSummary, runVersionProgressLabel } from "./dataFactory/RunStagePresentation";
+import { SearchProjectionPanel } from "./dataFactory/SearchProjectionPanel";
 import { SourceAssetDrawer } from "./dataFactory/SourceAssetDrawer";
 import { SourceEditorDialog } from "./dataFactory/SourceEditorDialog";
 import { SourceSyncStatus } from "./dataFactory/SourceSyncStatus";
@@ -49,19 +45,6 @@ import { SourceSyncStatus } from "./dataFactory/SourceSyncStatus";
 const RUNS_PER_PAGE = 25;
 const ASSETS_PER_PAGE = 50;
 type ReplayableRunState = "failed" | "partial" | "canceled";
-const ACTIVE_QUARANTINE_STATUSES = new Set(["pending_review", "held", "rescan_requested"]);
-
-const DATA_FACTORY_STATUS_LABELS: Record<string, string> = {
-  "projection ready": "检索投影正常",
-  "projection unavailable": "检索投影不可用",
-  "scheduler active": "调度已启用",
-  "scheduler disabled": "调度未启用",
-};
-
-function dataFactoryStatusLabel(value: string): string {
-  return DATA_FACTORY_STATUS_LABELS[value] ?? statusLabel(value);
-}
-
 const SOURCE_READINESS_GUIDANCE: Record<string, string> = {
   owner: "请指定可追责的数据负责人",
   authorization_scopes: "请登记至少一个有效的来源授权范围",
@@ -121,9 +104,6 @@ export function DataFactoryView({ user }: { user: User }) {
   const searchStatus = searchStatusQuery.data;
   const runs = snapshot.data?.runs ?? [];
   const quarantineCases = snapshot.data?.quarantineCases ?? [];
-  const activeQuarantineCases = quarantineCases.filter((item) =>
-    ACTIVE_QUARANTINE_STATUSES.has(item.quarantine_status),
-  );
   const assets = assetsQuery.data?.items ?? [];
   const assetTotal = assetsQuery.data?.total ?? 0;
   const assetPageCount = Math.max(1, Math.ceil(assetTotal / ASSETS_PER_PAGE));
@@ -228,184 +208,24 @@ export function DataFactoryView({ user }: { user: User }) {
               </div>
               <div>
                 <span>最近运行</span>
-                <strong>{latestRun ? dataFactoryStatusLabel(latestRun.effective_state) : "暂无"}</strong>
+                <strong>{latestRun ? statusLabel(latestRun.effective_state) : "暂无"}</strong>
                 <small>{latestRun ? formatDate(latestRun.created_at, true) : "等待数据源"}</small>
               </div>
             </section>
 
-            <section className="pipeline-panel" aria-labelledby="pipeline-title">
-              <header>
-                <div>
-                  <h2 id="pipeline-title">自动入库治理链路</h2>
-                  <p>自动采集、不可变快照、安全解析、确定性或模型治理，以及受控发布</p>
-                </div>
-                <StatusBadge
-                  value={capabilities.automatic_scheduling_enabled ? "scheduler active" : "scheduler disabled"}
-                  label={dataFactoryStatusLabel(
-                    capabilities.automatic_scheduling_enabled ? "scheduler active" : "scheduler disabled",
-                  )}
-                />
-              </header>
-              <div className="pipeline-stages">
-                <PipelineStage
-                  icon={FolderCog}
-                  title="来源发现"
-                  detail="官方接口与获授权只读来源"
-                  ready={capabilities.automatic_scheduling_enabled}
-                />
-                <PipelineStage
-                  icon={FileCheck2}
-                  title="安全解析"
-                  detail={capabilities.isolated_parser_enabled ? "隔离解析服务" : "进程内解析"}
-                  ready={capabilities.isolated_parser_enabled}
-                />
-                <PipelineStage
-                  icon={BrainCircuit}
-                  title="结构化治理"
-                  detail={
-                    capabilities.deterministic_governance_enabled
-                      ? "官方结构化来源可直接校验"
-                      : capabilities.ai_governance_enabled && capabilities.ai_model_configured
-                        ? `第三方 API · ${capabilities.ai_model ?? "已配置"}`
-                        : "未启用可用治理链路"
-                  }
-                  ready={
-                    capabilities.deterministic_governance_enabled ||
-                    (capabilities.ai_governance_enabled && capabilities.ai_model_configured)
-                  }
-                />
-                <PipelineStage icon={ShieldCheck} title="质量审核" detail="低置信度进入审核队列" ready />
-                <PipelineStage icon={ScanSearch} title="发布检索" detail="Web 与 MCP 同源引用" ready />
-              </div>
-            </section>
-
-            {searchStatus ? (
-              <section className="pipeline-panel" aria-labelledby="projection-status-title">
-                <header>
-                  <div>
-                    <h2 id="projection-status-title">检索投影运行状态</h2>
-                    <p>OpenSearch 集群、别名和投递队列来自实时服务状态，不由浏览器推断</p>
-                  </div>
-                  <StatusBadge
-                    value={searchStatus.available ? "projection ready" : "projection unavailable"}
-                    label={dataFactoryStatusLabel(
-                      searchStatus.available ? "projection ready" : "projection unavailable",
-                    )}
-                  />
-                </header>
-                <dl className="enterprise-tenant-details factory-projection-metrics">
-                  <div>
-                    <dt>集群</dt>
-                    <dd>{searchStatus.cluster_name ?? "未连接"}</dd>
-                  </div>
-                  <div>
-                    <dt>集群状态</dt>
-                    <dd>
-                      {searchStatus.cluster_status ??
-                        (searchStatus.error ? "连接失败，请检查检索服务配置与网络" : "未披露")}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>版本</dt>
-                    <dd>{searchStatus.version ?? "未披露"}</dd>
-                  </div>
-                  <div>
-                    <dt>索引别名</dt>
-                    <dd>{Object.keys(searchStatus.aliases).length}</dd>
-                  </div>
-                  <div>
-                    <dt>待投递</dt>
-                    <dd>{searchStatus.deliveries.pending ?? 0}</dd>
-                  </div>
-                  <div>
-                    <dt>失败投递</dt>
-                    <dd>{searchStatus.deliveries.failed ?? 0}</dd>
-                  </div>
-                </dl>
-              </section>
-            ) : null}
-
-            {!capabilities.ai_governance_enabled || !capabilities.ai_model_configured ? (
-              <div className="factory-warning" role="status">
-                <BrainCircuit size={17} />
-                <span>
-                  <strong>第三方 LLM API 尚未启用</strong>
-                  非结构化文档的模型事实抽取未启用；已授权的 ClinicalTrials.gov 与 ChEMBL 可走独立确定性治理。全文、OCR
-                  和语义模型仍需各自配置与授权。
-                </span>
-              </div>
-            ) : null}
-
-            <section className="quarantine-panel" aria-labelledby="quarantine-title">
-              <header>
-                <div>
-                  <h2 id="quarantine-title">恶意文件隔离</h2>
-                  <p>安全扫描命中的源版本不会进入解析、AI 治理或检索发布，必须经过受审计的人工处置。</p>
-                </div>
-                <span
-                  className="quarantine-count"
-                  role="status"
-                  aria-label={`${activeQuarantineCases.length} 个待处置案件`}
-                >
-                  <ShieldAlert size={16} />
-                  {activeQuarantineCases.length} 待处置
-                </span>
-              </header>
-              {quarantineCases.length ? (
-                <div className="table-frame quarantine-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>隔离文件</th>
-                        <th>威胁</th>
-                        <th>处置状态</th>
-                        <th>决策版本</th>
-                        <th>最近变更</th>
-                        <th aria-label="操作" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {quarantineCases.map((item) => (
-                        <tr key={item.source_version_id}>
-                          <td>
-                            <span className="quarantine-file">
-                              <strong>{item.file_name}</strong>
-                              <small className="mono-cell">{item.logical_path}</small>
-                            </span>
-                          </td>
-                          <td className="quarantine-threat">{item.threat_name ?? "未披露签名"}</td>
-                          <td>
-                            <StatusBadge value={item.quarantine_status} />
-                          </td>
-                          <td>v{item.quarantine_version}</td>
-                          <td>{formatDate(item.updated_at, true)}</td>
-                          <td>
-                            <button
-                              className="secondary-button"
-                              type="button"
-                              onClick={() => setSelectedQuarantineVersionId(item.source_version_id)}
-                            >
-                              <ShieldAlert size={15} />
-                              {user.role === "admin" && ACTIVE_QUARANTINE_STATUSES.has(item.quarantine_status)
-                                ? "处置"
-                                : "查看"}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="factory-run-empty">
-                  <ShieldCheck size={20} />
-                  <span>
-                    <strong>当前没有隔离案件</strong>
-                    <small>扫描命中后，文件会自动阻断并显示在这里。</small>
-                  </span>
-                </div>
-              )}
-            </section>
+            <QuarantineCasesPanel
+              items={quarantineCases}
+              role={user.role}
+              stale={snapshot.isError}
+              onOpen={setSelectedQuarantineVersionId}
+            />
+            <SearchProjectionPanel
+              data={searchStatus}
+              pending={searchStatusQuery.isPending}
+              error={searchStatusQuery.error instanceof Error ? searchStatusQuery.error : null}
+              onRetry={() => void searchStatusQuery.refetch()}
+            />
+            <IngestionFlowOverview capabilities={capabilities} stale={snapshot.isError} />
           </>
         ) : null}
 
@@ -606,7 +426,7 @@ export function DataFactoryView({ user }: { user: User }) {
                   <tr key={run.id}>
                     <td className="mono-cell">{run.workflow_id}</td>
                     <td>
-                      <StatusBadge value={run.effective_state} label={dataFactoryStatusLabel(run.effective_state)} />
+                      <StatusBadge value={run.effective_state} label={statusLabel(run.effective_state)} />
                     </td>
                     <td>
                       <div className="ingestion-run-progress">
@@ -863,30 +683,5 @@ export function DataFactoryView({ user }: { user: User }) {
         />
       ) : null}
     </section>
-  );
-}
-
-function PipelineStage({
-  icon: Icon,
-  title,
-  detail,
-  ready,
-}: {
-  icon: LucideIcon;
-  title: string;
-  detail: string;
-  ready: boolean;
-}) {
-  return (
-    <div className={ready ? "ready" : "pending"}>
-      <span className="pipeline-icon">
-        <Icon size={18} />
-      </span>
-      <span>
-        <strong>{title}</strong>
-        <small>{detail}</small>
-      </span>
-      {ready ? <CheckCircle2 size={15} aria-label="已配置" /> : <span className="pipeline-pending">待配置</span>}
-    </div>
   );
 }
