@@ -1,5 +1,6 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs } from "@playwright/test";
 import { expect } from "@playwright/test";
+import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifySessionRecovery({ page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">) {
   let recovered = false;
@@ -23,6 +24,7 @@ export async function verifySessionRecovery({ page }: Pick<PlaywrightTestArgs & 
   });
 
   await page.goto("/");
+  await selectInterfaceLanguage(page, "zh-CN");
   await expect(page.getByText("Identity service unavailable", { exact: true })).toBeVisible();
   await expect.poll(() => cancelledUserReads).toBeGreaterThan(0);
   recovered = true;

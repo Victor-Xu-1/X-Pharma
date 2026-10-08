@@ -1,0 +1,43 @@
+.language-switcher {
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+.language-switcher label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.language-switcher svg {
+  flex: 0 0 auto;
+  color: var(--ds-ink-muted);
+}
+.language-switcher select {
+  width: auto;
+  min-width: 102px;
+  min-height: 36px;
+  padding-block: 6px;
+}
+.language-switcher small {
+  display: block;
+  max-width: 240px;
+  margin-top: 6px;
+  color: var(--ds-ink-muted);
+  overflow-wrap: anywhere;
+}
+.login-language {
+  width: min(400px, 100%);
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+.page-heading:has(> .language-switcher) {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+.page-heading:has(> .language-switcher) h1 {
+  min-width: 0;
+  flex: 1 1 min-content;
+}

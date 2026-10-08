@@ -1,7 +1,8 @@
+import type { MessageKey } from "../i18n/catalog";
 import type { ViewKey } from "./types";
 
-type ResearchDestination = { view: ViewKey; label: string };
-export type ResearchWorkflow = { label: string; destinations: readonly ResearchDestination[] };
+type ResearchDestination = { view: ViewKey; label: MessageKey };
+export type ResearchWorkflow = { label: MessageKey; destinations: readonly ResearchDestination[] };
 
 /** Presentation hierarchy only: existing URLs, queries and domain services remain authoritative. */
 export const researchWorkflows: readonly ResearchWorkflow[] = [

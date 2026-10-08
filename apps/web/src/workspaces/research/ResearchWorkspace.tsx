@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { Spinner } from "../../components/common";
 import { ResearchContinuity } from "../../components/ResearchContinuity";
 import { WorkspaceShell } from "../../components/WorkspaceShell";
+import { t, useLocale } from "../../lib/i18n";
 import { ChemistryRoute } from "./ChemistryRoute";
 import { CollectionsRoute } from "./CollectionsRoute";
 import { CompanyRoute } from "./CompanyRoute";
@@ -26,6 +27,7 @@ import { TrialsRoute } from "./TrialsRoute";
 import { useResearchNavigation } from "./useResearchNavigation";
 
 export function ResearchWorkspace(props: WorkspaceSessionProps) {
+  useLocale();
   const navigation = useResearchNavigation();
   const { location, pendingNavigationView, navigateToView, openEntityById } = navigation;
   const { user, onLogout, logoutPending, logoutError } = props;
@@ -46,7 +48,7 @@ export function ResearchWorkspace(props: WorkspaceSessionProps) {
       onView={navigateToView}
     >
       <ResearchReturnControl context={context} />
-      <Suspense fallback={<Spinner label="正在加载研究工作区" />}>
+      <Suspense fallback={<Spinner label={t("正在加载研究工作区")} />}>
         {location.view === "explorer" ? <ResearchContinuity onOpenEntity={openEntityById} /> : null}
         {location.view === "overview" ? <OverviewRoute context={context} /> : null}
         {location.view === "explorer" ? <ExplorerRoute context={context} /> : null}

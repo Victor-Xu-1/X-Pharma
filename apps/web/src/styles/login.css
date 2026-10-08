@@ -77,12 +77,21 @@
 .login-form {
   width: 100%;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   padding: 0 24px 24px;
   border: 0;
   border-radius: var(--ds-radius-panel);
   background: var(--ds-surface);
   box-shadow: var(--ds-shadow-sm);
+}
+.login-form .view-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.login-form .view-tabs button {
+  min-width: 0;
+  padding-inline: 8px;
 }
 .login-form h2 {
   font-size: 18px;

@@ -1,9 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
-
 import { resolveBrowserCredentials } from "../src/lib/browserAcceptanceCredentials";
 import { verifyKeyboardReflow } from "./accessibility/reflow-keyboard";
 import { expectNamedKeyboardScrollableTables } from "./accessibility/reflow-support";
+import { selectInterfaceLanguage } from "./interface-language";
 
 const wcagTags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22a", "wcag22aa"];
 
@@ -64,6 +64,7 @@ test("[accessibility] passes WCAG 2.2 A/AA across the public login and every ext
   if (!credentials) return;
 
   await page.goto("/");
+  await selectInterfaceLanguage(page, "zh-CN");
   await expect(page.getByRole("heading", { name: "账户登录" })).toBeVisible();
   await expectSharedLightTheme(page);
   const violations = [await findWcagViolations(page, "public login")].filter((value): value is string =>
@@ -107,6 +108,7 @@ test("[accessibility-dossier] passes WCAG 2.2 A/AA across every professional dos
   if (!credentials || !targetId || !drugId || !companyId || !diseaseId || !trialId || !patentId || !dealId) return;
 
   await page.goto("/");
+  await selectInterfaceLanguage(page, "zh-CN");
   await expect(page.getByRole("heading", { name: "账户登录" })).toBeVisible();
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);

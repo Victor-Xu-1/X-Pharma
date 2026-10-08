@@ -10,11 +10,12 @@ import {
   Settings2,
   ShieldCheck,
 } from "lucide-react";
+import { type MessageKey, t, useLocale } from "../lib/i18n";
 import type { UserRole } from "../lib/types";
 import { researchWorkflowForView, researchWorkflows } from "../lib/workspace/researchNavigation";
 import { canAccessView, type ViewKey, type WorkbenchKey } from "../lib/workspaceRouting";
 
-type Item = { key: ViewKey; label: string; icon: typeof Search };
+type Item = { key: ViewKey; label: MessageKey; icon: typeof Search };
 const researchIcons: Partial<Record<ViewKey, typeof Search>> = {
   explorer: Search,
   pipeline: FlaskConical,
@@ -45,6 +46,7 @@ export function WorkspaceNavigation({
   collapsed: boolean;
   onView: (view: ViewKey) => void;
 }) {
+  useLocale();
   const activeWorkflow = researchWorkflowForView(activeView, sourceView);
   const items: Item[] =
     workbench === "research"
@@ -66,17 +68,17 @@ export function WorkspaceNavigation({
             type="button"
             onClick={() => onView(key)}
             aria-current={active ? "page" : undefined}
-            title={collapsed ? label : undefined}
+            title={collapsed ? t(label) : undefined}
           >
             <Icon size={18} aria-hidden="true" />
-            <span>{label}</span>
+            <span>{t(label)}</span>
           </button>
         );
       });
   }
   return (
     <div className="sidebar-navigation-sections">
-      <nav className="sidebar-primary-nav" aria-label="主导航">
+      <nav className="sidebar-primary-nav" aria-label={t("主导航")}>
         {buttons()}
       </nav>
     </div>

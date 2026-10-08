@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type MessageKey, t, useLocale } from "../lib/i18n";
 
 import { OPERATIONS_NAME, PRODUCT_NAME, PRODUCT_RELEASE } from "../lib/product";
 import type { User } from "../lib/types";
@@ -7,11 +8,12 @@ import { useCompactNavigation } from "../lib/useCompactNavigation";
 import { useModalFocus } from "../lib/useModalFocus";
 import type { ViewKey, WorkbenchKey } from "../lib/workspaceRouting";
 import { BrandMark } from "./BrandMark";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ResearchViewNavigation } from "./ResearchViewNavigation";
 import { WorkspaceAccountNavigation } from "./WorkspaceAccountNavigation";
 import { WorkspaceNavigation } from "./WorkspaceNavigation";
 
-const titles: Record<ViewKey, string> = {
+const titles: Record<ViewKey, MessageKey> = {
   overview: "用户中心",
   explorer: "全局情报检索",
   chemistry: "化学结构检索",
@@ -63,6 +65,7 @@ export function WorkspaceShell({
   logoutError?: string | null;
   children: ReactNode;
 }) {
+  useLocale();
   const [collapsed, setCollapsed] = useState(false);
   const compact = useCompactNavigation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -75,7 +78,7 @@ export function WorkspaceShell({
   const pageHeadingRef = useRef<HTMLHeadingElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const previousView = useRef(activeView);
-  const heading = titles[activeView];
+  const heading = t(titles[activeView]);
   const navigationView = pendingView ?? activeView;
   const researchWorkbench = activeWorkbench === "research";
   const recordPage = researchDetail || ["target", "drug", "company", "disease", "entity"].includes(activeView);
@@ -99,8 +102,8 @@ export function WorkspaceShell({
       className="collapse-button"
       type="button"
       onClick={() => setCollapsed((value) => !value)}
-      title={collapsed ? "展开导航" : "收起导航"}
-      aria-label={collapsed ? "展开导航" : "收起导航"}
+      title={collapsed ? t("展开导航") : t("收起导航")}
+      aria-label={collapsed ? t("展开导航") : t("收起导航")}
     >
       {collapsed ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
     </button>
@@ -119,13 +122,13 @@ export function WorkspaceShell({
           mainRef.current?.focus();
         }}
       >
-        跳到主要内容
+        {t("跳到主要内容")}
       </button>
       <aside
         id="workspace-navigation"
         ref={mobileNavigationRef}
         className={`workspace-sidebar ${mobileOpen ? "mobile-open" : ""}`}
-        aria-label="工作台导航"
+        aria-label={t("工作台导航")}
         inert={compact && !mobileOpen}
         aria-hidden={compact && !mobileOpen ? true : undefined}
         tabIndex={mobileOpen ? -1 : undefined}
@@ -136,7 +139,8 @@ export function WorkspaceShell({
             <span className="brand-copy">
               <strong>{PRODUCT_NAME}</strong>
               <small>
-                <span>{researchWorkbench ? "医药研发情报" : "内部管理工作台"}</span> · <span>{PRODUCT_RELEASE}</span>
+                <span>{researchWorkbench ? t("医药研发情报") : t("内部管理工作台")}</span> ·{" "}
+                <span>{PRODUCT_RELEASE}</span>
               </small>
             </span>
           </div>
@@ -144,8 +148,8 @@ export function WorkspaceShell({
             className="icon-button mobile-only"
             type="button"
             onClick={() => setMobileOpen(false)}
-            title="关闭导航"
-            aria-label="关闭导航"
+            title={t("关闭导航")}
+            aria-label={t("关闭导航")}
           >
             <X size={19} />
           </button>
@@ -175,7 +179,7 @@ export function WorkspaceShell({
           ref={sidebarScrimRef}
           type="button"
           className="sidebar-scrim"
-          aria-label="关闭导航"
+          aria-label={t("关闭导航")}
           onClick={() => setMobileOpen(false)}
         />
       ) : null}
@@ -188,15 +192,15 @@ export function WorkspaceShell({
               setNavigationClosing(false);
               setMobileOpen(true);
             }}
-            title="打开导航"
-            aria-label="打开导航"
+            title={t("打开导航")}
+            aria-label={t("打开导航")}
             aria-expanded={mobileOpen}
             aria-controls="workspace-navigation"
           >
             <Menu size={20} />
           </button>
           <span className="mobile-workspace-context" aria-hidden="true">
-            {researchWorkbench ? "X-Pharma · 研究工作台" : "X-Pharma · 内部管理"}
+            {researchWorkbench ? t("X-Pharma · 研究工作台") : t("X-Pharma · 内部管理")}
           </span>
         </header>
         <main
@@ -211,6 +215,7 @@ export function WorkspaceShell({
             <h1 id="workspace-page-title" ref={pageHeadingRef} tabIndex={-1} style={{ outline: "none" }}>
               {heading}
             </h1>
+            <LanguageSwitcher />
           </div>
           {researchWorkbench && !researchDetail ? (
             <ResearchViewNavigation activeView={navigationView} onView={navigate} />

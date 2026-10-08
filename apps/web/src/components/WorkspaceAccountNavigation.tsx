@@ -1,5 +1,6 @@
 import { CircleUserRound, LogOut } from "lucide-react";
 import type { ReactNode } from "react";
+import { t, useLocale } from "../lib/i18n";
 
 import type { User } from "../lib/types";
 import type { ViewKey } from "../lib/workspaceRouting";
@@ -26,8 +27,9 @@ export function WorkspaceAccountNavigation({
   logoutPending: boolean;
   logoutError: string | null;
 }) {
+  useLocale();
   return (
-    <nav className="sidebar-account-nav" aria-label="账户导航">
+    <nav className="sidebar-account-nav" aria-label={t("账户导航")}>
       <div className="sidebar-account-row">
         {researchWorkbench ? (
           <button
@@ -35,12 +37,12 @@ export function WorkspaceAccountNavigation({
             type="button"
             onClick={() => onView("overview")}
             aria-current={navigationView === "overview" ? "page" : undefined}
-            aria-label="用户中心"
-            title={collapsed ? "用户中心" : undefined}
+            aria-label={t("用户中心")}
+            title={collapsed ? t("用户中心") : undefined}
           >
             <CircleUserRound size={19} />
             <span className="sidebar-account-copy">
-              <strong>用户中心</strong>
+              <strong>{t("用户中心")}</strong>
               <small>{user.display_name}</small>
             </span>
           </button>
@@ -49,7 +51,7 @@ export function WorkspaceAccountNavigation({
             <CircleUserRound size={19} aria-hidden="true" />
             <span className="sidebar-account-copy">
               <strong>{user.display_name}</strong>
-              <small>内部工作台</small>
+              <small>{t("内部工作台")}</small>
             </span>
           </div>
         )}
@@ -61,11 +63,11 @@ export function WorkspaceAccountNavigation({
         type="button"
         onClick={onLogout}
         disabled={logoutPending}
-        title="退出账号"
-        aria-label="退出账号"
+        title={t("退出账号")}
+        aria-label={t("退出账号")}
       >
         <LogOut size={18} />
-        <span>{logoutPending ? "退出中…" : "退出账号"}</span>
+        <span>{logoutPending ? t("退出中…") : t("退出账号")}</span>
       </button>
       {logoutError ? (
         <p className="form-error" role="alert">

@@ -1,6 +1,7 @@
 import { expect, type PlaywrightTestArgs, type PlaywrightWorkerArgs, type TestInfo, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
 import type { DiseaseDossierResponse } from "../../src/lib/generated";
+import { selectInterfaceLanguage } from "../interface-language";
 import { verifyResearchNavigationHierarchy } from "./research-navigation";
 
 export async function verifyResearcherReview(
@@ -24,6 +25,7 @@ export async function verifyResearcherReview(
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/workspace/research");
+  await selectInterfaceLanguage(page, "zh-CN");
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
