@@ -75,6 +75,10 @@
   margin-bottom: 14px;
 }
 
+.collection-heading > .row-actions {
+  flex-wrap: wrap;
+}
+
 .collection-heading strong {
   font-size: 17px;
 }
@@ -190,6 +194,9 @@
 }
 
 @media (max-width: 760px) {
+  .collection-heading > .row-actions {
+    width: 100%;
+  }
   .collections-layout {
     grid-template-columns: 1fr;
   }

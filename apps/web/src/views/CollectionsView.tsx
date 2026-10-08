@@ -158,7 +158,6 @@ function CollectionContent({
           <small>{detail.description || `更新于 ${formatDate(detail.updated_at)}`}</small>
         </span>
         <div className="row-actions">
-          <CollectionExport detail={detail} changing={writes.pending} refreshing={refreshing} stale={stale} />
           <button
             className="icon-button"
             type="button"
@@ -197,6 +196,7 @@ function CollectionContent({
           ) : (
             <small>共享列表 · 只读</small>
           )}
+          <CollectionExport detail={detail} changing={writes.pending} refreshing={refreshing} stale={stale} />
         </div>
       </div>
       <CollectionMembers
