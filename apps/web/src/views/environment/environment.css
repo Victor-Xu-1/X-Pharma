@@ -67,6 +67,15 @@
   border-width: 1px 0 0;
   border-radius: 0 0 var(--ds-radius-panel) var(--ds-radius-panel);
 }
+.environment-probe-table table {
+  table-layout: fixed;
+  min-width: 720px;
+}
+.environment-probe-table td,
+.environment-probe-table code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .environment-installation {
   min-width: 0;
   display: grid;

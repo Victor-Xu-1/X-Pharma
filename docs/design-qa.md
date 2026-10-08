@@ -7,6 +7,39 @@ current-deployment evidence merely because the product version advances.
 
 ## 2026-10-07: research-first frontend craft
 
+### 2026-10-09: bilingual environment workflow and truthful state presentation
+
+The existing environment panels use the sole English-first locale runtime.
+Fixed first-party captions are translated; unknown diagnostics, paths, commands,
+versions, costs, report metadata and audit identifiers remain literal. Query keys
+and authorization/install contracts are unchanged.
+
+Behavior regressions reproduce missing-observation compatibility, unlocked pending
+plan inputs, tab-switch draft loss and unknown queue counts silently rendered as
+zero. The single small installation hook now retains drafts/request/result state
+across tabs and locale, locks pending inputs and refresh, and checks available/
+offline-supported scopes without automatic substitution. The old panel state and
+inline count implementations are removed. Counts remain unknown unless safely
+observed; true zero is preserved. Empty probes use the existing status component.
+
+Twenty-five focused environment/readiness/catalog/metric tests, five selected
+platform consumers, the exact probe-layout contract, strict app/E2E types and
+original build limits pass. Fourteen actual read-only Chrome155 states at1440/390
+pass all three panels, cached reads, drafts, reflow and WCAG-tag checks. Native
+review additionally reproduces a desktop status column offscreen: the inherited
+nowrap rule is overridden only in the probe table's owner; full original values
+wrap in bounded columns while the mobile named scroll region remains.
+
+Two controlled desktop/mobile browser cases cover incomplete probes, pending/
+prepared/failed plans, cross-tab drafts/results, raw commands/diagnostics and
+unknown-vs-zero counts. All plan responses are browser-only fixtures, not actual
+host/production/identity/scientific acceptance. No installation or real plan
+creation occurs. Initial E2E fixture compilation used a browser-only product define;
+it now consumes the generated package-version mirror rather than a new hardcoded
+version. One initial empty-state selector expected a heading; it was corrected to
+the existing status semantics, retaining the absence-of-empty-table assertion.
+Ordinary PR CI, main versioning, merge and exact-main deployment remain separate.
+
 ### 2026-10-09: readable bilingual navigation and unobscured language control
 
 Real rendering exposed English primary/organization labels clipped by nowrap and

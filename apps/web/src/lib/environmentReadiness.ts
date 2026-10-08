@@ -29,8 +29,8 @@ export function environmentReadiness(environment: EnvironmentRead) {
   return { gateway, host, overall, issues };
 }
 
-export const dependencyReadinessLabels: Record<DependencyReadiness, string> = {
+export const dependencyReadinessLabels = {
   ready: "依赖可用",
   repair: "需修复或更新",
   unverified: "待核对",
-};
+} as const satisfies Record<DependencyReadiness, string>;

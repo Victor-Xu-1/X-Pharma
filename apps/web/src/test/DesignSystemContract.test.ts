@@ -60,6 +60,15 @@ it("keeps internal action toolbars below the shared heading and language control
   expect(toolbar).toContain("flex-wrap: wrap;");
 });
 
+it("bounds environment probe columns without clipping status or original diagnostic values", () => {
+  const layout = source("../views/environment/environment.css");
+  const table = ruleBody(layout, ".environment-probe-table table");
+  expect(table).toContain("table-layout: fixed;");
+  expect(table).toContain("min-width: 720px;");
+  expect(layout).toMatch(/\.environment-probe-table td,[^}]*white-space:\s*normal;/);
+  expect(layout).toMatch(/\.environment-probe-table code[^}]*overflow-wrap:\s*anywhere;/);
+});
+
 function stylesheetSource(url: URL, parents = new Set<string>()): string {
   if (parents.has(url.href)) throw new Error(`Circular stylesheet import: ${url.href}`);
   const ancestry = new Set(parents).add(url.href);
