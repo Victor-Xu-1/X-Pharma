@@ -16,6 +16,7 @@
 | 商业与协作 | `commercial/`、`comparison/`、`monitoring/` | 账本、权益、导出和团队工作流 |
 | 前端 | `apps/web/src/workspaces/research/`、`lib/contracts`、`components`、`views` | 导航状态、分域路由、传输和独立功能面板 |
 | 界面语言 | `apps/web/src/lib/i18n/`、`LanguageSwitcher`、`LocaleEffects` | 中文/英文目录、只含语言的浏览器偏好、同源同步和当前 locale 格式化；不拥有业务数据、API 枚举或查询状态 |
+| 高级专业查询 | `components/professionalQuery/` | 薄组装入口、单一草稿/目录读取/验证模型、七类领域表单、共享日期/受控字段与纯选项推导；不拥有事实写入或第二套 URL 合同 |
 | 部署与工具 | `deploy/`、`services/`、`scripts/release/`、`scripts/`、`runbooks/` | 安装、隔离组件、发布证据、门禁、恢复与运维 |
 
 入口、领域、持久化和适配器各自负责一层。新增规则进入对应领域模块，不能在 UI、路由和 MCP 重复实现。数据流见 [architecture.md](architecture.md)。
@@ -39,6 +40,14 @@ ORM 的公共入口是 `models/__init__.py`，只聚合显式导出；领域表�
 接入控制写入由 `ingest/commands/` 负责事务、状态冲突、幂等、审计和精确 Temporal execution；它不导入 FastAPI、HTTP 或应用入口。传输层保留原 HTTP 状态和响应契约，将命令错误统一映射，不能另写一套取消、重放或隔离转换。
 
 研究入口只组装 `SessionBoundary` 与工作台。`useResearchNavigation` 管理稳定 URL、返回路径、实体解析、浏览器历史和非紧急导航；`savedSearchLocation` 是可单测的保存检索恢复模型；19 个领域 Route 拥有具体视图的 props 和懒加载。商业界面的状态/操作与表格、生命周期、风险、账单及确认表单在 `views/commercial/` 按职责分开。
+
+`ProfessionalQueryBuilder` 只选择活动领域并显示统一的查询摘要；
+`professionalQuery/useProfessionalQueryModel` 是唯一草稿、目录请求、验证与执行所有者。
+各领域字段使用精确 `Pick` 类型消费模型；管线临床/交易信号单独呈现，
+相关依赖字段的清理仍复用原更新规则。`options/` 按领域提供纯目录/条件计数
+推导，不请求网络、创建状态或更改 API 值。共享日期与受控 facet 只负责交互，
+无来源选项仍按原规则不呈现，无权/失败不伪装为可用。原 1,747 行组件中的
+字段、目录与草稿实现已移出，未保留竞争副本；拆分本身不宣称英文正文已完成。
 
 `EntityCandidateInput` 是单选与多选筛选的唯一候选检索、键盘消歧、防抖及失败恢复实现。草稿关键词变化时旧候选立即不可选，未解析的词不能意外提交外层表单；候选错误明确重试并恢复输入焦点，首次 Escape 只关闭候选。单选/多选包装只拥有已选稳定 ID、类型与身份核对、读取恢复和选择上限，不再复制检索与键盘逻辑。全局检索执行筛选、排序或分页保留当前列表/格局及分析展示模式，展示变化不另建查询权威。
 
