@@ -54,21 +54,30 @@ it.each(["drug", "target", "company", "disease", "entity"])(
   },
 );
 
-it("bounds nested return history without losing the immediate valid source", () => {
+it("bounds nested return history while preserving the recent sources and originating query", () => {
   let source = query;
   for (let index = 0; index < 6; index++) {
     source = `/workspace/research?view=target&entity=${entityId}&from=${encodeURIComponent(source)}`;
   }
   const detail = parseWorkbenchLocation("research", `?view=drug&entity=${entityId}&from=${encodeURIComponent(source)}`);
   let path = detail.returnTo;
-  let depth = 0;
+  const retained = [];
   while (path) {
-    depth++;
     const parsed = parseWorkbenchLocation("research", new URL(path, window.location.origin).search);
-    expect(parsed.view).toBe("target");
+    retained.push(parsed);
     path = parsed.returnTo;
   }
-  expect(depth).toBe(3);
+  expect(retained).toHaveLength(3);
+  for (const recent of retained.slice(0, 2)) {
+    expect(recent.view).toBe("target");
+    expect(recent.entityId).toBe(entityId);
+  }
+  const origin = retained.at(-1);
+  if (!origin) throw new Error("Originating research was not retained");
+  expect(origin.view).toBe("explorer");
+  expect(workspaceUrl({ ...origin, returnTo: undefined })).toBe(
+    workspaceUrl(parseWorkbenchLocation("research", new URL(query, window.location.origin).search)),
+  );
 });
 
 it.each([
