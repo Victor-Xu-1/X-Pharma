@@ -1636,6 +1636,15 @@
   color: var(--ds-ink-muted);
   font-size: var(--ds-text-xs);
 }
+.deal-party-suggestions button {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+}
+.deal-party-suggestions button > span,
+.deal-party-suggestions button > small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .suggestion-status {
   display: block;
   padding: 10px;

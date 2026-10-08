@@ -565,7 +565,9 @@ export function DealsView({
           filters={filters}
           facets={data?.facets}
           suggestions={partySuggestions.data?.items ?? []}
-          suggestionsEnabled={!filters.partyEntityId && debouncedParty.length >= 2}
+          suggestionsEnabled={
+            !filters.partyEntityId && debouncedParty.length >= 2 && debouncedParty === filters.party.trim()
+          }
           loading={partySuggestions.isFetching}
           onChange={updateFilter}
           onPartyText={(party) => setFilters((current) => ({ ...current, party, partyEntityId: "" }))}
