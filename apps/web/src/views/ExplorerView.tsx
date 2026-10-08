@@ -46,6 +46,7 @@ import {
   entityLabels,
   entityResultContext,
   entityTypeLabel,
+  hasDistinctEntityMatch,
   matchExplanation,
   publicIdentifiers,
 } from "../lib/entityPresentation";
@@ -328,7 +329,7 @@ export function ExplorerView({
         cell: ({ row }) => {
           const entity = row.original;
           const context = entityResultContext(entity);
-          const explanation = matchExplanation(entity);
+          const explanation = hasDistinctEntityMatch(entity) ? matchExplanation(entity) : null;
           return (
             <button
               className="entity-name-button intelligence-name-button"
@@ -342,10 +343,12 @@ export function ExplorerView({
               aria-description={context ?? undefined}
             >
               <strong>{entity.name}</strong>
-              {context ? (
-                <small className="intelligence-result-context" title={context}>
+              {explanation || entity.description ? (
+                <small
+                  className={`intelligence-result-context${entity.description ? " has-source-summary" : ""}`}
+                  title={context ?? undefined}
+                >
                   {explanation ? <span className="entity-match-context">{explanation}</span> : null}
-                  {explanation && entity.description ? " · " : null}
                   {entity.description ? <span className="cell-subtitle">{entity.description}</span> : null}
                 </small>
               ) : null}

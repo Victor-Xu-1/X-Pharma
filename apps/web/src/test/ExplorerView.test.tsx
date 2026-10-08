@@ -1940,6 +1940,38 @@ it("surfaces and retries an authoritative news facet catalog failure without exp
   expect(screen.getByRole("combobox", { name: "会议 / 场景" })).toBeInTheDocument();
 });
 
+it("prioritizes the original source summary over a duplicated canonical-name match in a compact row", async () => {
+  vi.mocked(searchEntities).mockResolvedValue({
+    query_schema_version: "pharma.entity.search.v2",
+    applied_filters: [],
+    items: [{ ...target, match: { ...target.match, match_type: "canonical_name", matched_value: "EGFR" } }],
+    total: 1,
+    limit: 100,
+    offset: 0,
+    sort_by: "relevance",
+    sort_direction: "desc",
+    facets: {},
+    suggestions: [],
+    engine: "opensearch",
+    took_ms: 12,
+  });
+  renderWithQueryClient(
+    <ExplorerView
+      initialQuery="EGFR"
+      initialEntityType="target"
+      initialReviewStatus="verified"
+      onSearchChange={vi.fn()}
+      onOpenEntity={vi.fn()}
+      onOpenSpecializedSearch={vi.fn()}
+    />,
+  );
+  const table = await screen.findByRole("table", { name: "实体检索结果" });
+  const name = within(table).getByRole("button", { name: "EGFR" });
+  expect(name.querySelector(".entity-match-context")).toBeNull();
+  expect(name.querySelector(".cell-subtitle")).toHaveTextContent("Epidermal growth factor receptor");
+  expect(name).toHaveAttribute("aria-description", "名称精确匹配：EGFR · Epidermal growth factor receptor");
+});
+
 it("keeps the professional query on the current page when a date range is invalid", async () => {
   const onOpenSpecializedSearch = vi.fn();
   renderWithQueryClient(

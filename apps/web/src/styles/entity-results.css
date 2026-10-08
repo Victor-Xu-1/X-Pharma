@@ -13,7 +13,9 @@
   white-space: nowrap;
 }
 .intelligence-result-context {
-  display: block;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   width: 100%;
   margin-top: 3px;
   overflow: hidden;
@@ -22,6 +24,20 @@
 }
 .intelligence-result-context > .entity-match-context,
 .intelligence-result-context > .cell-subtitle {
-  display: inline;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   margin: 0;
+}
+.intelligence-result-context > .entity-match-context {
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+.intelligence-result-context.has-source-summary > .entity-match-context {
+  max-width: 50%;
+}
+.intelligence-result-context > .cell-subtitle {
+  flex: 1 1 0;
 }
