@@ -12,3 +12,16 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.intelligence-result-context {
+  display: block;
+  width: 100%;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.intelligence-result-context > .entity-match-context,
+.intelligence-result-context > .cell-subtitle {
+  display: inline;
+  margin: 0;
+}

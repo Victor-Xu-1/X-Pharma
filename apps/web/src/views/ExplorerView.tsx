@@ -325,26 +325,33 @@ export function ExplorerView({
         accessorKey: "name",
         header: t("名称"),
         size: 300,
-        cell: ({ row }) => (
-          <button
-            className="entity-name-button intelligence-name-button"
-            type="button"
-            onClick={() => {
-              setLocalSelectedEntity(row.original);
-              selectPreview(row.original);
-            }}
-            aria-label={row.original.name}
-            title={row.original.name}
-            aria-description={entityResultContext(row.original) ?? undefined}
-          >
-            <strong>{row.original.name}</strong>
-            {entityResultContext(row.original) ? (
-              <small className="entity-match-context" title={entityResultContext(row.original) ?? undefined}>
-                {entityResultContext(row.original)}
-              </small>
-            ) : null}
-          </button>
-        ),
+        cell: ({ row }) => {
+          const entity = row.original;
+          const context = entityResultContext(entity);
+          const explanation = matchExplanation(entity);
+          return (
+            <button
+              className="entity-name-button intelligence-name-button"
+              type="button"
+              onClick={() => {
+                setLocalSelectedEntity(entity);
+                selectPreview(entity);
+              }}
+              aria-label={entity.name}
+              title={entity.name}
+              aria-description={context ?? undefined}
+            >
+              <strong>{entity.name}</strong>
+              {context ? (
+                <small className="intelligence-result-context" title={context}>
+                  {explanation ? <span className="entity-match-context">{explanation}</span> : null}
+                  {explanation && entity.description ? " · " : null}
+                  {entity.description ? <span className="cell-subtitle">{entity.description}</span> : null}
+                </small>
+              ) : null}
+            </button>
+          );
+        },
       },
       {
         accessorKey: "entity_type",

@@ -357,8 +357,13 @@ it("searches through the typed contract and opens a governed target result", asy
   expect(screen.getByRole("table", { name: "实体检索结果" })).not.toHaveTextContent("已核验");
   expect(screen.queryByText("opensearch")).not.toBeInTheDocument();
   expect(screen.queryByText("12 ms")).not.toBeInTheDocument();
-  const matchContext = screen.getByText("别名精确匹配：ERBB1 · Epidermal growth factor receptor");
-  expect(matchContext).toHaveAttribute("title", "别名精确匹配：ERBB1 · Epidermal growth factor receptor");
+  const matchContext = screen.getByText("别名精确匹配：ERBB1");
+  expect(matchContext.closest("small")).toHaveAttribute(
+    "title",
+    "别名精确匹配：ERBB1 · Epidermal growth factor receptor",
+  );
+  expect(matchContext).not.toHaveTextContent("Epidermal growth factor receptor");
+  expect(screen.getByText("Epidermal growth factor receptor")).toHaveClass("cell-subtitle");
   expect(screen.getByRole("button", { name: "EGFR" })).toHaveAttribute(
     "aria-description",
     "别名精确匹配：ERBB1 · Epidermal growth factor receptor",
