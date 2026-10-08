@@ -102,6 +102,12 @@ ClinicalTrials.gov、NextPharma 与 ChEMBL 的确定性处理分别归属 `adapt
 
 浏览器查找和版本输出由 `scripts/lib/browser_runtime.sh` 单独拥有，普通运行在 Docker/夹具之前调用。CI 安装客户端后先运行同一 `scripts.browser_visual_profile`，使用参考清单的同一安全元数据读取器；Chrome 小版本漂移给出明确错误，不自动改参考、不降级浏览器、不放宽容差。Edge 对比、显式 Chrome 审阅和显式中断夹具恢复保留原各自边界。
 
+CI 的 `ci_browser_apt.py` 仅在明确的 GitHub Linux/Ubuntu24.04 临时 runner 中，
+把固定 mirror list 的 Azure Ubuntu 传输地址改为 Ubuntu 官方 HTTPS archive。
+APT 仍验证相同仓库元数据与包校验和，固定 Noto 包版本、真实字体探针、Chrome
+版本和既有测试/时限均保留。拒绝本机调用、系统漂移、符号链接和未知镜像
+配置；不修改工作站 WSL、字体或项目运行服务。实际下载耗时由当次 CI 证明。
+
 原 320/720/360 重排路径及两个共享检查分别归属 `e2e/accessibility/reflow-keyboard.ts` 和 `reflow-support.ts`，正式注册与定向复现调用同一实现，旧内联已移除。独立视觉 worker 曾在原正式十项平板组合中通过，但精确部署后又为 9/10，因此已撤销，不保留无效第二套运行环境。浏览器、context、page、设备选项、trace 和 teardown 仍使用原 Playwright 实现；场景发现仍为原 140 项。布局的两项单元回归先失败、改动后表格八项通过，另有十二项工程守卫及严格类型通过；这些结果不宣称 Chromium 内部机理、全站或后续 MCP 验收，最终结论须对应新提交的真实浏览器和自动 CI。
 
 普通浏览器验收只按本次运行生成的邮箱前缀清理账号及其关联记录，不清理其他运行或相似名称的账号。只有显式 `--recover-interrupted-run` 才进入历史测试账号恢复模式；实体仍按已登记的夹具标识清理，原用户和业务数据不属于验收清理范围。
