@@ -228,7 +228,7 @@ export async function verifyClinicalQueryAndResults(context: Awaited<ReturnType<
   await expect(page.getByText(/p=0\.01/)).toBeVisible();
   const trialOutcomesVisual = page.locator(".trial-professional-body");
   await expect(trialOutcomesVisual).toHaveCount(1);
-  await expect(trialOutcomesVisual).toHaveScreenshot("research-trial-outcomes.png", {
+  await expect.soft(trialOutcomesVisual).toHaveScreenshot("research-trial-outcomes.png", {
     animations: "disabled",
     caret: "hide",
     maxDiffPixelRatio: 0.001,
