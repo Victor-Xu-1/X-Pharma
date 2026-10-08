@@ -41,6 +41,24 @@ Normal exact-head CI, PR merging, the automatic version counter and exact-final-
 deployment/postdeploy acceptance remain independent gates, not implied by these
 candidate checks. No award, global WCAG or scientific acceptance is claimed.
 
+### 2026-10-09: canonical-match accessibility consumer alignment
+
+Exact child-head1d23fb3 CI37805421909 finishes160/164, with four original workspace
+flows failing the same obsolete visible canonical-name match assertion. The
+controlled snapshots, original pixel/geometry/resource gates and other160 cases
+pass; no failed reference is adopted. The intentional row simplification retains
+the full match in `aria-description` and the original summary visibly, rather than
+repeating the canonical name in the bounded metadata line.
+
+The consumer now checks the full match context, no duplicate visible match node,
+and visible summary against the same authorized entity response; external-ID
+matching remains a visible hard assertion. Exact and partial-name component
+regressions pass. A scoped browser-only long-alias/partial-name check retains
+column bounds and full source text; it is not scientific/auth/persistence evidence.
+No scenarios, masks, tolerance, performance or authorization guards are removed.
+The failed ordinary CI is retained; normal main-version13 integration and a new
+exact-head PR run are required before merge/deployment closure.
+
 The award-inspired quality target is assessed through task clarity, visual
 coherence, readable evidence, responsive behavior, keyboard access and
 performance, not decorative payloads or a self-certified award. The original
