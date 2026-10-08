@@ -1,14 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  BarChart3,
-  BookmarkPlus,
-  ExternalLink,
-  FileText,
-  List,
-  Search,
-  SlidersHorizontal,
-} from "lucide-react";
+import { ArrowLeft, BarChart3, BookmarkPlus, ExternalLink, FileText, List, Search } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { AddToComparisonControl } from "../components/AddToComparisonControl";
 import { AppliedFiltersBar } from "../components/AppliedFiltersBar";
@@ -32,6 +23,7 @@ import { ResearchTabList, type ResearchTabOption } from "../components/ResearchT
 import { ResultPagination } from "../components/ResultPagination";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
 import { ScrollableTableRegion } from "../components/ScrollableTableRegion";
+import { SecondaryFilters } from "../components/SecondaryFilters";
 import { type ColumnDef, type SortingState, VirtualDataTable } from "../components/VirtualDataTable";
 import {
   type DealAnalysisDimension,
@@ -68,6 +60,8 @@ import { useFilterDraft } from "../lib/useFilterDraft";
 import { usePagedEntitySelection } from "../lib/usePagedEntitySelection";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import type { DealDossierSection } from "../lib/workspaceRouting";
+import { DealParticipantFilters } from "./deals/DealParticipantFilters";
+import { advancedDealFilterCount } from "./deals/dealFilterGroups";
 import type { DossierEntityOpener } from "./EntityDossierView";
 
 const PAGE_SIZE = 100;
@@ -126,8 +120,6 @@ const appliedFilterLabels = {
 } as const;
 
 const statusOptions = Object.keys(statusLabels);
-const directionOptions = Object.keys(directionLabels);
-const partyRoleOptions = Object.keys(partyRoleLabels);
 const rightTypeOptions = Object.keys(rightTypeLabels);
 const phaseOptions = Object.keys(phaseLabels);
 
@@ -555,21 +547,6 @@ export function DealsView({
             ))}
           </select>
         </label>
-        <label>
-          <span>交易方向</span>
-          <select
-            aria-label="交易方向"
-            value={filters.direction}
-            onChange={(event) => updateFilter("direction", event.target.value)}
-          >
-            <option value="">全部</option>
-            {directionOptions.map((value) => (
-              <option value={value} key={value}>
-                {directionLabels[value]} ({data?.facets?.direction?.[value] ?? 0})
-              </option>
-            ))}
-          </select>
-        </label>
         <EntityFilterSelect
           label="交易药品"
           entityType="drug"
@@ -584,243 +561,190 @@ export function DealsView({
           onChange={(entityId) => updateFilter("targetEntityId", entityId)}
           placeholder="输入靶点名称或别名"
         />
-        <EntityFilterSelect
-          label="关联适应症"
-          entityType="disease"
-          value={filters.diseaseEntityId}
-          onChange={(entityId) => updateFilter("diseaseEntityId", entityId)}
-          placeholder="输入适应症名称或别名"
+        <DealParticipantFilters
+          filters={filters}
+          facets={data?.facets}
+          suggestions={partySuggestions.data?.items ?? []}
+          suggestionsEnabled={!filters.partyEntityId && debouncedParty.length >= 2}
+          loading={partySuggestions.isFetching}
+          onChange={updateFilter}
+          onPartyText={(party) => setFilters((current) => ({ ...current, party, partyEntityId: "" }))}
+          onChooseParty={chooseParty}
         />
-        <label className="deal-party-field">
-          <span>参与机构</span>
-          <input
-            role="combobox"
-            aria-autocomplete="list"
-            aria-expanded={Boolean(partySuggestions.data?.items.length && !filters.partyEntityId)}
-            aria-controls="deal-party-suggestions"
-            value={filters.party}
-            onChange={(event) =>
-              setFilters((current) => ({ ...current, party: event.target.value, partyEntityId: "" }))
-            }
-            placeholder="至少输入 2 个字符"
-            maxLength={500}
-          />
-          {!filters.partyEntityId && debouncedParty.length >= 2 ? (
-            <div className="query-suggestions deal-party-suggestions" id="deal-party-suggestions" role="listbox">
-              {partySuggestions.isFetching ? <span className="suggestion-status">正在查找机构</span> : null}
-              {partySuggestions.data?.items.slice(0, 8).map((entity) => (
-                <button type="button" role="option" key={entity.id} onClick={() => chooseParty(entity.id, entity.name)}>
-                  <span>{entity.name}</span>
-                  <small>
-                    {entity.external_ids ? Object.values(entity.external_ids).slice(0, 2).join(" · ") : "机构"}
-                  </small>
-                </button>
-              ))}
-              {!partySuggestions.isFetching && partySuggestions.data?.items.length === 0 ? (
-                <span className="suggestion-status">未找到匹配机构</span>
-              ) : null}
-            </div>
-          ) : null}
-        </label>
-        <label>
-          <span>参与角色</span>
-          <select
-            aria-label="参与角色"
-            value={filters.partyRole}
-            onChange={(event) => updateFilter("partyRole", event.target.value)}
-          >
-            <option value="">全部</option>
-            {partyRoleOptions.map((value) => (
-              <option value={value} key={value}>
-                {partyRoleLabels[value]} ({data?.facets?.party_role?.[value] ?? 0})
-              </option>
-            ))}
-          </select>
-        </label>
 
-        <details className="advanced-filter-panel">
-          <summary>
-            <SlidersHorizontal size={16} />
-            更多交易条件
-          </summary>
-          <div className="advanced-filter-grid">
-            <label>
-              <span>方向参照地区</span>
-              <input
-                value={filters.directionReferenceJurisdiction}
-                onChange={(event) => updateFilter("directionReferenceJurisdiction", event.target.value)}
-                placeholder="例如 US"
-                maxLength={120}
-              />
-            </label>
-            <label>
-              <span>交易地域</span>
-              <select value={filters.territory} onChange={(event) => updateFilter("territory", event.target.value)}>
-                <option value="">全部</option>
-                {territories.map((value) => (
-                  <option value={value} key={value}>
-                    {value} ({data?.facets?.territory?.[value] ?? 0})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>机构所在地区</span>
-              <input
-                list="deal-party-country-options"
-                value={filters.partyCountryRegion}
-                onChange={(event) => updateFilter("partyCountryRegion", event.target.value)}
-                maxLength={120}
-              />
-              <datalist id="deal-party-country-options">
-                {partyCountries.map((value) => (
-                  <option value={value} key={value} label={String(data?.facets?.party_country_region?.[value] ?? 0)} />
-                ))}
-              </datalist>
-            </label>
-            <label>
-              <span>机构类型</span>
-              <input
-                list="deal-party-organization-type-options"
-                value={filters.partyOrganizationType}
-                onChange={(event) => updateFilter("partyOrganizationType", event.target.value)}
-                maxLength={120}
-              />
-              <datalist id="deal-party-organization-type-options">
-                {partyOrganizationTypes.map((value) => (
-                  <option
-                    value={value}
-                    key={value}
-                    label={String(data?.facets?.party_organization_type?.[value] ?? 0)}
-                  />
-                ))}
-              </datalist>
-            </label>
-            <FacetMultiSelect
-              label="资产模态"
-              options={assetModalities.map((value) => ({
-                value,
-                label: programTagLabel(value),
-                count: data?.facets?.asset_modality?.[value] ?? 0,
-              }))}
-              selected={filters.assetModalities}
-              onChange={(values) => updateFilter("assetModalities", values)}
+        <SecondaryFilters label="更多交易条件" activeCount={advancedDealFilterCount(filters)}>
+          <label>
+            <span>方向参照地区</span>
+            <input
+              value={filters.directionReferenceJurisdiction}
+              onChange={(event) => updateFilter("directionReferenceJurisdiction", event.target.value)}
+              placeholder="例如 US"
+              maxLength={120}
             />
-            <FacetMultiSelect
-              label="资产项目标签"
-              options={assetProgramTags.map((value) => ({
-                value,
-                label: value,
-                count: data?.facets?.asset_program_tag?.[value] ?? 0,
-              }))}
-              selected={filters.assetProgramTags}
-              onChange={(values) => updateFilter("assetProgramTags", values)}
+          </label>
+          <label>
+            <span>交易地域</span>
+            <select value={filters.territory} onChange={(event) => updateFilter("territory", event.target.value)}>
+              <option value="">全部</option>
+              {territories.map((value) => (
+                <option value={value} key={value}>
+                  {value} ({data?.facets?.territory?.[value] ?? 0})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>机构所在地区</span>
+            <input
+              list="deal-party-country-options"
+              value={filters.partyCountryRegion}
+              onChange={(event) => updateFilter("partyCountryRegion", event.target.value)}
+              maxLength={120}
             />
-            <label>
-              <span>交易时阶段</span>
-              <select
-                value={filters.developmentPhaseAtTransaction}
-                onChange={(event) => updateFilter("developmentPhaseAtTransaction", event.target.value)}
-              >
-                <option value="">全部</option>
-                {phaseOptions.map((value) => (
-                  <option value={value} key={value}>
-                    {phaseLabels[value]} ({data?.facets?.development_phase_at_transaction?.[value] ?? 0})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>当前最高阶段</span>
-              <select
-                value={filters.currentDevelopmentPhase}
-                onChange={(event) => updateFilter("currentDevelopmentPhase", event.target.value)}
-              >
-                <option value="">全部</option>
-                {phaseOptions.map((value) => (
-                  <option value={value} key={value}>
-                    {phaseLabels[value]} ({data?.facets?.current_development_phase?.[value] ?? 0})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>权益类型</span>
-              <select value={filters.rightType} onChange={(event) => updateFilter("rightType", event.target.value)}>
-                <option value="">全部</option>
-                {rightTypeOptions.map((value) => (
-                  <option value={value} key={value}>
-                    {rightTypeLabels[value]} ({data?.facets?.right_type?.[value] ?? 0})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>权益地区</span>
-              <select
-                value={filters.rightsTerritory}
-                onChange={(event) => updateFilter("rightsTerritory", event.target.value)}
-              >
-                <option value="">全部</option>
-                {rightsTerritories.map((value) => (
-                  <option value={value} key={value}>
-                    {value} ({data?.facets?.rights_territory?.[value] ?? 0})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>币种</span>
-              <select
-                aria-label="币种"
-                value={filters.currency}
-                onChange={(event) => updateFilter("currency", event.target.value)}
-              >
-                <option value="">全部</option>
-                {currencies.map((value) => (
-                  <option value={value} key={value}>
-                    {value} ({data?.facets?.currency?.[value] ?? 0})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <DateRangeFields
-              label="初始披露"
-              from={filters.announcedFrom}
-              to={filters.announcedTo}
-              onFrom={(value) => updateFilter("announcedFrom", value)}
-              onTo={(value) => updateFilter("announcedTo", value)}
+            <datalist id="deal-party-country-options">
+              {partyCountries.map((value) => (
+                <option value={value} key={value} label={String(data?.facets?.party_country_region?.[value] ?? 0)} />
+              ))}
+            </datalist>
+          </label>
+          <label>
+            <span>机构类型</span>
+            <input
+              list="deal-party-organization-type-options"
+              value={filters.partyOrganizationType}
+              onChange={(event) => updateFilter("partyOrganizationType", event.target.value)}
+              maxLength={120}
             />
-            <DateRangeFields
-              label="终止日期"
-              from={filters.terminatedFrom}
-              to={filters.terminatedTo}
-              onFrom={(value) => updateFilter("terminatedFrom", value)}
-              onTo={(value) => updateFilter("terminatedTo", value)}
-            />
-            <DateRangeFields
-              label="信息更新"
-              from={filters.sourceUpdatedFrom}
-              to={filters.sourceUpdatedTo}
-              onFrom={(value) => updateFilter("sourceUpdatedFrom", value)}
-              onTo={(value) => updateFilter("sourceUpdatedTo", value)}
-            />
-            <AmountRangeFields
-              label="首付款"
-              minimum={filters.upfrontAmountMin}
-              maximum={filters.upfrontAmountMax}
-              onMinimum={(value) => updateFilter("upfrontAmountMin", value)}
-              onMaximum={(value) => updateFilter("upfrontAmountMax", value)}
-            />
-            <AmountRangeFields
-              label="潜在总额"
-              minimum={filters.totalPotentialAmountMin}
-              maximum={filters.totalPotentialAmountMax}
-              onMinimum={(value) => updateFilter("totalPotentialAmountMin", value)}
-              onMaximum={(value) => updateFilter("totalPotentialAmountMax", value)}
-            />
-          </div>
-        </details>
+            <datalist id="deal-party-organization-type-options">
+              {partyOrganizationTypes.map((value) => (
+                <option value={value} key={value} label={String(data?.facets?.party_organization_type?.[value] ?? 0)} />
+              ))}
+            </datalist>
+          </label>
+          <FacetMultiSelect
+            label="资产模态"
+            options={assetModalities.map((value) => ({
+              value,
+              label: programTagLabel(value),
+              count: data?.facets?.asset_modality?.[value] ?? 0,
+            }))}
+            selected={filters.assetModalities}
+            onChange={(values) => updateFilter("assetModalities", values)}
+          />
+          <FacetMultiSelect
+            label="资产项目标签"
+            options={assetProgramTags.map((value) => ({
+              value,
+              label: value,
+              count: data?.facets?.asset_program_tag?.[value] ?? 0,
+            }))}
+            selected={filters.assetProgramTags}
+            onChange={(values) => updateFilter("assetProgramTags", values)}
+          />
+          <label>
+            <span>交易时阶段</span>
+            <select
+              value={filters.developmentPhaseAtTransaction}
+              onChange={(event) => updateFilter("developmentPhaseAtTransaction", event.target.value)}
+            >
+              <option value="">全部</option>
+              {phaseOptions.map((value) => (
+                <option value={value} key={value}>
+                  {phaseLabels[value]} ({data?.facets?.development_phase_at_transaction?.[value] ?? 0})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>当前最高阶段</span>
+            <select
+              value={filters.currentDevelopmentPhase}
+              onChange={(event) => updateFilter("currentDevelopmentPhase", event.target.value)}
+            >
+              <option value="">全部</option>
+              {phaseOptions.map((value) => (
+                <option value={value} key={value}>
+                  {phaseLabels[value]} ({data?.facets?.current_development_phase?.[value] ?? 0})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>权益类型</span>
+            <select value={filters.rightType} onChange={(event) => updateFilter("rightType", event.target.value)}>
+              <option value="">全部</option>
+              {rightTypeOptions.map((value) => (
+                <option value={value} key={value}>
+                  {rightTypeLabels[value]} ({data?.facets?.right_type?.[value] ?? 0})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>权益地区</span>
+            <select
+              value={filters.rightsTerritory}
+              onChange={(event) => updateFilter("rightsTerritory", event.target.value)}
+            >
+              <option value="">全部</option>
+              {rightsTerritories.map((value) => (
+                <option value={value} key={value}>
+                  {value} ({data?.facets?.rights_territory?.[value] ?? 0})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>币种</span>
+            <select
+              aria-label="币种"
+              value={filters.currency}
+              onChange={(event) => updateFilter("currency", event.target.value)}
+            >
+              <option value="">全部</option>
+              {currencies.map((value) => (
+                <option value={value} key={value}>
+                  {value} ({data?.facets?.currency?.[value] ?? 0})
+                </option>
+              ))}
+            </select>
+          </label>
+          <DateRangeFields
+            label="初始披露"
+            from={filters.announcedFrom}
+            to={filters.announcedTo}
+            onFrom={(value) => updateFilter("announcedFrom", value)}
+            onTo={(value) => updateFilter("announcedTo", value)}
+          />
+          <DateRangeFields
+            label="终止日期"
+            from={filters.terminatedFrom}
+            to={filters.terminatedTo}
+            onFrom={(value) => updateFilter("terminatedFrom", value)}
+            onTo={(value) => updateFilter("terminatedTo", value)}
+          />
+          <DateRangeFields
+            label="信息更新"
+            from={filters.sourceUpdatedFrom}
+            to={filters.sourceUpdatedTo}
+            onFrom={(value) => updateFilter("sourceUpdatedFrom", value)}
+            onTo={(value) => updateFilter("sourceUpdatedTo", value)}
+          />
+          <AmountRangeFields
+            label="首付款"
+            minimum={filters.upfrontAmountMin}
+            maximum={filters.upfrontAmountMax}
+            onMinimum={(value) => updateFilter("upfrontAmountMin", value)}
+            onMaximum={(value) => updateFilter("upfrontAmountMax", value)}
+          />
+          <AmountRangeFields
+            label="潜在总额"
+            minimum={filters.totalPotentialAmountMin}
+            maximum={filters.totalPotentialAmountMax}
+            onMinimum={(value) => updateFilter("totalPotentialAmountMin", value)}
+            onMaximum={(value) => updateFilter("totalPotentialAmountMax", value)}
+          />
+        </SecondaryFilters>
 
         {validationError ? (
           <p className="form-error deal-filter-error" role="alert">

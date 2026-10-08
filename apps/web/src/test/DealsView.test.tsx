@@ -289,6 +289,64 @@ function renderDeals(overrides: Partial<Parameters<typeof DealsView>[0]> = {}) {
   return props;
 }
 
+it("keeps common deal filters first and leaves unused participant conditions collapsed", async () => {
+  renderDeals();
+  await screen.findByRole("table", { name: "交易结果" });
+  const participants = screen.getByText("参与方与关联条件").closest("details");
+  expect(participants).not.toHaveAttribute("open");
+  expect(screen.getByLabelText("交易方向").closest("details")).toBe(participants);
+  expect(screen.getByLabelText("参与机构").closest("details")).toBe(participants);
+  expect(screen.getByLabelText("参与角色").closest("details")).toBe(participants);
+  expect(screen.getByRole("group", { name: "关联适应症检索与选择", hidden: true }).closest("details")).toBe(
+    participants,
+  );
+  expect(screen.getByRole("group", { name: "交易药品检索与选择" }).closest("details")).toBeNull();
+  expect(screen.getByRole("group", { name: "关联靶点检索与选择" }).closest("details")).toBeNull();
+});
+
+it("reveals restored participant conditions and counts a selected organization only once", async () => {
+  const props = renderDeals({
+    initialFilters: {
+      ...initialFilters,
+      party: "Acme Pharma",
+      partyEntityId: "550e8400-e29b-41d4-a716-446655440002",
+      partyRole: "licensor",
+      direction: "outbound",
+      directionReferenceJurisdiction: "US",
+    },
+  });
+  await screen.findByRole("table", { name: "交易结果" });
+  const participants = screen.getByText("参与方与关联条件").closest("details");
+  expect(participants).toHaveAttribute("open");
+  expect(participants).toHaveTextContent("已选 3 项");
+  fireEvent.click(screen.getByRole("button", { name: "查询" }));
+  expect(props.onSearchChange).toHaveBeenCalledWith(
+    expect.objectContaining({
+      party: "Acme Pharma",
+      partyEntityId: "550e8400-e29b-41d4-a716-446655440002",
+      partyRole: "licensor",
+      direction: "outbound",
+    }),
+    0,
+  );
+});
+
+it("reveals restored advanced conditions including zero amount values", async () => {
+  renderDeals({
+    initialFilters: {
+      ...initialFilters,
+      currency: "USD",
+      upfrontAmountMin: "0",
+      assetModalities: ["antibody", "small molecule"],
+    },
+  });
+  await screen.findByRole("table", { name: "交易结果" });
+  const advanced = screen.getByText("更多交易条件").closest("details");
+  expect(advanced).toHaveAttribute("open");
+  expect(advanced).toHaveTextContent("已选 3 项");
+  expect(screen.getByLabelText("币种")).toHaveValue("USD");
+});
+
 it("renders governed role, stage, rights and dense deal results", async () => {
   const props = renderDeals();
 
