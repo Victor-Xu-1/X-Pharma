@@ -29,25 +29,25 @@
     },
     "research-dense-results-desktop-1440.png": {
       "capture": "table-shell",
-      "sha256": "4229150b1e37a53e4286fc3a560f1088315aaeeaaf3d7a774774b20f59934adf",
+      "sha256": "5c12f97f17002fb82345cc2358584ae821feadffdf5d823d6c02a9dbb5d926ef",
       "state": "controlled-dense-results",
       "viewport": "1440x900"
     },
     "research-dense-results-desktop-1920.png": {
       "capture": "table-shell",
-      "sha256": "77804c2b4ecbe6e5aa54e4638a7da60f5c9d6548fe85892f047bd3289fc5fd8e",
+      "sha256": "f2a738c0dbc99be4f56255be02e2daf8b1705e966bd0d86a787cd8e02cc45705",
       "state": "controlled-dense-results",
       "viewport": "1920x1080"
     },
     "research-dense-results-mobile-390.png": {
       "capture": "table-shell",
-      "sha256": "ed640fa386fbea0bf49c161f81f1e5c856593499ba792a82d15253c0dcada047",
+      "sha256": "9f896626ede48e9ff5ea28ef416720113290cff89b05d5747075a9cec3d55503",
       "state": "controlled-dense-results",
       "viewport": "390x844"
     },
     "research-dense-results-tablet-1024.png": {
       "capture": "table-shell",
-      "sha256": "2834c89873336adc887081696f999232cf7525b7c5866bd26c1c99d13164a024",
+      "sha256": "6878093dcd206b8f14f4600ef5d9ea9e71487b438575a194c1a96cae17a9a67f",
       "state": "controlled-dense-results",
       "viewport": "1024x768"
     },
