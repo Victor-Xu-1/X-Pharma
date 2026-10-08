@@ -3,6 +3,10 @@ name: product-version
 on:
   push:
     branches: [main]
+  schedule:
+    # Catch missed/suppressed notifications, including merges performed with GITHUB_TOKEN.
+    # Offset from the busiest top-of-hour scheduling window; scheduler latency is not a release SLA.
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
 
 permissions:

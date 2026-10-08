@@ -58,6 +58,9 @@ The prospective baseline is `0.1.0` at main commit
 `02dca0ce8ad7e2519b2d50419e7369318a76039b`. Historical merged PRs before that
 baseline are not counted. The enabling PR itself is the first new increment.
 `.github/workflows/product-version.yml` serializes reconciliation on main pushes.
+An offset fifteen-minute scheduled reconciliation also catches delayed or
+suppressed notifications, including merges performed with `GITHUB_TOKEN`.
+GitHub scheduler latency is not a release/version propagation SLA.
 It reads the processed first-parent cursor in `tool.x-pharma.versioning`, obtains
 GitHub's actual merged PR receipts, and counts each PR once, including merge,
 squash and rebase methods. A latest queued run reconciles the whole unprocessed
@@ -74,7 +77,7 @@ than the ephemeral `GITHUB_TOKEN` is required. It never creates a version PR or
 recursively increments itself.
 
 GitHub-token pushes do not automatically trigger push CI. The reconciler explicitly
-dispatches `ci.yml` for the resulting main head when no current/successful run
+dispatches `ci.yml` for the resulting main head when no existing run
 exists. All six original gates still apply to the final version commit. A version
 increment is not a release, automatic deployment, tag, production approval, or
 permission to skip exact-commit backup, rollback and postdeploy acceptance.
@@ -84,7 +87,14 @@ the workflow fails visibly without resetting/forcing main. Inspect its job and
 the current main head, then rerun `product-version` on `main` through Actions or
 `gh workflow run product-version.yml --ref main`. The cursor prevents duplicate
 increments, including recovery after the version commit was pushed but CI dispatch
-failed. No unrelated global suite is needed for local iteration:
+failed.
+
+An existing failed/cancelled CI run is retained and never silently retried by
+scheduled version reconciliation. Diagnose that run and explicitly rerun the
+failed CI gate after its cause is resolved; do not use version automation as
+a repeating test-retry loop.
+
+No unrelated global suite is needed for local iteration:
 
 ```bash
 uv run pytest tests/test_product_versioning.py tests/test_product_version_workflow.py

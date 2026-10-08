@@ -92,7 +92,7 @@ def test_bot_commit_explicitly_gets_original_ci_without_recursive_version_pr(exi
     )
     github.ensure_ci(sha)
     dispatched = [payload for path, payload in github.calls if path.endswith("dispatches")]
-    assert dispatched == ([{"ref": "main"}] if existing in {"failure", "cancelled", "none"} else [])
+    assert dispatched == ([{"ref": "main"}] if existing == "none" else [])
 
 
 def test_ci_dispatch_rejects_concurrent_main_change() -> None:
@@ -234,6 +234,7 @@ def test_version_workflow_is_trusted_main_only_and_preserves_six_original_gates(
     workflow = yaml.safe_load((root / ".github/workflows/product-version.yml").read_text())
     events = workflow.get("on", workflow.get(True))  # PyYAML implements YAML 1.1's `on` boolean spelling.
     assert events["push"]["branches"] == ["main"]
+    assert events["schedule"] == [{"cron": "7,22,37,52 * * * *"}]
     assert "pull_request_target" not in events
     assert workflow["concurrency"]["cancel-in-progress"] is False
     job = workflow["jobs"]["reconcile"]

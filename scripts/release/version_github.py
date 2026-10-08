@@ -84,10 +84,11 @@ class GitHubRepository:
             and run.get("head_sha") == revision
             and (
                 run.get("status") in {"queued", "in_progress", "waiting", "requested", "pending"}
-                or (run.get("status") == "completed" and run.get("conclusion") == "success")
+                or run.get("status") == "completed"
             )
             for run in runs
         ):
+            # A terminal failure is evidence, not permission for unbounded scheduled CI retries.
             return
         # GITHUB_TOKEN pushes do not start push workflows. Explicit dispatch preserves all six original gates.
         self.request("actions/workflows/ci.yml/dispatches", {"ref": "main"})
