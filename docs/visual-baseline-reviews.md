@@ -6,6 +6,18 @@ image hashes; a later numeric increment does not recapture or recertify it.
 
 ## English-first bilingual interface: three affected references
 
+Follow-up exact head `d1ddf0d57668c3725df7eaafdbe3e4e081f22f7c`, run
+`37783605092`: 163 browser cases passed; the only remaining failure was the
+mobile390 dense-results table-shell comparison, with 545 different pixels.
+Its actual/diff pair from artifact11554768306 was inspected alongside the old
+reference. Differences are confined to the toolbar text rasterization, not
+the table geometry, data, masks or controls. Only this one controlled PNG is
+adopted from that capture; the other19 hashes remain unchanged. The old PNG,
+manifest and browser binding are retained on E. The canonical generator updates
+the manifest and the unchanged Chrome artifact is rebound to its digest; no
+scenario, font, browser binary, performance budget or0.001 tolerance changes.
+That failed run remains failed; a new exact-head full gate must pass before merge.
+
 PR57 head `ae3908be0d3cef2b704636c6354c27b577638034`, exact CI
 `37774256194`, produced 133 passing browser cases and 31 failures. Twenty-eight
 were the seven existing Chinese, browser-fixture scenarios across four viewports
