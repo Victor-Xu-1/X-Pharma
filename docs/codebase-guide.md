@@ -71,7 +71,7 @@ ClinicalTrials.gov、NextPharma 与 ChEMBL 的确定性处理分别归属 `adapt
 
 `scripts/release/` 是发布证据的唯一实现，合同、记录、文件安全、策略、领域校验、采集、签名、打包、验证与交接各自归属具体模块。`release_evidence.py` 仅保留已验证的直接 CLI 与其他命令入口依赖的公共委派。该库纳入 Ruff/Mypy、依赖 DAG 和真实文件/子进程/签名回归，不保留旧 7,000 多行实现。
 
-公共名称集中在后端 `product.py` 与前端 `lib/product.ts`；API、MCP、来源请求、登录和导航复用该定义。软件版本为 v0.1.0，`pyproject.toml` 唯一拥有语义版本：API 与 MCP 读取发行包元数据，Web 构建读取生成 OpenAPI 并校验清单镜像，HTML 生成器读取同一产品清单。版本回归同时检查实际 MCP initialize 协议和页面可见标识，不能把 SDK 版本当产品版本。内部数据库、协议和 CLI 标识保持稳定，已有业务数据不因品牌变动而迁移。
+公共名称集中在后端 `product.py` 与前端 `lib/product.ts`；API、MCP、来源请求、登录和导航复用该定义。`pyproject.toml` 唯一拥有产品版本：每合并一个 PR 到 main，补丁号自动加 1，到 100 向次版本进位，次版本到 10 向主版本进位。计数游标位于同一清单的 `tool.x-pharma.versioning`，自动化流程与恢复规则见 CONTRIBUTING 的 Product version counter；不回溯启用前历史，不按提交数量或机器人元数据提交重复计数。API 与 MCP 读取发行包元数据，Web 构建读取生成 OpenAPI 并校验清单镜像，HTML 生成器读取同一产品清单。版本回归同时检查实际 MCP initialize 协议和页面可见标识，不能把 SDK 版本当产品版本。内部数据库、协议和 CLI 标识保持稳定，已有业务数据不因品牌或产品版本变动而迁移。
 
 原 10,431 行集中样式按职责拆为 16 个模块：基础、登录、导航、共享数据表面、研究、用户中心、靶点、档案、商业、企业、知识、数据工厂、治理、化学、临床和监管。`styles.css` 保持共享及基础领域布局顺序，证据/知识布局与响应式仅由所属视图按需加载 `styles/knowledge.css`；环境、组织与检索起始引导各有局部呈现样式，不拥有查询或权限状态。`design-system.css` 只导入五个主题模块，分别拥有 token、控件、排版、业务表面和第三方适配。所有领域色值已改为语义 token，415 条被主题覆盖的重复声明已删除。设计权威见 [design-system.md](design-system.md)。
 
