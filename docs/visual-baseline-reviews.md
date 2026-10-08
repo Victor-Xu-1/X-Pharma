@@ -6,6 +6,23 @@ image hashes; a later numeric increment does not recapture or recertify it.
 
 ## English-first bilingual interface: three affected references
 
+Exact follow-upfa2bf3092c0413a582419ccc67914276c04f01be/run37796732331
+completed163 passing cases and one mobile390 deal-rights crop difference566pixels.
+The old/actual/diff pair from11561037370 was inspected: rights type/territory,
+controlled masks, provenance absence and layout are unchanged. Only this one
+native controlled PNG is adopted and its predecessor/manifest/browser binding
+retained on E; the other19 hashes are unchanged. No tolerance/font/data/mask change.
+
+The same navigation flow stopped at its first visual difference, so successive
+runs exposed later crops serially. Its five existing screenshot assertions now
+collect differences with Playwright soft assertions: a difference still makes
+the test/run fail and emits its original artifacts, while later visual checks
+are reached. A bounded isolated two-screenshot harness recorded both failures,
+reached the following check and exited1. Functional, authorization, natural-row/
+column geometry, Web Vitals, masks and0.001 thresholds stay hard and unchanged;
+there is no failure waiver or broader manual scenario run. Exact-head required
+CI must still pass before merge or deployment.
+
 Exact follow-up `59298c0fe833b1e1017898f1d0ed3fa29c5d61dd`, run37788816529,
 again completed163 passing cases. Its sole failure was the mobile390 controlled
 trial-outcomes crop (2133 different pixels). Actual/diff artifact11557507705 and

@@ -99,7 +99,7 @@ export async function verifyResearchAppearance(context: AppearanceContext) {
       .getByRole("group", { name: "药物模态" })
       .getByLabel("药物模态：全部"),
   ).toBeVisible();
-  await expect(page).toHaveScreenshot("research-workbench.png", {
+  await expect.soft(page).toHaveScreenshot("research-workbench.png", {
     animations: "disabled",
     caret: "hide",
     fullPage: true,
