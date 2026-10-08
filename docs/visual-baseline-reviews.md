@@ -6,6 +6,16 @@ image hashes; a later numeric increment does not recapture or recertify it.
 
 ## English-first bilingual interface: three affected references
 
+Exact follow-up `59298c0fe833b1e1017898f1d0ed3fa29c5d61dd`, run37788816529,
+again completed163 passing cases. Its sole failure was the mobile390 controlled
+trial-outcomes crop (2133 different pixels). Actual/diff artifact11557507705 and
+the old image were individually inspected: source result values, bounds,
+denominator, report identity and rights text are unchanged, with text-rendering
+differences rather than changed panels. Only that one PNG is adopted; other19
+hashes remain unchanged, old image/manifest/binding retained on E. Browser,
+fonts, masks, geometry assertions, budgets and0.001 tolerance are unchanged.
+This review is not a passing run or deployment receipt.
+
 Follow-up exact head `d1ddf0d57668c3725df7eaafdbe3e4e081f22f7c`, run
 `37783605092`: 163 browser cases passed; the only remaining failure was the
 mobile390 dense-results table-shell comparison, with 545 different pixels.
