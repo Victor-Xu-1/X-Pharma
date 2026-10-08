@@ -1,0 +1,16 @@
+export const entityFilterMessages = {
+  "{label}检索与选择": "{label} search and selection",
+  正在读取实体: "Loading entity",
+  所选实体不可用: "Selected entity unavailable",
+  "重试已选{label}": "Retry selected {label}",
+  重试: "Retry",
+  "清除{label}": "Clear {label}",
+  "{label}筛选": "{label} filter",
+  正在检索候选项: "Searching candidates",
+  "实体检索暂不可用，请重试": "Entity search unavailable. Retry explicitly.",
+  "重试{label}候选检索": "Retry {label} candidate search",
+  重新检索: "Search again",
+  "{label}候选项": "{label} candidates",
+  未找到可添加项: "No addable candidates found",
+  未找到匹配项: "No matching candidates found",
+} as const;

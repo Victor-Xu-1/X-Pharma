@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useMessages } from "../../lib/i18n";
+import { professionalQueryMessages } from "../../lib/i18n/professionalQuery";
 import {
   identifyProfessionalDatePreset,
   type ProfessionalDatePreset,
@@ -8,10 +10,11 @@ import { FacetMultiSelect, type FacetMultiSelectOption } from "../FacetMultiSele
 import type { FacetCatalogState } from "./presentation";
 
 function GovernedFacetPlaceholder({ label, state }: { label: string; state: Exclude<FacetCatalogState, "ready"> }) {
+  const t = useMessages(professionalQueryMessages);
   return (
     <div className="professional-facet-placeholder" aria-disabled="true">
       <span>{label}</span>
-      <small>{state === "loading" ? "读取中" : "暂不可用"}</small>
+      <small>{state === "loading" ? t("读取中") : t("暂不可用")}</small>
     </div>
   );
 }
@@ -52,6 +55,7 @@ export function GovernedFacetSelect({
   disabled?: boolean;
   onChange: (value: string) => void;
 }) {
+  const t = useMessages(professionalQueryMessages);
   if (state !== "ready") return <GovernedFacetPlaceholder label={label} state={state} />;
   if (!options.length) {
     // Empty governed catalogs are not a user-facing filter. Keep the form focused on conditions that can be used.
@@ -60,8 +64,8 @@ export function GovernedFacetSelect({
   return (
     <label>
       <span>{label}</span>
-      <select value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
-        <option value="">全部</option>
+      <select aria-label={label} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
+        <option value="">{t("全部")}</option>
         {options.map((option) => (
           <option value={option.value} key={option.value}>
             {option.label} ({option.count})
@@ -83,6 +87,7 @@ export function DateRange({
   to: string;
   onChange: (from: string, to: string) => void;
 }) {
+  const t = useMessages(professionalQueryMessages);
   const [preset, setPreset] = useState<ProfessionalDatePreset>(() => identifyProfessionalDatePreset(from, to));
 
   useEffect(() => {
@@ -100,33 +105,33 @@ export function DateRange({
     <fieldset className="professional-date-range" aria-label={label}>
       <legend>{label}</legend>
       <label className="professional-date-preset">
-        <span>{label}时间范围</span>
+        <span>{t("{label}时间范围", { label })}</span>
         <select
-          aria-label={`${label}时间范围`}
+          aria-label={t("{label}时间范围", { label })}
           value={preset}
           onChange={(event) => selectPreset(event.target.value as ProfessionalDatePreset)}
         >
-          <option value="all">全部</option>
-          <option value="last_month">近 1 个月</option>
-          <option value="last_6_months">近半年</option>
-          <option value="last_year">近 1 年</option>
-          <option value="custom">自定义</option>
+          <option value="all">{t("全部")}</option>
+          <option value="last_month">{t("近 1 个月")}</option>
+          <option value="last_6_months">{t("近半年")}</option>
+          <option value="last_year">{t("近 1 年")}</option>
+          <option value="custom">{t("自定义")}</option>
         </select>
       </label>
       {preset === "custom" ? (
         <div className="professional-custom-date-range">
           <label>
-            <span>起</span>
+            <span>{t("起")}</span>
             <input type="date" value={from} onChange={(event) => onChange(event.target.value, to)} />
           </label>
           <label>
-            <span>止</span>
+            <span>{t("止")}</span>
             <input type="date" value={to} onChange={(event) => onChange(from, event.target.value)} />
           </label>
         </div>
       ) : preset !== "all" ? (
         <output className="professional-date-output" aria-live="polite">
-          {from} 至 {to}
+          {t("{from} 至 {to}", { from, to })}
         </output>
       ) : null}
     </fieldset>

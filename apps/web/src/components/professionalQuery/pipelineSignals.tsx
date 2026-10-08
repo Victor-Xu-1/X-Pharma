@@ -1,4 +1,6 @@
 import { SlidersHorizontal } from "lucide-react";
+import { useMessages } from "../../lib/i18n";
+import { professionalQueryMessages } from "../../lib/i18n/professionalQuery";
 import type { ProfessionalSearchDraft } from "../../lib/professionalSearch";
 import { GovernedFacetSelect } from "./fields";
 import type { ProfessionalQueryModel } from "./useProfessionalQueryModel";
@@ -29,16 +31,19 @@ export function PipelineSignalFields({
   update,
   pipelineCatalogState,
 }: Props) {
+  const t = useMessages(professionalQueryMessages);
   return (
     <details className="professional-more-fields" open={pipelineSignalConditionCount > 0 || undefined}>
       <summary>
         <SlidersHorizontal size={14} />
-        <span>临床结果与交易信号</span>
-        <small>{pipelineSignalConditionCount ? `已选 ${pipelineSignalConditionCount} 项` : "按需展开"}</small>
+        <span>{t("临床结果与交易信号")}</span>
+        <small>
+          {pipelineSignalConditionCount ? t("已选 {count} 项", { count: pipelineSignalConditionCount }) : t("按需展开")}
+        </small>
       </summary>
       <div className="professional-more-fields-grid">
         <GovernedFacetSelect
-          label="是否已有临床结果"
+          label={t("是否已有临床结果")}
           options={clinicalResultPresenceOptions}
           value={draft.pipelineHasClinicalResults}
           state={pipelineCatalogState}
@@ -53,7 +58,7 @@ export function PipelineSignalFields({
           }}
         />
         <GovernedFacetSelect
-          label="临床结果评价"
+          label={t("临床结果评价")}
           options={clinicalResultEvaluationOptions}
           value={draft.pipelineClinicalResultEvaluation}
           state={pipelineCatalogState}
@@ -61,7 +66,7 @@ export function PipelineSignalFields({
           onChange={(value) => update("pipelineClinicalResultEvaluation", value)}
         />
         <GovernedFacetSelect
-          label="是否存在交易记录"
+          label={t("是否存在交易记录")}
           options={dealPresenceOptions}
           value={draft.pipelineHasDeal}
           state={pipelineCatalogState}
@@ -78,7 +83,7 @@ export function PipelineSignalFields({
           }}
         />
         <GovernedFacetSelect
-          label="交易币种"
+          label={t("交易币种")}
           options={pipelineDealCurrencyOptions}
           value={draft.pipelineDealCurrency}
           state={pipelineCatalogState}
@@ -86,7 +91,7 @@ export function PipelineSignalFields({
           onChange={(value) => update("pipelineDealCurrency", value)}
         />
         <label>
-          <span>潜在总额下限</span>
+          <span>{t("潜在总额下限")}</span>
           <input
             type="number"
             min="0"
@@ -95,11 +100,11 @@ export function PipelineSignalFields({
             disabled={draft.pipelineHasDeal === "false"}
             value={draft.pipelineDealTotalPotentialAmountMin}
             onChange={(event) => update("pipelineDealTotalPotentialAmountMin", event.target.value)}
-            placeholder="例如 100000000"
+            placeholder={t("例如 100000000")}
           />
         </label>
         <label>
-          <span>潜在总额上限</span>
+          <span>{t("潜在总额上限")}</span>
           <input
             type="number"
             min={draft.pipelineDealTotalPotentialAmountMin || "0"}
@@ -108,7 +113,7 @@ export function PipelineSignalFields({
             disabled={draft.pipelineHasDeal === "false"}
             value={draft.pipelineDealTotalPotentialAmountMax}
             onChange={(event) => update("pipelineDealTotalPotentialAmountMax", event.target.value)}
-            placeholder="例如 500000000"
+            placeholder={t("例如 500000000")}
           />
         </label>
       </div>

@@ -1,4 +1,7 @@
 import { FileBadge, SlidersHorizontal } from "lucide-react";
+import { useMessages } from "../../lib/i18n";
+import { professionalEnumLabel } from "../../lib/i18n/professionalEnums";
+import { professionalQueryMessages } from "../../lib/i18n/professionalQuery";
 import {
   trialInitiationTypeLabels,
   trialKeyResultLabels,
@@ -30,51 +33,68 @@ export function TrialsFields({
   update,
   updateDateRange,
 }: Props) {
+  const t = useMessages(professionalQueryMessages);
   return (
     <>
       <label>
-        <span>注册平台</span>
-        <select value={draft.registry} onChange={(event) => update("registry", event.target.value)}>
-          <option value="">全部</option>
+        <span>{t("注册平台")}</span>
+        <select
+          aria-label={t("注册平台")}
+          value={draft.registry}
+          onChange={(event) => update("registry", event.target.value)}
+        >
+          <option value="">{t("全部")}</option>
           <option value="ClinicalTrials.gov">ClinicalTrials.gov</option>
           <option value="ChiCTR">ChiCTR</option>
           <option value="EU CTIS">EU CTIS</option>
         </select>
       </label>
       <label>
-        <span>招募状态</span>
-        <select value={draft.trialStatus} onChange={(event) => update("trialStatus", event.target.value)}>
-          <option value="">全部</option>
-          <option value="RECRUITING">招募中</option>
-          <option value="ACTIVE_NOT_RECRUITING">进行中，停止招募</option>
-          <option value="COMPLETED">已完成</option>
-          <option value="TERMINATED">终止</option>
+        <span>{t("招募状态")}</span>
+        <select
+          aria-label={t("招募状态")}
+          value={draft.trialStatus}
+          onChange={(event) => update("trialStatus", event.target.value)}
+        >
+          <option value="">{t("全部")}</option>
+          <option value="RECRUITING">{t("招募中")}</option>
+          <option value="ACTIVE_NOT_RECRUITING">{t("进行中，停止招募")}</option>
+          <option value="COMPLETED">{t("已完成")}</option>
+          <option value="TERMINATED">{t("终止")}</option>
         </select>
       </label>
       <label>
-        <span>临床分期</span>
-        <select value={draft.trialPhase} onChange={(event) => update("trialPhase", event.target.value)}>
-          <option value="">全部</option>
+        <span>{t("临床分期")}</span>
+        <select
+          aria-label={t("临床分期")}
+          value={draft.trialPhase}
+          onChange={(event) => update("trialPhase", event.target.value)}
+        >
+          <option value="">{t("全部")}</option>
           {trialPhases.map(([value, label]) => (
             <option value={value} key={value}>
-              {label}
+              {professionalEnumLabel(label, value)}
             </option>
           ))}
         </select>
       </label>
       <label>
-        <span>研究类型</span>
-        <select value={draft.studyType} onChange={(event) => update("studyType", event.target.value)}>
-          <option value="">全部</option>
-          <option value="INTERVENTIONAL">干预性研究</option>
-          <option value="OBSERVATIONAL">观察性研究</option>
-          <option value="EXPANDED_ACCESS">扩大使用</option>
+        <span>{t("研究类型")}</span>
+        <select
+          aria-label={t("研究类型")}
+          value={draft.studyType}
+          onChange={(event) => update("studyType", event.target.value)}
+        >
+          <option value="">{t("全部")}</option>
+          <option value="INTERVENTIONAL">{t("干预性研究")}</option>
+          <option value="OBSERVATIONAL">{t("观察性研究")}</option>
+          <option value="EXPANDED_ACCESS">{t("扩大使用")}</option>
         </select>
       </label>
       <label>
-        <span>结果发布</span>
+        <span>{t("结果发布")}</span>
         <select
-          aria-label="结果发布"
+          aria-label={t("结果发布")}
           value={draft.trialHasResults}
           onChange={(event) => {
             const value = event.target.value;
@@ -86,13 +106,13 @@ export function TrialsFields({
             setError("");
           }}
         >
-          <option value="">全部</option>
-          <option value="true">已发布</option>
-          <option value="false">未发布</option>
+          <option value="">{t("全部")}</option>
+          <option value="true">{t("已发布")}</option>
+          <option value="false">{t("未发布")}</option>
         </select>
       </label>
       <DateRange
-        label="结果发布日期"
+        label={t("结果发布日期")}
         from={draft.trialResultsPostedFrom}
         to={draft.trialResultsPostedTo}
         onChange={(from, to) => updateDateRange("trialResultsPostedFrom", "trialResultsPostedTo", from, to)}
@@ -100,55 +120,63 @@ export function TrialsFields({
       <details className="professional-more-fields" open={trialProfileConditionCount > 0 || undefined}>
         <summary>
           <SlidersHorizontal size={14} />
-          <span>试验属性与结果评价</span>
-          <small>{trialProfileConditionCount ? `已选 ${trialProfileConditionCount} 项` : "按需展开"}</small>
+          <span>{t("试验属性与结果评价")}</span>
+          <small>
+            {trialProfileConditionCount ? t("已选 {count} 项", { count: trialProfileConditionCount }) : t("按需展开")}
+          </small>
         </summary>
         <div className="professional-more-fields-grid">
           <label>
-            <span>试验简称</span>
+            <span>{t("试验简称")}</span>
             <input
               value={draft.trialAcronym}
               onChange={(event) => update("trialAcronym", event.target.value)}
-              placeholder="如 KEYNOTE、CheckMate"
+              placeholder={t("如 KEYNOTE、CheckMate")}
               maxLength={240}
             />
           </label>
           <label>
-            <span>发起类型</span>
+            <span>{t("发起类型")}</span>
             <select
               value={draft.trialInitiationType}
+              aria-label={t("发起类型")}
               onChange={(event) => update("trialInitiationType", event.target.value)}
             >
-              <option value="">全部</option>
+              <option value="">{t("全部")}</option>
               {Object.entries(trialInitiationTypeLabels).map(([value, label]) => (
                 <option value={value} key={value}>
-                  {label}
+                  {professionalEnumLabel(label, value)}
                 </option>
               ))}
             </select>
           </label>
           <label>
-            <span>治疗线次</span>
-            <select value={draft.trialTherapyLine} onChange={(event) => update("trialTherapyLine", event.target.value)}>
-              <option value="">全部</option>
+            <span>{t("治疗线次")}</span>
+            <select
+              aria-label={t("治疗线次")}
+              value={draft.trialTherapyLine}
+              onChange={(event) => update("trialTherapyLine", event.target.value)}
+            >
+              <option value="">{t("全部")}</option>
               {Object.entries(trialTherapyLineLabels).map(([value, label]) => (
                 <option value={value} key={value}>
-                  {label}
+                  {professionalEnumLabel(label, value)}
                 </option>
               ))}
             </select>
           </label>
           <label>
-            <span>结果最优评价</span>
+            <span>{t("结果最优评价")}</span>
             <select
               value={draft.trialResultEvaluation}
+              aria-label={t("结果最优评价")}
               disabled={draft.trialHasResults === "false"}
               onChange={(event) => update("trialResultEvaluation", event.target.value)}
             >
-              <option value="">全部</option>
+              <option value="">{t("全部")}</option>
               {Object.entries(trialResultEvaluationLabels).map(([value, label]) => (
                 <option value={value} key={value}>
-                  {label}
+                  {professionalEnumLabel(label, value)}
                 </option>
               ))}
             </select>
@@ -158,44 +186,47 @@ export function TrialsFields({
       <details className="professional-more-fields" open={trialEvidenceConditionCount > 0 || undefined}>
         <summary>
           <FileBadge size={14} />
-          <span>关键结果与发表证据</span>
-          <small>{trialEvidenceConditionCount ? `已选 ${trialEvidenceConditionCount} 项` : "按需展开"}</small>
+          <span>{t("关键结果与发表证据")}</span>
+          <small>
+            {trialEvidenceConditionCount ? t("已选 {count} 项", { count: trialEvidenceConditionCount }) : t("按需展开")}
+          </small>
         </summary>
         <div className="professional-more-fields-grid">
           <label>
-            <span>关键结果</span>
+            <span>{t("关键结果")}</span>
             <select
               value={draft.trialHasKeyResult}
+              aria-label={t("关键结果")}
               onChange={(event) => update("trialHasKeyResult", event.target.value)}
             >
-              <option value="">全部</option>
+              <option value="">{t("全部")}</option>
               {Object.entries(trialKeyResultLabels).map(([value, label]) => (
                 <option value={value} key={value}>
-                  {label}
+                  {professionalEnumLabel(label, value)}
                 </option>
               ))}
             </select>
           </label>
           <label>
-            <span>发表编号</span>
+            <span>{t("发表编号")}</span>
             <input
               value={draft.trialPublicationId}
               onChange={(event) => update("trialPublicationId", event.target.value)}
-              placeholder="PMID、DOI 或会议摘要编号"
+              placeholder={t("PMID、DOI 或会议摘要编号")}
               maxLength={240}
             />
           </label>
           <label>
-            <span>会议</span>
+            <span>{t("会议")}</span>
             <input
               value={draft.trialConference}
               onChange={(event) => update("trialConference", event.target.value)}
-              placeholder="如 ASCO、AACR"
+              placeholder={t("如 ASCO、AACR")}
               maxLength={500}
             />
           </label>
           <DateRange
-            label="结果披露日期"
+            label={t("结果披露日期")}
             from={draft.trialDisclosedFrom}
             to={draft.trialDisclosedTo}
             onChange={(from, to) => updateDateRange("trialDisclosedFrom", "trialDisclosedTo", from, to)}

@@ -1,4 +1,7 @@
 import { ArrowRight, RotateCcw } from "lucide-react";
+import { useMessages } from "../lib/i18n";
+import { professionalQueryLabel, professionalQueryMessages } from "../lib/i18n/professionalQuery";
+import { professionalValidationText } from "../lib/i18n/professionalValidation";
 import { createProfessionalSearchDraft } from "../lib/professionalSearch";
 import type { WorkspaceLocation } from "../lib/workspaceRouting";
 import { DealsFields } from "./professionalQuery/deals";
@@ -19,15 +22,17 @@ export function ProfessionalQueryBuilder({
   query: string;
   onExecute: (location: WorkspaceLocation) => void;
 }) {
+  const t = useMessages(professionalQueryMessages);
   const model = useProfessionalQueryModel(query, onExecute);
   const { selected, conditionCount, draft, setDraft, error, selectDomain, execute } = model;
   return (
     <section className="professional-query-builder" aria-labelledby="professional-query-title">
       <header>
         <div>
-          <strong id="professional-query-title">专业条件查询</strong>
+          <strong id="professional-query-title">{t("专业条件查询")}</strong>
           <span>
-            {selected.label} · {conditionCount ? `已选 ${conditionCount} 项` : "全部记录"}
+            {professionalQueryLabel(selected.label)} ·{" "}
+            {conditionCount ? t("已选 {count} 项", { count: conditionCount }) : t("全部记录")}
           </span>
         </div>
         <button
@@ -37,11 +42,11 @@ export function ProfessionalQueryBuilder({
           disabled={conditionCount === Number(Boolean(query.trim()))}
         >
           <RotateCcw size={14} />
-          清除条件
+          {t("清除条件")}
         </button>
       </header>
 
-      <nav aria-label="专业数据域">
+      <nav aria-label={t("专业数据域")}>
         {domains.map(({ value, label, detail, icon: Icon }) => (
           <button
             type="button"
@@ -49,10 +54,10 @@ export function ProfessionalQueryBuilder({
             className={draft.domain === value ? "selected" : ""}
             onClick={() => selectDomain(value)}
             aria-pressed={draft.domain === value}
-            title={detail}
+            title={professionalQueryLabel(detail)}
           >
             <Icon size={15} />
-            <span>{label}</span>
+            <span>{professionalQueryLabel(label)}</span>
           </button>
         ))}
       </nav>
@@ -75,16 +80,16 @@ export function ProfessionalQueryBuilder({
 
       <footer>
         <div>
-          <strong>{selected.label}</strong>
-          <span>{query.trim() ? `关键词：${query.trim()}` : "未限定关键词"}</span>
+          <strong>{professionalQueryLabel(selected.label)}</strong>
+          <span>{query.trim() ? t("关键词：{query}", { query: query.trim() }) : t("未限定关键词")}</span>
         </div>
         {error ? (
           <p className="inline-error" role="alert">
-            {error}
+            {professionalValidationText(error)}
           </p>
         ) : null}
         <button className="primary-button" type="button" onClick={execute}>
-          查询 {selected.label}
+          {t("查询 {domain}", { domain: professionalQueryLabel(selected.label) })}
           <ArrowRight size={15} />
         </button>
       </footer>

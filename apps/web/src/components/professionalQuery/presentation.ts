@@ -1,4 +1,5 @@
 import { ClipboardList, FileBadge, FlaskConical, Handshake, Landmark, Newspaper, TrendingUp } from "lucide-react";
+import { professionalEnumLabel } from "../../lib/i18n/professionalEnums";
 import type { ProfessionalSearchDomain } from "../../lib/professionalSearch";
 import type { FacetMultiSelectOption } from "../FacetMultiSelect";
 
@@ -77,6 +78,8 @@ export function labeledFacetOptions(
 ): FacetMultiSelectOption[] {
   return facetOptions(values, selected).map((option) => ({
     ...option,
-    label: labels[option.value] ?? option.label,
+    label: Object.hasOwn(labels, option.value)
+      ? professionalEnumLabel(labels[option.value], option.value)
+      : option.label,
   }));
 }
