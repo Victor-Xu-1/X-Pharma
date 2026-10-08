@@ -64,3 +64,24 @@ def test_fixed_column_layout_is_verified_by_the_one_visual_owner() -> None:
     assert ".newContext(" not in layout
     assert ".newPage(" not in layout
     assert "maxDiffPixelRatio" not in layout
+
+
+def test_visual_differences_are_collected_without_softening_functional_or_budget_gates() -> None:
+    captures = {
+        "dense-results-visual.ts": "denseTableShell",
+        "clinical-query-and-results.ts": "trialOutcomesVisual",
+        "news-deal-and-patent-details.ts": "dealRightsVisual",
+        "login-and-appearance.ts": "page",
+    }
+    for filename, locator in captures.items():
+        source = (NAVIGATION / filename).read_text(encoding="utf-8")
+        assert f"await expect.soft({locator}).toHaveScreenshot(" in source
+        assert "maxDiffPixelRatio: 0.001" in source
+    source = (NAVIGATION / "news-deal-and-patent-details.ts").read_text(encoding="utf-8")
+    assert 'await expect.soft(patentTimelineVisual).toHaveScreenshot("research-patent-timeline.png"' in source
+    assert 'await expect(dealRightsVisual).toHaveCount(1)' in source
+    assert 'await expect(page.getByText("Exclusive commercialization rights' in source
+    dense = (NAVIGATION / "dense-results-visual.ts").read_text(encoding="utf-8")
+    assert "await verifyFixedColumnLayout(denseTableShell)" in dense
+    assert "await verifyVirtualRowLayout(denseTableShell)" in dense
+    assert "await expect.soft(denseQuality)" not in dense
