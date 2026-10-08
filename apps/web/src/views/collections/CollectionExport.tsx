@@ -3,6 +3,8 @@ import { useState } from "react";
 import { FormStatus } from "../../components/FormStatus";
 import type { CollectionDetail } from "../../lib/contracts/collections";
 import type { ExportFormat } from "../../lib/download";
+import { formattingLocale, useMessages } from "../../lib/i18n";
+import { collectionExportMessages } from "../../lib/i18n/collectionExport";
 import { useDismissibleDetails } from "../../lib/useDismissibleDetails";
 import { useCollectionExport } from "./useCollectionExport";
 
@@ -17,6 +19,8 @@ export function CollectionExport({
   refreshing?: boolean;
   stale?: boolean;
 }) {
+  const text = useMessages(collectionExportMessages);
+  const number = new Intl.NumberFormat(formattingLocale());
   const [open, setOpen] = useState(false);
   const control = useCollectionExport(detail, open, { changing, refreshing, stale });
   const popover = useDismissibleDetails({ dismissible: !control.pending });
@@ -28,34 +32,40 @@ export function CollectionExport({
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary aria-disabled={control.pending || undefined}>
-        <Download size={15} aria-hidden="true" /> 导出列表
+        <Download size={15} aria-hidden="true" /> {text("导出列表")}
       </summary>
       {open ? (
         <form
-          aria-label="列表导出"
+          aria-label={text("列表导出")}
           onSubmit={(event) => {
             event.preventDefault();
             void control.exportSet();
           }}
         >
           <header>
-            <strong>列表导出</strong>
+            <strong>{text("列表导出")}</strong>
             {control.canExport || control.pending ? (
-              <small>最多 {control.policy?.max_records_per_export} 个对象</small>
+              <small>
+                {text("最多 {count} 个对象", {
+                  count: control.policy ? number.format(control.policy.max_records_per_export) : "—",
+                })}
+              </small>
             ) : null}
           </header>
           {control.reading && !control.pending ? (
-            <FormStatus pending pendingLabel="正在读取导出策略" />
+            <FormStatus pending pendingLabel={text("正在读取导出策略")} />
           ) : control.policyQuery.isError && !control.pending ? (
             <>
               <FormStatus
                 pending={false}
                 error={
-                  control.policyQuery.error instanceof Error ? control.policyQuery.error.message : "导出策略读取失败"
+                  control.policyQuery.error instanceof Error
+                    ? control.policyQuery.error.message
+                    : text("导出策略读取失败")
                 }
               />
               <button type="button" className="secondary-button" onClick={() => void control.policyQuery.refetch()}>
-                重新读取导出策略
+                {text("重新读取导出策略")}
               </button>
             </>
           ) : (
@@ -68,9 +78,9 @@ export function CollectionExport({
               {showSettings || control.pending ? (
                 <>
                   <label>
-                    格式
+                    {text("格式")}
                     <select
-                      aria-label="导出格式"
+                      aria-label={text("导出格式")}
                       value={control.format}
                       disabled={control.pending}
                       onChange={(event) => control.setFormat(event.target.value as ExportFormat)}
@@ -83,7 +93,7 @@ export function CollectionExport({
                     </select>
                   </label>
                   <fieldset className="domain-export-fields" disabled={control.pending}>
-                    <legend>导出字段</legend>
+                    <legend>{text("导出字段")}</legend>
                     {control.availableFields.map((field) => (
                       <label className="check-control domain-export-field" key={field.value}>
                         <input
@@ -92,14 +102,20 @@ export function CollectionExport({
                           disabled={field.required || control.pending}
                           onChange={(event) => control.toggleField(field.value, event.target.checked)}
                         />
-                        {field.label}
+                        {text(field.label)}
                       </label>
                     ))}
                   </fieldset>
                   {control.policy?.attribution ? (
-                    <p className="field-help">使用说明：{control.policy.attribution}</p>
+                    <p className="field-help">
+                      {text("使用说明：{attribution}", { attribution: control.policy.attribution })}
+                    </p>
                   ) : null}
-                  <FormStatus pending={control.pending} pendingLabel="正在生成列表导出文件" error={control.error} />
+                  <FormStatus
+                    pending={control.pending}
+                    pendingLabel={text("正在生成列表导出文件")}
+                    error={control.error}
+                  />
                   {control.notice ? (
                     <p className="inline-feedback" role="status">
                       {control.notice}
@@ -107,7 +123,7 @@ export function CollectionExport({
                   ) : null}
                   <button className="primary-button" type="submit" disabled={!control.canExport || control.pending}>
                     <Download size={16} aria-hidden="true" />
-                    {control.pending ? "生成中" : "导出"}
+                    {control.pending ? text("生成中") : text("导出")}
                   </button>
                 </>
               ) : null}

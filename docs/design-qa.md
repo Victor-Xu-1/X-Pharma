@@ -7,6 +7,40 @@ current-deployment evidence merely because the product version advances.
 
 ## 2026-10-07: research-first frontend craft
 
+### 2026-10-09: bilingual governed research lists (candidate, not deployed)
+
+List catalogue, members, comparison, history, shared metadata editor and export
+controls use the existing English-first locale. Drafts, selected comparisons,
+cached reads, export choices, request locks and idempotency remain in their
+original owners. Structured feedback identities keep completed notices localized
+without replaying writes/downloads. Raw names, descriptions, license attribution,
+coverage notes and unknown status/modality values stay literal. Unknown historical
+sharing scope no longer silently claims private ownership; its regression fails
+before correction. The long matrix is split into186/166/115-line query/display/
+presentation modules, with the original query owners unchanged.
+
+Forty-seven focused list/export/editor/catalog tests and two selected monitoring
+metadata consumers pass. Strict app/E2E types, exact-file format and original build
+budgets pass. Four native read-only Chrome155 states at1440/390 verify actual empty
+directories and retained create drafts: this account has no existing lists, so
+these captures do not establish real populated-list/comparison acceptance.
+Two controlled desktop/mobile Chrome cases separately cover mixed and drug
+comparisons, pending saves, cross-tab language, recoverable version conflicts,
+export settings/attribution and history. Their single conflict PATCH is fulfilled
+in-browser; no identity, provider, source, list or export reaches a business server.
+
+Image review identifies member names and descriptions compressed side-by-side,
+and a clipped/untranslated sharing badge. A native geometry regression fails
+before vertically stacking member copy and the catalogue's name/status. Status
+tone keeps its original value while the existing badge-label contract localizes
+the caption. The first badge geometry locator incorrectly names a nonexistent
+class; the exact real .badge owner is corrected without dropping the bounds check.
+An initial controlled unknown phase violates the closed API enum; it is replaced
+by the legal registered phase, while unknown open status/modality values and
+unit-level literal phase preservation remain checked. No type casts, relaxed
+limits or unlicensed source completion are used. Remaining full-site body/state,
+ordinary CI/merge counter and exact-main deployment gates are still separate.
+
 ### 2026-10-09: knowledge reading language continuity (candidate, not deployed)
 
 The directory, document controls, coverage and immutable history now use the sole

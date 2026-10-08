@@ -52,16 +52,24 @@ tbody tr:last-child td {
 }
 .collection-entity-link,
 .comparison-entity-link {
-  display: flex;
   width: 100%;
   min-width: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
   padding: 0;
   border: 0;
   background: transparent;
   text-align: left;
+}
+
+.collection-entity-link {
+  display: grid;
+  gap: 3px;
+}
+
+.comparison-entity-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 .collection-entity-link > strong,
 .collection-entity-link > small,

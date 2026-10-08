@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import { CollectionComparisonMatrix } from "../components/CollectionComparisonMatrix";
@@ -21,6 +21,7 @@ import {
   loadEntityDossier,
 } from "../lib/contracts/entityDossier";
 import { downloadBlob } from "../lib/download";
+import { setLocale } from "../lib/i18n";
 import type { User } from "../lib/types";
 import { CollectionsView } from "../views/CollectionsView";
 
@@ -165,6 +166,26 @@ const coverageDomains: EntityDossier["coverage"][number]["domain"][] = [
   "structures",
   "target_evidence",
 ];
+
+it("switches the actual comparison matrix captions without changing original identities, totals or cached dossiers", async () => {
+  setLocale("en");
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  vi.mocked(loadEntityDossier).mockImplementation(async (id) => dossierFor(id === entity.id ? entity : company, 1200));
+  render(
+    <QueryClientProvider client={client}>
+      <CollectionComparisonMatrix entities={[entity, company]} onOpenEntity={vi.fn()} />
+    </QueryClientProvider>,
+  );
+  const table = await screen.findByRole("table", { name: "R&D intelligence comparison" });
+  expect(within(table).getByRole("row", { name: /Development programs/ })).toHaveTextContent("1,200");
+  expect(table).toHaveTextContent(entity.description ?? "");
+  expect(table).toHaveTextContent("UniProt · P00533");
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("table", { name: "研发情报对比表" })).toHaveTextContent("研发项目");
+  act(() => setLocale("en"));
+  expect(screen.getByRole("table", { name: "R&D intelligence comparison" })).toHaveTextContent(company.name);
+  expect(loadEntityDossier).toHaveBeenCalledTimes(2);
+});
 
 function dossierFor(subject: CollectionEntity, programCount: number): EntityDossier {
   return {

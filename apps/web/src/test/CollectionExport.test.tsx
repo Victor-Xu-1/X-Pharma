@@ -8,6 +8,7 @@ import {
   getWorkspaceExportPolicy,
 } from "../lib/contracts/collections";
 import { downloadBlob } from "../lib/download";
+import { getLocale, setLocale } from "../lib/i18n";
 import { CollectionExport } from "../views/collections/CollectionExport";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
@@ -52,17 +53,34 @@ beforeEach(() => {
   vi.mocked(exportComparisonSet).mockResolvedValue(new Blob(["{}"]));
 });
 
-// The legacy control is permanently expanded; exercise the same operation there
-// while the new control explicitly opens its native progressive disclosure.
 async function openExport() {
-  const summary = screen.queryByText("导出列表", { selector: "summary" });
-  if (summary) {
-    const details = summary.closest("details");
-    if (!details) throw new Error("Export disclosure missing");
-    details.open = true;
-    fireEvent(details, new Event("toggle"));
-  }
+  const summary = screen.getByText(getLocale() === "en" ? "Export list" : "导出列表", { selector: "summary" });
+  const details = summary.closest("details");
+  if (!details) throw new Error("Export disclosure missing");
+  details.open = true;
+  fireEvent(details, new Event("toggle"));
 }
+
+it("preserves export format, selected fields, raw attribution and completed feedback when language changes", async () => {
+  setLocale("en");
+  renderWithQueryClient(<CollectionExport detail={detail} changing={false} />);
+  await openExport();
+  const submit = await screen.findByRole("button", { name: "Export" });
+  fireEvent.change(screen.getByRole("combobox", { name: "Export format" }), { target: { value: "xlsx" } });
+  fireEvent.click(screen.getByRole("checkbox", { name: "Description" }));
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("combobox", { name: "导出格式" })).toHaveValue("xlsx");
+  expect(screen.getByRole("checkbox", { name: "描述" })).toBeChecked();
+  expect(screen.getByText("使用说明：Controlled test fixture")).toBeVisible();
+  act(() => setLocale("en"));
+  fireEvent.click(submit);
+  expect(await screen.findByText("Export generated for list v2")).toBeVisible();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("列表 v2 的导出文件已生成")).toBeVisible();
+  expect(getWorkspaceExportPolicy).toHaveBeenCalledOnce();
+  expect(exportComparisonSet).toHaveBeenCalledOnce();
+  expect(downloadBlob).toHaveBeenCalledOnce();
+});
 
 it("reads export policy only when the researcher opens the control", async () => {
   renderWithQueryClient(<CollectionExport detail={detail} changing={false} />);
