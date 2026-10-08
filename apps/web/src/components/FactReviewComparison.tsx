@@ -5,6 +5,7 @@ import { governanceKeys, loadFactComparison, type StagedFact } from "../lib/cont
 import type { GovernanceFactOriginRead } from "../lib/generated";
 import { governanceLabel, payloadDifferences, reviewValue } from "../lib/governancePresentation";
 import { ErrorState, formatDate, Spinner, StatusBadge } from "./common";
+import { ScrollableTableRegion } from "./ScrollableTableRegion";
 
 function Origin({ origin }: { origin: GovernanceFactOriginRead | null }) {
   if (!origin) return <p>来源运行记录不可用，不能确认解析方式。</p>;
@@ -46,7 +47,7 @@ export function FieldDifferences({
   const differences = payloadDifferences(before, after);
   if (!differences.length) return <p>业务字段一致；引证元数据另行保留。</p>;
   return (
-    <div className="review-field-differences">
+    <ScrollableTableRegion ariaLabel={`${beforeTitle}与${afterTitle}字段对照`} className="review-field-differences">
       <table>
         <thead>
           <tr>
@@ -65,7 +66,7 @@ export function FieldDifferences({
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollableTableRegion>
   );
 }
 
