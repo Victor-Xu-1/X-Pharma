@@ -403,3 +403,36 @@ The intermediate 94b90 reference is withdrawn rather than claimed as a
 product fix. The sole shared reflow implementation is retained so focused
 reproduction can use the actual official flow. Partial helper results must
 not replace complete-flow or actual automatic-CI acceptance evidence.
+
+## 2026-10-08: reachable narrow-table actions and one reviewed capture
+
+PR49 candidate `fac79944` unpins the identity column in containers at most
+640px wide, retaining the selection gutter. Real pointer activation and modal
+focus return passed five native widths; wide column pinning, row geometry,
+virtualization, preferences and all resource budgets remain intact.
+
+Automatic run `37724414411` passed 143/144 original browser cases. Its sole
+failure was 862 changed pixels in the mobile dense-table reference at the
+unchanged `0.001` tolerance. The actual, diff and old capture were reviewed
+side by side; names, controls, counts and row flow remain readable, with the
+name text raster changing after the intentional unpinning. The same rejection
+was reproduced with the original dense owner in a disposable SQLite gateway
+using 205 explicit synthetic fixtures and Chrome `155.0.8059.39`.
+
+Only `research-dense-results-mobile-390.png` is adopted from that original CI
+capture, SHA-256 `1bf9a466caa765fb9425de8412bbb2cced4f03140da399e528ffc426259e6977`.
+The other nineteen PNGs remain unchanged. The original manifest-generation
+block recomputes hashes; its new date does not imply twenty new captures.
+Frozen Chrome metadata is rebound to the manifest, without changing the
+browser version, package or executable digest. Masks, pixel/performance
+thresholds and required complete-flow CI are not relaxed.
+
+The standalone diagnostic also exposed a fast-first-input measurement gap:
+Chrome recorded a real interaction while the 16ms ordinary event observer
+reported none. The [Event Timing editor's draft](https://w3c.github.io/event-timing/)
+describes first-input entries outside that duration threshold. The probe now
+feeds those real entries through the same ID-deduplicated handler, retaining
+actual durations and zero when no interaction exists. The ineffective
+wait-only workaround was removed; no synthetic count, delay or timing is used
+to pass a gate. This is local browser-probe verification, not field P75, full
+WCAG, scientific/UAT or whole-product acceptance.
