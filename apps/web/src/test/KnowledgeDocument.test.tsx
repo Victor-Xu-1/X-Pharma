@@ -1,5 +1,6 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { setLocale } from "../lib/i18n";
 import { KnowledgeDocument } from "../views/knowledge/KnowledgeDocument";
 import { KnowledgeFactValue } from "../views/knowledge/KnowledgeFactValue";
 import {
@@ -9,6 +10,37 @@ import {
 } from "../views/knowledge/knowledgeReading";
 
 describe("public knowledge reading", () => {
+  it("localizes the reader while retaining open supplementary fields, source Markdown and recorded precision", () => {
+    const value = {
+      fact_kind: "trial",
+      registry_id: "NCT1003",
+      overall_status: "COMPLETED",
+      phases: ["PHASE2", "FUTURE_PHASE"],
+      enrollment: 0,
+      completion_date: "2028-02-01T00:00:00Z",
+      completion_date_precision: "month",
+      result_evaluation: false,
+    };
+    const source = `## Evidence\n\n- **has_trial**: \`${JSON.stringify(value)}\` [^1]\n\n[^1]: 原始引用 / Exact source`;
+    render(<KnowledgeDocument markdown={source} title="原始专题标题" />);
+    fireEvent.click(screen.getByRole("button", { name: "展开其余 1 个字段" }));
+    fireEvent.click(screen.getByText("查看公开原文 Markdown", { selector: "summary" }));
+    act(() => setLocale("en"));
+    expect(screen.getByRole("heading", { name: "Recorded facts" })).toBeVisible();
+    expect(screen.getByText("Clinical trial record", { selector: "strong" })).toBeVisible();
+    expect(screen.getByText("Completed", { selector: ".knowledge-value-field-value" })).toBeVisible();
+    expect(screen.getByText("Phase II, FUTURE_PHASE", { selector: ".knowledge-value-field-value" })).toBeVisible();
+    expect(screen.getByText("2028-02", { selector: ".knowledge-value-field-value" })).toBeVisible();
+    expect(screen.getByText("0", { selector: ".knowledge-value-field-value" })).toBeVisible();
+    expect(screen.getByText("false", { selector: ".knowledge-value-field-value" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Collapse supplementary fields" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(screen.getByRole("textbox", { name: "Complete public original for this version" })).toHaveValue(source);
+    expect(screen.getByRole("textbox", { name: "Complete public original for this version" })).toBeVisible();
+    expect(screen.getByText("原始引用 / Exact source")).toBeVisible();
+  });
   it("reads registered clinical enums and date precision without manufacturing exact dates or changing the original", () => {
     const value = {
       fact_kind: "trial",

@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -8,6 +8,7 @@ import {
   listKnowledgePageVersions,
   searchKnowledgePages,
 } from "../lib/contracts/knowledge";
+import { setLocale } from "../lib/i18n";
 import { KnowledgeView } from "../views/KnowledgeView";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
@@ -191,6 +192,28 @@ beforeEach(() => {
     to_version_number: versionNumber,
     truncated: false,
   }));
+});
+
+it("switches knowledge controls and coverage without discarding the query draft or cached immutable reads", async () => {
+  setLocale("en");
+  renderWithQueryClient(<KnowledgeView initialPageId="page-1" />);
+  expect(await screen.findByRole("heading", { name: "EGFR landscape" })).toBeVisible();
+  const search = screen.getByRole("textbox", { name: "Search knowledge topics" });
+  fireEvent.change(search, { target: { value: "未提交研究草稿" } });
+  fireEvent.click(screen.getByRole("tab", { name: "Coverage and versions" }));
+  await screen.findByRole("table", { name: "Knowledge fact coverage" });
+  expect(screen.getByText("Source records")).toBeInTheDocument();
+  expect(screen.queryByText("Independent sources")).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Version history" })).toBeInTheDocument();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("textbox", { name: "检索知识专题" })).toHaveValue("未提交研究草稿");
+  expect(screen.getByRole("tab", { name: "覆盖与版本" })).toHaveAttribute("aria-selected", "true");
+  act(() => setLocale("en"));
+  expect(screen.getByRole("textbox", { name: "Search knowledge topics" })).toHaveValue("未提交研究草稿");
+  expect(getKnowledgePage).toHaveBeenCalledOnce();
+  expect(getKnowledgePageCoverage).toHaveBeenCalledOnce();
+  expect(listKnowledgePageVersions).toHaveBeenCalledOnce();
+  expect(searchKnowledgePages).toHaveBeenCalledOnce();
 });
 
 it("loads a searchable page index and a separately cached immutable version", async () => {

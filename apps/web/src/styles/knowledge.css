@@ -206,10 +206,9 @@
   flex-direction: column;
 }
 .knowledge-page-list strong {
-  overflow: hidden;
   font-size: var(--ds-text-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .knowledge-page-list small {
   margin-top: 3px;

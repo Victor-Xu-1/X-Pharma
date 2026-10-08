@@ -7,6 +7,40 @@ current-deployment evidence merely because the product version advances.
 
 ## 2026-10-07: research-first frontend craft
 
+### 2026-10-09: knowledge reading language continuity (candidate, not deployed)
+
+The directory, document controls, coverage and immutable history now use the sole
+English-first locale owner. Topic names, source Markdown, citations, unknown
+clinical codes, zero, false and recorded date precision remain unchanged.
+Coverage/history presentation is extracted into small modules without new query
+or state owners; KnowledgeView retains its original five queries, URL, selection,
+draft and focus. Shared directory disclosure labels update without discarding
+their state; the direct research-list consumer is checked separately.
+
+A genuine English-rendering regression fails before implementation. Seventy-two
+focused knowledge/document/structured-field/catalog tests and two selected compact-list consumer
+tests pass. Exact formatting, application/E2E types and original build budgets
+pass. Ten actual read-only Chrome155 desktop/mobile states at1440/390 verify the
+directory, full source original, coverage/history, retained drafts, cache and
+locale; reflow, page errors and WCAG-tag checks pass. Captures are private native
+evidence, not AI mockups or global accessibility/scientific acceptance.
+
+Controlled browser regressions additionally exercise raw structured values,
+source disclosure, failed coverage/retry, selected immutable versions and empty
+results. Two desktop1440/mobile390 cases pass, with reflow and WCAG-tag checks.
+They use browser-only responses and never publish scientific evidence
+or create identities. Publication, exact-head CI, normal merging, automatic
+versioning and exact-main deployment remain independent acceptance gates.
+Native visual review also exposes one-line topic-title truncation. A real Chrome
+text-range regression first fails (the complete text extends past its owner),
+then the knowledge-owned style replaces ellipsis/nowrap with full wrapping.
+The existing bounded scrolling directory and original scientific names remain.
+Review of actual repeated source records also exposes an overclaim in the old
+"Independent sources" caption: the backend counts source record identities, not
+independent studies/providers. A failing caption regression precedes the truthful
+"Source records" / "来源记录" wording. Counts, facts, versions and citations are
+not deduplicated or rewritten by the frontend.
+
 ### 2026-10-09: bilingual environment workflow and truthful state presentation
 
 The existing environment panels use the sole English-first locale runtime.
