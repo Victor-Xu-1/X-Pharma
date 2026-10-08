@@ -191,6 +191,67 @@ function dossierFor(subject: CollectionEntity, programCount: number): EntityDoss
   };
 }
 
+it("keeps registered provider conditions and sponsors scoped in the collection member table", async () => {
+  const condition: CollectionEntity = {
+    ...entity,
+    entity_type: "disease",
+    name: "Source condition",
+    attributes: { identity_scope: "provider_label" },
+  };
+  const sponsor: CollectionEntity = {
+    ...company,
+    name: "Source sponsor",
+    attributes: { identity_scope: "provider_label" },
+  };
+  vi.mocked(getComparisonSet).mockResolvedValue({
+    ...comparisonSet,
+    members: comparisonSet.members.map((member, index) => ({ ...member, entity: index ? sponsor : condition })),
+  });
+  renderView({ activeCollectionId: comparisonSet.id });
+  const table = await screen.findByRole("table", { name: "对比列表内容" });
+  expect(within(table).getByRole("cell", { name: /登记条件/ })).toHaveTextContent("不代表获批适应症");
+  expect(within(table).getByRole("cell", { name: /登记申办方/ })).toHaveTextContent("不代表已核实的法律主体");
+});
+
+it("does not relabel generic diseases and organizations as indications and developers", async () => {
+  const disease: CollectionEntity = { ...entity, entity_type: "disease", name: "Reviewed disease" };
+  vi.mocked(getComparisonSet).mockResolvedValue({
+    ...comparisonSet,
+    members: comparisonSet.members.map((member, index) => ({ ...member, entity: index ? company : disease })),
+  });
+  renderView({ activeCollectionId: comparisonSet.id });
+  const table = await screen.findByRole("table", { name: "对比列表内容" });
+  expect(within(table).getByRole("cell", { name: "疾病" })).toBeVisible();
+  expect(within(table).getByRole("cell", { name: "机构" })).toBeVisible();
+});
+
+it("uses the authoritative dossier identity scope in mixed-type research comparison", async () => {
+  const condition: CollectionEntity = {
+    ...entity,
+    entity_type: "disease",
+    name: "Source condition",
+    attributes: { identity_scope: "provider_label" },
+  };
+  const sponsor: CollectionEntity = {
+    ...company,
+    name: "Source sponsor",
+    attributes: { identity_scope: "provider_label" },
+  };
+  vi.mocked(loadEntityDossier).mockImplementation(async (id) =>
+    dossierFor(id === condition.id ? condition : sponsor, 0),
+  );
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={queryClient}>
+      <CollectionComparisonMatrix entities={[condition, sponsor]} onOpenEntity={vi.fn()} />
+    </QueryClientProvider>,
+  );
+  const table = await screen.findByRole("table", { name: "研发情报对比表" });
+  const type = within(table).getByRole("row", { name: /^类型/ });
+  expect(within(type).getByRole("cell", { name: /登记条件/ })).toHaveTextContent("不代表获批适应症");
+  expect(within(type).getByRole("cell", { name: /登记申办方/ })).toHaveTextContent("不代表已核实的法律主体");
+});
+
 function drugComparisonFor(
   first: CollectionEntity,
   second: CollectionEntity,

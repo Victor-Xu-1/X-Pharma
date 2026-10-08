@@ -160,29 +160,6 @@
 .knowledge-index {
   border-right: 1px solid var(--ds-border);
 }
-.knowledge-index-content[hidden] {
-  display: none;
-}
-.knowledge-catalog-toggle {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 48px;
-  padding: 12px 15px;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  color: var(--ds-ink);
-}
-.knowledge-catalog-toggle > span {
-  margin-inline-start: auto;
-  color: var(--ds-ink-muted);
-  font-size: var(--ds-text-xs);
-}
-.knowledge-catalog-toggle > .expanded {
-  transform: rotate(180deg);
-}
 .inline-search {
   margin: 13px;
 }

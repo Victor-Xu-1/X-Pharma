@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { BookOpenText, History, ShieldCheck } from "lucide-react";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import "./knowledge-pagination.css";
 import "../styles/knowledge.css";
 
@@ -15,6 +15,7 @@ import {
   listKnowledgePageVersions,
   searchKnowledgePages,
 } from "../lib/contracts/knowledge";
+import { useSelectedRecordFocus } from "../lib/useSelectedRecordFocus";
 import type { KnowledgePanel } from "../lib/workspaceRouting";
 import { KnowledgeCatalog } from "./knowledge/KnowledgeCatalog";
 import { KnowledgeChangeList } from "./knowledge/KnowledgeChangeList";
@@ -46,8 +47,6 @@ export function KnowledgeView({
   onLocationChange?: (location: KnowledgeLocation) => void;
 }) {
   const controlled = Boolean(onLocationChange);
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const pendingFocus = useRef<string | null>(null);
   const [query, setQuery] = useState(initialQuery);
   const [localLocation, setLocalLocation] = useState<KnowledgeLocation>({
     offset: initialOffset,
@@ -133,28 +132,17 @@ export function KnowledgeView({
   }
 
   function selectPage(pageId: string) {
-    pendingFocus.current = pageId;
-    if (detail?.id === pageId && !detailQuery.isFetching) {
-      headingRef.current?.focus();
-      pendingFocus.current = null;
-    }
+    requestFocus(pageId);
     updateLocation({ query: submittedQuery, pageId, panel: "document", versionNumber: null });
   }
 
   const result = pagesQuery.isError ? undefined : pagesQuery.data;
   const detail = detailQuery.data;
   const detailError = detailQuery.error instanceof Error ? detailQuery.error.message : "";
-  useEffect(() => {
-    if (
-      pendingFocus.current === selectedPageId &&
-      detail?.id === selectedPageId &&
-      !detailQuery.isFetching &&
-      !detailError
-    ) {
-      headingRef.current?.focus();
-      pendingFocus.current = null;
-    }
-  }, [selectedPageId, detail?.id, detailQuery.isFetching, detailError]);
+  const { headingRef, requestFocus } = useSelectedRecordFocus(
+    selectedPageId || null,
+    Boolean(detail?.id === selectedPageId && !detailQuery.isFetching && !detailQuery.error),
+  );
   return (
     <section className="knowledge-layout">
       <KnowledgeCatalog
