@@ -1,5 +1,10 @@
 # Visual baseline reviews
 
+Current software versions are owned by [`pyproject.toml`](../pyproject.toml)
+under [the PR-merge policy](../CONTRIBUTING.md#product-version-counter). Dated
+reviews retain their captured version, commit and image hashes; a later numeric
+increment does not refresh or recertify those captures.
+
 The current reference inventory is the 20-image research-first frontend craft review below.
 It retains the bounded natural-flow table implementation, not either former
 transform-rendering paint phase. The manifest owns all current image hashes.
