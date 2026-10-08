@@ -42,6 +42,7 @@ import { useLocale } from "../lib/i18n";
 import { tableText as t } from "../lib/i18n/table";
 import { columnLabel, describeTableSorting } from "../lib/tablePresentation";
 import { useDismissibleDetails } from "../lib/useDismissibleDetails";
+import { useFilterDraft } from "../lib/useFilterDraft";
 import { useSessionIdentity } from "./SessionIdentityContext";
 
 type TablePreferences = WorkspaceTablePreferences;
@@ -152,7 +153,7 @@ export function VirtualDataTable<T>({
   const [localSorting, setLocalSorting] = useState<SortingState>(defaultSorting);
   const serverSorting = controlledSorting !== undefined && onSortingChange !== undefined;
   const sorting = serverSorting ? controlledSorting : localSorting;
-  const [sortDraft, setSortDraft] = useState<SortingState>(sorting);
+  const [sortDraft, setSortDraft] = useFilterDraft(normalizeSortingState(sorting));
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [density, setDensity] = useState<WorkspaceTableDensity>("comfortable");
   const [columnOrder, setColumnOrder] = useState<ColumnOrderState>([]);
@@ -275,18 +276,6 @@ export function VirtualDataTable<T>({
   const sortDraftIsCurrent =
     sorting.length === draftSorting.length &&
     sorting.every((sort, index) => sort.id === draftSorting[index]?.id && sort.desc === draftSorting[index]?.desc);
-
-  useEffect(() => {
-    setSortDraft((current) => {
-      const normalized = normalizeSortingState(sorting);
-      const unchanged =
-        current.length === normalized.length &&
-        current.every(
-          (criterion, index) => criterion.id === normalized[index]?.id && criterion.desc === normalized[index]?.desc,
-        );
-      return unchanged ? current : normalized;
-    });
-  }, [sorting]);
 
   useEffect(() => {
     setHydratedPreferenceIdentity(null);

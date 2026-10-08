@@ -14,6 +14,53 @@ const columns: ColumnDef<Row, unknown>[] = [
   { accessorKey: "score", header: "评分", size: 120 },
 ];
 
+it("preserves an unapplied sort draft across equivalent applied props and locale-driven headers", () => {
+  const onSortingChange = vi.fn();
+  const data = [{ id: "1", name: "Original name", score: 1 }];
+  const { rerender } = renderWithQueryClient(
+    <VirtualDataTable
+      ariaLabel="Results"
+      columns={columns}
+      data={data}
+      preferenceKey="entity-search"
+      sorting={[]}
+      onSortingChange={onSortingChange}
+    />,
+  );
+  fireEvent.click(screen.getByText("排序", { selector: "summary" }));
+  fireEvent.click(screen.getByRole("button", { name: "添加排序字段" }));
+  fireEvent.change(screen.getByLabelText("第 1 排序字段"), { target: { value: "score" } });
+  act(() => setLocale("en"));
+  const englishColumns = [
+    { accessorKey: "name", header: "Name", size: 180 },
+    { accessorKey: "score", header: "Score", size: 120 },
+  ];
+  rerender(
+    <VirtualDataTable
+      ariaLabel="Results"
+      columns={englishColumns}
+      data={data}
+      preferenceKey="entity-search"
+      sorting={[]}
+      onSortingChange={onSortingChange}
+    />,
+  );
+  expect(screen.getByLabelText("Sort field 1")).toHaveValue("score");
+  expect(onSortingChange).not.toHaveBeenCalled();
+  rerender(
+    <VirtualDataTable
+      ariaLabel="Results"
+      columns={englishColumns}
+      data={data}
+      preferenceKey="entity-search"
+      sorting={[{ id: "name", desc: true }]}
+      onSortingChange={onSortingChange}
+    />,
+  );
+  expect(screen.getByLabelText("Sort field 1")).toHaveValue("name");
+  expect(screen.getByLabelText("Sort direction 1: descending")).toHaveAttribute("aria-pressed", "true");
+});
+
 it("localizes table controls and current sorting without resetting the local presentation or editing facts", () => {
   renderWithQueryClient(
     <VirtualDataTable
