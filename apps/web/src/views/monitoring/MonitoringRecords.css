@@ -1,0 +1,85 @@
+.monitoring-action-label {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .monitoring-records {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .monitoring-records table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .monitoring-records thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .monitoring-records tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .monitoring-records tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    border: 1px solid var(--ds-border);
+    border-radius: var(--ds-radius-panel);
+    padding: 16px;
+    background: var(--ds-surface);
+  }
+
+  .monitoring-records td {
+    grid-column: 1 / -1;
+    min-width: 0;
+    border: 0;
+    padding: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .monitoring-records [data-label]::before {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--ds-ink-muted);
+    font-size: var(--ds-text-xs);
+    content: attr(data-label);
+  }
+
+  .monitoring-records .monitoring-record-name::before {
+    display: none;
+  }
+
+  .monitoring-records .monitoring-record-meta {
+    grid-column: auto;
+  }
+
+  .monitoring-records .monitoring-record-actions {
+    grid-row: 2;
+  }
+
+  .monitoring-records .row-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .monitoring-records .icon-button {
+    width: auto;
+    gap: 6px;
+    padding-inline: 10px;
+  }
+
+  .monitoring-action-label {
+    display: inline;
+  }
+}

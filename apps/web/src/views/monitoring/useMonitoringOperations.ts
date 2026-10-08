@@ -1,9 +1,15 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { loadMonitoringAlertReplay, loadMonitoringTopicReplay, type SavedSearch } from "../../lib/contracts/monitoring";
+import {
+  loadMonitoringAlertReplay,
+  loadMonitoringTopicReplay,
+  loadSavedSearch,
+  type SavedSearch,
+} from "../../lib/contracts/monitoring";
 
 export function useMonitoringOperations(tab: string, onOpenSearch: (saved: SavedSearch) => void) {
   const live = useRef({ mounted: true, tab, generation: 0, open: onOpenSearch });
   const locks = useRef(new Set<string>());
+  const replayIntent = useRef(0);
   const [pending, setPending] = useState(new Set<string>());
   const [error, setError] = useState("");
   useLayoutEffect(() => {
@@ -35,11 +41,25 @@ export function useMonitoringOperations(tab: string, onOpenSearch: (saved: Saved
       if (live.current.mounted) setPending(new Set(locks.current));
     }
   }
-  function replay(kind: "topic" | "alert", id: string) {
+  function replay(kind: "topic" | "alert" | "saved", id: string) {
+    const key = `replay:${kind}:${id}`;
+    if (locks.current.has(key)) return Promise.resolve();
     const generation = live.current.generation;
-    return run(`replay:${kind}:${id}`, async () => {
-      const saved = kind === "topic" ? await loadMonitoringTopicReplay(id) : await loadMonitoringAlertReplay(id);
-      if (live.current.mounted && live.current.generation === generation) live.current.open(saved);
+    const intent = ++replayIntent.current;
+    const isCurrent = () =>
+      live.current.mounted && live.current.generation === generation && replayIntent.current === intent;
+    return run(key, async () => {
+      try {
+        const saved =
+          kind === "topic"
+            ? await loadMonitoringTopicReplay(id)
+            : kind === "alert"
+              ? await loadMonitoringAlertReplay(id)
+              : await loadSavedSearch(id);
+        if (isCurrent()) live.current.open(saved);
+      } catch (caught) {
+        if (isCurrent()) throw caught;
+      }
     });
   }
   return { pending, error, clearError: () => setError(""), run, replay };
