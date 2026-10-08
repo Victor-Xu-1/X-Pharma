@@ -2,6 +2,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { compactNumber, formatDate, statusLabel } from "../components/common";
 import { createTranslator, type MessageKey, t, uiFeedback } from "../lib/i18n";
 import { messages } from "../lib/i18n/catalog";
+import { entityPreviewMessages } from "../lib/i18n/entityPreview";
 import { identityMessages } from "../lib/i18n/identity";
 import {
   getLocale,
@@ -13,6 +14,7 @@ import {
   subscribeLocale,
 } from "../lib/i18n/locale";
 import { navigationMessages } from "../lib/i18n/navigation";
+import { researchContinuityMessages } from "../lib/i18n/researchContinuity";
 import { sharedMessages } from "../lib/i18n/shared";
 
 beforeEach(() => setLocale("zh-CN"));
@@ -27,6 +29,18 @@ it("has one owner per message and identical interpolation parameters in both lan
     expect(parameters(english), key).toEqual(parameters(key));
   }
 });
+
+it.each([entityPreviewMessages, researchContinuityMessages])(
+  "keeps feature-local preview/history interpolation complete",
+  (catalog) => {
+    const parameters = (value: string) =>
+      [...value.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/gu)].map((match) => match[1]).sort();
+    for (const [key, english] of Object.entries(catalog)) {
+      expect(english.trim(), key).not.toBe("");
+      expect(parameters(english), key).toEqual(parameters(key));
+    }
+  },
+);
 
 it.each(["zh-CN", "en"] as const)("rejects missing message IDs and parameters in %s", (locale) => {
   setLocale(locale);

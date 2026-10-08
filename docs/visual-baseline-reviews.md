@@ -4,7 +4,24 @@ Current product version is owned by [pyproject.toml](../pyproject.toml), not by
 these dated captures. Each review retains its original version, revision and
 image hashes; a later numeric increment does not recapture or recertify it.
 
-## English-first bilingual interface: three affected references
+## Bilingual research controls: bounded source-summary rows
+
+PR58 head155259006f4b003e2410547c87123760d142ebb2/run37797681521
+completed160 passing cases and four intentional dense-results reference
+differences. Each actual/diff pair (1440,1920,1024,390) from11560468404 was
+individually inspected. Names, source summaries, types, identifiers, dates,
+selection/action controls and fixed68/46px natural rows remain present; name
+buttons now use a bounded two-line hierarchy, with original summaries visibly
+outside the unchanged unstable-match mask and match bounds inside their column.
+The earlier7bea images were rejected because their mask crossed the column and
+starved source summaries. These four corrected155 captures alone are adopted,
+old4/manifest/browser binding retained on E. Other16 hashes are unchanged;
+Chrome/fonts, geometry/virtualization checks, performance budgets and0.001
+tolerance are unchanged. The genuine source-summary red,47 unit consumers,
+16 real-data query states and two browser-only long-alias geometry/source-paint
+states pass; none substitutes for the new exact-head six-gate run or deployment.
+
+## English-first bilingual interface: subsequent reference review
 
 Exact follow-upfa2bf3092c0413a582419ccc67914276c04f01be/run37796732331
 completed163 passing cases and one mobile390 deal-rights crop difference566pixels.

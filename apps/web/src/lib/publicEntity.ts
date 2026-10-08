@@ -1,7 +1,9 @@
+import { createTranslator } from "./i18n";
+import { entityPreviewMessages } from "./i18n/entityPreview";
 import type { Entity } from "./types";
 
 /** Only business-facing entity attributes may be rendered by human research pages. */
-export const publicEntityAttributeLabels: Record<string, string> = {
+const publicEntityAttributeLabels = {
   biomarker: "生物标志物",
   cas_number: "CAS 号",
   chemical_name: "化学名称",
@@ -26,7 +28,14 @@ export const publicEntityAttributeLabels: Record<string, string> = {
   status_detail: "进展说明",
   target_class: "靶点类别",
   therapeutic_area: "治疗领域",
-};
+} as const;
+
+const attributeText = createTranslator(entityPreviewMessages);
+export function publicEntityAttributeLabel(key: string): string {
+  return Object.hasOwn(publicEntityAttributeLabels, key)
+    ? attributeText(publicEntityAttributeLabels[key as keyof typeof publicEntityAttributeLabels])
+    : key;
+}
 
 const hiddenIdentifierNamespacePrefixes = ["pharmcube", "internal", "source", "ingestion"];
 
@@ -48,6 +57,6 @@ function isPublicAttributeValue(value: unknown): boolean {
 
 export function publicEntityAttributes(entity: Pick<Entity, "attributes">): Array<[string, unknown]> {
   return Object.entries(entity.attributes).filter(
-    ([key, value]) => key in publicEntityAttributeLabels && isPublicAttributeValue(value),
+    ([key, value]) => Object.hasOwn(publicEntityAttributeLabels, key) && isPublicAttributeValue(value),
   );
 }

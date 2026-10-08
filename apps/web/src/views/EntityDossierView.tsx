@@ -22,26 +22,14 @@ import { companyKeys, loadCompanyTimeline } from "../lib/contracts/company";
 import { type EntityDossier, entityDossierKeys, loadEntityDossier } from "../lib/contracts/entityDossier";
 import type { ProvenanceSelection } from "../lib/contracts/provenance";
 import { directionLabels, partyRoleLabels, phaseLabels } from "../lib/dealDisplay";
-import { relationshipLabel } from "../lib/entityPresentation";
+import { entityLabels, entityTypeLabel, relationshipLabel } from "../lib/entityPresentation";
 import type { CompanyTimelineResult, EntityType } from "../lib/generated";
-import { publicEntityAttributeLabels, publicEntityAttributes } from "../lib/publicEntity";
+import { useLocale } from "../lib/i18n";
+import { publicEntityAttributeLabel, publicEntityAttributes } from "../lib/publicEntity";
 import type { Entity } from "../lib/types";
 import type { EntityDossierSection } from "../lib/workspaceRouting";
 
 export { Activities };
-
-const entityLabels: Record<string, string> = {
-  drug: "药物",
-  target: "靶点",
-  disease: "疾病",
-  organization: "研发机构",
-  clinical_trial: "临床试验",
-  patent: "专利",
-  transaction: "交易",
-  product: "产品",
-  technology: "技术",
-  person: "人物",
-};
 
 const domainLabels: Record<string, string> = {
   relationships: "实体关系",
@@ -114,6 +102,7 @@ export function EntityDossierView({
   onOpenRegulatoryEvent: (eventId: string) => void;
   onOpenNewsEvent: (eventId: string) => void;
 }) {
+  useLocale();
   const [provenanceSelection, setProvenanceSelection] = useState<ProvenanceSelection | null>(null);
   const dossier = useQuery({
     queryKey: entityDossierKeys.detail(entity?.id ?? ""),
@@ -177,7 +166,7 @@ export function EntityDossierView({
             <Network size={23} />
           </div>
           <div>
-            <span>{entityLabels[data.entity.entity_type] ?? data.entity.entity_type}</span>
+            <span>{entityTypeLabel(data.entity)}</span>
             <h2>{data.entity.name}</h2>
             <p>{data.entity.description ?? "暂无实体摘要"}</p>
           </div>
@@ -307,7 +296,7 @@ function DossierOverview({
           ))}
           {publicEntityAttributes(data.entity).map(([key, value]) => (
             <div key={key}>
-              <dt>{publicEntityAttributeLabels[key] ?? key}</dt>
+              <dt>{publicEntityAttributeLabel(key)}</dt>
               <dd>{formatAttribute(value)}</dd>
             </div>
           ))}
@@ -603,7 +592,7 @@ export function Relationships({
                   {item.related_entity.name}
                 </button>
               </td>
-              <td>{entityLabels[item.related_entity.entity_type] ?? item.related_entity.entity_type}</td>
+              <td>{entityLabels()[item.related_entity.entity_type] ?? item.related_entity.entity_type}</td>
               <td>
                 {formatDate(item.valid_from)} - {formatDate(item.valid_to)}
               </td>

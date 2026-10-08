@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { useLayoutEffect, useState } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 
@@ -18,6 +18,7 @@ import { loadPatentFacetCatalog } from "../lib/contracts/patents";
 import { loadPipelineFacetCatalog } from "../lib/contracts/pipeline";
 import { loadRegulatoryFacetCatalog } from "../lib/contracts/regulatory";
 import { loadTargetProfile } from "../lib/contracts/target";
+import { setLocale } from "../lib/i18n";
 import { resolveProfessionalDatePreset } from "../lib/professionalSearch";
 import type { Entity } from "../lib/types";
 import { ExplorerView } from "../views/ExplorerView";
@@ -119,6 +120,32 @@ const comparisonSet = {
 function openAdvancedQuery(): void {
   fireEvent.click(screen.getByText(/^高级条件查询/, { selector: "summary" }));
 }
+
+it("changes memoized search headers and labels without repeating the query or clearing the draft", async () => {
+  const onSearchChange = vi.fn();
+  renderWithQueryClient(
+    <ExplorerView
+      initialQuery="EGFR"
+      initialEntityType="target"
+      initialReviewStatus="verified"
+      onSearchChange={onSearchChange}
+      onOpenEntity={vi.fn()}
+      onOpenSpecializedSearch={vi.fn()}
+    />,
+  );
+  await screen.findByRole("table", { name: "实体检索结果" });
+  fireEvent.change(screen.getByRole("combobox", { name: "情报检索词" }), {
+    target: { value: "未提交的中文名称 EGFR" },
+  });
+  const requests = vi.mocked(searchEntities).mock.calls.length;
+  act(() => setLocale("en"));
+  expect(screen.getByRole("columnheader", { name: "Name" })).toBeInTheDocument();
+  expect(screen.getByRole("table", { name: "Entity search results" })).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: "Intelligence query" })).toHaveValue("未提交的中文名称 EGFR");
+  expect(screen.getByRole("button", { name: "EGFR" })).toBeInTheDocument();
+  expect(vi.mocked(searchEntities).mock.calls.length).toBe(requests);
+  expect(onSearchChange).not.toHaveBeenCalled();
+});
 
 it("keeps a preview opener's DOM identity when route callbacks change and uses the latest handler", async () => {
   const first = vi.fn();
@@ -330,7 +357,17 @@ it("searches through the typed contract and opens a governed target result", asy
   expect(screen.getByRole("table", { name: "实体检索结果" })).not.toHaveTextContent("已核验");
   expect(screen.queryByText("opensearch")).not.toBeInTheDocument();
   expect(screen.queryByText("12 ms")).not.toBeInTheDocument();
-  expect(screen.getByText("别名精确匹配：ERBB1")).toBeInTheDocument();
+  const matchContext = screen.getByText("别名精确匹配：ERBB1");
+  expect(matchContext.closest("small")).toHaveAttribute(
+    "title",
+    "别名精确匹配：ERBB1 · Epidermal growth factor receptor",
+  );
+  expect(matchContext).not.toHaveTextContent("Epidermal growth factor receptor");
+  expect(screen.getByText("Epidermal growth factor receptor")).toHaveClass("cell-subtitle");
+  expect(screen.getByRole("button", { name: "EGFR" })).toHaveAttribute(
+    "aria-description",
+    "别名精确匹配：ERBB1 · Epidermal growth factor receptor",
+  );
   const directTarget = screen.getByRole("region", { name: "EGFR 靶点直达" });
   expect(within(directTarget).getByText("靶点精确命中")).toBeInTheDocument();
   expect(await within(directTarget).findByText(/已关联 80 个研发项目/)).toBeVisible();
@@ -1902,6 +1939,49 @@ it("surfaces and retries an authoritative news facet catalog failure without exp
   expect(await screen.findByRole("option", { name: "会议摘要 (2)" })).toBeInTheDocument();
   expect(screen.getByRole("combobox", { name: "会议 / 场景" })).toBeInTheDocument();
 });
+
+it.each([
+  ["exact", "精确"],
+  ["partial", "相关"],
+] as const)(
+  "prioritizes the original source summary over a duplicated %s canonical-name match in a compact row",
+  async (relation, caption) => {
+    vi.mocked(searchEntities).mockResolvedValue({
+      query_schema_version: "pharma.entity.search.v2",
+      applied_filters: [],
+      items: [
+        {
+          ...target,
+          match: { ...target.match, match_type: "canonical_name", match_relation: relation, matched_value: "EGFR" },
+        },
+      ],
+      total: 1,
+      limit: 100,
+      offset: 0,
+      sort_by: "relevance",
+      sort_direction: "desc",
+      facets: {},
+      suggestions: [],
+      engine: "opensearch",
+      took_ms: 12,
+    });
+    renderWithQueryClient(
+      <ExplorerView
+        initialQuery="EGFR"
+        initialEntityType="target"
+        initialReviewStatus="verified"
+        onSearchChange={vi.fn()}
+        onOpenEntity={vi.fn()}
+        onOpenSpecializedSearch={vi.fn()}
+      />,
+    );
+    const table = await screen.findByRole("table", { name: "实体检索结果" });
+    const name = within(table).getByRole("button", { name: "EGFR" });
+    expect(name.querySelector(".entity-match-context")).toBeNull();
+    expect(name.querySelector(".cell-subtitle")).toHaveTextContent("Epidermal growth factor receptor");
+    expect(name).toHaveAttribute("aria-description", `名称${caption}匹配：EGFR · Epidermal growth factor receptor`);
+  },
+);
 
 it("keeps the professional query on the current page when a date range is invalid", async () => {
   const onOpenSpecializedSearch = vi.fn();

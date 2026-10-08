@@ -2,12 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 import { type FormEvent, useId, useState } from "react";
 import { loadPublicCoverage, type PublicResearchTopic, searchPublicResearch } from "../lib/contracts/publicResearch";
 import { entityLabels } from "../lib/entityPresentation";
+import { useLocale } from "../lib/i18n";
+import { publicResearchText as t } from "../lib/i18n/publicResearch";
 import { useFilterDraft } from "../lib/useFilterDraft";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import { ErrorState, Spinner } from "./common";
 import { PublicResearchResults } from "./PublicResearchResults";
 
-const topics: ReadonlyArray<readonly [PublicResearchTopic, string]> = [
+const topics: ReadonlyArray<
+  readonly [PublicResearchTopic, keyof typeof import("../lib/i18n/publicResearch").publicResearchMessages]
+> = [
   ["overview", "综合调研"],
   ["drugs", "药物"],
   ["targets", "靶点"],
@@ -27,6 +31,7 @@ export function PublicResearchPanel({
   defaultQuery?: string;
   defaultTopic?: PublicResearchTopic;
 }) {
+  useLocale();
   const inputId = useId();
   const [expanded, setExpanded] = useState(false);
   const [draft, setDraft] = useFilterDraft({ q: defaultQuery, topic: defaultTopic });
@@ -43,7 +48,7 @@ export function PublicResearchPanel({
   const search = useQuery({
     queryKey,
     queryFn: ({ signal }) => {
-      if (!executed) throw new Error("公开检索尚未执行");
+      if (!executed) throw new Error(t("公开检索尚未执行"));
       return searchPublicResearch({ q: executed.q, topic: executed.topic, limit: 10 }, signal);
     },
     enabled: Boolean(executed),
@@ -70,13 +75,14 @@ export function PublicResearchPanel({
       }}
     >
       <summary>
-        公开来源调研<span>补充本地覆盖 · 按需联网查询</span>
+        {t("公开来源调研")}
+        <span>{t("补充本地覆盖 · 按需联网查询")}</span>
       </summary>
-      <section aria-label="公开来源调研">
+      <section aria-label={t("公开来源调研")}>
         <details>
-          <summary>查看本地数据覆盖</summary>
-          {coverage.isFetching ? <Spinner label="正在读取本地覆盖" /> : null}
-          {coverage.error ? <ErrorState message="本地覆盖读取失败" /> : null}
+          <summary>{t("查看本地数据覆盖")}</summary>
+          {coverage.isFetching ? <Spinner label={t("正在读取本地覆盖")} /> : null}
+          {coverage.error ? <ErrorState message={t("本地覆盖读取失败")} /> : null}
           {coverage.data ? (
             <>
               <p>
@@ -86,11 +92,15 @@ export function PublicResearchPanel({
                       type,
                     ),
                   )
-                  .map(([type, count]) => `${entityLabels[type] ?? type} ${count}`)
+                  .map(([type, count]) => `${entityLabels()[type] ?? type} ${count}`)
                   .join(" · ")}
               </p>
               <p>{coverage.data.scope_note}</p>
-              <p>已登记公开来源：{coverage.data.public_source_names.join("、") || "未登记"}</p>
+              <p>
+                {t("已登记公开来源：{sources}", {
+                  sources: coverage.data.public_source_names.join(t("、")) || t("未登记"),
+                })}
+              </p>
             </>
           ) : null}
           <button
@@ -99,25 +109,27 @@ export function PublicResearchPanel({
             onClick={() => void coverage.refetch()}
             disabled={coverage.isFetching}
           >
-            刷新本地覆盖
+            {t("刷新本地覆盖")}
           </button>
         </details>
         <p>
-          仅点击“查询公开来源”后才发送下方关键词。不要输入患者、未公开项目或其他保密信息；联网结果与本地已核验数据分开。
+          {t(
+            "仅点击“查询公开来源”后才发送下方关键词。不要输入患者、未公开项目或其他保密信息；联网结果与本地已核验数据分开。",
+          )}
         </p>
-        <form className="intelligence-query-panel" onSubmit={submit} aria-label="公开来源检索">
+        <form className="intelligence-query-panel" onSubmit={submit} aria-label={t("公开来源检索")}>
           <div className="query-row">
-            <label htmlFor={inputId}>公开关键词</label>
+            <label htmlFor={inputId}>{t("公开关键词")}</label>
             <input
               id={inputId}
               value={draft.q}
               maxLength={120}
               onChange={(event) => setDraft({ ...draft, q: event.target.value })}
-              placeholder="英文靶点、药物、公司或研究主题"
+              placeholder={t("英文靶点、药物、公司或研究主题")}
             />
           </div>
           <div className="query-row">
-            <label htmlFor={`${inputId}-topic`}>调研范围</label>
+            <label htmlFor={`${inputId}-topic`}>{t("调研范围")}</label>
             <select
               id={`${inputId}-topic`}
               value={draft.topic}
@@ -125,7 +137,7 @@ export function PublicResearchPanel({
             >
               {topics.map(([key, label]) => (
                 <option key={key} value={key}>
-                  {label}
+                  {t(label)}
                 </option>
               ))}
             </select>
@@ -134,23 +146,23 @@ export function PublicResearchPanel({
               type="submit"
               disabled={!draft.q.trim() || draft.q.trim().length > 120 || search.isFetching}
             >
-              查询公开来源
+              {t("查询公开来源")}
             </button>
           </div>
         </form>
         {search.isFetching ? (
           <>
-            <Spinner label="正在查询公开来源" />
+            <Spinner label={t("正在查询公开来源")} />
             <button className="secondary-button" type="button" onClick={cancellation.cancel}>
-              取消等待
+              {t("取消等待")}
             </button>
           </>
         ) : null}
         {cancellation.isCancelled ? (
-          <p role="status">已取消本次等待；来源请求将在有界时限内结束，未写入本地事实。</p>
+          <p role="status">{t("已取消本次等待；来源请求将在有界时限内结束，未写入本地事实。")}</p>
         ) : null}
         {search.error ? (
-          <ErrorState message={search.error instanceof Error ? search.error.message : "公开查询失败，请明确重试"} />
+          <ErrorState message={search.error instanceof Error ? search.error.message : t("公开查询失败，请明确重试")} />
         ) : null}
         {search.data ? <PublicResearchResults response={search.data} /> : null}
       </section>
