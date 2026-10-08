@@ -1,4 +1,5 @@
 import { EmptyState, formatDate, StatusBadge } from "../../components/common";
+import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { PlatformOperationsRead } from "../../lib/generated";
 
 export function queueCount(value: unknown, key: string): number {
@@ -40,7 +41,7 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
           </div>
           <span className="cell-subtitle">快照 {formatDate(platform.generated_at, true)}</span>
         </header>
-        <div className="table-frame enterprise-table">
+        <ScrollableTableRegion className="enterprise-table" ariaLabel="平台服务状态明细">
           <table aria-label="平台服务状态">
             <thead>
               <tr>
@@ -82,7 +83,7 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       </section>
 
       <section aria-labelledby="platform-queues-title">
@@ -143,7 +144,7 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
             <p>目标来自版本化运维契约；达标结论必须由目标环境集中遥测证据给出。</p>
           </div>
         </header>
-        <div className="table-frame enterprise-table">
+        <ScrollableTableRegion className="enterprise-table" ariaLabel="平台 SLO 明细">
           <table aria-label="平台 SLO">
             <thead>
               <tr>
@@ -173,7 +174,7 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       </section>
 
       <section aria-labelledby="platform-evidence-title">
@@ -189,7 +190,7 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
           <code>{platform.migration.current_revision ?? "unknown"}</code>
           <span className="cell-subtitle">目标 {platform.migration.expected_revision ?? "unknown"}</span>
         </div>
-        <div className="table-frame enterprise-table">
+        <ScrollableTableRegion className="enterprise-table" ariaLabel="平台发布证据明细">
           <table aria-label="平台发布证据">
             <thead>
               <tr>
@@ -217,7 +218,7 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       </section>
 
       <section aria-labelledby="platform-events-title">
@@ -228,7 +229,7 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
           </div>
         </header>
         {platform.recent_events.length ? (
-          <div className="table-frame enterprise-table">
+          <ScrollableTableRegion className="enterprise-table" ariaLabel="最近平台审计事件明细">
             <table aria-label="最近平台审计事件">
               <thead>
                 <tr>
@@ -253,7 +254,7 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableTableRegion>
         ) : (
           <EmptyState title="暂无审计事件" detail="当前租户还没有可显示的平台操作记录。" />
         )}
