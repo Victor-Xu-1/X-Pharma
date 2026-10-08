@@ -240,7 +240,7 @@ export async function verifyPatentDealSubscription(
   const dealFilters = page.getByRole("form", { name: "交易筛选" });
   await expect(dealFilters.getByLabel("交易方向", { exact: true })).toHaveValue("outbound");
   await expect(dealFilters.getByLabel("参与角色", { exact: true })).toHaveValue("licensor");
-  await dealFilters.getByText("更多交易条件", { exact: true }).click();
+  await expect(dealFilters.getByLabel(/资产模态：/)).toBeVisible();
   await dealFilters.getByLabel(/资产模态：/).click();
   await expect(dealFilters.getByRole("checkbox", { name: /small molecule/ })).toBeChecked();
   await expect(dealFilters.getByRole("checkbox", { name: /antibody/ })).toBeChecked();

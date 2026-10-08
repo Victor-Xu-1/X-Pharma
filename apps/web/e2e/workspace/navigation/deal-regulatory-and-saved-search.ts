@@ -17,6 +17,9 @@ export async function verifyDealRegulatoryAndSavedSearch(
   const dealFilters = page.getByRole("form", { name: "交易筛选" });
   await expect(dealFilters.getByLabel("关键词")).toHaveValue("license");
   await dealFilters.getByLabel("交易状态").selectOption("active");
+  await expect(dealFilters.getByLabel("交易方向")).not.toBeVisible();
+  await dealFilters.getByText("参与方与关联条件", { exact: true }).click();
+  await expect(dealFilters.getByLabel("交易方向")).toBeVisible();
   await dealFilters.getByLabel("交易方向").selectOption("outbound");
   await dealFilters.getByLabel("参与机构").fill(companyName);
   await page

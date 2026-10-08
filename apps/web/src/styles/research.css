@@ -63,6 +63,7 @@
   color: var(--ds-ink-muted);
   font-weight: 400;
   font-size: var(--ds-text-xs);
+  white-space: nowrap;
 }
 .secondary-filter-grid {
   display: grid;
@@ -875,7 +876,7 @@
   color: var(--ds-ink-muted);
 }
 .deal-filter-bar {
-  grid-template-columns: minmax(280px, 1.5fr) repeat(5, minmax(128px, 0.68fr));
+  grid-template-columns: minmax(280px, 1.5fr) repeat(4, minmax(128px, 0.68fr));
 }
 .deal-party-field {
   position: relative;
@@ -1634,6 +1635,15 @@
 .query-suggestions button small {
   color: var(--ds-ink-muted);
   font-size: var(--ds-text-xs);
+}
+.deal-party-suggestions button {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+}
+.deal-party-suggestions button > span,
+.deal-party-suggestions button > small {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .suggestion-status {
   display: block;
