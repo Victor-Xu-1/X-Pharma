@@ -102,6 +102,7 @@ export function CollectionsView({
                 onOpenEntity={onOpenEntity}
                 writes={writes}
                 refreshing={detailQuery.isFetching}
+                stale={detailQuery.isError}
                 refresh={() => void detailQuery.refetch()}
                 headingRef={headingRef}
               />
@@ -125,6 +126,7 @@ function CollectionContent({
   onOpenEntity,
   writes,
   refreshing,
+  stale,
   refresh,
   headingRef,
 }: {
@@ -134,6 +136,7 @@ function CollectionContent({
   onOpenEntity: (entity: CollectionEntity) => void;
   writes: ReturnType<typeof useCollectionWrites>;
   refreshing: boolean;
+  stale: boolean;
   refresh: () => void;
   headingRef: RefObject<HTMLHeadingElement | null>;
 }) {
@@ -155,6 +158,7 @@ function CollectionContent({
           <small>{detail.description || `更新于 ${formatDate(detail.updated_at)}`}</small>
         </span>
         <div className="row-actions">
+          <CollectionExport detail={detail} changing={writes.pending} refreshing={refreshing} stale={stale} />
           <button
             className="icon-button"
             type="button"
@@ -214,7 +218,6 @@ function CollectionContent({
           )
         }
       />
-      <CollectionExport detail={detail} changing={writes.pending} />
       {detail.editable ? <CollectionHistory collectionId={detail.id} version={detail.version} /> : null}
       <ResearchMetadataDialog
         title="编辑对比列表"

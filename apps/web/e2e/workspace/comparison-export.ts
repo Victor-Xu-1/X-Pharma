@@ -119,6 +119,8 @@ export async function verifyComparisonExport({ page }: Pick<PlaywrightTestArgs &
   await page.getByRole("button", { name: "检索", exact: true }).click();
   await page.getByRole("button", { name: "加入 EGFR" }).click();
   await expect(page.getByText("UNIPROT: P00533", { exact: true })).toBeVisible();
+  await page.getByText("导出列表", { exact: true }).click();
+  await expect(page.getByRole("button", { name: "导出", exact: true })).toBeEnabled();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "导出", exact: true }).click();
   const artifact = await download;
