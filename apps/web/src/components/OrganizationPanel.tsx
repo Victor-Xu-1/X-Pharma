@@ -76,7 +76,7 @@ function MembershipPanel({ controls }: { controls: OrganizationControls }) {
       >
         <Building2 size={18} aria-hidden="true" />
         <span className="sidebar-account-copy">
-          <strong>{t("组织与账号")}</strong>
+          <strong className="sidebar-nav-label">{t("组织与账号")}</strong>
           {controls.organizationName ? (
             <small title={controls.organizationName}>{controls.organizationName}</small>
           ) : null}

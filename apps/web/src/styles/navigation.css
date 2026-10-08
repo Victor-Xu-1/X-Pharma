@@ -92,6 +92,13 @@
   height: 22px;
   stroke-width: 1.6;
 }
+.nav-button .sidebar-nav-label {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  overflow: visible;
+  text-overflow: clip;
+}
 .nav-button.active {
   font-weight: 500;
 }

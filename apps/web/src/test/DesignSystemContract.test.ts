@@ -42,6 +42,24 @@ it("bounds knowledge coverage and version tracks while their tables and history 
   expect(layout).toMatch(/\.knowledge-version-list\s*\{[^}]*overflow-x:\s*auto;/);
 });
 
+it("lets controlled sidebar labels wrap without altering raw identity summaries or collapsed visibility", () => {
+  const layout = source("../styles/navigation.css");
+  const label = ruleBody(layout, ".nav-button .sidebar-nav-label");
+  expect(label).toContain("min-width: 0;");
+  expect(label).toContain("white-space: normal;");
+  expect(label).toContain("overflow-wrap: anywhere;");
+  expect(label).toContain("text-overflow: clip;");
+  expect(layout).toMatch(/\.sidebar-account-copy small\s*\{[^}]*overflow:\s*hidden;/);
+  expect(layout).toMatch(/\.sidebar-collapsed \.nav-button span,[^}]*display:\s*none;/);
+});
+
+it("keeps internal action toolbars below the shared heading and language control", () => {
+  const toolbar = ruleBody(source("../styles/enterprise.css"), ".enterprise-toolbar");
+  expect(toolbar).toContain("margin-top: 0;");
+  expect(toolbar).toContain("min-width: 0;");
+  expect(toolbar).toContain("flex-wrap: wrap;");
+});
+
 function stylesheetSource(url: URL, parents = new Set<string>()): string {
   if (parents.has(url.href)) throw new Error(`Circular stylesheet import: ${url.href}`);
   const ancestry = new Set(parents).add(url.href);

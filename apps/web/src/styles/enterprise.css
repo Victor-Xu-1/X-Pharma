@@ -23,11 +23,13 @@
 }
 .enterprise-toolbar {
   min-height: 38px;
+  min-width: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 14px;
-  margin-top: -58px;
+  margin-top: 0;
   margin-bottom: 20px;
   font-size: 12px;
 }
@@ -326,7 +328,6 @@ fieldset.enterprise-modal-subject legend {
 
 @media (max-width: 720px) {
   .enterprise-toolbar {
-    margin-top: 0;
     justify-content: space-between;
   }
   .enterprise-metrics,

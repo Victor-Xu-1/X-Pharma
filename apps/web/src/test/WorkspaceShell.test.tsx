@@ -2,7 +2,42 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { expect, it, vi } from "vitest";
 
 import { WorkspaceShell } from "../components/WorkspaceShell";
+import { setLocale } from "../lib/i18n";
 import { PRODUCT_RELEASE } from "../lib/product";
+
+it.each(["research", "internal"] as const)(
+  "marks every controlled %s primary label for readable wrapping",
+  (workbench) => {
+    setLocale("en");
+    render(
+      <WorkspaceShell
+        user={{
+          id: "admin",
+          tenant_id: "tenant",
+          email: "admin@example.test",
+          display_name: "原始用户名字",
+          role: "admin",
+        }}
+        activeWorkbench={workbench}
+        activeView={workbench === "research" ? "overview" : "factory"}
+        onView={vi.fn()}
+        onLogout={vi.fn()}
+      >
+        workspace
+      </WorkspaceShell>,
+    );
+    const primary = screen.getByRole("navigation", { name: "Primary navigation" });
+    const buttons = within(primary).getAllByRole("button");
+    expect(buttons).toHaveLength(5);
+    for (const button of buttons) expect(button.querySelector("span")).toHaveClass("sidebar-nav-label");
+    expect(
+      within(primary).getByRole("button", {
+        name: workbench === "research" ? "Competitive intelligence" : "Environment management",
+      }),
+    ).toHaveTextContent(workbench === "research" ? "Competitive intelligence" : "Environment management");
+    if (workbench === "internal") expect(screen.getByText("原始用户名字")).not.toHaveClass("sidebar-nav-label");
+  },
+);
 
 it.each(["research", "internal"] as const)(
   "keeps the %s account actions together without an invented online status",

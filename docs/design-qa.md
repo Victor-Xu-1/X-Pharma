@@ -9,6 +9,32 @@ current-deployment evidence merely because the product version advances.
 
 ### 2026-10-09: target dossier language continuity (candidate, not deployed)
 
+### 2026-10-09: readable bilingual navigation and unobscured language control
+
+Real rendering exposed English primary/organization labels clipped by nowrap and
+ellipsis. Only controlled action labels now wrap; raw identity summaries, the224px
+desktop sidebar, original five-workflow structure and collapsed visibility remain.
+Two behavior-level ownership regressions and a native text-rectangle overflow
+first fail, then pass. Existing62 focused shell/locale/navigation/design and exact
+enterprise/environment presentation checks pass, with strict app/E2E types and
+unchanged build limits. Eleven pre-existing unrelated enterprise CSS specificity
+warnings remain; no warning suppression or unrelated mass-reordering is performed.
+
+Initial native research states pass, then the internal environment scan reveals
+the language select obscured by the toolbar (WCAG target-size). The sole shared
+enterprise-toolbar owner still used-58px top margin; remove that collision and
+its redundant mobile reset, allow normal-flow wrapping. The genuine source
+contract fails before the fix. Twenty actual read-only Chrome155 captures at1440
+and390 now pass navigation, language-control hit testing, reflow and WCAG-tag
+checks, including both toolbar consumers and desktop/mobile opening states.
+These captures do not certify environment readiness or translated internal bodies.
+No installation, administrative or scientific writes occur.
+
+The first internal selector used the navigation label instead of the source-owned
+page title; it was corrected to the exact canonical title, not broadened. Native
+launch failures before process startup are retained separately from test results.
+Normal PR/CI/main-version/deployment closure and whole-site quality remain pending.
+
 The target shell, overview and relationship/translational-evidence panels use
 the same English-first locale owner. Controlled classification, phases, counts,
 coverage, options and feedback are translated; sequences, original study text,

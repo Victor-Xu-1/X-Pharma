@@ -71,7 +71,7 @@ export function WorkspaceNavigation({
             title={collapsed ? t(label) : undefined}
           >
             <Icon size={18} aria-hidden="true" />
-            <span>{t(label)}</span>
+            <span className="sidebar-nav-label">{t(label)}</span>
           </button>
         );
       });
