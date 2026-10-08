@@ -70,7 +70,16 @@ the automation's own metadata commit do not count as PRs.
 The automation uses the existing uv/OpenAPI/Web-client/project-overview generators
 to synchronize installed metadata, `uv.lock`, Web package metadata and generated
 mirrors. It rejects dependency-resolution or API-schema changes and writes only
-the explicit version-file allowlist. Its normal fast-forward push never forces
+the explicit version-file allowlist.
+
+Cold CI explicitly obtains registry metadata when `uv lock` refreshes the root
+package version: `uv sync --locked` alone caches install artifacts, not a complete
+offline resolver index. The following semantic check still rejects every
+dependency-resolution change; subsequent installs remain locked, and Web
+importer refresh remains frozen/offline. This publishing workflow needs GitHub
+network access and does not weaken offline application/runtime packaging.
+
+Its normal fast-forward push never forces
 or rewrites another merge. Permissions are limited to repository contents,
 read-only PR metadata and dispatching the existing CI workflow; no secret other
 than the ephemeral `GITHUB_TOKEN` is required. It never creates a version PR or

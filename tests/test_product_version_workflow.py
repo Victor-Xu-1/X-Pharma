@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -8,7 +9,7 @@ from typing import Any
 import pytest
 import yaml
 
-from scripts.release import version_workflow
+from scripts.release import version_generation, version_workflow
 from scripts.release.version_generation import VERSION_PATHS, command, unchanged_dependencies
 from scripts.release.version_github import GitHubRepository
 from scripts.release.version_manifest import read_state
@@ -227,6 +228,43 @@ def test_dependency_versions_are_not_product_versions() -> None:
     unchanged_dependencies(before, after)
     with pytest.raises(ValueError, match="dependency"):
         unchanged_dependencies(before, {**after, "dependency-resolution": "changed"})
+
+
+def test_cold_runner_requests_resolver_metadata_without_disabling_lock_comparison(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "uv.lock").write_text('[metadata]\nversion = "fixture"\n')
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs/openapi.json").write_text('{"info":{"version":"0.1.0"}}')
+    operations: list[tuple[Path, Sequence[str]]] = []
+
+    class ResolverObserved(Exception):
+        pass
+
+    def observe(root: Path, args: Sequence[str], *, timeout: int = 120) -> str:
+        operations.append((root, args))
+        raise ResolverObserved
+
+    monkeypatch.setattr(version_generation, "command", observe)
+    with pytest.raises(ResolverObserved):
+        version_generation.generate_mirrors(tmp_path)
+    assert operations == [(tmp_path, ["uv", "lock"])]
+
+
+def test_subprocess_failure_names_the_fixed_stage_without_printing_sensitive_stderr(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fail(_root: Path, _github: GitHubRepository) -> dict[str, object]:
+        raise subprocess.CalledProcessError(7, ["uv", "lock"], stderr="test-confidential-value")
+
+    monkeypatch.setattr(sys, "argv", ["version-runner", "--repository", "example/X-Pharma"])
+    monkeypatch.setattr(version_workflow, "reconcile", fail)
+    with pytest.raises(SystemExit) as error:
+        version_workflow.main()
+    assert error.value.code == 1
+    diagnostic = capsys.readouterr().err
+    assert "uv lock (exit 7)" in diagnostic
+    assert "test-confidential-value" not in diagnostic
 
 
 def test_version_workflow_is_trusted_main_only_and_preserves_six_original_gates() -> None:
