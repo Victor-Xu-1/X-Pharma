@@ -383,6 +383,10 @@ it("builds a version-governed comparison set and downloads a bounded standard ex
   await waitFor(() => expect(screen.getAllByText("EGFR landscape")).toHaveLength(2));
   expect(screen.queryByText("工作台导出策略")).not.toBeInTheDocument();
   expect(screen.queryByText("租户导出策略")).not.toBeInTheDocument();
+  const exportMenu = screen.getByText("导出列表", { selector: "summary" }).closest("details");
+  if (!exportMenu) throw new Error("Export control missing");
+  exportMenu.open = true;
+  fireEvent(exportMenu, new Event("toggle"));
   expect(await screen.findByRole("checkbox", { name: "记录编号" })).toBeDisabled();
   expect(screen.queryByRole("checkbox", { name: "审核状态" })).not.toBeInTheDocument();
 
