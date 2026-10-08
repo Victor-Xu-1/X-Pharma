@@ -1,5 +1,30 @@
 # Visual baseline reviews
 
+## English-first bilingual interface: three affected references
+
+PR57 head `ae3908be0d3cef2b704636c6354c27b577638034`, exact CI
+`37774256194`, produced 133 passing browser cases and 31 failures. Twenty-eight
+were the seven existing Chinese, browser-fixture scenarios across four viewports
+that had not explicitly selected Chinese; their original assertions remain intact,
+and 14 focused desktop/mobile consumers pass after ordinary UI locale selection.
+The eight new English-first/persistence cases passed in that run.
+
+The other three failures were visual comparisons: the mobile390 full workbench,
+desktop1920 trial outcomes and tablet1024 deal rights. Their real Chrome155.0.8059.39
+actual/diff images were individually reviewed from Actions artifact11551458204.
+The new language control changes the workbench heading geometry; section content,
+all controlled values, full fields and masking remain present, with crop-position
+text rasterization differences in the two dossier sections. Only those three
+repository-owned controlled reference PNGs were updated from the exact captures.
+The previous PNGs, manifest and browser binding are retained in the maintainer's
+E-drive evidence. The other17 PNG hashes are unchanged; no claim of fresh captures
+for those images. The existing manifest generator recomputes registration and the
+same reviewed Chrome artifact consumes its new digest; browser package/executable,
+fonts, scenarios, performance budgets and0.001 pixel tolerance are unchanged.
+
+This review does not establish a passing rerun, MCP completion, actual deployment,
+scientific acceptance or full frontend quality closure. Those gates remain separate.
+
 Current software versions are owned by [`pyproject.toml`](../pyproject.toml)
 under [the PR-merge policy](../CONTRIBUTING.md#product-version-counter). Dated
 reviews retain their captured version, commit and image hashes; a later numeric

@@ -1,5 +1,6 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs } from "@playwright/test";
 import { expect } from "@playwright/test";
+import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyComparisonExport({ page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">) {
   const setId = "22222222-2222-4222-8222-222222222222";
@@ -112,6 +113,7 @@ export async function verifyComparisonExport({ page }: Pick<PlaywrightTestArgs &
   });
 
   await page.goto("/?view=collections");
+  await selectInterfaceLanguage(page, "zh-CN");
   await expect(page.getByRole("heading", { name: "对比列表" })).toBeVisible();
   await expect(page.getByText("工作台导出策略", { exact: true })).toHaveCount(0);
   await expect(page.getByText("租户导出策略", { exact: true })).toHaveCount(0);

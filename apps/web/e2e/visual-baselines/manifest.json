@@ -23,7 +23,7 @@
     },
     "research-deal-rights-tablet-1024.png": {
       "capture": "dossier-section",
-      "sha256": "ba4d407cc0a651100a6363ed48cfa1abdcca6d873a0c17e392e0d446210a6656",
+      "sha256": "3174c4826946a705b5fc9a052ea2f653883e9540042a8f9f15fb49be4853484e",
       "state": "controlled-deal-rights",
       "viewport": "1024x768"
     },
@@ -83,7 +83,7 @@
     },
     "research-trial-outcomes-desktop-1920.png": {
       "capture": "dossier-section",
-      "sha256": "8b8eaa2ae223dc015d8ddb4db109537ed38de6f6d48981acc556a70db7d855ab",
+      "sha256": "20fe84f3e845e88b3bd990537f5e4e3fab11e869c8452dad0127ea573be56715",
       "state": "controlled-trial-outcomes",
       "viewport": "1920x1080"
     },
@@ -113,7 +113,7 @@
     },
     "research-workbench-mobile-390.png": {
       "capture": "full-page",
-      "sha256": "aef8c91b9670e5bb72fb88c410ba1cb2d2ccad87739a5e1a02e7b95cdf0e80c5",
+      "sha256": "0b4b1aec8088232f8bb4dc6911624762cbb63bdf0083d19e09094eec43cd40a7",
       "state": "controlled-no-result",
       "viewport": "390x844"
     },

@@ -1,6 +1,7 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs } from "@playwright/test";
 import { expect } from "@playwright/test";
 import type { EnterpriseApiKeyCatalogRead } from "../../src/lib/generated";
+import { selectInterfaceLanguage } from "../interface-language";
 import { openNavigation } from "./helpers";
 
 export async function verifyEnterpriseAdministration({
@@ -277,6 +278,7 @@ export async function verifyEnterpriseAdministration({
   });
 
   await page.goto("/workspace/internal?view=enterprise");
+  await selectInterfaceLanguage(page, "zh-CN");
   expect(await page.evaluate(() => document.documentElement.dataset.workbench)).toBe("internal");
   await expect(page.getByRole("heading", { name: "企业账户与审计" })).toBeVisible();
   await expect(page.getByText("Browser Pharma Tenant", { exact: true })).toBeVisible();
