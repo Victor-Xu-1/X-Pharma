@@ -1,3 +1,4 @@
+import { t, useLocale } from "../lib/i18n";
 import { researchWorkflowForView } from "../lib/workspace/researchNavigation";
 import type { ViewKey } from "../lib/workspaceRouting";
 
@@ -8,12 +9,16 @@ export function ResearchViewNavigation({
   activeView: ViewKey;
   onView: (view: ViewKey) => void;
 }) {
+  useLocale();
   const workflow = researchWorkflowForView(activeView);
   // Dossiers already own their section tabs and return control; do not stack another navigation row there.
   if (!workflow || workflow.destinations.length < 2 || !workflow.destinations.some((item) => item.view === activeView))
     return null;
   return (
-    <nav className="view-tabs research-view-navigation" aria-label={`${workflow.label}分类`}>
+    <nav
+      className="view-tabs research-view-navigation"
+      aria-label={t("{workflow}分类", { workflow: t(workflow.label) })}
+    >
       {workflow.destinations.map(({ view, label }) => (
         <button
           key={view}
@@ -24,7 +29,7 @@ export function ResearchViewNavigation({
             if (view !== activeView) onView(view);
           }}
         >
-          {label}
+          {t(label)}
         </button>
       ))}
     </nav>

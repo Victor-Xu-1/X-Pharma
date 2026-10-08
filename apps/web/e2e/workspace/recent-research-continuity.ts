@@ -1,6 +1,7 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs, TestInfo } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
+import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyRecentResearchContinuity(
   { page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">,
@@ -13,6 +14,7 @@ export async function verifyRecentResearchContinuity(
   if (!credentials || !targetId || !fixtureKey) return;
   const name = `Browser pipeline target ${fixtureKey}`;
   await page.goto("/");
+  await selectInterfaceLanguage(page, "zh-CN");
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();

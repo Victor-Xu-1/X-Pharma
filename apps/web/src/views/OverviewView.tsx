@@ -3,6 +3,7 @@ import { type FormEvent, useState } from "react";
 import { UserAvatar } from "../components/UserAvatar";
 import type { AuthMode } from "../lib/contracts/session";
 import { changeCurrentUserPassword, updateCurrentUser } from "../lib/contracts/session";
+import { t, uiFeedback, useLocale } from "../lib/i18n";
 import type { User } from "../lib/types";
 
 type ProfileDraft = {
@@ -36,6 +37,7 @@ export function OverviewView({
   onLogout: () => void;
   onUserUpdated?: (user: User) => void;
 }) {
+  useLocale();
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() => profileDraftFromUser(user));
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileStatus, setProfileStatus] = useState<{ kind: "success" | "error"; text: string } | null>(null);
@@ -98,7 +100,7 @@ export function OverviewView({
       <section className="user-center-identity-card" aria-labelledby="user-center-identity-title">
         <UserAvatar user={user} className="user-center-identity-avatar" />
         <div className="user-center-identity-copy">
-          <p className="user-center-eyebrow">账户信息</p>
+          <p className="user-center-eyebrow">{t("账户信息")}</p>
           <h2 id="user-center-identity-title">{user.display_name}</h2>
           <span>
             <Mail size={15} aria-hidden="true" />
@@ -107,30 +109,32 @@ export function OverviewView({
         </div>
         <span className="user-center-status">
           <CheckCircle2 size={16} aria-hidden="true" />
-          账户正常
+          {t("账户正常")}
         </span>
       </section>
       {authMode === "local" ? (
         <p className="field-help">
-          本地账号：邮箱仅作为登录标识，尚未验证邮箱归属；忘记密码请联系本地管理员。正式部署需要企业身份与恢复策略。
+          {t(
+            "本地账号：邮箱仅作为登录标识，尚未验证邮箱归属；忘记密码请联系本地管理员。正式部署需要企业身份与恢复策略。",
+          )}
         </p>
       ) : authMode === "oidc" ? (
-        <p className="field-help">企业账号：登录、邮箱身份、密码及恢复由企业身份服务管理。</p>
+        <p className="field-help">{t("企业账号：登录、邮箱身份、密码及恢复由企业身份服务管理。")}</p>
       ) : null}
 
       <div className="user-center-settings-grid">
         <section className="user-center-panel" aria-labelledby="user-center-profile-title">
           <header className="user-center-panel-header">
             <div>
-              <h2 id="user-center-profile-title">个人资料</h2>
-              <p>更新你的头像和联系方式</p>
+              <h2 id="user-center-profile-title">{t("个人资料")}</h2>
+              <p>{t("更新你的头像和联系方式")}</p>
             </div>
           </header>
           <form className="user-center-form" onSubmit={saveProfile}>
             <div className="user-center-avatar-editor">
               <UserAvatar user={draftUser} className="user-center-avatar" />
               <label className="user-center-field">
-                <span>头像图片地址</span>
+                <span>{t("头像图片地址")}</span>
                 <input
                   type="url"
                   value={profileDraft.avatarUrl}
@@ -141,7 +145,7 @@ export function OverviewView({
               </label>
             </div>
             <label className="user-center-field">
-              <span>用户名</span>
+              <span>{t("用户名")}</span>
               <input
                 type="text"
                 value={profileDraft.displayName}
@@ -156,7 +160,7 @@ export function OverviewView({
               />
             </label>
             <label className="user-center-field">
-              <span>邮箱</span>
+              <span>{t("邮箱")}</span>
               <input
                 type="email"
                 readOnly={authMode === "oidc"}
@@ -167,7 +171,7 @@ export function OverviewView({
               />
             </label>
             <label className="user-center-field">
-              <span>电话</span>
+              <span>{t("电话")}</span>
               <input
                 type="tel"
                 value={profileDraft.phone}
@@ -178,12 +182,12 @@ export function OverviewView({
             </label>
             {profileStatus ? (
               <p className={`user-center-form-status ${profileStatus.kind}`} role="status">
-                {profileStatus.text}
+                {uiFeedback(profileStatus.text)}
               </p>
             ) : null}
             <button className="primary-button" type="submit" disabled={profileSaving}>
               <Save size={16} aria-hidden="true" />
-              {profileSaving ? "保存中…" : "保存个人资料"}
+              {profileSaving ? t("保存中…") : t("保存个人资料")}
             </button>
           </form>
         </section>
@@ -191,17 +195,17 @@ export function OverviewView({
         <section className="user-center-panel" aria-labelledby="user-center-security-title">
           <header className="user-center-panel-header">
             <div>
-              <h2 id="user-center-security-title">登录安全</h2>
-              <p>{authMode === "oidc" ? "密码与账号恢复请前往企业身份服务" : "修改密码后，其他登录会话会退出"}</p>
+              <h2 id="user-center-security-title">{t("登录安全")}</h2>
+              <p>{authMode === "oidc" ? t("密码与账号恢复请前往企业身份服务") : t("修改密码后，其他登录会话会退出")}</p>
             </div>
             <KeyRound size={20} aria-hidden="true" />
           </header>
           {authMode === "oidc" ? (
-            <p>本软件不会接收或修改企业密码，也不会提供本地密码登录回退。</p>
+            <p>{t("本软件不会接收或修改企业密码，也不会提供本地密码登录回退。")}</p>
           ) : (
             <form className="user-center-form" onSubmit={savePassword}>
               <label className="user-center-field">
-                <span>当前密码</span>
+                <span>{t("当前密码")}</span>
                 <input
                   type="password"
                   value={passwordDraft.current}
@@ -213,7 +217,7 @@ export function OverviewView({
                 />
               </label>
               <label className="user-center-field">
-                <span>新密码</span>
+                <span>{t("新密码")}</span>
                 <input
                   type="password"
                   value={passwordDraft.next}
@@ -225,7 +229,7 @@ export function OverviewView({
                 />
               </label>
               <label className="user-center-field">
-                <span>确认新密码</span>
+                <span>{t("确认新密码")}</span>
                 <input
                   type="password"
                   value={passwordDraft.confirm}
@@ -238,12 +242,12 @@ export function OverviewView({
               </label>
               {passwordStatus ? (
                 <p className={`user-center-form-status ${passwordStatus.kind}`} role="status">
-                  {passwordStatus.text}
+                  {uiFeedback(passwordStatus.text)}
                 </p>
               ) : null}
               <button className="secondary-button" type="submit" disabled={passwordSaving}>
                 <KeyRound size={16} aria-hidden="true" />
-                {passwordSaving ? "修改中…" : "修改密码"}
+                {passwordSaving ? t("修改中…") : t("修改密码")}
               </button>
             </form>
           )}
@@ -252,12 +256,12 @@ export function OverviewView({
 
       <section className="user-center-account-actions" aria-labelledby="user-center-account-actions-title">
         <div>
-          <h2 id="user-center-account-actions-title">账户操作</h2>
-          <p>退出当前账号后，需要重新登录才能继续使用工作台。</p>
+          <h2 id="user-center-account-actions-title">{t("账户操作")}</h2>
+          <p>{t("退出当前账号后，需要重新登录才能继续使用工作台。")}</p>
         </div>
         <button className="secondary-button" type="button" onClick={onLogout}>
           <LogOut size={16} aria-hidden="true" />
-          退出当前账号
+          {t("退出当前账号")}
         </button>
       </section>
     </div>

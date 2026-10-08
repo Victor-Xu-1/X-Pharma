@@ -1,8 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
-
 import { expect, type Page, test } from "@playwright/test";
-
 import { resolveBrowserCredentials } from "../src/lib/browserAcceptanceCredentials";
+import { selectInterfaceLanguage } from "./interface-language";
 import { navigateResearchView } from "./workspace/helpers";
 
 // These flows display a one-time secret; never retain a trace or screenshot of it.
@@ -71,6 +70,7 @@ test("[account-registration][human-session] independently registers researchers 
   const password = randomBytes(32).toString("base64url");
   const researcher = `account-browser-research-${randomUUID()}@example.test`;
   await page.goto("/workspace/research");
+  await selectInterfaceLanguage(page, "zh-CN");
   const independent = await register(page, researcher, password);
   expect(independent.role).toBe("viewer");
   await login(page, researcher, password);
@@ -118,6 +118,7 @@ test("[multi-organization][organization-isolation][session-context] joins an exi
   const password = randomBytes(32).toString("base64url");
   const email = `account-browser-member-${randomUUID()}@example.test`;
   await page.goto("/workspace/research");
+  await selectInterfaceLanguage(page, "zh-CN");
   await register(page, email, password);
   await login(page, email, password);
   const original = await (await page.request.get("/api/v1/auth/me")).json();

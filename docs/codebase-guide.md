@@ -15,6 +15,7 @@
 | 知识阅读层 | `apps/web/src/views/knowledge/` | 安全的正文与引用、结构化字段渐进披露、不可变版本差异；保留完整公开原文，不取得事实发布或科学推断权威 |
 | 商业与协作 | `commercial/`、`comparison/`、`monitoring/` | 账本、权益、导出和团队工作流 |
 | 前端 | `apps/web/src/workspaces/research/`、`lib/contracts`、`components`、`views` | 导航状态、分域路由、传输和独立功能面板 |
+| 界面语言 | `apps/web/src/lib/i18n/`、`LanguageSwitcher`、`LocaleEffects` | 中文/英文目录、只含语言的浏览器偏好、同源同步和当前 locale 格式化；不拥有业务数据、API 枚举或查询状态 |
 | 部署与工具 | `deploy/`、`services/`、`scripts/release/`、`scripts/`、`runbooks/` | 安装、隔离组件、发布证据、门禁、恢复与运维 |
 
 入口、领域、持久化和适配器各自负责一层。新增规则进入对应领域模块，不能在 UI、路由和 MCP 重复实现。数据流见 [architecture.md](architecture.md)。
@@ -100,6 +101,12 @@ ClinicalTrials.gov、NextPharma 与 ChEMBL 的确定性处理分别归属 `adapt
 逐次参考审阅记录见 `visual-baseline-reviews.md`；清单只记录资产身份，不把历史生成日期当作所有资产刚刚重新截图的证据。
 
 浏览器查找和版本输出由 `scripts/lib/browser_runtime.sh` 单独拥有，普通运行在 Docker/夹具之前调用。CI 安装客户端后先运行同一 `scripts.browser_visual_profile`，使用参考清单的同一安全元数据读取器；Chrome 小版本漂移给出明确错误，不自动改参考、不降级浏览器、不放宽容差。Edge 对比、显式 Chrome 审阅和显式中断夹具恢复保留原各自边界。
+
+CI 的 `ci_browser_apt.py` 仅在明确的 GitHub Linux/Ubuntu24.04 临时 runner 中，
+把固定 mirror list 的 Azure Ubuntu 传输地址改为 Ubuntu 官方 HTTPS archive。
+APT 仍验证相同仓库元数据与包校验和，固定 Noto 包版本、真实字体探针、Chrome
+版本和既有测试/时限均保留。拒绝本机调用、系统漂移、符号链接和未知镜像
+配置；不修改工作站 WSL、字体或项目运行服务。实际下载耗时由当次 CI 证明。
 
 原 320/720/360 重排路径及两个共享检查分别归属 `e2e/accessibility/reflow-keyboard.ts` 和 `reflow-support.ts`，正式注册与定向复现调用同一实现，旧内联已移除。独立视觉 worker 曾在原正式十项平板组合中通过，但精确部署后又为 9/10，因此已撤销，不保留无效第二套运行环境。浏览器、context、page、设备选项、trace 和 teardown 仍使用原 Playwright 实现；场景发现仍为原 140 项。布局的两项单元回归先失败、改动后表格八项通过，另有十二项工程守卫及严格类型通过；这些结果不宣称 Chromium 内部机理、全站或后续 MCP 验收，最终结论须对应新提交的真实浏览器和自动 CI。
 

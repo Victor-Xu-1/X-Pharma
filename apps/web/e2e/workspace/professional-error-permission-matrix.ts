@@ -1,6 +1,7 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs, TestInfo } from "@playwright/test";
 import { expect, type Locator, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
+import { selectInterfaceLanguage } from "../interface-language";
 import { verifyProfessionalErrorPermissionLifecycle } from "./helpers";
 
 export async function verifyProfessionalErrorPermissionMatrix(
@@ -20,6 +21,7 @@ export async function verifyProfessionalErrorPermissionMatrix(
   if (!credentials || !fixtureKeyBase || !pipelineTargetId || !regulatorySubjectId || !epidemiologyDiseaseId) return;
 
   await page.goto("/");
+  await selectInterfaceLanguage(page, "zh-CN");
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();

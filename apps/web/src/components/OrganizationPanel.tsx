@@ -2,19 +2,21 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2 } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { createPortal } from "react-dom";
-
 import { joinOrganization, loadOrganizations, organizationKeys } from "../lib/contracts/organizations";
+import { t, uiFeedback, useLocale } from "../lib/i18n";
 import { useModalFocus } from "../lib/useModalFocus";
 import { EmptyState, ErrorState, Spinner } from "./common";
 import { type OrganizationControls, useOrganizationControls } from "./OrganizationContext";
 import "./OrganizationPanel.css";
 
 export function OrganizationPanel() {
+  useLocale();
   const controls = useOrganizationControls();
   return controls ? <MembershipPanel controls={controls} /> : null;
 }
 
 function MembershipPanel({ controls }: { controls: OrganizationControls }) {
+  useLocale();
   const client = useQueryClient();
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState("");
@@ -69,12 +71,12 @@ function MembershipPanel({ controls }: { controls: OrganizationControls }) {
         type="button"
         className="nav-button"
         onClick={() => setOpen(true)}
-        aria-label="组织与账号"
-        title="组织与账号"
+        aria-label={t("组织与账号")}
+        title={t("组织与账号")}
       >
         <Building2 size={18} aria-hidden="true" />
         <span className="sidebar-account-copy">
-          <strong>组织与账号</strong>
+          <strong>{t("组织与账号")}</strong>
           {controls.organizationName ? (
             <small title={controls.organizationName}>{controls.organizationName}</small>
           ) : null}
@@ -92,16 +94,16 @@ function MembershipPanel({ controls }: { controls: OrganizationControls }) {
                 tabIndex={-1}
               >
                 <header className="modal-header">
-                  <h2 id="organization-title">组织与账号</h2>
+                  <h2 id="organization-title">{t("组织与账号")}</h2>
                   <button type="button" className="secondary-button" onClick={close}>
-                    关闭
+                    {t("关闭")}
                   </button>
                 </header>
-                <p>每次会话只访问一个组织。切换不会合并或转移研究、数据、授权与历史记录。</p>
+                <p>{t("每次会话只访问一个组织。切换不会合并或转移研究、数据、授权与历史记录。")}</p>
                 {organizations.isPending ? (
-                  <Spinner label="正在读取组织成员资格" />
+                  <Spinner label={t("正在读取组织成员资格")} />
                 ) : organizations.error ? (
-                  <ErrorState message="组织成员资格读取失败" retry={() => void organizations.refetch()} />
+                  <ErrorState message={t("组织成员资格读取失败")} retry={() => void organizations.refetch()} />
                 ) : organizations.data?.length ? (
                   <ul className="permission-list">
                     {organizations.data.map((organization) => (
@@ -109,7 +111,7 @@ function MembershipPanel({ controls }: { controls: OrganizationControls }) {
                         <strong>{organization.name}</strong>
                         <span>
                           {organization.role} ·{" "}
-                          {organization.selected ? "当前组织" : organization.active ? "可切换" : "已停用"}
+                          {organization.selected ? t("当前组织") : organization.active ? t("可切换") : t("已停用")}
                         </span>
                         <button
                           type="button"
@@ -117,23 +119,23 @@ function MembershipPanel({ controls }: { controls: OrganizationControls }) {
                           disabled={!organization.active || organization.selected || switching || join.isPending}
                           onClick={() => void selectOrganization(organization.tenant_id)}
                         >
-                          切换到 {organization.name}
+                          {t("切换到 {organization}", { organization: organization.name })}
                         </button>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <EmptyState title="没有组织成员资格" detail="请联系组织管理员获取邀请码。" />
+                  <EmptyState title={t("没有组织成员资格")} detail={t("请联系组织管理员获取邀请码。")} />
                 )}
                 {switchError ? (
                   <p role="alert" className="form-error">
-                    {switchError}
+                    {uiFeedback(switchError)}
                   </p>
                 ) : null}
                 <form className="modal-form" onSubmit={submit}>
-                  <h3>接受组织邀请</h3>
+                  <h3>{t("接受组织邀请")}</h3>
                   <label>
-                    <span>管理员邀请码</span>
+                    <span>{t("管理员邀请码")}</span>
                     <input
                       type="password"
                       value={code}
@@ -151,20 +153,20 @@ function MembershipPanel({ controls }: { controls: OrganizationControls }) {
                       onChange={(event) => setConfirmed(event.target.checked)}
                       required
                     />
-                    <span>我确认加入邀请的组织，原组织的数据不会共享。</span>
+                    <span>{t("我确认加入邀请的组织，原组织的数据不会共享。")}</span>
                   </label>
                   {join.error ? (
                     <p role="alert" className="form-error">
-                      {join.error instanceof Error ? join.error.message : "邀请接受失败，请重试"}
+                      {join.error instanceof Error ? join.error.message : t("邀请接受失败，请重试")}
                     </p>
                   ) : null}
-                  {join.isSuccess ? <p role="status">已加入组织，请从上方选择切换。</p> : null}
+                  {join.isSuccess ? <p role="status">{t("已加入组织，请从上方选择切换。")}</p> : null}
                   <button
                     type="submit"
                     className="primary-button"
                     disabled={!code.trim() || !confirmed || join.isPending || switching}
                   >
-                    {join.isPending ? "接受中…" : "确认加入组织"}
+                    {join.isPending ? t("接受中…") : t("确认加入组织")}
                   </button>
                 </form>
               </div>

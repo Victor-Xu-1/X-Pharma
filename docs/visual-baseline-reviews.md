@@ -1,5 +1,73 @@
 # Visual baseline reviews
 
+Current product version is owned by [pyproject.toml](../pyproject.toml), not by
+these dated captures. Each review retains its original version, revision and
+image hashes; a later numeric increment does not recapture or recertify it.
+
+## English-first bilingual interface: three affected references
+
+Exact follow-upfa2bf3092c0413a582419ccc67914276c04f01be/run37796732331
+completed163 passing cases and one mobile390 deal-rights crop difference566pixels.
+The old/actual/diff pair from11561037370 was inspected: rights type/territory,
+controlled masks, provenance absence and layout are unchanged. Only this one
+native controlled PNG is adopted and its predecessor/manifest/browser binding
+retained on E; the other19 hashes are unchanged. No tolerance/font/data/mask change.
+
+The same navigation flow stopped at its first visual difference, so successive
+runs exposed later crops serially. Its five existing screenshot assertions now
+collect differences with Playwright soft assertions: a difference still makes
+the test/run fail and emits its original artifacts, while later visual checks
+are reached. A bounded isolated two-screenshot harness recorded both failures,
+reached the following check and exited1. Functional, authorization, natural-row/
+column geometry, Web Vitals, masks and0.001 thresholds stay hard and unchanged;
+there is no failure waiver or broader manual scenario run. Exact-head required
+CI must still pass before merge or deployment.
+
+Exact follow-up `59298c0fe833b1e1017898f1d0ed3fa29c5d61dd`, run37788816529,
+again completed163 passing cases. Its sole failure was the mobile390 controlled
+trial-outcomes crop (2133 different pixels). Actual/diff artifact11557507705 and
+the old image were individually inspected: source result values, bounds,
+denominator, report identity and rights text are unchanged, with text-rendering
+differences rather than changed panels. Only that one PNG is adopted; other19
+hashes remain unchanged, old image/manifest/binding retained on E. Browser,
+fonts, masks, geometry assertions, budgets and0.001 tolerance are unchanged.
+This review is not a passing run or deployment receipt.
+
+Follow-up exact head `d1ddf0d57668c3725df7eaafdbe3e4e081f22f7c`, run
+`37783605092`: 163 browser cases passed; the only remaining failure was the
+mobile390 dense-results table-shell comparison, with 545 different pixels.
+Its actual/diff pair from artifact11554768306 was inspected alongside the old
+reference. Differences are confined to the toolbar text rasterization, not
+the table geometry, data, masks or controls. Only this one controlled PNG is
+adopted from that capture; the other19 hashes remain unchanged. The old PNG,
+manifest and browser binding are retained on E. The canonical generator updates
+the manifest and the unchanged Chrome artifact is rebound to its digest; no
+scenario, font, browser binary, performance budget or0.001 tolerance changes.
+That failed run remains failed; a new exact-head full gate must pass before merge.
+
+PR57 head `ae3908be0d3cef2b704636c6354c27b577638034`, exact CI
+`37774256194`, produced 133 passing browser cases and 31 failures. Twenty-eight
+were the seven existing Chinese, browser-fixture scenarios across four viewports
+that had not explicitly selected Chinese; their original assertions remain intact,
+and 14 focused desktop/mobile consumers pass after ordinary UI locale selection.
+The eight new English-first/persistence cases passed in that run.
+
+The other three failures were visual comparisons: the mobile390 full workbench,
+desktop1920 trial outcomes and tablet1024 deal rights. Their real Chrome155.0.8059.39
+actual/diff images were individually reviewed from Actions artifact11551458204.
+The new language control changes the workbench heading geometry; section content,
+all controlled values, full fields and masking remain present, with crop-position
+text rasterization differences in the two dossier sections. Only those three
+repository-owned controlled reference PNGs were updated from the exact captures.
+The previous PNGs, manifest and browser binding are retained in the maintainer's
+E-drive evidence. The other17 PNG hashes are unchanged; no claim of fresh captures
+for those images. The existing manifest generator recomputes registration and the
+same reviewed Chrome artifact consumes its new digest; browser package/executable,
+fonts, scenarios, performance budgets and0.001 pixel tolerance are unchanged.
+
+This review does not establish a passing rerun, MCP completion, actual deployment,
+scientific acceptance or full frontend quality closure. Those gates remain separate.
+
 Current software versions are owned by [`pyproject.toml`](../pyproject.toml)
 under [the PR-merge policy](../CONTRIBUTING.md#product-version-counter). Dated
 reviews retain their captured version, commit and image hashes; a later numeric

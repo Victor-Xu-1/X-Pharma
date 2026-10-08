@@ -249,6 +249,7 @@ jobs:
         run: |
           uv sync --locked --dev
           pnpm --dir apps/web install --frozen-lockfile
+          sudo --preserve-env=GITHUB_ACTIONS,RUNNER_OS python3 scripts/ci_browser_apt.py
           pnpm --dir apps/web exec playwright install-deps chrome
           chrome_args=(--reviewed)
           if [[ "$VISUAL_PROFILE_REVIEW" == "true" ]]; then chrome_args=(); fi

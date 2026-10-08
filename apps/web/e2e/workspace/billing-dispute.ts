@@ -1,5 +1,6 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs } from "@playwright/test";
 import { expect } from "@playwright/test";
+import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyBillingDispute({ page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">) {
   let disputeCreated = false;
@@ -94,6 +95,7 @@ export async function verifyBillingDispute({ page }: Pick<PlaywrightTestArgs & P
   });
 
   await page.goto("/");
+  await selectInterfaceLanguage(page, "zh-CN");
   await page.goto("/workspace/internal?view=commercial");
   await expect(page.getByRole("heading", { name: "Agent 商业运营" })).toBeVisible();
   await page.getByRole("tab", { name: "账单投递" }).click();

@@ -1,9 +1,9 @@
 import { type QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-
 import { ApiError } from "../lib/api";
 import { switchOrganization as switchOrganizationRequest } from "../lib/contracts/organizations";
 import { type AuthMode, loadSession, logout, type SessionSnapshot, sessionKeys } from "../lib/contracts/session";
+import { t, uiFeedback, useLocale } from "../lib/i18n";
 import {
   hasPendingSessionWrites,
   setOrganizationSession,
@@ -12,6 +12,7 @@ import {
 import type { User } from "../lib/types";
 import { type WorkbenchKey, workbenchPath } from "../lib/workspaceRouting";
 import { ErrorState, Spinner } from "./common";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { LoginScreen } from "./LoginScreen";
 import { OrganizationContext } from "./OrganizationContext";
 import { SessionIdentityContext } from "./SessionIdentityContext";
@@ -33,6 +34,7 @@ export function SessionBoundary({
   workbench: WorkbenchKey;
   children: (session: AuthenticatedSession) => ReactNode;
 }) {
+  useLocale();
   const queryClient = useQueryClient();
   const unauthorizedProbe = useRef<Promise<void> | null>(null);
   const channel = useRef<BroadcastChannel | null>(null);
@@ -238,11 +240,12 @@ export function SessionBoundary({
   if (contextState !== "ready")
     return (
       <div className="session-loading">
+        <LanguageSwitcher />
         {contextState === "checking" ? (
-          <Spinner label="正在确认组织会话" />
+          <Spinner label={t("正在确认组织会话")} />
         ) : (
           <ErrorState
-            message="组织会话尚未确认，已暂停工作台以保护数据隔离"
+            message={t("组织会话尚未确认，已暂停工作台以保护数据隔离")}
             retry={() => void confirmOrganizationContext()}
           />
         )}
@@ -252,14 +255,16 @@ export function SessionBoundary({
   if (!session.data && !session.error) {
     return (
       <div className="session-loading">
-        <Spinner label="正在验证会话" />
+        <LanguageSwitcher />
+        <Spinner label={t("正在验证会话")} />
       </div>
     );
   }
   if (session.error && !session.data) {
-    const message = session.error instanceof Error ? session.error.message : "会话验证失败";
+    const message = session.error instanceof Error ? session.error.message : t("会话验证失败");
     return (
       <div className="session-loading">
+        <LanguageSwitcher />
         <ErrorState message={message} retry={() => void session.refetch()} />
       </div>
     );
@@ -282,7 +287,7 @@ export function SessionBoundary({
       <OrganizationContext value={{ switchOrganization, organizationName: user.organization_name }}>
         {contextNotice ? (
           <p role="alert" className="form-error">
-            {contextNotice}
+            {uiFeedback(contextNotice)}
           </p>
         ) : null}
         <WorkspaceQueryScope
@@ -295,7 +300,7 @@ export function SessionBoundary({
             user,
             logout: () => logoutRequest.mutate(),
             logoutPending: logoutRequest.isPending,
-            logoutError: logoutRequest.isError ? "退出失败，请重试" : null,
+            logoutError: logoutRequest.isError ? t("退出失败，请重试") : null,
             updateUser,
           })}
         </WorkspaceQueryScope>
