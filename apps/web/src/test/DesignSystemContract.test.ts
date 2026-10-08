@@ -3,6 +3,18 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+it("keeps only the selection gutter pinned in narrow table containers so row actions remain reachable", () => {
+  const layout = source("../styles.css");
+  expect(ruleBody(layout, ".virtual-table-shell")).toContain("container: workbench-table / inline-size;");
+  const narrow = layout.split("@container workbench-table (max-width: 640px)")[1];
+  expect(narrow).toBeDefined();
+  expect(narrow).toContain(".virtual-table-cell:first-child:not(.virtual-table-selection-cell)");
+  expect(narrow).toContain(".has-row-selection .virtual-table-cell:nth-child(2)");
+  expect(narrow).toMatch(/position:\s*static;/);
+  expect(narrow).toMatch(/left:\s*auto;/);
+  expect(narrow).toMatch(/z-index:\s*auto;/);
+});
+
 function source(relativePath: string) {
   const url = new URL(relativePath, import.meta.url);
   // Include the real on-demand domain sheet in design checks, without making it initial payload.

@@ -44,6 +44,7 @@ import {
 import { loadTargetProfile, targetKeys } from "../lib/contracts/target";
 import { entityLabels, entityTypeLabel, matchExplanation, publicIdentifiers } from "../lib/entityPresentation";
 import type { Entity } from "../lib/types";
+import { useCommittedCallback } from "../lib/useCommittedCallback";
 import { usePagedEntitySelection } from "../lib/usePagedEntitySelection";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import type { WorkspaceLocation } from "../lib/workspaceRouting";
@@ -312,6 +313,9 @@ export function ExplorerView({
     });
   }
 
+  const selectPreview = useCommittedCallback<[Entity | null]>(onSelectedEntityChange);
+  const openTargetPipeline = useCommittedCallback<[string]>(onOpenTargetPipeline);
+  const hasTargetPipeline = Boolean(onOpenTargetPipeline);
   const columns = useMemo<ColumnDef<IntelligenceEntity, unknown>[]>(
     () => [
       {
@@ -324,7 +328,7 @@ export function ExplorerView({
             type="button"
             onClick={() => {
               setLocalSelectedEntity(row.original);
-              onSelectedEntityChange?.(row.original);
+              selectPreview(row.original);
             }}
             aria-label={row.original.name}
           >
@@ -374,11 +378,11 @@ export function ExplorerView({
         enableSorting: false,
         cell: ({ row }) => (
           <div className="row-actions">
-            {row.original.entity_type === "target" && onOpenTargetPipeline ? (
+            {row.original.entity_type === "target" && hasTargetPipeline ? (
               <button
                 className="icon-button"
                 type="button"
-                onClick={() => onOpenTargetPipeline(row.original.id)}
+                onClick={() => openTargetPipeline(row.original.id)}
                 title="查看研发项目"
                 aria-label={`查看 ${row.original.name} 研发项目`}
               >
@@ -390,7 +394,7 @@ export function ExplorerView({
               type="button"
               onClick={() => {
                 setLocalSelectedEntity(row.original);
-                onSelectedEntityChange?.(row.original);
+                selectPreview(row.original);
               }}
               title="查看实体详情"
               aria-label={`查看 ${row.original.name} 实体详情`}
@@ -401,7 +405,7 @@ export function ExplorerView({
         ),
       },
     ],
-    [onOpenTargetPipeline, onSelectedEntityChange],
+    [hasTargetPipeline, openTargetPipeline, selectPreview],
   );
 
   // A large real page must not monopolize the main thread while the user is
