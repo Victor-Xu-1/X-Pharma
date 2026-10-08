@@ -357,7 +357,12 @@ it("searches through the typed contract and opens a governed target result", asy
   expect(screen.getByRole("table", { name: "实体检索结果" })).not.toHaveTextContent("已核验");
   expect(screen.queryByText("opensearch")).not.toBeInTheDocument();
   expect(screen.queryByText("12 ms")).not.toBeInTheDocument();
-  expect(screen.getByText("别名精确匹配：ERBB1")).toBeInTheDocument();
+  const matchContext = screen.getByText("别名精确匹配：ERBB1 · Epidermal growth factor receptor");
+  expect(matchContext).toHaveAttribute("title", "别名精确匹配：ERBB1 · Epidermal growth factor receptor");
+  expect(screen.getByRole("button", { name: "EGFR" })).toHaveAttribute(
+    "aria-description",
+    "别名精确匹配：ERBB1 · Epidermal growth factor receptor",
+  );
   const directTarget = screen.getByRole("region", { name: "EGFR 靶点直达" });
   expect(within(directTarget).getByText("靶点精确命中")).toBeInTheDocument();
   expect(await within(directTarget).findByText(/已关联 80 个研发项目/)).toBeVisible();

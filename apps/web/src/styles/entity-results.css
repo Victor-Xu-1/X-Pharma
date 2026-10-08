@@ -1,0 +1,14 @@
+/* Keep primary result targets inside the existing fixed virtual-row height. */
+.intelligence-name-button {
+  min-height: 24px;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.intelligence-name-button > strong {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

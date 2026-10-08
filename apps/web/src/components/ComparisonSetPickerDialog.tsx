@@ -2,6 +2,8 @@ import { ListPlus, X } from "lucide-react";
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 
 import type { CollectionSummary } from "../lib/contracts/collections";
+import { useMessages } from "../lib/i18n";
+import { comparisonMessages } from "../lib/i18n/comparison";
 import { useModalFocus } from "../lib/useModalFocus";
 
 export function ComparisonSetPickerDialog({
@@ -37,6 +39,7 @@ export function ComparisonSetPickerDialog({
   onCreateSet?: (name: string, visibility: "private" | "tenant") => void | Promise<void>;
   catalogControls?: ReactNode;
 }) {
+  const t = useMessages(comparisonMessages);
   const dialogRef = useModalFocus<HTMLFormElement>(open, onClose, { closeOnEscape: !pending });
   const [newSetName, setNewSetName] = useState("");
   const [newSetShared, setNewSetShared] = useState(false);
@@ -79,14 +82,12 @@ export function ComparisonSetPickerDialog({
         onSubmit={handleSubmit}
       >
         <header>
-          <h2 id="comparison-set-picker-title">加入对比列表</h2>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="关闭" disabled={pending}>
+          <h2 id="comparison-set-picker-title">{t("加入对比列表")}</h2>
+          <button className="icon-button" type="button" onClick={onClose} aria-label={t("关闭")} disabled={pending}>
             <X size={18} />
           </button>
         </header>
-        <p className="modal-context">
-          已选择 <strong>{selectedCount}</strong> 个实体
-        </p>
+        <p className="modal-context">{t("已选择 {count} 个实体", { count: selectedCount })}</p>
         {error ? (
           <p className="inline-error" role="alert">
             {error}
@@ -95,11 +96,11 @@ export function ComparisonSetPickerDialog({
         {catalogControls}
         {loading ? (
           <p className="modal-context" role="status">
-            正在读取可编辑列表
+            {t("正在读取可编辑列表")}
           </p>
         ) : sets.length || selectedSetId ? (
           <label>
-            目标列表
+            {t("目标列表")}
             <select
               value={selectedSetId}
               onChange={(event) => onSetChange(event.target.value)}
@@ -109,7 +110,7 @@ export function ComparisonSetPickerDialog({
             >
               {selectedSetId && !selectedSet ? (
                 <option value={selectedSetId} disabled>
-                  当前列表不可访问，请选择其他列表
+                  {t("当前列表不可访问，请选择其他列表")}
                 </option>
               ) : null}
               {sets.map((item) => (
@@ -121,16 +122,16 @@ export function ComparisonSetPickerDialog({
           </label>
         ) : (
           <>
-            <p className="modal-context">当前目录没有可选择的列表。可调整搜索，或创建新列表后加入已选实体。</p>
+            <p className="modal-context">{t("当前目录没有可选择的列表。可调整搜索，或创建新列表后加入已选实体。")}</p>
             {onCreateSet ? (
               <>
                 <label>
-                  新建列表
+                  {t("新建列表")}
                   <input
                     type="text"
                     value={newSetName}
                     onChange={(event) => setNewSetName(event.target.value)}
-                    placeholder="例如：EGFR 竞品对比"
+                    placeholder={t("例如：EGFR 竞品对比")}
                     data-modal-autofocus="true"
                     maxLength={120}
                     required
@@ -144,7 +145,7 @@ export function ComparisonSetPickerDialog({
                     disabled={pending}
                     onChange={(event) => setNewSetShared(event.target.checked)}
                   />
-                  与团队共享
+                  {t("与团队共享")}
                 </label>
               </>
             ) : null}
@@ -155,18 +156,21 @@ export function ComparisonSetPickerDialog({
             {alreadyPresentCount ? (
               <p className="modal-context">
                 {effectiveNewCount
-                  ? `其中 ${alreadyPresentCount} 个已在列表中，本次将新增 ${effectiveNewCount} 个`
-                  : `已选择的 ${alreadyPresentCount} 个实体均已在列表中`}
+                  ? t("其中 {existing} 个已在列表中，本次将新增 {added} 个", {
+                      existing: alreadyPresentCount,
+                      added: effectiveNewCount,
+                    })
+                  : t("已选择的 {count} 个实体均已在列表中", { count: alreadyPresentCount })}
               </p>
             ) : null}
             <p className={exceedsCapacity ? "inline-error" : "modal-context"}>
-              完成后共 {effectiveMemberCount + effectiveNewCount}/20 个实体
+              {t("完成后共 {count}/20 个实体", { count: effectiveMemberCount + effectiveNewCount })}
             </p>
           </>
         ) : null}
         <footer>
           <button className="secondary-button" type="button" onClick={onClose} disabled={pending}>
-            取消
+            {t("取消")}
           </button>
           <button
             className="primary-button"
@@ -179,7 +183,7 @@ export function ComparisonSetPickerDialog({
             }
           >
             <ListPlus size={16} />
-            {pending ? "处理中" : selectedSet ? (effectiveNewCount ? "确认加入" : "完成") : "创建并加入"}
+            {t(pending ? "处理中" : selectedSet ? (effectiveNewCount ? "确认加入" : "完成") : "创建并加入")}
           </button>
         </footer>
       </form>

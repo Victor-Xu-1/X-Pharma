@@ -33,6 +33,16 @@ export const publicResearchMessages = {
   "已取消本次等待；来源请求将在有界时限内结束，未写入本地事实。":
     "Waiting cancelled. Source requests will end within their bounded deadline; no local facts were written.",
   "公开查询失败，请明确重试": "Public search failed. Retry explicitly to send another request.",
+  公开调研结果: "Public research results",
+  可读取: "Available",
+  当前范围未命中: "No matches in this scope",
+  暂不可用: "Temporarily unavailable",
+  "已查询：{query} · {observed} · 公开元数据，未自动入库或核验为事实。":
+    "Query: {query} · {observed} · Public metadata only; not automatically stored or verified as facts.",
+  "来源命中 {count} 条": "{count} source matches",
+  "来源日期：{date} · ": "Source date: {date} · ",
+  "来源日期未提供 · ": "Source date not provided · ",
+  到来源继续检索: "Continue searching at the source",
 } as const;
 
 export const publicResearchText = createTranslator(publicResearchMessages);

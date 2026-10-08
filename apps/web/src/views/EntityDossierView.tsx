@@ -25,7 +25,7 @@ import { directionLabels, partyRoleLabels, phaseLabels } from "../lib/dealDispla
 import { entityLabels, entityTypeLabel, relationshipLabel } from "../lib/entityPresentation";
 import type { CompanyTimelineResult, EntityType } from "../lib/generated";
 import { useLocale } from "../lib/i18n";
-import { publicEntityAttributeLabels, publicEntityAttributes } from "../lib/publicEntity";
+import { publicEntityAttributeLabel, publicEntityAttributes } from "../lib/publicEntity";
 import type { Entity } from "../lib/types";
 import type { EntityDossierSection } from "../lib/workspaceRouting";
 
@@ -296,7 +296,7 @@ function DossierOverview({
           ))}
           {publicEntityAttributes(data.entity).map(([key, value]) => (
             <div key={key}>
-              <dt>{publicEntityAttributeLabels[key] ?? key}</dt>
+              <dt>{publicEntityAttributeLabel(key)}</dt>
               <dd>{formatAttribute(value)}</dd>
             </div>
           ))}

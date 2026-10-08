@@ -4,6 +4,7 @@ import { type KeyboardEvent, type Ref, useEffect, useId, useImperativeHandle, us
 import { intelligenceKeys, suggestEntities } from "../lib/contracts/intelligence";
 import { useLocale } from "../lib/i18n";
 import { queryText as t } from "../lib/i18n/query";
+import { useFocusDismissal } from "../lib/useFocusDismissal";
 import { useSearchShortcut } from "../lib/useSearchShortcut";
 
 /** Name suggestions are optional; an unselected Enter always submits the typed search. */
@@ -32,6 +33,14 @@ export function EntitySearchInput({
   const inputRef = useRef<HTMLInputElement>(null);
   useSearchShortcut(inputRef);
   const groupRef = useRef<HTMLDivElement>(null);
+  const dismissOnBlur = useFocusDismissal({
+    open,
+    rootRef: groupRef,
+    onDismiss: () => {
+      setOpen(false);
+      setSelection(null);
+    },
+  });
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const listId = `entity-suggestions-${useId().replaceAll(":", "")}`;
   const queryReady = normalizedQuery.length >= 2 && normalizedQuery === debouncedQuery;
@@ -120,13 +129,7 @@ export function EntitySearchInput({
         }}
         onKeyDown={handleKey}
         onFocus={() => setOpen(true)}
-        onBlur={(event) => {
-          const target = event.relatedTarget;
-          if (target instanceof HTMLButtonElement && target.type === "submit") return;
-          if (target instanceof Node && groupRef.current?.contains(target)) return;
-          setOpen(false);
-          setSelection(null);
-        }}
+        onBlur={dismissOnBlur}
         placeholder={
           entityTypes.length === 0
             ? t("输入药物、靶点、机构或外部标识")

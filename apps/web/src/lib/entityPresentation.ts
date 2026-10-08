@@ -104,3 +104,9 @@ export function matchExplanation(entity: IntelligenceEntity | Entity): string | 
     : "";
   return t("{source}{relation}{value}", { source, relation, value });
 }
+
+/** A compact row retains its complete match context and source description. */
+export function entityResultContext(entity: IntelligenceEntity | Entity): string | null {
+  const values = [matchExplanation(entity), entity.description].filter((value): value is string => Boolean(value));
+  return values.length ? values.join(" · ") : null;
+}

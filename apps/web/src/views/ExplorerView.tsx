@@ -42,7 +42,13 @@ import {
   tableSortingFromCriteria,
 } from "../lib/contracts/sorting";
 import { loadTargetProfile, targetKeys } from "../lib/contracts/target";
-import { entityLabels, entityTypeLabel, matchExplanation, publicIdentifiers } from "../lib/entityPresentation";
+import {
+  entityLabels,
+  entityResultContext,
+  entityTypeLabel,
+  matchExplanation,
+  publicIdentifiers,
+} from "../lib/entityPresentation";
 import { formattingLocale, useLocale, useMessages } from "../lib/i18n";
 import { explorerMessages } from "../lib/i18n/explorer";
 import type { Entity } from "../lib/types";
@@ -50,6 +56,7 @@ import { useCommittedCallback } from "../lib/useCommittedCallback";
 import { usePagedEntitySelection } from "../lib/usePagedEntitySelection";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import type { WorkspaceLocation } from "../lib/workspaceRouting";
+import "../styles/entity-results.css";
 
 const PUBLIC_REVIEW_STATUS = "verified";
 
@@ -320,19 +327,22 @@ export function ExplorerView({
         size: 300,
         cell: ({ row }) => (
           <button
-            className="entity-name-button"
+            className="entity-name-button intelligence-name-button"
             type="button"
             onClick={() => {
               setLocalSelectedEntity(row.original);
               selectPreview(row.original);
             }}
             aria-label={row.original.name}
+            title={row.original.name}
+            aria-description={entityResultContext(row.original) ?? undefined}
           >
             <strong>{row.original.name}</strong>
-            {matchExplanation(row.original) ? (
-              <small className="entity-match-context">{matchExplanation(row.original)}</small>
+            {entityResultContext(row.original) ? (
+              <small className="entity-match-context" title={entityResultContext(row.original) ?? undefined}>
+                {entityResultContext(row.original)}
+              </small>
             ) : null}
-            {row.original.description ? <small className="cell-subtitle">{row.original.description}</small> : null}
           </button>
         ),
       },

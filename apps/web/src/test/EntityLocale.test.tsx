@@ -1,7 +1,13 @@
 import { act, render, screen } from "@testing-library/react";
 import { expect, it } from "vitest";
 import { EntityIdentityLabel } from "../components/EntityIdentityLabel";
-import { entityIdentityNote, entityTypeLabel, matchExplanation, relationshipLabel } from "../lib/entityPresentation";
+import {
+  entityIdentityNote,
+  entityResultContext,
+  entityTypeLabel,
+  matchExplanation,
+  relationshipLabel,
+} from "../lib/entityPresentation";
 import { setLocale } from "../lib/i18n";
 import type { Entity } from "../lib/types";
 
@@ -51,4 +57,14 @@ it("localizes match explanations while retaining the actual matched value and na
   expect(matchExplanation(entity)).toBe("External identifier · Exact match: UniProt · P00533 中文来源");
   setLocale("zh-CN");
   expect(matchExplanation(entity)).toBe("外部标识精确匹配：UniProt · P00533 中文来源");
+});
+
+it("keeps the complete original description and match information in a compact row's context", () => {
+  const description = "很长的来源描述 EGFR ".repeat(30);
+  const entity = {
+    description,
+    match: { match_type: "alias", match_relation: "exact", matched_value: "原始别名 ERBB1" },
+  } as unknown as Entity;
+  setLocale("en");
+  expect(entityResultContext(entity)).toBe(`Alias · Exact match: 原始别名 ERBB1 · ${description}`);
 });
