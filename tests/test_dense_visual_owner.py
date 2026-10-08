@@ -79,7 +79,7 @@ def test_visual_differences_are_collected_without_softening_functional_or_budget
         assert "maxDiffPixelRatio: 0.001" in source
     source = (NAVIGATION / "news-deal-and-patent-details.ts").read_text(encoding="utf-8")
     assert 'await expect.soft(patentTimelineVisual).toHaveScreenshot("research-patent-timeline.png"' in source
-    assert 'await expect(dealRightsVisual).toHaveCount(1)' in source
+    assert "await expect(dealRightsVisual).toHaveCount(1)" in source
     assert 'await expect(page.getByText("Exclusive commercialization rights' in source
     dense = (NAVIGATION / "dense-results-visual.ts").read_text(encoding="utf-8")
     assert "await verifyFixedColumnLayout(denseTableShell)" in dense
