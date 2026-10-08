@@ -2,6 +2,8 @@ import { hashKey, useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { type KeyboardEvent, type Ref, useEffect, useId, useImperativeHandle, useRef, useState } from "react";
 import { intelligenceKeys, suggestEntities } from "../lib/contracts/intelligence";
+import { useLocale } from "../lib/i18n";
+import { queryText as t } from "../lib/i18n/query";
 import { useSearchShortcut } from "../lib/useSearchShortcut";
 
 /** Name suggestions are optional; an unselected Enter always submits the typed search. */
@@ -20,6 +22,7 @@ export function EntitySearchInput({
   onSearch: (value: string) => void;
   controlRef?: Ref<{ close: () => void }>;
 }) {
+  useLocale();
   const normalizedQuery = query.trim();
   const [debouncedQuery, setDebouncedQuery] = useState(normalizedQuery);
   const [open, setOpen] = useState(false);
@@ -124,8 +127,12 @@ export function EntitySearchInput({
           setOpen(false);
           setSelection(null);
         }}
-        placeholder={`输入${domainLabel === "全部情报" ? "药物、靶点、机构或外部标识" : `${domainLabel}名称、别名或外部标识`}`}
-        aria-label="情报检索词"
+        placeholder={
+          entityTypes.length === 0
+            ? t("输入药物、靶点、机构或外部标识")
+            : t("输入{domain}名称、别名或外部标识", { domain: domainLabel })
+        }
+        aria-label={t("情报检索词")}
         aria-keyshortcuts="/"
         role="combobox"
         aria-autocomplete="list"
@@ -140,12 +147,12 @@ export function EntitySearchInput({
         <div className="query-suggestions">
           {pending ? (
             <span className="suggestion-status" role="status">
-              正在查找相关结果
+              {t("正在查找相关结果")}
             </span>
           ) : null}
           {queryReady && !pending && result.isError ? (
             <span className="suggestion-status error" role="status">
-              联想暂不可用，可直接检索
+              {t("联想暂不可用，可直接检索")}
               <button
                 type="button"
                 onClick={() => {
@@ -153,11 +160,11 @@ export function EntitySearchInput({
                   void result.refetch();
                 }}
               >
-                重试联想
+                {t("重试联想")}
               </button>
             </span>
           ) : null}
-          <div id={listId} role="listbox" aria-label="名称检索联想">
+          <div id={listId} role="listbox" aria-label={t("名称检索联想")}>
             {options.map((option, index) => (
               <button
                 ref={(element) => {
@@ -179,7 +186,7 @@ export function EntitySearchInput({
           </div>
           {!pending && !result.isError && !options.length ? (
             <span className="suggestion-status" role="status">
-              未找到相关名称
+              {t("未找到相关名称")}
             </span>
           ) : null}
         </div>

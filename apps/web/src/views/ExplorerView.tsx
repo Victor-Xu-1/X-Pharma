@@ -43,6 +43,8 @@ import {
 } from "../lib/contracts/sorting";
 import { loadTargetProfile, targetKeys } from "../lib/contracts/target";
 import { entityLabels, entityTypeLabel, matchExplanation, publicIdentifiers } from "../lib/entityPresentation";
+import { formattingLocale, useLocale, useMessages } from "../lib/i18n";
+import { explorerMessages } from "../lib/i18n/explorer";
 import type { Entity } from "../lib/types";
 import { useCommittedCallback } from "../lib/useCommittedCallback";
 import { usePagedEntitySelection } from "../lib/usePagedEntitySelection";
@@ -50,17 +52,6 @@ import { useQueryCancellation } from "../lib/useQueryCancellation";
 import type { WorkspaceLocation } from "../lib/workspaceRouting";
 
 const PUBLIC_REVIEW_STATUS = "verified";
-
-// The applied-condition bar renders the server's normalized `applied_filters`, so draft
-// input that has not been submitted never appears as applied query state.
-const appliedFilterLabels: Record<string, string> = {
-  q: "关键词",
-  entity_types: "实体类型",
-};
-
-const appliedFilterValueLabels: Record<string, Record<string, string>> = {
-  entity_types: entityLabels,
-};
 
 const domains = [
   { value: "", label: "全部情报", icon: Search },
@@ -95,7 +86,7 @@ function facetBuckets(
 }
 
 function normalizeEntityTypes(values: readonly string[]): string[] {
-  return Array.from(new Set(values.filter((value) => value in entityLabels))).sort();
+  return Array.from(new Set(values.filter((value) => Object.hasOwn(entityLabels(), value)))).sort();
 }
 
 function isDirectTargetMatch(entity: IntelligenceEntity, query: string): boolean {
@@ -165,6 +156,11 @@ export function ExplorerView({
   onSelectedEntityChange?: (entity: Entity | null) => void;
   onOpenSpecializedSearch: (location: WorkspaceLocation) => void;
 }) {
+  const { locale } = useLocale();
+  const t = useMessages(explorerMessages);
+  const appliedFilterValueLabels: Record<string, Record<string, string>> = {
+    entity_types: entityLabels(),
+  };
   const initialEntityTypesKey = (initialEntityTypes ?? []).join(",");
   const requestedInitialEntityTypes = useMemo(
     () =>
@@ -320,7 +316,7 @@ export function ExplorerView({
     () => [
       {
         accessorKey: "name",
-        header: "名称",
+        header: t("名称"),
         size: 300,
         cell: ({ row }) => (
           <button
@@ -342,13 +338,13 @@ export function ExplorerView({
       },
       {
         accessorKey: "entity_type",
-        header: "类型",
+        header: t("类型"),
         size: 120,
         cell: ({ row }) => entityTypeLabel(row.original),
       },
       {
         id: "external_ids",
-        header: "外部标识",
+        header: t("外部标识"),
         size: 250,
         enableSorting: false,
         cell: ({ row }) => {
@@ -360,20 +356,20 @@ export function ExplorerView({
                   {key}: {value}
                 </span>
               ))}
-              {!identifiers.length ? <span>暂无外部标识</span> : null}
+              {!identifiers.length ? <span>{t("暂无外部标识")}</span> : null}
             </div>
           );
         },
       },
       {
         accessorKey: "updated_at",
-        header: "更新时间",
+        header: t("更新时间"),
         size: 175,
         cell: ({ getValue }) => formatDate(String(getValue())),
       },
       {
         id: "actions",
-        header: "操作",
+        header: t("操作"),
         size: 104,
         enableSorting: false,
         cell: ({ row }) => (
@@ -383,8 +379,8 @@ export function ExplorerView({
                 className="icon-button"
                 type="button"
                 onClick={() => openTargetPipeline(row.original.id)}
-                title="查看研发项目"
-                aria-label={`查看 ${row.original.name} 研发项目`}
+                title={t("查看研发项目")}
+                aria-label={t("查看 {name} 研发项目", { name: row.original.name })}
               >
                 <FlaskConical size={17} />
               </button>
@@ -396,8 +392,8 @@ export function ExplorerView({
                 setLocalSelectedEntity(row.original);
                 selectPreview(row.original);
               }}
-              title="查看实体详情"
-              aria-label={`查看 ${row.original.name} 实体详情`}
+              title={t("查看实体详情")}
+              aria-label={t("查看 {name} 实体详情", { name: row.original.name })}
             >
               <ArrowRight size={17} />
             </button>
@@ -405,7 +401,7 @@ export function ExplorerView({
         ),
       },
     ],
-    [hasTargetPipeline, openTargetPipeline, selectPreview],
+    [hasTargetPipeline, openTargetPipeline, selectPreview, t],
   );
 
   // A large real page must not monopolize the main thread while the user is
@@ -442,13 +438,13 @@ export function ExplorerView({
     () => [
       {
         id: "entity-type",
-        title: "实体类型",
-        detail: "按实体类型统计当前完整命中集",
-        buckets: facetBuckets(result?.facets.entity_type, entityLabels),
+        title: t("实体类型"),
+        detail: t("按实体类型统计当前完整命中集"),
+        buckets: facetBuckets(result?.facets.entity_type, entityLabels(locale)),
         filterField: "entity_type",
       },
     ],
-    [result?.facets.entity_type],
+    [result?.facets.entity_type, locale, t],
   );
   const selectedEntity =
     initialSelectedEntityId === undefined || localSelectedEntity?.id === initialSelectedEntityId
@@ -465,12 +461,15 @@ export function ExplorerView({
   );
   const selectedSearchHit = result?.items.find((item) => item.id === selectedEntity?.id);
   const canSubmit = Boolean(query.trim() || selectedEntityTypes.length);
+  const saveFeedback = Object.hasOwn(explorerMessages, saveMessage)
+    ? t(saveMessage as keyof typeof explorerMessages)
+    : saveMessage;
   const activeDomain =
     selectedEntityTypes.length === 0
-      ? "全部情报"
+      ? t("全部情报")
       : selectedEntityTypes.length === 1
-        ? (entityLabels[selectedEntityTypes[0] ?? ""] ?? selectedEntityTypes[0])
-        : `已选 ${selectedEntityTypes.length} 类`;
+        ? (entityLabels()[selectedEntityTypes[0] ?? ""] ?? selectedEntityTypes[0])
+        : t("已选 {count} 类", { count: selectedEntityTypes.length });
   const entitySort = effectiveSort(
     initialSort,
     (initialSortBy ?? "relevance") as EntitySearchSortField,
@@ -531,7 +530,7 @@ export function ExplorerView({
     <section className="data-section explorer-section">
       <form className="intelligence-query-panel" onSubmit={submit}>
         <div className="query-row">
-          <label htmlFor="intelligence-query">查询对象</label>
+          <label htmlFor="intelligence-query">{t("查询对象")}</label>
           <EntitySearchInput
             query={query}
             entityTypes={selectedEntityTypes}
@@ -542,28 +541,28 @@ export function ExplorerView({
           />
           <button className="primary-button" type="submit" disabled={search.isFetching || !canSubmit}>
             <Search size={16} />
-            检索
+            {t("检索")}
           </button>
           <button
             className="secondary-button"
             type="button"
             disabled={!initialQuery.trim() && !requestedInitialEntityTypes.length}
-            title="保存当前已执行的查询条件"
+            title={t("保存当前已执行的查询条件")}
             onClick={() => {
-              setSaveName(initialQuery.trim() || "已执行检索监控");
+              setSaveName(initialQuery.trim() || t("已执行检索监控"));
               save.reset();
               setSaveOpen(true);
               setSaveMessage("");
             }}
           >
             <BookmarkPlus size={16} />
-            保存检索
+            {t("保存检索")}
           </button>
         </div>
         <div className="query-row filter-row">
-          <span className="query-label">对象类型</span>
+          <span className="query-label">{t("对象类型")}</span>
           <fieldset className="inline-filter-options domain-filter-options">
-            <legend className="sr-only">情报对象类型</legend>
+            <legend className="sr-only">{t("情报对象类型")}</legend>
             {domains.map(({ value, label, icon: Icon }) => (
               <button
                 className={
@@ -579,12 +578,16 @@ export function ExplorerView({
                 key={value || "all"}
                 onClick={() => chooseDomain(value)}
                 aria-pressed={value ? selectedEntityTypes.includes(value) : selectedEntityTypes.length === 0}
-                aria-label={`对象类型：${label}${
-                  displayedEntityTypeCount(value) !== undefined ? `，${displayedEntityTypeCount(value)} 条` : ""
-                }`}
+                aria-label={t("对象类型：{label}{count}", {
+                  label: t(label),
+                  count:
+                    displayedEntityTypeCount(value) !== undefined
+                      ? t("，{count} 条", { count: displayedEntityTypeCount(value) ?? 0 })
+                      : "",
+                })}
               >
                 <Icon size={14} />
-                {label}
+                {t(label)}
                 {displayedEntityTypeCount(value) !== undefined ? <span>{displayedEntityTypeCount(value)}</span> : null}
               </button>
             ))}
@@ -592,14 +595,14 @@ export function ExplorerView({
         </div>
         <details className="advanced-filters explorer-professional-query">
           <summary>
-            高级条件查询
-            <span>按药物、靶点、机构、阶段等组合筛选</span>
+            {t("高级条件查询")}
+            <span>{t("按药物、靶点、机构、阶段等组合筛选")}</span>
           </summary>
           <ProfessionalQueryBuilder query={query.trim()} onExecute={onOpenSpecializedSearch} />
         </details>
         <label
           className="checkbox-field"
-          title="从精确名称、别名或标识出发，仅扩展一层有当前已发布证据的关系，不推断机制或获批用途。"
+          title={t("从精确名称、别名或标识出发，仅扩展一层有当前已发布证据的关系，不推断机制或获批用途。")}
         >
           <input
             type="checkbox"
@@ -617,13 +620,13 @@ export function ExplorerView({
               )
             }
           />
-          包含已验证关联
+          {t("包含已验证关联")}
         </label>
       </form>
 
       <PublicResearchPanel defaultQuery={initialQuery} />
       {result && requestedInitialEntityTypes.length ? (
-        <p className="inline-feedback">当前结果仅统计已选对象类型；点击“全部情报”重新查询完整范围。</p>
+        <p className="inline-feedback">{t("当前结果仅统计已选对象类型；点击“全部情报”重新查询完整范围。")}</p>
       ) : null}
       {result?.warnings?.map((warning) => (
         <p className="inline-feedback" role="status" key={warning}>
@@ -634,7 +637,7 @@ export function ExplorerView({
         filters={result?.applied_filters?.filter(
           (filter) => !["review_status", "include_related"].includes(filter.field),
         )}
-        labels={appliedFilterLabels}
+        labels={{ q: t("关键词"), entity_types: t("实体类型") }}
         valueLabels={appliedFilterValueLabels}
         onClear={() => {
           setQuery("");
@@ -645,7 +648,7 @@ export function ExplorerView({
 
       {saveMessage && !saveOpen ? (
         <p className={save.isError ? "inline-error" : "inline-feedback"} role={save.isError ? "alert" : "status"}>
-          {saveMessage}
+          {saveFeedback}
         </p>
       ) : null}
       <SavedSearchDialog
@@ -655,7 +658,7 @@ export function ExplorerView({
         shared={shared}
         monitor={monitor}
         pending={save.isPending}
-        error={save.isError ? saveMessage : ""}
+        error={save.isError ? saveFeedback : ""}
         onNameChange={setSaveName}
         onSharedChange={setShared}
         onMonitorChange={setMonitor}
@@ -669,8 +672,8 @@ export function ExplorerView({
         isFetching={search.isFetching}
         isCancelled={queryCancellation.isCancelled}
         error={search.error}
-        loadingLabel="正在检索结构化情报"
-        fallbackError="结构化情报查询失败"
+        loadingLabel={t("正在检索结构化情报")}
+        fallbackError={t("结构化情报查询失败")}
         onCancel={queryCancellation.cancel}
         onRetry={retrySearch}
         onDismissCancellation={queryCancellation.reset}
@@ -681,16 +684,18 @@ export function ExplorerView({
             {directTarget && onOpenTargetPipeline ? (
               <section
                 className="pipeline-result-toolbar target-direct-access"
-                aria-label={`${directTarget.name} 靶点直达`}
+                aria-label={t("{name} 靶点直达", { name: directTarget.name })}
               >
                 <div className="result-summary">
                   <strong>{directTarget.name}</strong>
-                  <span>靶点精确命中</span>
+                  <span>{t("靶点精确命中")}</span>
                   <small>
-                    {matchExplanation(directTarget) ?? "已识别为靶点"} ·{" "}
+                    {matchExplanation(directTarget) ?? t("已识别为靶点")} ·{" "}
                     {directTargetProfile.data
-                      ? `已关联 ${directTargetProfile.data.program_count.toLocaleString("zh-CN")} 个研发项目，可继续按药物、阶段、机构、适应症与作用机制筛选`
-                      : "进入后查看药物、阶段、机构、适应症与作用机制"}
+                      ? t("已关联 {count} 个研发项目，可继续按药物、阶段、机构、适应症与作用机制筛选", {
+                          count: directTargetProfile.data.program_count.toLocaleString(formattingLocale()),
+                        })
+                      : t("进入后查看药物、阶段、机构、适应症与作用机制")}
                   </small>
                 </div>
                 <div className="pipeline-result-actions">
@@ -700,8 +705,10 @@ export function ExplorerView({
                     onClick={() => onOpenTargetPipeline(directTarget.id)}
                   >
                     {directTargetProfile.data
-                      ? `查看 ${directTargetProfile.data.program_count.toLocaleString("zh-CN")} 个研发项目`
-                      : "查看全部研发项目"}
+                      ? t("查看 {count} 个研发项目", {
+                          count: directTargetProfile.data.program_count.toLocaleString(formattingLocale()),
+                        })
+                      : t("查看全部研发项目")}
                     <ArrowRight size={15} />
                   </button>
                   <button
@@ -712,7 +719,7 @@ export function ExplorerView({
                       onSelectedEntityChange?.(directTarget);
                     }}
                   >
-                    查看靶点详情
+                    {t("查看靶点详情")}
                   </button>
                 </div>
               </section>
@@ -721,19 +728,19 @@ export function ExplorerView({
               <div className="pipeline-result-toolbar">
                 <div className="result-summary">
                   <strong>{result.total}</strong>
-                  <span>条匹配结果</span>
+                  <span>{t("条匹配结果")}</span>
                 </div>
                 <div className="pipeline-result-actions">
                   <QueryRefreshButton refreshing={search.isFetching} onRefresh={retrySearch} />
                   <fieldset className="segmented-control">
-                    <legend className="sr-only">实体结果展示方式</legend>
+                    <legend className="sr-only">{t("实体结果展示方式")}</legend>
                     <button
                       type="button"
                       aria-pressed={initialDisplayMode === "list"}
                       onClick={() => onDisplayModeChange("list")}
                     >
                       <List size={14} />
-                      列表
+                      {t("列表")}
                     </button>
                     <button
                       type="button"
@@ -741,7 +748,7 @@ export function ExplorerView({
                       onClick={() => onDisplayModeChange("landscape")}
                     >
                       <BarChart3 size={14} />
-                      统计
+                      {t("统计")}
                     </button>
                   </fieldset>
                 </div>
@@ -749,16 +756,16 @@ export function ExplorerView({
             ) : (
               <div className="result-summary">
                 <strong>{result.total}</strong>
-                <span>条匹配结果</span>
+                <span>{t("条匹配结果")}</span>
               </div>
             )}
             {initialDisplayMode === "landscape" && result.total > 0 ? (
               <DomainLandscape
                 domainId="entities"
-                ariaLabel="实体检索统计分析"
+                ariaLabel={t("实体检索统计分析")}
                 total={result.total}
-                totalUnit="条实体"
-                unitLabel="实体数"
+                totalUnit={t("条实体")}
+                unitLabel={t("实体数")}
                 sections={landscapeSections}
                 view={initialAnalysisView}
                 onViewChange={onAnalysisViewChange}
@@ -766,7 +773,7 @@ export function ExplorerView({
               />
             ) : result.items.length ? (
               <VirtualDataTable
-                ariaLabel="实体检索结果"
+                ariaLabel={t("实体检索结果")}
                 columns={columns}
                 data={result.items}
                 getRowId={(entity) => entity.id}
@@ -774,7 +781,7 @@ export function ExplorerView({
                 totalRows={result.total}
                 sorting={tableSorting}
                 defaultSorting={[]}
-                defaultSortingDescription="按相关性降序"
+                defaultSortingDescription={t("按相关性降序")}
                 onSortingChange={changeSorting}
                 sortingScope="all"
                 toolbarActions={
@@ -792,13 +799,13 @@ export function ExplorerView({
                 rowSelection={{
                   selectedRowIds: selectedEntityIds,
                   onChange: setSelectedEntityIds,
-                  getRowLabel: (entity) => `对比 ${entity.name}`,
-                  label: "选择对比实体",
+                  getRowLabel: (entity) => t("对比 {name}", { name: entity.name }),
+                  label: t("选择对比实体"),
                   maxSelectedRows: 20,
                 }}
               />
             ) : (
-              <EmptyState title="未找到匹配实体" detail="请调整名称、情报领域或更多筛选" />
+              <EmptyState title={t("未找到匹配实体")} detail={t("请调整名称、情报领域或更多筛选")} />
             )}
             {initialDisplayMode === "list" && result.total > 0 ? (
               <ResultPagination
@@ -806,7 +813,7 @@ export function ExplorerView({
                 offset={result.offset}
                 pageSize={PAGE_SIZE}
                 onPageChange={changePage}
-                ariaLabel="实体检索结果分页"
+                ariaLabel={t("实体检索结果分页")}
               />
             ) : null}
           </div>

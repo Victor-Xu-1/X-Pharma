@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { useLayoutEffect, useState } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 
@@ -18,6 +18,7 @@ import { loadPatentFacetCatalog } from "../lib/contracts/patents";
 import { loadPipelineFacetCatalog } from "../lib/contracts/pipeline";
 import { loadRegulatoryFacetCatalog } from "../lib/contracts/regulatory";
 import { loadTargetProfile } from "../lib/contracts/target";
+import { setLocale } from "../lib/i18n";
 import { resolveProfessionalDatePreset } from "../lib/professionalSearch";
 import type { Entity } from "../lib/types";
 import { ExplorerView } from "../views/ExplorerView";
@@ -119,6 +120,32 @@ const comparisonSet = {
 function openAdvancedQuery(): void {
   fireEvent.click(screen.getByText(/^高级条件查询/, { selector: "summary" }));
 }
+
+it("changes memoized search headers and labels without repeating the query or clearing the draft", async () => {
+  const onSearchChange = vi.fn();
+  renderWithQueryClient(
+    <ExplorerView
+      initialQuery="EGFR"
+      initialEntityType="target"
+      initialReviewStatus="verified"
+      onSearchChange={onSearchChange}
+      onOpenEntity={vi.fn()}
+      onOpenSpecializedSearch={vi.fn()}
+    />,
+  );
+  await screen.findByRole("table", { name: "实体检索结果" });
+  fireEvent.change(screen.getByRole("combobox", { name: "情报检索词" }), {
+    target: { value: "未提交的中文名称 EGFR" },
+  });
+  const requests = vi.mocked(searchEntities).mock.calls.length;
+  act(() => setLocale("en"));
+  expect(screen.getByRole("columnheader", { name: "Name" })).toBeInTheDocument();
+  expect(screen.getByRole("table", { name: "Entity search results" })).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: "Intelligence query" })).toHaveValue("未提交的中文名称 EGFR");
+  expect(screen.getByRole("button", { name: "EGFR" })).toBeInTheDocument();
+  expect(vi.mocked(searchEntities).mock.calls.length).toBe(requests);
+  expect(onSearchChange).not.toHaveBeenCalled();
+});
 
 it("keeps a preview opener's DOM identity when route callbacks change and uses the latest handler", async () => {
   const first = vi.fn();

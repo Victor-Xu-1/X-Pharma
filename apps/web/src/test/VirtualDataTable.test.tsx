@@ -1,9 +1,10 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { expect, it, vi } from "vitest";
 
 import { type ColumnDef, VirtualDataTable } from "../components/VirtualDataTable";
 import { sessionKeys } from "../lib/contracts/session";
+import { setLocale } from "../lib/i18n";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 type Row = { id: string; name: string; score: number };
@@ -12,6 +13,26 @@ const columns: ColumnDef<Row, unknown>[] = [
   { accessorKey: "name", header: "名称", size: 180 },
   { accessorKey: "score", header: "评分", size: 120 },
 ];
+
+it("localizes table controls and current sorting without resetting the local presentation or editing facts", () => {
+  renderWithQueryClient(
+    <VirtualDataTable
+      ariaLabel="Research results"
+      columns={columns}
+      data={[{ id: "1", name: "中文原名 EGFR", score: 1 }]}
+      getRowId={(row) => row.id}
+      preferenceKey="entity-search"
+      totalRows={24}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "紧凑" }));
+  fireEvent.click(within(screen.getByRole("columnheader", { name: "名称" })).getByRole("button"));
+  act(() => setLocale("en"));
+  expect(screen.getByRole("button", { name: "Compact" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByText("On this page: 1 / Total: 24 · Current page · Sort: 名称 Ascending")).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Research results scroll area" })).toBeInTheDocument();
+  expect(screen.getByText("中文原名 EGFR")).toBeInTheDocument();
+});
 
 it("renders a keyboard-scrollable table and exposes deterministic sorting state", () => {
   renderWithQueryClient(

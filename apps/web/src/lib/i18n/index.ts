@@ -1,5 +1,5 @@
-import { useSyncExternalStore } from "react";
-import { isMessageKey, messages } from "./catalog";
+import { useMemo, useSyncExternalStore } from "react";
+import { isMessageKey, type MessageParameters, messages } from "./catalog";
 import { getLocale, getLocaleSnapshot, subscribeLocale } from "./locale";
 import { createTranslator } from "./translator";
 
@@ -9,6 +9,15 @@ export { createTranslator } from "./translator";
 
 export function useLocale() {
   return useSyncExternalStore(subscribeLocale, getLocaleSnapshot, getLocaleSnapshot);
+}
+
+/** A render-bound translator changes identity with the locale, including memoized headers. */
+export function useMessages<Catalog extends Readonly<Record<string, string>>>(catalog: Catalog) {
+  const { locale } = useLocale();
+  return useMemo(() => {
+    const translate = createTranslator(catalog);
+    return (key: keyof Catalog & string, parameters: MessageParameters = {}) => translate(key, parameters, locale);
+  }, [catalog, locale]);
 }
 
 /** Explicit UI messages only. React renders the returned text without HTML interpretation. */

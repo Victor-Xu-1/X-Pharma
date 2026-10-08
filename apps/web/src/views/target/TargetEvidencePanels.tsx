@@ -5,6 +5,7 @@ import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { ProvenanceSelection } from "../../lib/contracts/provenance";
 import type { TargetEvidence, TargetRelationship } from "../../lib/contracts/target";
 import { entityLabels, relationshipLabel } from "../../lib/entityPresentation";
+import { useLocale } from "../../lib/i18n";
 import type { TargetEntityOpener } from "./types";
 
 export function Relationships({
@@ -14,6 +15,7 @@ export function Relationships({
   items: TargetRelationship[];
   onOpenEntity: TargetEntityOpener;
 }) {
+  useLocale();
   if (!items.length) return <EmptyState title="暂无关联实体" />;
   return (
     <ScrollableTableRegion ariaLabel="靶点实体关系">
@@ -40,7 +42,7 @@ export function Relationships({
                   {item.related_entity.name}
                 </button>
               </td>
-              <td>{entityLabels[item.related_entity.entity_type] ?? item.related_entity.entity_type}</td>
+              <td>{entityLabels()[item.related_entity.entity_type] ?? item.related_entity.entity_type}</td>
             </tr>
           ))}
         </tbody>
