@@ -1,5 +1,10 @@
 # Design QA: X-Pharma 工作台
 
+The current product version is owned by [`pyproject.toml`](../pyproject.toml)
+and follows [the PR-merge counter](../CONTRIBUTING.md#product-version-counter).
+Dated captures below retain their original version and revision; they are not
+current-deployment evidence merely because the product version advances.
+
 ## 2026-10-07: research-first frontend craft
 
 The award-inspired quality target is assessed through task clarity, visual

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -81,3 +82,35 @@ def test_invalid_cursor_fails_before_any_write(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="revision"):
         update_manifests(tmp_path, "main; injected", 1)
     assert (tmp_path / "pyproject.toml").read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    "document",
+    [
+        "GOAL.md",
+        "docs/research-workflow-integrity.md",
+        "docs/automatic-public-source-ingestion.md",
+        "docs/completion-gap-checklist.md",
+        "docs/formal-acceptance-inputs.md",
+        "docs/researcher-experience-review.md",
+        "docs/security-gates.md",
+        "docs/public-research.md",
+    ],
+)
+def test_evergreen_product_documents_defer_to_the_single_version_authority(document: str) -> None:
+    text = (Path(__file__).resolve().parents[1] / document).read_text()
+    relative_manifest = "pyproject.toml" if document == "GOAL.md" else "../pyproject.toml"
+    assert re.search(r"\bX-Pharma(?:'s)?\s+v[0-9]+\.[0-9]+\.[0-9]+(?![0-9.])", text) is None
+    assert "软件版本仍为v" not in text
+    assert f"]({relative_manifest})" in text
+
+
+@pytest.mark.parametrize(
+    "document",
+    ["docs/release-evidence.md", "docs/design-qa.md", "docs/visual-baseline-reviews.md"],
+)
+def test_dated_version_evidence_keeps_its_original_version_separate_from_current_authority(document: str) -> None:
+    text = (Path(__file__).resolve().parents[1] / document).read_text()
+    introduction = "\n".join(text.splitlines()[:10])
+    assert "](../pyproject.toml)" in introduction
+    assert "v0.1.0" in text
