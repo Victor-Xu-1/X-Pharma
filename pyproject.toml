@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "X-Pharma"
-version = "0.1.11"
+version = "0.1.12"
 description = "Enterprise pharmaceutical intelligence database with human and agent interfaces"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
@@ -141,4 +141,4 @@ package = true
 constraint-dependencies = ["soupsieve==2.9.0", "urllib3==2.8.0"]
 
 [tool.x-pharma.versioning]
-processed-through = "6b8ff8b3251e49443546d9d1e1b15f2cd8ed7cd0"
+processed-through = "b6b40b84bf3a8b4e9c6be8bf1b46cf534a0f82ec"
