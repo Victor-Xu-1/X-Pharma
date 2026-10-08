@@ -110,3 +110,12 @@ export function entityResultContext(entity: IntelligenceEntity | Entity): string
   const values = [matchExplanation(entity), entity.description].filter((value): value is string => Boolean(value));
   return values.length ? values.join(" · ") : null;
 }
+
+/** Repeating the canonical name adds no candidate context; external IDs stay explicit. */
+export function hasDistinctEntityMatch(entity: IntelligenceEntity | Entity): boolean {
+  if (!("match" in entity) || !entity.match) return false;
+  return (
+    entity.match.match_type === "external_id" ||
+    entity.match.matched_value?.trim().toLocaleLowerCase() !== entity.name.trim().toLocaleLowerCase()
+  );
+}
