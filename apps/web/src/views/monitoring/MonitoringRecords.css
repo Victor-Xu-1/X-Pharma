@@ -2,6 +2,27 @@
   display: none;
 }
 
+.monitoring-record-description {
+  margin-top: 4px;
+}
+
+.monitoring-record-description > summary {
+  min-height: 32px;
+  width: fit-content;
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-sm);
+  cursor: pointer;
+}
+
+.monitoring-record-description > p {
+  max-inline-size: 38ch;
+  margin: 4px 0 0;
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 760px) {
   .monitoring-records {
     overflow: visible;
