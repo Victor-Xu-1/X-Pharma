@@ -466,10 +466,10 @@
   .pipeline-stages {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  .pipeline-stages > div:nth-child(3) {
+  .pipeline-stages > li:nth-child(3) {
     border-right: 0;
   }
-  .pipeline-stages > div:nth-child(-n + 3) {
+  .pipeline-stages > li:nth-child(-n + 3) {
     border-bottom: 1px solid var(--ds-border-subtle);
   }
   .commercial-metrics {
@@ -572,8 +572,6 @@
   .factory-status-strip > div:nth-child(-n + 2) {
     border-bottom: 1px solid var(--ds-border-subtle);
   }
-  .pipeline-panel > header,
-  .quarantine-panel > header,
   .source-form-section > header {
     align-items: flex-start;
     flex-direction: column;
@@ -584,12 +582,12 @@
   .source-form-grid {
     grid-template-columns: 1fr;
   }
-  .pipeline-stages > div,
-  .pipeline-stages > div:nth-child(3) {
+  .pipeline-stages > li,
+  .pipeline-stages > li:nth-child(3) {
     border-right: 0;
     border-bottom: 1px solid var(--ds-border-subtle);
   }
-  .pipeline-stages > div:last-child {
+  .pipeline-stages > li:last-child {
     border-bottom: 0;
   }
   .source-form-grid .source-path-field {

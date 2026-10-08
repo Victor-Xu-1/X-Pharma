@@ -175,6 +175,65 @@ it("does not block the data factory on a slow search projection status request",
   expect(loadSearchProjectionStatus).toHaveBeenCalledOnce();
 });
 
+it("collapses healthy operational details and flow guidance without removing source controls", async () => {
+  vi.mocked(loadSearchProjectionStatus).mockResolvedValue({
+    available: true,
+    version: "3.7.0",
+    cluster_name: "pharma-search",
+    cluster_status: "green",
+    aliases: {},
+    deliveries: { pending: 0, failed: 0, dead: 0 },
+    error: null,
+  });
+  renderWithQueryClient(<DataFactoryView user={user} />);
+  await screen.findByRole("button", { name: "接入自动数据源" });
+  expect(screen.getByRole("heading", { name: "采集与治理流程" }).closest("details")).not.toHaveAttribute("open");
+  expect(screen.getByRole("heading", { name: "检索投影运行状态" }).closest("details")).not.toHaveAttribute("open");
+  expect(screen.getByRole("heading", { name: "恶意文件隔离" }).closest("details")).not.toHaveAttribute("open");
+  expect(screen.getByRole("button", { name: "编辑 Legacy literature" })).toBeInTheDocument();
+  expect(screen.getByText("处理能力说明，不代表某次入库已完成；实际执行结果请查看入库运行记录。")).toBeInTheDocument();
+});
+
+it("does not hide a failed projection read behind a missing status panel", async () => {
+  vi.mocked(loadSearchProjectionStatus).mockRejectedValue(new Error("Projection request failed"));
+  renderWithQueryClient(<DataFactoryView user={user} />);
+  expect(await screen.findByText("检索投影状态读取失败")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "检索投影运行状态" }).closest("details")).toHaveAttribute("open");
+  expect(screen.getByRole("button", { name: "接入自动数据源" })).toBeInTheDocument();
+  expect(screen.queryByText("检索投影正常")).not.toBeInTheDocument();
+  vi.mocked(loadSearchProjectionStatus).mockResolvedValue({
+    available: true,
+    version: "3.7.0",
+    cluster_name: "recovered-search",
+    cluster_status: "green",
+    aliases: {},
+    deliveries: {},
+    error: null,
+  });
+  fireEvent.click(screen.getByRole("button", { name: "重试" }));
+  await waitFor(() => expect(screen.queryByText("检索投影状态读取失败")).not.toBeInTheDocument());
+});
+
+it("marks cached projection information as historical after a failed refresh", async () => {
+  renderWithQueryClient(<DataFactoryView user={user} />);
+  await screen.findByText("pharma-search");
+  vi.mocked(loadSearchProjectionStatus).mockRejectedValue(new Error("Projection refresh failed"));
+  fireEvent.click(screen.getByRole("button", { name: "刷新数据工厂" }));
+  expect(await screen.findByText("上次读取的状态（非实时）")).toBeInTheDocument();
+  expect(screen.getByText("pharma-search")).toBeInTheDocument();
+  expect(screen.queryByText("检索投影正常")).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "检索投影运行状态" }).closest("details")).toHaveAttribute("open");
+});
+
+it("reveals failed deliveries instead of labelling connectivity as complete projection success", async () => {
+  renderWithQueryClient(<DataFactoryView user={user} />);
+  await screen.findByText("pharma-search");
+  const panel = screen.getByRole("heading", { name: "检索投影运行状态" }).closest("details");
+  expect(panel).toHaveAttribute("open");
+  expect(panel?.querySelector("summary")).toHaveTextContent("1 条失败投递");
+  expect(screen.queryByText("检索投影正常")).not.toBeInTheDocument();
+});
+
 it("refreshes source assets together with the data factory snapshot", async () => {
   renderWithQueryClient(<DataFactoryView user={user} />);
 
@@ -314,6 +373,19 @@ it("requires an audited decision and keeps malware rescans behind ClamAV", async
 
   expect(await screen.findByLabelText("1 个待处置案件")).toBeInTheDocument();
   expect(screen.getByText("Win.Test.EICAR_HDB-1")).toBeInTheDocument();
+  const quarantinePanel = screen.getByRole("heading", { name: "恶意文件隔离" }).closest("details");
+  expect(quarantinePanel).toHaveAttribute("open");
+  const quarantineRegion = screen.getByRole("region", { name: "恶意文件隔离案件" });
+  expect(quarantineRegion).toHaveAttribute("tabindex", "0");
+  expect(within(quarantineRegion).getByText("待审核", { exact: true })).toBeInTheDocument();
+  expect(Array.from(quarantineRegion.querySelectorAll("tbody td"), (cell) => cell.getAttribute("data-label"))).toEqual([
+    "隔离文件",
+    "威胁",
+    "处置状态",
+    "决策版本",
+    "最近变更",
+    "操作",
+  ]);
   await verifyDialogKeyboard(screen.getByRole("button", { name: "处置" }), "隔离案件处置");
   expect(await screen.findByRole("dialog", { name: "隔离案件处置" })).toBeInTheDocument();
   expect(await screen.findByText(/仍强制经过 ClamAV/)).toBeInTheDocument();
@@ -356,6 +428,7 @@ it("moves focus into the data source dialog and restores it to the opener", asyn
   fireEvent.click(opener);
 
   const dialog = screen.getByRole("dialog", { name: "接入自动数据源" });
+  expect(within(dialog).queryByText("DATA SOURCE")).not.toBeInTheDocument();
   const nameInput = screen.getByLabelText("数据源名称");
   await waitFor(() => expect(nameInput).toHaveFocus());
   expect(dialog).toContainElement(document.activeElement as HTMLElement);

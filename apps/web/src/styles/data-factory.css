@@ -40,23 +40,54 @@
   border: 1px solid;
   margin-bottom: 20px;
 }
-.pipeline-panel > header {
-  min-height: 62px;
+.factory-details-panel > summary {
+  min-height: var(--ds-control-height);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 20px;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+.factory-details-panel > summary::-webkit-details-marker {
+  display: none;
+}
+.factory-details-panel > summary h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  overflow-wrap: anywhere;
+}
+.factory-panel-meta {
+  flex-shrink: 0;
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-xs);
+  white-space: nowrap;
+}
+.factory-details-panel > summary > svg {
+  flex-shrink: 0;
+}
+.factory-details-panel[open] > summary {
   border-bottom: 1px solid var(--ds-border-subtle);
 }
-.pipeline-panel > header p {
-  margin: 3px 0 0;
+.factory-details-panel[open] > summary .disclosure-chevron {
+  transform: rotate(180deg);
+}
+.factory-details-content {
+  padding: 16px;
+}
+.factory-details-content > p:first-child {
+  margin-top: 0;
 }
 .pipeline-stages {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
-.pipeline-stages > div {
+.pipeline-stages > li {
   min-width: 0;
   min-height: 104px;
   display: grid;
@@ -66,7 +97,7 @@
   padding: 16px;
   border-right: 1px solid var(--ds-border-subtle);
 }
-.pipeline-stages > div:last-child {
+.pipeline-stages > li:last-child {
   border-right: 0;
 }
 .pipeline-icon {
@@ -78,7 +109,7 @@
   color: var(--ds-accent-strong);
   border-radius: 50%;
 }
-.pipeline-stages > div > span:nth-child(2) {
+.pipeline-stages > li > span:nth-child(2) {
   min-width: 0;
   display: grid;
   gap: 3px;
@@ -90,8 +121,9 @@
   color: var(--ds-ink-muted);
   overflow-wrap: anywhere;
 }
-.pipeline-pending {
-  font-weight: 700;
+.pipeline-capability-label {
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-xs);
   white-space: nowrap;
 }
 .factory-warning {
@@ -116,23 +148,6 @@
   border-radius: var(--ds-radius-panel);
   background: var(--ds-surface);
 }
-.quarantine-panel > header {
-  min-height: 62px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--ds-border-subtle);
-}
-.quarantine-panel > header h2,
-.quarantine-panel > header p {
-  margin: 0;
-}
-.quarantine-panel > header p {
-  margin-top: 3px;
-  color: var(--ds-ink-muted);
-}
 .quarantine-count {
   min-width: 96px;
   display: inline-flex;
@@ -149,6 +164,64 @@
 }
 .quarantine-table {
   border: 0;
+}
+@media (max-width: 640px) {
+  .quarantine-table table,
+  .quarantine-table tbody {
+    display: block;
+    min-width: 0;
+    width: 100%;
+  }
+  .quarantine-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .quarantine-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+  .quarantine-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px 12px;
+    border: 1px solid var(--ds-border);
+    border-radius: var(--ds-radius-control);
+    padding: 12px;
+  }
+  .quarantine-table td {
+    display: grid;
+    grid-template-columns: 68px minmax(0, 1fr);
+    grid-column: 1 / -1;
+    min-width: 0;
+    border-bottom: 0;
+    padding: 4px 0;
+    gap: 8px;
+    overflow-wrap: anywhere;
+  }
+  .quarantine-table td:not(:first-child):not(:last-child)::before {
+    content: attr(data-label);
+    color: var(--ds-ink-muted);
+    font-size: var(--ds-text-xs);
+    font-weight: 400;
+  }
+  .quarantine-table td:first-child {
+    grid-column: 1;
+    grid-row: 1;
+    display: block;
+  }
+  .quarantine-table td:last-child {
+    grid-column: 2;
+    grid-row: 1;
+    display: block;
+  }
+  .quarantine-table .quarantine-file {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
 }
 .quarantine-file {
   min-width: 160px;
