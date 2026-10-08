@@ -1,4 +1,4 @@
-import { entityTypeLabel } from "../lib/entityPresentation";
+import { entityTypeLabel, hasDistinctEntityMatch } from "../lib/entityPresentation";
 import type { EntitySearchItemRead } from "../lib/generated";
 import { useLocale } from "../lib/i18n";
 import { entitySearchOptionText as t } from "../lib/i18n/entitySearchOption";
@@ -31,12 +31,7 @@ function identifierNamespaceLabel(namespace: string): string {
 
 export function entityMatchExplanation(entity: EntitySearchItemRead): string | null {
   if (!entity.match) return null;
-  if (
-    entity.match.matched_value?.trim().toLocaleLowerCase() === entity.name.trim().toLocaleLowerCase() &&
-    entity.match.match_type !== "external_id"
-  ) {
-    return null;
-  }
+  if (!hasDistinctEntityMatch(entity)) return null;
   const relation = {
     exact: "精确匹配",
     partial: "部分匹配",
