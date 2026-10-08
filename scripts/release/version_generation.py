@@ -42,7 +42,10 @@ def unchanged_dependencies(before: dict[str, Any], after: dict[str, Any]) -> Non
 def generate_mirrors(root: Path) -> None:
     before_lock = tomllib.loads((root / "uv.lock").read_text())
     before_contract = json.loads((root / "docs/openapi.json").read_text())
-    command(root, ["uv", "lock", "--offline"])
+    # A locked install caches wheels, not the registry metadata required to refresh
+    # the root-package version. Cold CI explicitly fetches that metadata; the
+    # semantic comparison below still forbids any dependency-resolution change.
+    command(root, ["uv", "lock"])
     unchanged_dependencies(before_lock, tomllib.loads((root / "uv.lock").read_text()))
     command(root, ["uv", "sync", "--locked", "--offline", "--dev"], timeout=180)
     command(root, ["uv", "run", "--locked", "--offline", "pharma-openapi"])

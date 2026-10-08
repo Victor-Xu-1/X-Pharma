@@ -56,6 +56,10 @@ def main() -> None:
         result = reconcile(Path(__file__).resolve().parents[2], GitHubRepository(arguments.repository))
     except (ValueError, RuntimeError) as exc:
         parser.exit(1, f"Version reconciliation failed: {exc}\n")
+    except subprocess.CalledProcessError as exc:
+        # Report the fixed operation, not stderr/environment that may contain credentials.
+        operation = " ".join(str(part) for part in exc.cmd[:3]) if isinstance(exc.cmd, list) else "subprocess"
+        parser.exit(1, f"Version command failed: {operation} (exit {exc.returncode}); no forced recovery attempted\n")
     except (OSError, subprocess.SubprocessError) as exc:
         # Do not print subprocess arguments, environment or credential-bearing Git configuration.
         parser.exit(1, f"Version reconciliation failed ({type(exc).__name__}); no forced recovery attempted\n")
