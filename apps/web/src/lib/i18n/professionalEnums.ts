@@ -4,6 +4,7 @@ import { createTranslator } from "./translator";
 /** Only captions from existing project-owned controlled enum dictionaries. */
 export const professionalEnumMessages = {
   发现: "Discovery",
+  药物发现: "Drug discovery",
   临床前: "Preclinical",
   IND: "IND",
   "早期 I 期": "Early Phase I",
@@ -20,6 +21,7 @@ export const professionalEnumMessages = {
   III期: "Phase III",
   申报: "Submission",
   已申报: "Filed",
+  申报上市: "Marketing application filed",
   已批准: "Approved",
   阶段未知: "Phase unknown",
   交易合作方: "Partner",

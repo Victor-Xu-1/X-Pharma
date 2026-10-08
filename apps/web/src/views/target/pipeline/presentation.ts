@@ -1,6 +1,7 @@
 import { hasPipelineSearchFilter, type PipelineSearchFilters } from "../../../lib/contracts/pipeline";
 import type { CompetitiveProgram } from "../../../lib/contracts/target";
 import type { AppliedFilterRead, PipelineLandscapeRead } from "../../../lib/generated";
+import { professionalEnumLabel } from "../../../lib/i18n/professionalEnums";
 import { targetPhaseLabels } from "../../../lib/phasePresentation";
 import { publicProgramTags } from "../../../lib/programDisplay";
 
@@ -200,7 +201,10 @@ export function pipelineProgramStatusLabel(
 export const developmentPhaseLabels = targetPhaseLabels;
 
 export function developmentPhaseLabel(value: string): string {
-  return developmentPhaseLabels[value.toLowerCase()] ?? value;
+  const code = value.toLowerCase();
+  return Object.hasOwn(developmentPhaseLabels, code)
+    ? professionalEnumLabel(developmentPhaseLabels[code], code)
+    : value;
 }
 
 export type TargetFacetKey = "modality" | "therapeutic_area" | "innovation_type" | "drug_category" | "program_tag";

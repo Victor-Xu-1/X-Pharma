@@ -7,6 +7,40 @@ current-deployment evidence merely because the product version advances.
 
 ## 2026-10-07: research-first frontend craft
 
+### 2026-10-09: target dossier language continuity (candidate, not deployed)
+
+The target shell, overview and relationship/translational-evidence panels use
+the same English-first locale owner. Controlled classification, phases, counts,
+coverage, options and feedback are translated; sequences, original study text,
+attribution, source warnings and unknown vocabulary are not. Summary counts
+remain the server's complete authorized aggregate, not bounded-array counts.
+Registry sponsor labels retain their narrower identity scope in relationships.
+
+Four new behavior regressions first failed, then passed. The affected target,
+module ownership, controlled catalog and identity consumers pass44 focused
+tests, strict application/E2E types, exact-file formatting and unchanged build
+resource limits. Eight native Chrome155 read-only states at1440/320 verify actual
+EGFR shell/overview reflow, preserved query/tab/cache and raw narrative handling.
+Desktop1440/mobile390 controlled browser cases separately verify complete counts,
+evidence filter drafts, source narratives and registry identity with WCAG-tag
+checks. Synthetic responses are never written to a scientific database.
+
+The initial native narrative assertion incorrectly treated an absent-summary
+UI fallback as a source quote; it was corrected against the actual response.
+The initial controlled browser run flagged the existing performance telemetry
+POST, not a business mutation; that exact endpoint is now fulfilled locally,
+while all scientific/account writes remain blocked. The parallel failed run's
+incomplete memory-pressure trace is retained; focused single-worker cases pass.
+Other dossier bodies and complete site-language/quality closure remain pending.
+Visual review also reproduced the fieldset's inherited three-dimensional border
+and compressed English selects. An explicit border reset retains the token-based
+bottom divider; the existing auto-fit grid now uses180px so narrow controls stack.
+Both actual browser regressions failed first; functional and pixel budgets are
+unchanged. This is a target-owned correction, not another global theme override.
+Normal exact-head CI, PR merging, the automatic version counter and exact-final-main
+deployment/postdeploy acceptance remain independent gates, not implied by these
+candidate checks. No award, global WCAG or scientific acceptance is claimed.
+
 The award-inspired quality target is assessed through task clarity, visual
 coherence, readable evidence, responsive behavior, keyboard access and
 performance, not decorative payloads or a self-certified award. The original

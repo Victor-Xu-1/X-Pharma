@@ -29,7 +29,9 @@ it("keeps target primary filters bounded and readable instead of a fixed three-c
   const layout = source("../styles.css");
   const filters = ruleBody(layout, ".target-evidence-filters");
   expect(filters).toContain("min-width: 0;");
-  expect(filters).toContain("repeat(auto-fit, minmax(min(100%, 150px), 1fr))");
+  expect(filters).toContain("repeat(auto-fit, minmax(min(100%, 180px), 1fr))");
+  expect(filters).toContain("border: 0;");
+  expect(filters).toContain("border-bottom: 1px solid var(--ds-border);");
   expect(ruleBody(layout, ".target-evidence-filters select")).toContain("min-height: var(--ds-control-height);");
 });
 
