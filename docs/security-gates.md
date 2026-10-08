@@ -74,7 +74,10 @@ declared tools; these findings are not exempted through VEX or audit ignores.
 valid 512-character boundary and safe handling beyond it, plus agreement between
 both dependency pins and the installed parser. Strict PDF parsing, sandbox
 resource limits and the actual parser/OCR HTTP regressions remain required.
-This dependency version is independent of X-Pharma's v0.1.0 software version.
+This dependency version is independent of X-Pharma's product version, whose sole
+authority is [`pyproject.toml`](../pyproject.toml). Product PR-merge counting follows
+[the contribution policy](../CONTRIBUTING.md#product-version-counter), not the
+dependency, protocol or migration version.
 
 ### OCR transitive media-library reachability
 
