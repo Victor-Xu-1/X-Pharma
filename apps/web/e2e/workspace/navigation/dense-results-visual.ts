@@ -31,7 +31,7 @@ export async function verifyDenseResultsVisual({ page, testInfo, paginationQuery
   // Keep the pointer outside the viewport so row hover styling cannot make the
   // repository-owned visual baseline depend on the previous interaction target.
   await page.mouse.move(-10, -10);
-  await expect(denseTableShell).toHaveScreenshot("research-dense-results.png", {
+  await expect.soft(denseTableShell).toHaveScreenshot("research-dense-results.png", {
     animations: "disabled",
     caret: "hide",
     mask: [denseTableShell.locator(".entity-match-context")],
