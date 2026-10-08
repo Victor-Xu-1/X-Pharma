@@ -4,8 +4,6 @@ Current product version is owned by [pyproject.toml](../pyproject.toml), not by
 these dated captures. Each review retains its original version, revision and
 image hashes; a later numeric increment does not recapture or recertify it.
 
-## English-first bilingual interface: three affected references
-
 ## Bilingual research controls: bounded source-summary rows
 
 PR58 head155259006f4b003e2410547c87123760d142ebb2/run37797681521
