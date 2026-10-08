@@ -43,7 +43,12 @@ export function MonitoringSearches({
               <tr key={saved.id}>
                 <td className="monitoring-record-name" data-label="名称">
                   <strong>{saved.name}</strong>
-                  {saved.description ? <small className="cell-subtitle">{saved.description}</small> : null}
+                  {saved.description ? (
+                    <details className="monitoring-record-description">
+                      <summary>业务说明</summary>
+                      <p>{saved.description}</p>
+                    </details>
+                  ) : null}
                 </td>
                 <td className="monitoring-record-body" data-label="查询">
                   {summary.query}
