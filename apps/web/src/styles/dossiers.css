@@ -1,4 +1,35 @@
 /* Cross-domain entity dossier */
+:where(.disease-burden-summary) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px 20px;
+  margin: 0;
+  padding: 12px 0;
+}
+:where(.disease-burden-summary) > div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+:where(.disease-burden-summary) dt {
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-xs);
+}
+:where(.disease-burden-summary) dd {
+  margin: 0;
+  color: var(--ds-ink-strong);
+  font-size: var(--ds-text-sm);
+  font-weight: 600;
+}
+:where(.disease-target-disclosure) > summary {
+  padding: 12px 0;
+  cursor: pointer;
+  color: var(--ds-accent-strong);
+}
+:where(.disease-methodology) {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .entity-dossier-page {
   min-width: 0;
 }

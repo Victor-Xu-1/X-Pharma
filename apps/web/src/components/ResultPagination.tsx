@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { type FormEvent, useEffect, useId, useMemo, useState } from "react";
-import { useLocale } from "../lib/i18n";
+import { uiFeedback, useLocale } from "../lib/i18n";
 import { queryText as t } from "../lib/i18n/query";
 
 type PageToken = number | { key: string };
@@ -77,7 +77,7 @@ export function ResultPagination({
       <div className="domain-pagination-context">
         <strong>{t("第 {page} / {pages} 页", { page: currentPage, pages: totalPages })}</strong>
         <span>{t("共 {count} 条", { count: totalRows })}</span>
-        {notice ? <small title={notice}>{notice}</small> : null}
+        {notice ? <small title={uiFeedback(notice)}>{uiFeedback(notice)}</small> : null}
       </div>
       <div className="domain-pagination-controls">
         <button

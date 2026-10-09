@@ -1,5 +1,6 @@
-import { act, render } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
+import { DomainLandscape } from "../components/DomainLandscape";
 import { LandscapeBarChart } from "../components/LandscapeBarChart";
 import { setLocale } from "../lib/i18n";
 
@@ -49,4 +50,44 @@ it("updates controlled legend and count captions without changing bucket identit
   expect(chinese.yAxis.data).toEqual(["EGFR 原名"]);
   chart.on.mock.lastCall?.[1]({ dataIndex: 0 });
   expect(onSelect).toHaveBeenCalledExactlyOnceWith(buckets[0]);
+});
+
+it("uses the caller's record unit rather than inventing development programs for a domain distribution", () => {
+  const buckets = [{ key: "publication", label: "原始论文类型", count: 0, share: 0 }];
+  const view = render(<LandscapeBarChart ariaLabel="Updates" buckets={buckets} unitLabel="updates" />);
+  let tooltip = chart.setOption.mock.lastCall?.[0].tooltip.formatter({ dataIndex: 0 });
+  expect(tooltip).toContain("0 updates");
+  expect(tooltip).not.toContain("programs");
+  act(() => setLocale("zh-CN"));
+  view.rerender(<LandscapeBarChart ariaLabel="Updates" buckets={buckets} unitLabel="条动态" />);
+  tooltip = chart.setOption.mock.lastCall?.[0].tooltip.formatter({ dataIndex: 0 });
+  expect(tooltip).toContain("0 条动态");
+  expect(tooltip).not.toContain("项目");
+  view.rerender(
+    <LandscapeBarChart ariaLabel="Updates" buckets={buckets} unitLabel={'<img src=x onerror="alert(1)">'} />,
+  );
+  tooltip = chart.setOption.mock.lastCall?.[0].tooltip.formatter({ dataIndex: 0 });
+  expect(tooltip).toContain("&lt;img");
+  expect(tooltip).not.toContain("<img");
+  expect(buckets[0]).toEqual({ key: "publication", label: "原始论文类型", count: 0, share: 0 });
+});
+
+it("passes the domain unit through the lazy statistics chart without rewriting source buckets", async () => {
+  const buckets = [{ key: "publication", label: "原始论文类型", count: 1, share: 1 }];
+  render(
+    <DomainLandscape
+      domainId="news"
+      ariaLabel="Updates"
+      total={1}
+      totalUnit="updates"
+      unitLabel="updates"
+      sections={[{ id: "type", title: "Type", detail: "", buckets, filterField: "type" }]}
+      view="chart"
+      onViewChange={vi.fn()}
+      onFilter={vi.fn()}
+    />,
+  );
+  await screen.findByRole("img", { name: "Type updates distribution" });
+  expect(chart.setOption.mock.lastCall?.[0].tooltip.formatter({ dataIndex: 0 })).toContain("1 updates");
+  expect(buckets[0]).toEqual({ key: "publication", label: "原始论文类型", count: 1, share: 1 });
 });
