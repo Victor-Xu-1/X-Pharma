@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 
@@ -13,6 +13,7 @@ import {
 } from "../lib/contracts/pipeline";
 import { loadRecordProvenance } from "../lib/contracts/provenance";
 import { loadTargetDossier, loadTargetSar } from "../lib/contracts/target";
+import { setLocale } from "../lib/i18n";
 import type { Entity } from "../lib/types";
 import type { TargetDossierSection } from "../lib/workspaceRouting";
 import { TargetView } from "../views/TargetView";
@@ -430,6 +431,125 @@ beforeEach(() => {
     license_scopes: [],
     warnings: [],
   });
+});
+
+it("localizes the target overview without rewriting evidence or reloading the dossier", async () => {
+  setLocale("en");
+  const onOpenEvidence = vi.fn();
+  renderTargetView({ onOpenEvidence });
+  expect(await screen.findByRole("heading", { name: "EGFR" })).toBeInTheDocument();
+  expect(screen.getByText("Single protein · Human")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Function summary" })).toBeInTheDocument();
+  expect(screen.getByText("Governed EGFR summary")).toBeInTheDocument();
+  expect(screen.getByText("Phase II")).toBeInTheDocument();
+  expect(screen.getByText("Approved")).toBeInTheDocument();
+  expect(screen.getByRole("tablist", { name: "Target dossier views" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "View Source evidence" }));
+  expect(onOpenEvidence).toHaveBeenCalledExactlyOnceWith("EGFR");
+  fireEvent.click(screen.getByRole("tab", { name: "Structures" }));
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("tab", { name: "结构" })).toHaveAttribute("aria-selected", "true");
+  act(() => setLocale("en"));
+  expect(screen.getByRole("tab", { name: "Structures" })).toHaveAttribute("aria-selected", "true");
+  expect(loadTargetDossier).toHaveBeenCalledOnce();
+});
+
+it("localizes complete authorized coverage counts without counting the bounded arrays", async () => {
+  const data = await loadTargetDossier("target-1", new AbortController().signal);
+  vi.mocked(loadTargetDossier).mockClear();
+  vi.mocked(loadTargetDossier).mockResolvedValueOnce({
+    ...data,
+    summary: {
+      ...data.summary,
+      clinical_trial_count: 1200,
+      recruiting_trial_count: 137,
+      unclassified_trial_status_count: 11,
+      patent_count: 2042,
+      active_patent_count: 123,
+      unclassified_patent_status_count: 7,
+    },
+    coverage: [{ domain: "clinical_trials", total: 1200, returned: 50, status: "truncated", note: "原始来源说明" }],
+    warnings: ["原始来源限制，不进行机器翻译。"],
+  });
+  setLocale("en");
+  renderTargetView();
+  expect(await screen.findByRole("heading", { name: "EGFR" })).toBeInTheDocument();
+  expect(screen.getByText("137 recruiting trials")).toBeInTheDocument();
+  expect(
+    screen.getByText("11 trials have incomplete status data and are excluded from recruiting counts"),
+  ).toBeInTheDocument();
+  expect(screen.getByText("123 patent families with active legal status")).toBeInTheDocument();
+  expect(
+    screen.getByText("7 patent families have incomplete status data and are excluded from active counts"),
+  ).toBeInTheDocument();
+  expect(screen.getByText("1,200 related records; 50 currently shown")).toBeInTheDocument();
+  expect(screen.getByText("原始来源限制，不进行机器翻译。")).toBeInTheDocument();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("1,200 条相关信息，当前显示 50 条")).toBeInTheDocument();
+  expect(loadTargetDossier).toHaveBeenCalledOnce();
+});
+
+it("keeps translational filters and original study narratives while switching languages", async () => {
+  setLocale("en");
+  renderTargetView({ initialSection: "evidence" });
+  expect(await screen.findByRole("heading", { name: "EGFR" })).toBeInTheDocument();
+  const type = screen.getByRole("combobox", { name: "Evidence type" });
+  const direction = screen.getByRole("combobox", { name: "Evidence direction" });
+  expect(screen.getByText("Supports the target hypothesis")).toBeInTheDocument();
+  expect(screen.getByText("遗传关联支持 EGFR 靶点假设")).toBeInTheDocument();
+  fireEvent.change(type, { target: { value: "expression" } });
+  expect(screen.getByText("No evidence matches the current filters")).toBeInTheDocument();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("combobox", { name: "证据类型" })).toHaveValue("expression");
+  expect(screen.getByText("当前筛选条件下无匹配证据")).toBeInTheDocument();
+  fireEvent.change(type, { target: { value: "genetic_association" } });
+  fireEvent.change(direction, { target: { value: "supports" } });
+  act(() => setLocale("en"));
+  expect(screen.getByRole("combobox", { name: "Evidence type" })).toHaveValue("genetic_association");
+  expect(screen.getByRole("combobox", { name: "Evidence direction" })).toHaveValue("supports");
+  expect(screen.getByRole("table", { name: "Target translational evidence" })).toBeInTheDocument();
+  expect(screen.getByText("遗传关联支持 EGFR 靶点假设")).toBeInTheDocument();
+  expect(loadTargetDossier).toHaveBeenCalledOnce();
+});
+
+it("distinguishes original registry sponsor labels from verified organizations in relationships", async () => {
+  const data = await loadTargetDossier("target-1", new AbortController().signal);
+  vi.mocked(loadTargetDossier).mockClear();
+  vi.mocked(loadTargetDossier).mockResolvedValueOnce({
+    ...data,
+    relationships: [
+      {
+        id: "registry-relationship",
+        direction: "incoming",
+        predicate: "trial_lead_sponsor",
+        related_entity: {
+          ...data.profile.entity,
+          id: "source-sponsor",
+          canonical_entity_id: "source-sponsor",
+          entity_type: "organization",
+          name: "原始登记申办方",
+          attributes: { identity_scope: "provider_label" },
+        },
+        review_status: "verified",
+        attributes: {},
+        valid_from: null,
+        valid_to: null,
+      },
+    ],
+  });
+  setLocale("en");
+  const onOpenOrganization = vi.fn();
+  renderTargetView({ initialSection: "relationships", onOpenOrganization });
+  expect(await screen.findByRole("heading", { name: "EGFR" })).toBeInTheDocument();
+  expect(screen.getByRole("table", { name: "Target entity relationships" })).toBeInTheDocument();
+  expect(screen.getByText("Registry sponsor")).toBeInTheDocument();
+  expect(screen.getByText("From")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "原始登记申办方" }));
+  expect(onOpenOrganization).toHaveBeenCalledExactlyOnceWith("source-sponsor");
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("登记申办方")).toBeInTheDocument();
+  expect(screen.getByText("来自")).toBeInTheDocument();
+  expect(loadTargetDossier).toHaveBeenCalledOnce();
 });
 
 it("presents linked trial phases and recruitment states in novice-friendly Chinese", async () => {

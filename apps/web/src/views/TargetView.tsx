@@ -15,6 +15,8 @@ import type {
 } from "../lib/contracts/pipeline";
 import type { ProvenanceSelection } from "../lib/contracts/provenance";
 import { loadTargetDossier, targetKeys } from "../lib/contracts/target";
+import { formattingLocale, useMessages } from "../lib/i18n";
+import { targetDossierMessages } from "../lib/i18n/targetDossier";
 import { organismLabel, targetClassLabel, targetDisplayIdentity } from "../lib/targetDisplay";
 import type { Entity } from "../lib/types";
 import type { TargetDossierSection } from "../lib/workspaceRouting";
@@ -25,7 +27,7 @@ import { Overview } from "./target/TargetOverview";
 import { Deals, NewsEvents, Patents, RegulatoryEvents, Trials } from "./target/TargetRelatedRecords";
 import type { TargetEntityOpener } from "./target/types";
 
-const tabs: Array<ResearchTabOption<TargetDossierSection>> = [
+const tabLabels: Array<ResearchTabOption<TargetDossierSection> & { label: keyof typeof targetDossierMessages }> = [
   { key: "overview", label: "概览" },
   { key: "relationships", label: "关系网络" },
   { key: "evidence", label: "转化证据" },
@@ -102,6 +104,9 @@ export function TargetView({
     targetAggregation: PipelineTargetAggregation;
   }) => void;
 }) {
+  const text = useMessages(targetDossierMessages);
+  const tabs = tabLabels.map((tab) => ({ ...tab, label: text(tab.label) }));
+  const number = new Intl.NumberFormat(formattingLocale());
   const [provenanceSelection, setProvenanceSelection] = useState<ProvenanceSelection | null>(null);
   const openDrug = onOpenDrug ?? onOpenEntity;
   const openTarget = onOpenTarget ?? onOpenEntity;
@@ -130,12 +135,12 @@ export function TargetView({
     queryFn: ({ signal }) => loadTargetDossier(target?.id ?? "", signal),
     enabled: Boolean(target),
   });
-  if (!target) return <EmptyState title="尚未选择靶点" detail="请从情报检索结果中打开一个靶点" />;
+  if (!target) return <EmptyState title={text("尚未选择靶点")} detail={text("请从情报检索结果中打开一个靶点")} />;
   if (dossier.error) {
-    const message = dossier.error instanceof Error ? dossier.error.message : "靶点档案加载失败";
+    const message = dossier.error instanceof Error ? dossier.error.message : text("靶点档案加载失败");
     return <ErrorState message={message} retry={() => void dossier.refetch()} />;
   }
-  if (!dossier.data) return <Spinner label={`正在加载 ${target.name} 全景档案`} />;
+  if (!dossier.data) return <Spinner label={text("正在加载 {name} 全景档案", { name: target.name })} />;
   const data = dossier.data;
   const displayIdentity = targetDisplayIdentity({
     name: data.profile.entity.name,
@@ -164,7 +169,7 @@ export function TargetView({
               selection={{
                 resourceType: "target_profile",
                 resourceId: data.profile.profile_id,
-                label: `${data.profile.entity.name} 靶点档案`,
+                label: text("{name} 靶点档案", { name: data.profile.entity.name }),
               }}
               onOpen={setProvenanceSelection}
             />
@@ -173,7 +178,7 @@ export function TargetView({
         <EntityNames entity={data.profile.entity} />
         <dl className="dossier-metrics">
           <div>
-            <dt>基因符号</dt>
+            <dt>{text("基因符号")}</dt>
             <dd>{data.profile.gene_symbol ?? "--"}</dd>
           </div>
           <div>
@@ -181,27 +186,27 @@ export function TargetView({
             <dd>{data.profile.uniprot_accession ?? "--"}</dd>
           </div>
           <div>
-            <dt>活性记录</dt>
-            <dd>{data.profile.activity_count}</dd>
+            <dt>{text("活性记录")}</dt>
+            <dd>{number.format(data.profile.activity_count)}</dd>
           </div>
           <div>
-            <dt>转化证据</dt>
-            <dd>{data.profile.target_evidence_count ?? data.target_evidence.length}</dd>
+            <dt>{text("转化证据")}</dt>
+            <dd>{number.format(data.profile.target_evidence_count ?? data.target_evidence.length)}</dd>
           </div>
           <div>
-            <dt>竞品项目</dt>
-            <dd>{data.profile.program_count}</dd>
+            <dt>{text("竞品项目")}</dt>
+            <dd>{number.format(data.profile.program_count)}</dd>
           </div>
           <div>
-            <dt>查询时间</dt>
-            <dd title="本次档案查询时间，不代表所有来源的最后更新时间">{formatDate(data.profile.as_of, true)}</dd>
+            <dt>{text("查询时间")}</dt>
+            <dd title={text("本次档案查询时间不代表所有来源的最后更新时间")}>{formatDate(data.profile.as_of, true)}</dd>
           </div>
         </dl>
         <ResearchTabList
           tabs={tabs}
           activeTab={activeSection}
           onChange={onSectionChange}
-          ariaLabel="靶点档案视图"
+          ariaLabel={text("靶点档案视图")}
           idPrefix="target-dossier"
         />
         <div
@@ -272,7 +277,14 @@ export function TargetView({
         </div>
       </section>
       {provenanceSelection ? (
-        <RecordProvenanceDrawer selection={provenanceSelection} onClose={() => setProvenanceSelection(null)} />
+        <RecordProvenanceDrawer
+          selection={
+            provenanceSelection.resourceType === "target_profile"
+              ? { ...provenanceSelection, label: text("{name} 靶点档案", { name: data.profile.entity.name }) }
+              : provenanceSelection
+          }
+          onClose={() => setProvenanceSelection(null)}
+        />
       ) : null}
     </>
   );

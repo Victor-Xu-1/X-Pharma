@@ -90,11 +90,12 @@
 }
 .target-evidence-filters {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   min-width: 0;
   margin: 0;
   align-items: end;
   gap: 10px;
+  border: 0;
   border-bottom: 1px solid var(--ds-border);
   background: var(--ds-surface);
   padding: 12px 14px;
