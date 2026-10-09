@@ -57,6 +57,8 @@ it("renders English patent filters and memoized columns while retaining drafts a
   const table = await screen.findByRole("table", { name: "Patent family results" });
   expect(within(table).getByRole("columnheader", { name: /Family and title/ })).toBeVisible();
   expect(screen.getByLabelText("Legal status")).toBeVisible();
+  expect(screen.getByLabelText("Applicant")).toHaveAttribute("aria-label", "Applicant");
+  expect(screen.getByLabelText("Legal status")).toHaveAttribute("aria-label", "Legal status");
   expect(screen.getByText("1 events · 1 independent claims")).toBeVisible();
   fireEvent.change(screen.getByLabelText("Keyword"), { target: { value: "EGFR 未提交" } });
   expect(within(table).getByText("Active", { exact: true })).toBeVisible();
@@ -66,6 +68,7 @@ it("renders English patent filters and memoized columns while retaining drafts a
   expect(screen.getByLabelText("关键词")).toHaveValue("EGFR 未提交");
   expect(screen.getByRole("checkbox", { name: "取消选择对比 INPADOC-123456" })).toBeChecked();
   expect(screen.getByRole("columnheader", { name: /专利族与标题/ })).toBeVisible();
+  expect(screen.getByLabelText("申请人")).toHaveAttribute("aria-label", "申请人");
   act(() => setLocale("en"));
   expect(screen.getByLabelText("Keyword")).toHaveValue("EGFR 未提交");
   expect(screen.getByRole("checkbox", { name: "Deselect Compare INPADOC-123456" })).toBeChecked();

@@ -80,7 +80,11 @@ export function PatentFilterForm({
       </label>
       <label>
         <span>{t("申请人")}</span>
-        <select value={filters.applicant} onChange={(event) => update("applicant", event.target.value)}>
+        <select
+          aria-label={t("申请人")}
+          value={filters.applicant}
+          onChange={(event) => update("applicant", event.target.value)}
+        >
           <option value="">{t("全部")}</option>
           {facetOptions(facets, "applicant", filters.applicant).map((value) => (
             <option key={value} value={value}>
@@ -91,7 +95,11 @@ export function PatentFilterForm({
       </label>
       <label>
         <span>{t("法律状态")}</span>
-        <select value={filters.legalStatus} onChange={(event) => update("legalStatus", event.target.value)}>
+        <select
+          aria-label={t("法律状态")}
+          value={filters.legalStatus}
+          onChange={(event) => update("legalStatus", event.target.value)}
+        >
           <option value="">{t("全部")}</option>
           {facetOptions(facets, "legal_status", filters.legalStatus).map((value) => (
             <option key={value} value={value}>

@@ -49,6 +49,8 @@ test("[patent-language] English-first filters keep drafts, selection and source 
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   const results = page.getByRole("table", { name: "Patent family results", exact: true });
   await expect(results).toContainText(patent.title);
+  await expect(page.getByLabel("Applicant", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("Legal status", { exact: true })).toHaveValue("");
   await expect(results.getByText("Active", { exact: true })).toBeVisible();
   await page.getByRole("checkbox", { name: `Select Compare ${patent.family_identifier}`, exact: true }).check();
   await page.getByText("More patent conditions", { exact: true }).click();
@@ -62,6 +64,8 @@ test("[patent-language] English-first filters keep drafts, selection and source 
   await selectInterfaceLanguage(page, "zh-CN");
   expect(page.url()).toBe(originalUrl);
   expect(reads).toBe(originalReads);
+  await expect(page.getByLabel("申请人", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("法律状态", { exact: true })).toHaveValue("");
   await expect(page.getByRole("textbox", { name: "关键词", exact: true })).toHaveValue("未提交专利草稿");
   await expect(
     page.getByRole("checkbox", { name: `取消选择对比 ${patent.family_identifier}`, exact: true }),
