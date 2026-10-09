@@ -68,6 +68,7 @@ export function EpidemiologyTrendPanel({
               valueLabel={selection.filters.unit}
               points={data.items.map((item) => ({
                 label: periodLabel(item),
+                axisLabel: periodLabel(item).replace(" - ", "\n– "),
                 value: item.value,
                 lowerBound: item.lower_bound,
                 upperBound: item.upper_bound,

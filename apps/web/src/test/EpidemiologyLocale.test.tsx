@@ -1,7 +1,7 @@
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ApiError } from "../lib/api";
-import { loadEpidemiologyTrend, searchEpidemiology } from "../lib/contracts/epidemiology";
+import { loadEpidemiologyTrend, saveEpidemiologySearch, searchEpidemiology } from "../lib/contracts/epidemiology";
 import { setLocale } from "../lib/i18n";
 import { EpidemiologyView } from "../views/EpidemiologyView";
 import { emptyFilters, observation, searchResult } from "./fixtures/epidemiologyResearch";
@@ -25,6 +25,7 @@ beforeEach(() => {
   vi.mocked(searchEpidemiology).mockResolvedValue(searchResult);
   vi.mocked(loadEpidemiologyTrend).mockResolvedValue({
     disease: observation.disease_entity,
+    anchor_observation_id: observation.id,
     items: [observation],
     total: 1,
     truncated: false,
@@ -103,4 +104,35 @@ it("refuses a trend response for a different disease rather than labelling it a 
   );
   await screen.findByText("Trend response does not match the requested cohort");
   expect(screen.queryByText("FOREIGN_UNIT")).not.toBeInTheDocument();
+});
+
+it("retains a pending save and its original name across locale changes without repeating the operation", async () => {
+  let complete: ((outcome: Awaited<ReturnType<typeof saveEpidemiologySearch>>) => void) | undefined;
+  vi.mocked(saveEpidemiologySearch).mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        complete = resolve;
+      }),
+  );
+  renderWithQueryClient(<EpidemiologyView {...props} />);
+  await screen.findByRole("table", { name: "Epidemiology observations" });
+  fireEvent.click(screen.getByRole("button", { name: "Save / monitor" }));
+  const dialog = screen.getByRole("dialog");
+  fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "原始疾病负担名称" } });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Save search" }));
+  await screen.findByText("Saving search");
+  act(() => setLocale("zh-CN"));
+  expect(within(dialog).getByLabelText("名称")).toHaveValue("原始疾病负担名称");
+  expect(within(dialog).getByLabelText("名称")).toBeDisabled();
+  await act(async () => complete?.({ kind: "monitor_failed", reason: "RAW_EPI_MONITOR_FAILURE" }));
+  await screen.findByText("检索已保存，但监控未启用：RAW_EPI_MONITOR_FAILURE");
+  act(() => setLocale("en"));
+  expect(screen.getByText("Query saved, but monitoring was not enabled: RAW_EPI_MONITOR_FAILURE")).toBeVisible();
+  expect(saveEpidemiologySearch).toHaveBeenCalledOnce();
+  expect(vi.mocked(saveEpidemiologySearch).mock.calls[0]?.[0]).toEqual({
+    name: "原始疾病负担名称",
+    filters: props.initialFilters,
+    shared: false,
+    monitor: true,
+  });
 });

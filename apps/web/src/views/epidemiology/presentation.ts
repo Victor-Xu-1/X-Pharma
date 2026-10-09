@@ -5,14 +5,19 @@ import type {
   EpidemiologyTrendResult,
 } from "../../lib/contracts/epidemiology";
 import { epidemiologyMeasureLabels, epidemiologySexLabels } from "../../lib/epidemiologyDisplay";
-import { formattingLocale } from "../../lib/i18n";
 import { epidemiologyText as t } from "../../lib/i18n/epidemiology";
 import { professionalEnumLabel } from "../../lib/i18n/professionalEnums";
+
+export { formatScientificNumber as formatNumber } from "../../lib/scientificNumber";
+
+import { formatScientificNumber as formatNumber } from "../../lib/scientificNumber";
 
 export type TrendSelection = {
   observationId: string;
   diseaseId: string;
   diseaseName: string;
+  publisherId: string | null;
+  methodology: string | null;
   filters: EpidemiologyFilters;
 };
 export function measureValue(value: string): string {
@@ -25,10 +30,6 @@ export function sexValue(value: string | null): string {
   return Object.hasOwn(epidemiologySexLabels, value)
     ? professionalEnumLabel(epidemiologySexLabels[value], value)
     : value;
-}
-export function formatNumber(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return "--";
-  return new Intl.NumberFormat(formattingLocale(), { maximumSignificantDigits: 21 }).format(value);
 }
 export function estimateLabel(item: EpidemiologyObservation): string {
   const interval =
@@ -47,6 +48,8 @@ export function comparableTrend(item: EpidemiologyObservation): TrendSelection {
     observationId: item.id,
     diseaseId: item.disease_entity.id,
     diseaseName: item.disease_entity.name,
+    publisherId: item.publisher_entity_id ?? null,
+    methodology: item.methodology,
     filters: {
       query: "",
       displayMode: "list",
@@ -69,6 +72,7 @@ export function comparableTrend(item: EpidemiologyObservation): TrendSelection {
 export function trendMatchesSelection(data: EpidemiologyTrendResult, selection: TrendSelection): boolean {
   const filters = selection.filters;
   return (
+    data.anchor_observation_id === selection.observationId &&
     data.disease.id === selection.diseaseId &&
     data.items.every(
       (item) =>
@@ -79,7 +83,9 @@ export function trendMatchesSelection(data: EpidemiologyTrendResult, selection: 
         (item.patient_population_id ?? "") === filters.patientPopulationId &&
         item.population_scope === filters.populationScope &&
         (item.age_group ?? "") === filters.ageGroup &&
-        (item.sex ?? "") === filters.sex,
+        (item.sex ?? "") === filters.sex &&
+        (item.publisher_entity_id ?? null) === selection.publisherId &&
+        item.methodology === selection.methodology,
     )
   );
 }

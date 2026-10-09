@@ -13,6 +13,7 @@ import { ApiError } from "../lib/api";
 import {
   type EpidemiologyFilters,
   epidemiologyKeys,
+  epidemiologySortFields,
   hasEpidemiologySearchFilter,
   loadEpidemiologyTrend,
   saveEpidemiologySearch,
@@ -33,19 +34,9 @@ import { EpidemiologyTrendPanel } from "./epidemiology/EpidemiologyTrendPanel";
 import { type TrendSelection, trendMatchesSelection } from "./epidemiology/presentation";
 import { type EpidemiologySaveFeedback, epidemiologySaveFeedback } from "./epidemiology/saveFeedback";
 import { useEpidemiologyColumns } from "./epidemiology/useEpidemiologyColumns";
+import "../styles/epidemiology-research.css";
 
 const PAGE_SIZE = 100;
-const epidemiologySortFields: EpidemiologyFilters["sortBy"][] = [
-  "period_end",
-  "period_start",
-  "disease",
-  "measure",
-  "value",
-  "geography",
-  "unit",
-  "publisher",
-  "sample_size",
-];
 const appliedFilterLabels = {
   q: "关键词",
   disease_entity_id: "疾病",

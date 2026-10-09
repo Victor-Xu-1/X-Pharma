@@ -11,10 +11,6 @@ vi.mock("../lib/contracts/epidemiology", async () => {
   const actual = await vi.importActual<typeof import("../lib/contracts/epidemiology")>("../lib/contracts/epidemiology");
   return {
     ...actual,
-    epidemiologyKeys: {
-      search: (filters: EpidemiologyFilters, offset: number) => ["epidemiology", "search", filters, offset],
-      trend: (diseaseId: string, filters: EpidemiologyFilters) => ["epidemiology", "trend", diseaseId, filters],
-    },
     searchEpidemiology: vi.fn(),
     loadEpidemiologyTrend: vi.fn(),
     saveEpidemiologySearch: vi.fn(),
@@ -38,6 +34,7 @@ beforeEach(() => {
   vi.mocked(searchEpidemiology).mockResolvedValue(searchResult);
   vi.mocked(loadEpidemiologyTrend).mockResolvedValue({
     disease: observation.disease_entity,
+    anchor_observation_id: observation.id,
     items: [
       {
         ...observation,
