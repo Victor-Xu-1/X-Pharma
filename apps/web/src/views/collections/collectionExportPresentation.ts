@@ -1,4 +1,6 @@
 import type { CollectionDetail, CollectionPolicy } from "../../lib/contracts/collections";
+import { formattingLocale } from "../../lib/i18n";
+import { collectionExportText as text } from "../../lib/i18n/collectionExport";
 
 // Display vocabulary only. The server policy remains the authorization authority.
 const fieldCatalog = [
@@ -28,17 +30,20 @@ export function collectionExportBlockReason(
   policy: CollectionPolicy | null | undefined,
   { changing, refreshing, stale }: { changing: boolean; refreshing: boolean; stale: boolean },
 ) {
-  if (!policy) return "本组织尚未配置导出策略；请联系管理员。";
-  if (!policy.enabled) return "本组织尚未开放列表导出；请联系管理员。";
+  if (!policy) return text("本组织尚未配置导出策略；请联系管理员。");
+  if (!policy.enabled) return text("本组织尚未开放列表导出；请联系管理员。");
   if (!hasRequiredCollectionFields(policy.allowed_fields))
-    return "导出策略缺少必需字段（记录编号、类型、名称）；请联系管理员核对。";
+    return text("导出策略缺少必需字段（记录编号、类型、名称）；请联系管理员核对。");
   if (!Number.isInteger(policy.max_records_per_export) || policy.max_records_per_export < 1)
-    return "导出策略的记录上限无效；请联系管理员核对。";
-  if (!detail.member_count) return "当前列表尚无可导出对象；先加入关注对象，再导出。";
+    return text("导出策略的记录上限无效；请联系管理员核对。");
+  if (!detail.member_count) return text("当前列表尚无可导出对象；先加入关注对象，再导出。");
   if (detail.member_count > policy.max_records_per_export)
-    return `列表含 ${detail.member_count} 个对象，超过授权上限 ${policy.max_records_per_export} 个；请先精简列表。`;
-  if (stale) return "当前列表刷新失败；请先恢复连接并核对当前版本。";
-  if (refreshing) return "正在核对当前列表版本，完成后可导出。";
-  if (changing) return "列表正在更新，完成后可导出。";
+    return text("列表含 {count} 个对象，超过授权上限 {limit} 个；请先精简列表。", {
+      count: new Intl.NumberFormat(formattingLocale()).format(detail.member_count),
+      limit: new Intl.NumberFormat(formattingLocale()).format(policy.max_records_per_export),
+    });
+  if (stale) return text("当前列表刷新失败；请先恢复连接并核对当前版本。");
+  if (refreshing) return text("正在核对当前列表版本，完成后可导出。");
+  if (changing) return text("列表正在更新，完成后可导出。");
   return "";
 }

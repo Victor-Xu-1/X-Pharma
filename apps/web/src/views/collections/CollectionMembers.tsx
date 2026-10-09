@@ -12,6 +12,8 @@ import {
   searchCollectionEntities,
 } from "../../lib/contracts/collections";
 import { entityTypeLabel } from "../../lib/entityPresentation";
+import { formattingLocale, useMessages } from "../../lib/i18n";
+import { collectionsMessages } from "../../lib/i18n/collections";
 import { isPublicEntityIdentifierNamespace } from "../../lib/publicEntity";
 
 const maxCompared = 4;
@@ -34,10 +36,12 @@ export function CollectionMembers({
   add: (entity: CollectionEntity) => Promise<boolean>;
   remove: (entity: CollectionEntity) => Promise<boolean>;
 }) {
+  const text = useMessages(collectionsMessages);
+  const number = new Intl.NumberFormat(formattingLocale());
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
   const [optimistic, setOptimistic] = useState<string[] | null>(null);
-  const [error, setError] = useState("");
+  const [limitReached, setLimitReached] = useState(false);
   const search = useQuery({
     queryKey: collectionsKeys.search(query),
     queryFn: ({ signal }) => searchCollectionEntities(query, signal),
@@ -66,10 +70,10 @@ export function CollectionMembers({
   }, [canonical, comparedEntityIds, detail.id, onLocationChange]);
   function select(id: string, checked: boolean) {
     if (checked && !selectedIds.includes(id) && selectedIds.length >= maxCompared) {
-      setError("并排比较最多选择 4 个条目，请先取消一个已选条目");
+      setLimitReached(true);
       return;
     }
-    setError("");
+    setLimitReached(false);
     const next = checked ? [...new Set([...selectedIds, id])] : selectedIds.filter((value) => value !== id);
     setOptimistic(next);
     onLocationChange(detail.id, next, true);
@@ -80,9 +84,9 @@ export function CollectionMembers({
   }
   return (
     <>
-      {error ? (
+      {limitReached ? (
         <p className="inline-error" role="alert">
-          {error}
+          {text("并排比较最多选择 4 个条目，请先取消一个已选条目")}
         </p>
       ) : null}
       {detail.editable && detail.member_count < 20 ? (
@@ -92,21 +96,21 @@ export function CollectionMembers({
             <input
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder="搜索要加入的药物、靶点、机构或适应症"
-              aria-label="搜索要加入的药物、靶点、机构或适应症"
+              placeholder={text("搜索要加入的药物、靶点、机构或适应症")}
+              aria-label={text("搜索要加入的药物、靶点、机构或适应症")}
             />
           </div>
           <button className="secondary-button" type="submit" disabled={search.isFetching || !draft.trim()}>
-            {search.isFetching ? "检索中" : "检索"}
+            {search.isFetching ? text("检索中") : text("检索")}
           </button>
         </form>
       ) : null}
       {detail.editable && query ? (
         search.isPending ? (
-          <Spinner label="正在搜索可加入的条目" />
+          <Spinner label={text("正在搜索可加入的条目")} />
         ) : search.error ? (
           <ErrorState
-            message={search.error instanceof Error ? search.error.message : "条目检索失败"}
+            message={search.error instanceof Error ? search.error.message : text("条目检索失败")}
             retry={() => void search.refetch()}
           />
         ) : search.data?.items.length ? (
@@ -115,7 +119,7 @@ export function CollectionMembers({
               <button
                 type="button"
                 key={entity.id}
-                aria-label={`加入 ${entity.name}`}
+                aria-label={text("加入 {name}", { name: entity.name })}
                 disabled={memberIds.has(entity.id) || pending || detail.member_count >= 20}
                 onClick={() => void add(entity)}
               >
@@ -128,7 +132,7 @@ export function CollectionMembers({
             ))}
           </div>
         ) : (
-          <EmptyState title="未找到可加入的条目" detail="尝试名称、别名或公共资料编号" />
+          <EmptyState title={text("未找到可加入的条目")} detail={text("尝试名称、别名或公共资料编号")} />
         )
       ) : null}
       {detail.members.length ? (
@@ -137,22 +141,22 @@ export function CollectionMembers({
             <div className="comparison-selection-copy">
               <span aria-live="polite" aria-atomic="true">
                 <Columns3 size={16} aria-hidden="true" />
-                并排比较{" "}
+                {text("并排比较")}{" "}
                 <strong>
-                  {selectedIds.length}/{maxCompared}
+                  {number.format(selectedIds.length)}/{maxCompared}
                 </strong>
               </span>
               <small id={helpId}>
                 {selectedIds.length >= maxCompared
-                  ? "已达到上限，请先取消一个已选条目"
-                  : "选择 2 至 4 个条目生成对比表"}
+                  ? text("已达到上限，请先取消一个已选条目")
+                  : text("选择 2 至 4 个条目生成对比表")}
               </small>
             </div>
             <button
               type="button"
               className="icon-button"
-              title="清空比较"
-              aria-label="清空比较"
+              title={text("清空比较")}
+              aria-label={text("清空比较")}
               disabled={!selectedIds.length}
               onClick={() => {
                 setOptimistic([]);
@@ -162,17 +166,17 @@ export function CollectionMembers({
               <X size={16} aria-hidden="true" />
             </button>
           </div>
-          <ScrollableTableRegion ariaLabel="对比列表内容" className="comparison-table">
-            <table aria-label="对比列表内容">
+          <ScrollableTableRegion ariaLabel={text("对比列表内容")} className="comparison-table">
+            <table aria-label={text("对比列表内容")}>
               <thead>
                 <tr>
-                  <th scope="col">比较</th>
+                  <th scope="col">{text("比较")}</th>
                   <th scope="col">#</th>
-                  <th scope="col">名称</th>
-                  <th scope="col">类型</th>
-                  <th scope="col">资料编号</th>
-                  <th scope="col">更新时间</th>
-                  <th scope="col" aria-label="操作" />
+                  <th scope="col">{text("名称")}</th>
+                  <th scope="col">{text("类型")}</th>
+                  <th scope="col">{text("资料编号")}</th>
+                  <th scope="col">{text("更新时间")}</th>
+                  <th scope="col" aria-label={text("操作")} />
                 </tr>
               </thead>
               <tbody>
@@ -188,12 +192,12 @@ export function CollectionMembers({
                         <input
                           type="checkbox"
                           checked={checked}
-                          aria-label={`纳入情报对比：${member.entity.name}`}
+                          aria-label={text("纳入情报对比：{name}", { name: member.entity.name })}
                           aria-describedby={helpId}
                           onChange={(event) => select(member.entity.id, event.target.checked)}
                         />
                       </td>
-                      <td>{index + 1}</td>
+                      <td>{number.format(index + 1)}</td>
                       <td>
                         <button
                           className="collection-entity-link"
@@ -207,15 +211,15 @@ export function CollectionMembers({
                       <td>
                         <EntityIdentityLabel entity={member.entity} />
                       </td>
-                      <td>{identifiers || "未记录公共编号"}</td>
+                      <td>{identifiers || text("未记录公共编号")}</td>
                       <td>{formatDate(member.entity.updated_at)}</td>
                       <td>
                         {detail.editable ? (
                           <button
                             className="icon-button"
                             type="button"
-                            title="移出列表"
-                            aria-label={`移出 ${member.entity.name}`}
+                            title={text("移出列表")}
+                            aria-label={text("移出 {name}", { name: member.entity.name })}
                             disabled={pending}
                             onClick={() => void remove(member.entity)}
                           >
@@ -232,15 +236,15 @@ export function CollectionMembers({
           <section className="collection-comparison-panel" aria-labelledby="collection-comparison-heading">
             <header>
               <span>
-                <strong id="collection-comparison-heading">研发情报对比</strong>
-                <small>根据当前可查看的信息实时生成</small>
+                <strong id="collection-comparison-heading">{text("研发情报对比")}</strong>
+                <small>{text("根据当前可查看的信息实时生成")}</small>
               </span>
             </header>
             <CollectionComparisonMatrix entities={compared} onOpenEntity={onOpenEntity} />
           </section>
         </>
       ) : (
-        <EmptyState title="列表为空" detail="搜索药物、靶点、机构或适应症并加入列表" />
+        <EmptyState title={text("列表为空")} detail={text("搜索药物、靶点、机构或适应症并加入列表")} />
       )}
     </>
   );

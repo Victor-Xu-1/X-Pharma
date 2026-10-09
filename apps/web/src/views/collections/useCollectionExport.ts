@@ -7,6 +7,8 @@ import {
   getWorkspaceExportPolicy,
 } from "../../lib/contracts/collections";
 import { downloadBlob, type ExportFormat } from "../../lib/download";
+import { useMessages } from "../../lib/i18n";
+import { collectionExportMessages } from "../../lib/i18n/collectionExport";
 import {
   collectionExportBlockReason,
   collectionExportFields,
@@ -20,6 +22,7 @@ export function useCollectionExport(
   open: boolean,
   state: { changing: boolean; refreshing: boolean; stale: boolean },
 ) {
+  const text = useMessages(collectionExportMessages);
   const policyQuery = useQuery({
     queryKey: collectionsKeys.policy,
     queryFn: ({ signal }) => getWorkspaceExportPolicy(signal),
@@ -30,8 +33,8 @@ export function useCollectionExport(
   const availableFields = useMemo(() => collectionExportFields(policy), [policy]);
   const [format, setFormat] = useState<ExportFormat>("xlsx");
   const [fields, setFields] = useState<string[]>([]);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [error, setError] = useState<{ raw: string } | { fallback: true } | null>(null);
+  const [noticeVersion, setNoticeVersion] = useState<number | null>(null);
   const configured = useRef(false);
   const mounted = useRef(true);
   const lock = useRef(false);
@@ -70,8 +73,8 @@ export function useCollectionExport(
   async function exportSet() {
     if (lock.current || !canExport || !policy) return;
     lock.current = true;
-    setError("");
-    setNotice("");
+    setError(null);
+    setNoticeVersion(null);
     const selected = availableFields.filter((field) => fields.includes(field.value)).map((field) => field.value);
     const fingerprint = JSON.stringify({
       id: detail.id,
@@ -91,25 +94,25 @@ export function useCollectionExport(
       const blob = await mutation.mutateAsync({ id: detail.id, body });
       if (mounted.current) {
         downloadBlob(blob, `comparison-${detail.id}-v${detail.version}.${format}`);
-        setNotice(`列表 v${detail.version} 的导出文件已生成`);
+        setNoticeVersion(detail.version);
         intent.current = null;
       }
     } catch (caught) {
-      if (mounted.current) setError(caught instanceof Error ? caught.message : "导出失败");
+      if (mounted.current) setError(caught instanceof Error ? { raw: caught.message } : { fallback: true });
     } finally {
       lock.current = false;
     }
   }
 
   function toggleField(field: string, selected: boolean) {
-    setError("");
-    setNotice("");
+    setError(null);
+    setNoticeVersion(null);
     setFields((current) => (selected ? [...current, field] : current.filter((value) => value !== field)));
   }
   function selectFormat(value: ExportFormat) {
     if (value === format) return;
-    setError("");
-    setNotice("");
+    setError(null);
+    setNoticeVersion(null);
     setFormat(value);
   }
 
@@ -122,8 +125,8 @@ export function useCollectionExport(
     setFormat: selectFormat,
     fields,
     toggleField,
-    error,
-    notice,
+    error: error ? ("raw" in error ? error.raw : text("导出失败")) : "",
+    notice: noticeVersion !== null ? text("列表 v{version} 的导出文件已生成", { version: noticeVersion }) : "",
     pending: mutation.isPending,
     canExport,
     blockReason,
