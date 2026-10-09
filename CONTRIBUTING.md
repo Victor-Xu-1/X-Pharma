@@ -36,8 +36,8 @@ checks explicitly instead of substituting historical results.
 
 The browser CI builds PostgreSQL/RDKit from the same verified source and pinned
 Buildx action/cache contract as `postgres-contract`, then loads that image into
-the ephemeral runner. It separately builds the shared application image and
-starts Compose with `--no-build` so the loaded RDKit layers are not cold-compiled
+the ephemeral runner. It separately builds the shared application and selected
+telemetry collector images, then starts Compose with `--no-build` so the loaded RDKit layers are not cold-compiled
 again. Cache misses still build the actual source; all original browser cases,
 viewports, resource budgets, protocol/load gates and job timeout remain active.
 This is a CI build optimization, not a prebuilt-image substitute or local-runtime

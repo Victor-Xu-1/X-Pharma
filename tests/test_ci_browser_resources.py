@@ -53,3 +53,17 @@ def test_browser_ci_reuses_source_verified_rdkit_layers_without_rebuilding_loade
     assert "docker compose build api" in start["run"]
     assert "docker compose up -d --no-build --wait --wait-timeout 600 api worker parser otel-collector" in start["run"]
     assert "--build --wait" not in start["run"]
+
+
+def test_browser_ci_prebuilds_the_selected_telemetry_image_as_well_as_shared_application() -> None:
+    workflow = cast(dict[str, Any], yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")))
+    start = next(
+        step for step in workflow["jobs"]["two-entry-smoke"]["steps"] if step.get("name") == "Start integration stack"
+    )
+    base = cast(dict[str, Any], yaml.safe_load((ROOT / "compose.yaml").read_text(encoding="utf-8")))
+    telemetry = cast(dict[str, Any], yaml.safe_load((ROOT / "compose.telemetry.yaml").read_text(encoding="utf-8")))
+    application_image = base["services"]["api"]["image"]
+    assert application_image == base["services"]["worker"]["image"] == base["services"]["parser"]["image"]
+    assert telemetry["services"]["otel-collector"]["build"]
+    assert telemetry["services"]["otel-collector"]["image"] != application_image
+    assert "docker compose build api otel-collector" in start["run"]

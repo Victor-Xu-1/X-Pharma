@@ -280,7 +280,7 @@ jobs:
         run: |
           mkdir -p /tmp/pharma-source
           python3 scripts/configure-development.py
-          docker compose build api
+          docker compose build api otel-collector
           docker compose up -d --no-build --wait --wait-timeout 600 api worker parser otel-collector
           docker compose ps
       - name: Bootstrap ephemeral tenant
