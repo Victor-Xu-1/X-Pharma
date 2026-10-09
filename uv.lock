@@ -1,6 +1,6 @@
 version = 1
 revision = 3
-requires-python = "==3.13.*"
+requires-python = ">=3.13.16, <3.14"
 
 [manifest]
 constraints = [
@@ -2097,7 +2097,7 @@ wheels = [
 
 [[package]]
 name = "x-pharma"
-version = "0.1.17"
+version = "0.1.24"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },

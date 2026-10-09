@@ -4,7 +4,7 @@
 .patches/
 .DS_Store
 .pnpm-store/
-.venv/
+.venv
 __pycache__/
 *.py[cod]
 .pytest_cache/
