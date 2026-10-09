@@ -64,7 +64,7 @@
 | 企业管理契约 | 同一人员工作台提供租户概况、用户/角色/状态、用户组成员和审计日志；仅人员管理员可调用，使用版本冲突、最后管理员保护、复合租户外键、签名 RLS 和过滤绑定审计游标 |
 | 搜索投影 | OpenSearch 3.7 严格向量 mapping、版本化 alias/pipeline、实体/证据/知识 embedding、原生 BM25/k-NN hybrid、固定分页候选深度、租户 routing/filter、facet、联想、locator、outbox 重试/死信和全量原子重建；readiness 对单活动 alias、schema/向量维度及评分 pipeline 完整契约失效关闭；embedding 密钥只进入 API/projector，OpenSearch query/projector 凭据使用独立 OpenBao 路径并分别只挂载 API/projector，均在消费边界强校验 |
 | 数据库运行线 | Compose PostgreSQL 18.4 + RDKit 2026.03.3 固定源码供应链；逐库 dump/restore、精确行数、独立新卷和 16→18→16→18 回切演练 |
-| 工程交付 | Python 3.13.14、uv 单一锁、Biome 2、Node 锁、Docker 非 root 镜像、Alembic、CI、Kubernetes HA 基线 |
+| 工程交付 | Python 3.13.16 安全运行基线、uv 单一锁、Biome 2、Node 锁、Docker 非 root 镜像、Alembic、CI、Kubernetes HA 基线；升级候选仍需精确提交 CI 与部署验证 |
 
 ## 正式商用阻断项
 
@@ -74,7 +74,7 @@
 2. **内部运营闭环**：第 5.1.2 节十个域的 20 条代码能力已实现并进入同一内部工作台，包括主数据回滚、发布撤回/投影重建、质量处置、会话撤销、数据集许可和平台运营读模型；仍须以获批真实来源和外部服务完成数据管理员端到端 UAT、越权/失败恢复演练和运维签字，才能把十个域从 `partial` 提升为生产证明。
 3. **远程 Agent 互操作**：当前本地 MCP 协议、计量、异步任务和两类官方客户端证据不能替代远程生产能力；仍须在真实 TLS 域名、多副本 Gateway、企业 IdP 和非开发机网络上完成五类客户端、至少两个供应商的 OAuth、发现、调用、取消、重连、分页和错误恢复测试，并发布版本化 Python/TypeScript SDK 与兼容矩阵。
 4. **数据内容**：证据检索已按数据集强制许可编号/版本、渠道、有效期、字段、片段长度和归属声明，结构化导出已按账户强制字段/过滤字段许可并固化策略哈希；仍须完成合法授权的文献、专利、临床、药物、公司、交易和结构数据连接器，并将真实合同逐项录入和审批。
-5. **目标运行线**：本地 Python 3.13.14、固定 uv 0.11.28、单一 `uv.lock`、Biome 2、TypeScript 7/Vite 8 和 PostgreSQL 18.4/RDKit 2026.03.3 迁移已完成并进入 CI/容器验证。生产 PostgreSQL 18 + RDKit 仍必须完成托管 HA/PITR 与主备切换演练。
+5. **目标运行线**：源码最低 Python 版本已调整为 3.13.16，固定 uv 0.11.28 使用经摘要验证的供应商描述安装原生解释器；API/OCR 共用固定摘要官方运行时，不覆盖旧标准库文件。单一 `uv.lock`、Biome 2、TypeScript 7/Vite 8 和 PostgreSQL 18.4/RDKit 2026.03.3 的原有合同保留。新的运行时候选仍需精确提交 CI、备份恢复和部署验收；生产 PostgreSQL 18 + RDKit 仍必须完成托管 HA/PITR 与主备切换演练。
 6. **检索体验**：OpenSearch 3.7 多语言全文、联想、facet、证据定位、provider-neutral embedding API 端口、原生向量/混合检索和受限稳定分页已实现，并通过真实 OpenSearch 3.7 协议测试；仍需用获批准的第三方 HTTPS embedding API 完成医药金标排序评估、目标数据量容量测试、滚动升级和故障恢复验收。仓库不提供本地模型或回退；不能用确定性测试向量、PostgreSQL substring 或 RAGFlow 私有索引替代这些生产证据。
 7. **化学能力**：PostgreSQL 18 / RDKit cartridge、权威 mol/Morgan 指纹列、版本化标准化、exact/substructure/similarity、复合租户 GiST 索引、强制 RLS、人员 API 与收费 MCP 计算量结算均已用真实数据库验证；仍需完成批准数据规模下的相关性基准、并发/容量压测和生产 HA/PITR 验收。
 8. **真实外部链路**：在客户 IdP、真实模型网关、OpenSearch 证据索引、S3 对象存储和生产 Temporal 上完成验收；模型验收必须使用真实获批文档和付费 endpoint，证明 strict schema、usage/request ID、费用率、分段引用、防 prompt injection、限流退避和失败恢复，不能用 mock 响应替代。历史 RAGFlow 只验证隔离的只读离线导出，不进入生产验收拓扑。
