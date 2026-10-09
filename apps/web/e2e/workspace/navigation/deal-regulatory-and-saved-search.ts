@@ -151,7 +151,20 @@ export async function verifyDealRegulatoryAndSavedSearch(
   const savedPipelineRow = page.getByRole("row").filter({ hasText: pipelineSubscriptionName });
   await expect(savedPipelineRow).toContainText("药物与管线");
   await expect(savedPipelineRow).toContainText("统计表");
-  await expect(savedPipelineRow).toContainText("条件：靶点=已选");
+  await savedPipelineRow.getByText("7 个条件", { exact: true }).click();
+  const savedConditions = savedPipelineRow.getByRole("list", { name: "全部检索条件" });
+  await expect(savedConditions.getByRole("listitem")).toHaveCount(7);
+  for (const condition of [
+    "靶点=已选",
+    "适应症=已选",
+    "分析维度=targets",
+    "分析范围=50",
+    "阶段口径=global",
+    "靶点聚合=primary",
+    "多字段排序=status_date:desc",
+  ]) {
+    await expect(savedConditions.getByText(condition, { exact: true })).toBeVisible();
+  }
   const editSavedPipelineTrigger = savedPipelineRow.getByRole("button", { name: `编辑 ${pipelineSubscriptionName}` });
   await editSavedPipelineTrigger.click();
   const savedSearchEditor = page.getByRole("dialog", { name: "编辑已保存检索" });
@@ -177,6 +190,9 @@ export async function verifyDealRegulatoryAndSavedSearch(
   await expect(page).toHaveURL(/analysis_top=50/);
   await expect(page).toHaveURL(/analysis_stage=global/);
   await expect(page).toHaveURL(/target_aggregation=primary/);
+  await expect(page).toHaveURL(new RegExp(`target_entity_id=${pipelineTargetId}`));
+  await expect(page).toHaveURL(new RegExp(`disease_entity_id=${pipelineDiseaseId}`));
+  expect(new URL(page.url()).searchParams.getAll("sort")).toEqual(["status_date:desc"]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(
     false,
   );
