@@ -4,7 +4,7 @@ import type { ClinicalTrialDetailRead } from "../../lib/generated";
 import { formattingLocale } from "../../lib/i18n";
 import { clinicalText as t } from "../../lib/i18n/clinical";
 import { localizedTrialStatus } from "../../lib/i18n/trialVocabulary";
-import { clinicalContentRows } from "./contentRows";
+import { sourceRecordRows } from "../../lib/sourceRecordRows";
 export function TrialTimeline({ data }: { data: ClinicalTrialDetailRead }) {
   return (
     <div className="trial-detail-sections">
@@ -12,7 +12,7 @@ export function TrialTimeline({ data }: { data: ClinicalTrialDetailRead }) {
         <h3>{t("状态时间线")}</h3>
         {data.status_history.length ? (
           <ol className="trial-status-timeline">
-            {clinicalContentRows([...data.status_history].reverse()).map(({ value: event, key }) => (
+            {sourceRecordRows([...data.status_history].reverse()).map(({ value: event, key }) => (
               <li key={key}>
                 <CalendarDays size={17} />
                 <div>
@@ -31,7 +31,7 @@ export function TrialTimeline({ data }: { data: ClinicalTrialDetailRead }) {
         <h3>{t("研究中心")}</h3>
         {data.locations.length ? (
           <div className="trial-location-list">
-            {clinicalContentRows(data.locations).map(({ value: location, key }) => (
+            {sourceRecordRows(data.locations).map(({ value: location, key }) => (
               <div key={key}>
                 <MapPin size={17} />
                 <div>

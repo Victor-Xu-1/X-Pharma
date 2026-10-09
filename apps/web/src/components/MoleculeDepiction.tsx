@@ -1,9 +1,12 @@
 import { FlaskConical } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useLocale } from "../lib/i18n";
+import { dossierRecordText as t } from "../lib/i18n/dossierRecords";
 
 import { renderMolecule } from "../lib/rdkitRenderer";
 
 export function MoleculeDepiction({ smiles, name }: { smiles: string; name: string }) {
+  useLocale();
   const root = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
   const [image, setImage] = useState("");
@@ -51,12 +54,12 @@ export function MoleculeDepiction({ smiles, name }: { smiles: string; name: stri
 
   return (
     <figure className="molecule-depiction" ref={root} data-rdkit-version={version || undefined}>
-      {image ? <img src={image} alt={`${name} 2D 结构`} /> : null}
-      {!image && !failed ? <span className="molecule-loading" role="status" aria-label="正在绘制结构" /> : null}
+      {image ? <img src={image} alt={t("{name} 2D 结构", { name })} /> : null}
+      {!image && !failed ? <span className="molecule-loading" role="status" aria-label={t("正在绘制结构")} /> : null}
       {failed ? (
         <span className="molecule-fallback">
           <FlaskConical size={24} />
-          <small>结构图不可用</small>
+          <small>{t("结构图不可用")}</small>
         </span>
       ) : null}
     </figure>

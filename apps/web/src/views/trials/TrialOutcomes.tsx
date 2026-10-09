@@ -4,8 +4,8 @@ import type { ClinicalTrialDetailRead } from "../../lib/generated";
 import { formattingLocale } from "../../lib/i18n";
 import { clinicalCaption, clinicalText as t } from "../../lib/i18n/clinical";
 import { professionalEnumLabel } from "../../lib/i18n/professionalEnums";
+import { sourceRecordRows } from "../../lib/sourceRecordRows";
 import { trialResultEvaluationLabels as resultEvaluationLabels } from "../../lib/trialFilters";
-import { clinicalContentRows } from "./contentRows";
 import { formatResultRange } from "./presentation";
 import { TrialStatisticalAnalysis } from "./TrialStatisticalAnalysis";
 import { disclosureTypeLabels } from "./vocabulary";
@@ -15,7 +15,7 @@ export function TrialOutcomes({ data }: { data: ClinicalTrialDetailRead }) {
       <section className="trial-outcome-list">
         <h3>{t("终点与统计结果")}</h3>
         {data.outcomes.length ? (
-          clinicalContentRows(data.outcomes).map(({ value: outcome, key }) => (
+          sourceRecordRows(data.outcomes).map(({ value: outcome, key }) => (
             <section key={key}>
               <header>
                 <StatusBadge value={outcome.outcome_type ?? t("终点")} />
@@ -37,7 +37,7 @@ export function TrialOutcomes({ data }: { data: ClinicalTrialDetailRead }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {clinicalContentRows(outcome.results).map(({ value: result, key }) => (
+                      {sourceRecordRows(outcome.results).map(({ value: result, key }) => (
                         <tr key={key}>
                           <td>{result.group_label}</td>
                           <td>
@@ -55,7 +55,7 @@ export function TrialOutcomes({ data }: { data: ClinicalTrialDetailRead }) {
               )}
               {outcome.statistical_analyses?.length ? (
                 <div className="trial-analysis-list">
-                  {clinicalContentRows(outcome.statistical_analyses).map(({ value: analysis, key }) => (
+                  {sourceRecordRows(outcome.statistical_analyses).map(({ value: analysis, key }) => (
                     <TrialStatisticalAnalysis key={key} analysis={analysis} />
                   ))}
                 </div>

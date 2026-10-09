@@ -1,4 +1,4 @@
-import { compactPhaseLabels, spacedPhaseLabels } from "../phasePresentation";
+import { compactPhaseLabels, fullPhaseLabels, phaseLabel, spacedPhaseLabels } from "../phasePresentation";
 import { programModalityLabel, programTagLabel } from "../programDisplay";
 import { professionalEnumLabel } from "./professionalEnums";
 import { createTranslator } from "./translator";
@@ -45,4 +45,10 @@ export function localizedDevelopmentPhase(value: string, spaced = false): string
   const captions = spaced ? spacedPhaseLabels : compactPhaseLabels;
   const caption = captions[value];
   return caption ? professionalEnumLabel(caption, value) : value;
+}
+
+export function localizedFullDevelopmentPhase(value: string | null | undefined): string {
+  if (!value) return professionalEnumLabel("未披露");
+  const caption = fullPhaseLabels[value.toLowerCase()];
+  return caption ? professionalEnumLabel(caption, value.toLowerCase()) : phaseLabel(value);
 }

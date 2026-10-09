@@ -2,7 +2,7 @@ import { EmptyState, StatusBadge } from "../../components/common";
 import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { ClinicalTrialDetailRead } from "../../lib/generated";
 import { clinicalText as t } from "../../lib/i18n/clinical";
-import { clinicalContentRows } from "./contentRows";
+import { sourceRecordRows } from "../../lib/sourceRecordRows";
 import { displayBoolean, displayList } from "./presentation";
 import { DetailValue } from "./TrialDetailValue";
 
@@ -38,7 +38,7 @@ export function TrialDesign({ data }: { data: ClinicalTrialDetailRead }) {
         <h3>{t("队列与治疗组")}</h3>
         {data.arms.length ? (
           <div className="trial-arm-list">
-            {clinicalContentRows(data.arms).map(({ value: arm, key }) => (
+            {sourceRecordRows(data.arms).map(({ value: arm, key }) => (
               <article key={key}>
                 <div>
                   <strong>{arm.label}</strong>

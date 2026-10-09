@@ -2,7 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { setLocale } from "../lib/i18n";
 import { recordedCalendarDate } from "../lib/recordedCalendarDate";
-import { clinicalContentRows } from "../views/trials/contentRows";
+import { sourceRecordRows } from "../lib/sourceRecordRows";
 import { displayBoolean, formatResultRange } from "../views/trials/presentation";
 import { TrialDesign } from "../views/trials/TrialDesign";
 import { TrialOutcomes } from "../views/trials/TrialOutcomes";
@@ -72,10 +72,10 @@ it.each([0, 90, 99])("preserves the actually reported confidence level %s, notes
 
 it("preserves identical source rows with unique stable content-occurrence keys", () => {
   const raw = { group_label: "原始组", value: "0", participants: 0 };
-  const rows = clinicalContentRows([raw, raw, { ...raw, value: "1" }]);
+  const rows = sourceRecordRows([raw, raw, { ...raw, value: "1" }]);
   expect(rows.map((row) => row.value)).toEqual([raw, raw, { ...raw, value: "1" }]);
   expect(new Set(rows.map((row) => row.key)).size).toBe(3);
-  expect(clinicalContentRows([raw, raw]).map((row) => row.key)).toEqual(rows.slice(0, 2).map((row) => row.key));
+  expect(sourceRecordRows([raw, raw]).map((row) => row.key)).toEqual(rows.slice(0, 2).map((row) => row.key));
 });
 
 it("keeps original eligibility text keyboard-readable in its scrolling region", () => {

@@ -1,20 +1,35 @@
+import type { DossierEntityOpener, DossierSectionProps } from "./dossier/types";
+
+export type { DossierEntityOpener } from "./dossier/types";
+
+import { openDossierEntity } from "./dossier/navigation";
+import { Relationships } from "./dossier/Relationships";
+
+export { Relationships };
+
+import { Patents } from "./dossier/Patents";
+
+export { Patents };
+
+import { Regulatory } from "./dossier/Regulatory";
+
+export { Regulatory };
+
+import { News } from "./dossier/News";
+
+export { News };
+
+import { Structures } from "./dossier/Structures";
+
+export { Structures };
+
 import { useQuery } from "@tanstack/react-query";
-import {
-  Building2,
-  CalendarDays,
-  FlaskConical,
-  GitBranch,
-  Landmark,
-  Network,
-  Newspaper,
-  ShieldCheck,
-} from "lucide-react";
+import { CalendarDays, Landmark, Network, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "../components/common";
 import { DossierActivityTable as Activities } from "../components/DossierActivityTable";
 import { EntityNames } from "../components/EntityNames";
-import { PatentTimeline } from "../components/PatentTimeline";
 import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
 import { ScrollableTableRegion } from "../components/ScrollableTableRegion";
@@ -22,8 +37,8 @@ import { companyKeys, loadCompanyTimeline } from "../lib/contracts/company";
 import { type EntityDossier, entityDossierKeys, loadEntityDossier } from "../lib/contracts/entityDossier";
 import type { ProvenanceSelection } from "../lib/contracts/provenance";
 import { directionLabels, partyRoleLabels, phaseLabels } from "../lib/dealDisplay";
-import { entityLabels, entityTypeLabel, relationshipLabel } from "../lib/entityPresentation";
-import type { CompanyTimelineResult, EntityType } from "../lib/generated";
+import { entityTypeLabel } from "../lib/entityPresentation";
+import type { CompanyTimelineResult } from "../lib/generated";
 import { useLocale } from "../lib/i18n";
 import { publicEntityAttributeLabel, publicEntityAttributes } from "../lib/publicEntity";
 import type { Entity } from "../lib/types";
@@ -57,21 +72,6 @@ const tabs: Array<ResearchTabOption<EntityDossierSection>> = [
   { key: "news_events", label: "动态" },
   { key: "structures", label: "结构" },
 ];
-
-export type DossierEntityOpener = (entityType: EntityType, entityId: string) => void;
-
-function openDossierEntity(
-  fallback: (entityId: string) => void,
-  typed: DossierEntityOpener | undefined,
-  entityType: EntityType,
-  entityId: string,
-) {
-  if (typed) {
-    typed(entityType, entityId);
-    return;
-  }
-  fallback(entityId);
-}
 
 export function EntityDossierView({
   entity,
@@ -549,61 +549,6 @@ export function CompanyTimelinePanel({
   );
 }
 
-export function Relationships({
-  data,
-  onOpenEntity,
-  onOpenTypedEntity,
-}: {
-  data: EntityDossier;
-  onOpenEntity: (entityId: string) => void;
-  onOpenTypedEntity?: DossierEntityOpener;
-}) {
-  if (!data.relationships.length) return <EmptyState title="暂无关联实体关系" />;
-  return (
-    <ScrollableTableRegion ariaLabel="关联实体关系">
-      <table aria-label="关联实体关系">
-        <thead>
-          <tr>
-            <th>方向</th>
-            <th>关系</th>
-            <th>关联实体</th>
-            <th>类型</th>
-            <th>有效期</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.relationships.map((item) => (
-            <tr key={item.id}>
-              <td>{item.direction === "outgoing" ? "指向" : "来自"}</td>
-              <td title={item.predicate}>{relationshipLabel(item.predicate)}</td>
-              <td>
-                <button
-                  className="table-link-button"
-                  type="button"
-                  onClick={() =>
-                    openDossierEntity(
-                      onOpenEntity,
-                      onOpenTypedEntity,
-                      item.related_entity.entity_type,
-                      item.related_entity.id,
-                    )
-                  }
-                >
-                  {item.related_entity.name}
-                </button>
-              </td>
-              <td>{entityLabels()[item.related_entity.entity_type] ?? item.related_entity.entity_type}</td>
-              <td>
-                {formatDate(item.valid_from)} - {formatDate(item.valid_to)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </ScrollableTableRegion>
-  );
-}
-
 export function Programs({
   data,
   onOpen,
@@ -761,45 +706,6 @@ export function Trials({
   );
 }
 
-export function Patents({
-  data,
-  onOpen,
-  onOpenPatent,
-}: DossierSectionProps & { onOpenPatent: (patentId: string) => void }) {
-  if (!data.patents.length) return <EmptyState title="暂无关联专利" />;
-  return (
-    <div className="entity-record-list">
-      {data.patents.map((item) => (
-        <article key={item.id}>
-          <GitBranch size={18} />
-          <div>
-            <span>{item.family_identifier}</span>
-            <h3>
-              <button
-                className="table-link-button"
-                type="button"
-                onClick={() => onOpenPatent(item.id)}
-                aria-label={`打开专利族详情：${item.family_identifier}`}
-              >
-                {item.title}
-              </button>
-            </h3>
-            <p>
-              {item.applicants.join("、") || "申请人未记录"} · 优先权 {formatDate(item.priority_date)}
-            </p>
-          </div>
-          <StatusBadge value={item.legal_status ?? "unknown"} />
-          <PatentTimeline patent={item} />
-          <ProvenanceButton
-            selection={{ resourceType: "patent_family", resourceId: item.id, label: item.family_identifier }}
-            onOpen={onOpen}
-          />
-        </article>
-      ))}
-    </div>
-  );
-}
-
 export function Deals({
   data,
   onOpen,
@@ -887,107 +793,6 @@ export function Deals({
     </div>
   );
 }
-
-export function Regulatory({
-  data,
-  onOpen,
-  onOpenRegulatoryEvent,
-}: DossierSectionProps & { onOpenRegulatoryEvent: (eventId: string) => void }) {
-  if (!data.regulatory_events.length) return <EmptyState title="暂无关联监管事件" />;
-  return (
-    <div className="entity-record-list">
-      {data.regulatory_events.map((item) => (
-        <article key={item.id}>
-          <Building2 size={18} />
-          <div>
-            <span>
-              {item.agency} · {item.jurisdiction} · {formatDate(item.decision_date)}
-            </span>
-            <h3>
-              <button
-                className="table-link-button"
-                type="button"
-                onClick={() => onOpenRegulatoryEvent(item.id)}
-                aria-label={`打开监管事件详情：${item.title}`}
-              >
-                {item.title}
-              </button>
-            </h3>
-            <p>{item.application_number ?? item.event_identifier}</p>
-          </div>
-          <StatusBadge value={item.status ?? item.event_type} />
-          <ProvenanceButton
-            selection={{ resourceType: "regulatory_event", resourceId: item.id, label: item.title }}
-            onOpen={onOpen}
-          />
-        </article>
-      ))}
-    </div>
-  );
-}
-
-export function News({
-  data,
-  onOpen,
-  onOpenNewsEvent,
-}: DossierSectionProps & { onOpenNewsEvent: (eventId: string) => void }) {
-  if (!data.news_events.length) return <EmptyState title="暂无关联新闻或会议动态" />;
-  return (
-    <div className="entity-record-list">
-      {data.news_events.map((item) => (
-        <article key={item.id}>
-          <Newspaper size={18} />
-          <div>
-            <span>
-              {item.event_type} · {formatDate(item.published_at)}
-            </span>
-            <h3>
-              <button
-                className="table-link-button"
-                type="button"
-                onClick={() => onOpenNewsEvent(item.id)}
-                aria-label={`打开新闻事件详情：${item.title}`}
-              >
-                {item.title}
-              </button>
-            </h3>
-            <p>{item.summary ?? item.venue ?? item.event_identifier}</p>
-          </div>
-          <ProvenanceButton
-            selection={{ resourceType: "news_event", resourceId: item.id, label: item.title }}
-            onOpen={onOpen}
-          />
-        </article>
-      ))}
-    </div>
-  );
-}
-
-export function Structures({ data, onOpen }: DossierSectionProps) {
-  if (!data.structures.length) return <EmptyState title="暂无关联化学结构" />;
-  return (
-    <div className="entity-record-list">
-      {data.structures.map((item) => (
-        <article key={item.id}>
-          <FlaskConical size={18} />
-          <div>
-            <span>
-              {item.molecular_formula ?? "分子式未记录"} · MW {item.molecular_weight ?? "--"}
-            </span>
-            <h3 className="mono-cell">{item.standard_inchi_key}</h3>
-            <p className="mono-cell">{item.canonical_smiles}</p>
-          </div>
-          <ProvenanceButton
-            selection={{ resourceType: "compound_structure", resourceId: item.id, label: item.standard_inchi_key }}
-            onOpen={onOpen}
-          />
-        </article>
-      ))}
-    </div>
-  );
-}
-
-type DossierSectionProps = { data: EntityDossier; onOpen: (selection: ProvenanceSelection) => void };
 
 function formatAttribute(value: unknown): string {
   if (value === null || value === undefined) return "--";

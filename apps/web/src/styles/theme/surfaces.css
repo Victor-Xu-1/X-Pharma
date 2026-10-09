@@ -426,7 +426,35 @@
 .publication-preview-items {
   background: var(--ds-border);
 }
-.drug-profile-overview .state-message,
 .company-profile-overview .state-message {
   min-height: 110px;
+}
+.drug-profile-overview .empty-state {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-content: start;
+  align-items: start;
+  justify-items: start;
+  gap: 4px 12px;
+  padding: 18px 0;
+  text-align: left;
+}
+.drug-profile-overview .empty-state > .state-icon {
+  grid-row: 1 / span 2;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+}
+.drug-profile-overview .empty-state > strong {
+  font-size: var(--ds-text-sm);
+  line-height: var(--ds-leading-body);
+}
+.drug-profile-overview .empty-state > span:not(.state-icon) {
+  grid-column: 2;
+  max-width: none;
+}
+.dossier-coverage-disclosure > summary {
+  flex-wrap: wrap;
+  gap: 6px 16px;
 }

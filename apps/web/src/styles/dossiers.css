@@ -178,6 +178,7 @@
 }
 .drug-clinical-outcomes,
 .drug-clinical-outcomes > span,
+.drug-clinical-outcomes .program-history > div,
 .drug-clinical-role-links {
   display: grid;
   gap: 4px;
@@ -188,6 +189,9 @@
 .drug-clinical-outcomes > span + span {
   border-top: 1px solid var(--ds-border-subtle);
   padding-top: 5px;
+}
+.drug-clinical-outcomes .program-history > div {
+  margin-top: 8px;
 }
 .drug-clinical-outcomes strong {
   color: var(--ds-ink-strong);
@@ -620,6 +624,20 @@
 }
 .entity-record-list article > svg {
   color: var(--ds-accent-strong);
+}
+.entity-patent-list article {
+  align-items: start;
+}
+.entity-patent-list .patent-timeline {
+  grid-column: 2 / -1;
+}
+@media (min-width: 821px) {
+  .entity-patent-list article {
+    grid-template-columns: 30px minmax(0, 1fr) auto minmax(180px, 240px) auto;
+  }
+  .entity-patent-list .patent-timeline {
+    grid-column: auto;
+  }
 }
 .entity-record-list h3 {
   margin: 3px 0;

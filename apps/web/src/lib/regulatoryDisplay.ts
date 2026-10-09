@@ -14,6 +14,16 @@ export const eventTypeLabels: Record<string, string> = {
   other: "其他",
 };
 
+export const regulatoryStatusLabels: Record<string, string> = {
+  active: "有效",
+  approved: "已批准",
+  inactive: "失效",
+  pending: "待处理",
+  rejected: "未批准",
+  suspended: "暂停",
+  withdrawn: "已撤回",
+};
+
 export const designationLabels: Record<string, string> = {
   breakthrough_therapy: "突破性疗法",
   fast_track: "快速通道",

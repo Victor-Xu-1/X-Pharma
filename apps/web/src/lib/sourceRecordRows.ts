@@ -1,5 +1,5 @@
 /** Read-only DTOs have no row IDs. Retain duplicates, with content + duplicate occurrence keys. */
-export function clinicalContentRows<Value>(values: readonly Value[]): Array<{ key: string; value: Value }> {
+export function sourceRecordRows<Value>(values: readonly Value[]): Array<{ key: string; value: Value }> {
   const occurrences = new Map<string, number>();
   return values.map((value) => {
     const content = JSON.stringify(value);
