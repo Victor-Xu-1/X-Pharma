@@ -4,10 +4,10 @@ build-backend = "hatchling.build"
 
 [project]
 name = "X-Pharma"
-version = "0.1.24"
+version = "0.1.25"
 description = "Enterprise pharmaceutical intelligence database with human and agent interfaces"
 readme = "README.md"
-requires-python = ">=3.13,<3.14"
+requires-python = ">=3.13.16,<3.14"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE", "licenses/*"]
 authors = [{ name = "Victor Xu" }]
@@ -137,8 +137,9 @@ packages = ["pharma_intel"]
 
 [tool.uv]
 required-version = "==0.11.28"
+python-downloads-json-url = "deploy/cpython/downloads.json"
 package = true
 constraint-dependencies = ["soupsieve==2.9.0", "urllib3==2.8.0"]
 
 [tool.x-pharma.versioning]
-processed-through = "d48561f75a82e44ef20e8115487dda349040a8aa"
+processed-through = "b4e233c845a683e33bb4101beeef1f3457010d49"

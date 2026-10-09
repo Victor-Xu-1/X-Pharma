@@ -57,11 +57,15 @@ APT still validates repository Release/package signatures, fails when any index
 cannot be updated, and enforces bounded network and wall-clock timeouts. Proxy
 credentials are deliberately unsupported.
 
-The application image carries official CPython 3.13 backports for
-`CVE-2026-15308`, `CVE-2026-11940`, `CVE-2026-11972`, and `CVE-2026-82049`, verified by SHA-256
-during the image build. The corresponding OpenVEX statements are in
-`deploy/security/api.openvex.json`. The untrusted HTML ingestion path also selects
-`lxml` explicitly.
+Application and optional OCR images use the same digest-pinned official CPython
+3.13.16 runtime, including the supplier fixes for CVE-2026-19445 and CVE-2026-19553.
+TLS hostname, HTML streaming-comment and tarfile hardlink-relocation probes execute
+against the installed standard library during builds. Superseded local HTML/tarfile
+overlays and their old Python VEX entries are removed; no new TLS finding is ignored.
+The supplier digest and native-bootstrap descriptor are documented in
+[the CPython runtime contract](../deploy/cpython/README.md).
+The untrusted HTML ingestion path continues to select `lxml` explicitly. Original
+scanner thresholds, fixed-vulnerability failure and complete inventories remain.
 
 ### PDF parser dependency boundary
 
