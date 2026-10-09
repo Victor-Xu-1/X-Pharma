@@ -46,7 +46,7 @@ flowchart LR
 
 ## 安装
 
-支持 Linux x86-64 或 Windows WSL2 的 Linux 环境。需要 Linux Docker Engine/Compose、Python 3.13.14、uv 0.11.28、Node.js 24.14、Corepack/pnpm 11.7。版本由 `pyproject.toml`、`uv.lock`、`apps/web/package.json` 和 `pnpm-lock.yaml` 锁定。
+支持 Linux x86-64 或 Windows WSL2 的 Linux 环境。需要 Linux Docker Engine/Compose、Python 3.13.16、uv 0.11.28、Node.js 24.14、Corepack/pnpm 11.7。Python 安全最低版本和依赖由 `pyproject.toml`、`uv.lock`、`.python-version` 锁定；原生安装的固定供应商描述及容器摘要见 [CPython 运行时](deploy/cpython/README.md)。前端依赖由 `apps/web/package.json` 和 `pnpm-lock.yaml` 锁定。
 
 E 盘 WSL 工作区使用以下位置：
 

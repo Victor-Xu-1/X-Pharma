@@ -401,7 +401,7 @@ flowchart TB
 | 固定研究产物 | 已退出核心代码、Web/API 契约和数据库 schema；PPTX 仅作为可解析的输入格式 |
 | 生产 OIDC 协议 | 已实现签名和回调测试；客户 IdP 联调待验收 |
 | Kubernetes HA 基线 | 已实现清单；多可用区实际部署/压测待验收 |
-| Python 3.13 / PostgreSQL 18 目标运行线 | Python 3.13.14、固定 uv、单一依赖锁、Biome 2，以及 PostgreSQL 18.4 + RDKit cartridge、可回切卷迁移、权威结构 schema/query 与收费 MCP 计算量结算已完成真实验证；规模压测、托管 HA/PITR 待完成 |
+| Python 3.13 / PostgreSQL 18 目标运行线 | 源码的 Python 安全最低版本为 3.13.16，API/OCR 共用固定摘要的官方运行时并执行 TLS/HTML/tarfile 探针；固定 uv、单一依赖锁、Biome 2，以及 PostgreSQL 18.4 + RDKit cartridge、可回切卷迁移、权威结构 schema/query 与收费 MCP 计算量结算沿用原有实现；候选运行时的 CI/部署、规模压测、托管 HA/PITR 分别验收 |
 | OpenSearch 实体/证据检索 | 已实现 OpenSearch 3.7、严格向量 mapping、BM25/k-NN 原生 hybrid、版本化 normalization pipeline、租户 routing/filter、facet、联想、定位引用、投影重试/死信和 alias 原子重建；获批准的远程 embedding API 及其模型仍须完成真实医药金标、容量和故障演练 Production 验收 |
 | RDKit exact/子结构/相似性 | 已实现并通过真实 PostgreSQL 18/RDKit、GiST、RLS、人员 API 与收费 MCP 测试；生产数据规模相关性和容量验收待完成 |
 | RAGFlow 退出核心运行栈 | 已从 Compose、Kubernetes、API、Temporal 与新数据入库链路退出；仅保留隔离的只读离线导出命令和无损升级所需的可空遗留列 |
