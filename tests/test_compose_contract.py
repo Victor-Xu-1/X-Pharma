@@ -332,13 +332,12 @@ def test_optional_ocr_profile_is_private_pinned_bounded_and_secret_minimized() -
             "OCR_PYPI_INDEX_URL": "${OCR_PYPI_INDEX_URL:-https://pypi.org/simple}",
         },
     }
-    assert "python:3.13.14-slim@sha256:9662417aace5ae7b" in dockerfile
+    assert "python:3.13.16-slim@sha256:bf44cdfcb76cd3b41" in dockerfile
     assert "libgl1 libglib2.0-0t64 libgomp1" in dockerfile
-    assert "CPYTHON_HTML_PARSER_COMMIT=7933f4bf7131aa4140750f9404f5de0aa2969ced" in dockerfile
-    assert "CPYTHON_TARFILE_COMMIT=9c17bace90f88dfba6d0e2fe23c8e7ae35f83955" in dockerfile
-    assert "COPY deploy/cpython/html-parser.py" in dockerfile
-    assert "COPY deploy/cpython/tarfile.py" in dockerfile
-    assert dockerfile.count("sha256sum --check --strict") == 2
+    assert "verify_cpython_html.py" in dockerfile
+    assert "verify_cpython_tarfile.py" in dockerfile
+    assert "verify_cpython_tls.py" in dockerfile
+    assert "COPY deploy/cpython" not in dockerfile
     assert "rm -rf /var/lib/apt/lists/*" in dockerfile
     assert "env_file" not in ocr
     assert "ports" not in ocr
