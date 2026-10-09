@@ -1,6 +1,7 @@
 import { ExternalLink, FileText, X } from "lucide-react";
 import { ErrorState, formatDate, Spinner, StatusBadge } from "../../components/common";
 import { ProvenanceButton } from "../../components/RecordProvenanceDrawer";
+import { SourceMetadata } from "../../components/SourceMetadata";
 import type { ProvenanceSelection } from "../../lib/contracts/provenance";
 import { entityLabels } from "../../lib/entityPresentation";
 import type { NewsEventSearchItemRead } from "../../lib/generated";
@@ -9,7 +10,6 @@ import { newsText as t } from "../../lib/i18n/news";
 import { useModalFocus } from "../../lib/useModalFocus";
 import type { DossierEntityOpener } from "../EntityDossierView";
 import { newsTypeLabel } from "./presentation";
-import { SourceMetadata } from "../../components/SourceMetadata";
 export function NewsDetailDrawer({
   data,
   loading,

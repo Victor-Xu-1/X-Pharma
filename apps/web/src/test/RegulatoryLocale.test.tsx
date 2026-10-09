@@ -1,9 +1,11 @@
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ApiError } from "../lib/api";
+import { loadRecordProvenance } from "../lib/contracts/provenance";
 import {
   emptyRegulatorySearchFilters,
   loadRegulatoryEventDetail,
+  saveRegulatorySearch,
   searchRegulatoryEvents,
 } from "../lib/contracts/regulatory";
 import { setLocale } from "../lib/i18n";
@@ -16,6 +18,10 @@ vi.mock("../lib/contracts/regulatory", async (original) => ({
   searchRegulatoryEvents: vi.fn(),
   loadRegulatoryEventDetail: vi.fn(),
   saveRegulatorySearch: vi.fn(),
+}));
+vi.mock("../lib/contracts/provenance", async (original) => ({
+  ...(await original<typeof import("../lib/contracts/provenance")>()),
+  loadRecordProvenance: vi.fn(),
 }));
 const props = {
   initialFilters: { ...emptyRegulatorySearchFilters, query: "VX-101" },
@@ -32,6 +38,13 @@ beforeEach(() => {
   setLocale("en");
   vi.mocked(searchRegulatoryEvents).mockResolvedValue(regulatoryResult);
   vi.mocked(loadRegulatoryEventDetail).mockResolvedValue(regulatoryEvent);
+  vi.mocked(loadRecordProvenance).mockResolvedValue({
+    resource_type: "regulatory_event",
+    resource_id: eventId,
+    items: [],
+    license_scopes: [],
+    warnings: [],
+  });
 });
 
 it("localizes regulatory controls and memoized columns without rereading or discarding the query draft", async () => {
@@ -125,4 +138,53 @@ it("keeps prototype-like unknown event codes literal and distinguishes a recorde
   const warning = within(dialog).getByText("Boxed warning", { exact: true }).closest("div");
   expect(warning).toHaveTextContent("No");
   expect(warning).not.toHaveTextContent("Not provided");
+});
+
+it("retains a pending save across locale changes and localizes partial success without repeating a write", async () => {
+  let complete: ((outcome: Awaited<ReturnType<typeof saveRegulatorySearch>>) => void) | undefined;
+  vi.mocked(saveRegulatorySearch).mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        complete = resolve;
+      }),
+  );
+  renderWithQueryClient(<RegulatoryView {...props} />);
+  await screen.findByRole("table", { name: "Regulatory events" });
+  fireEvent.click(screen.getByRole("button", { name: "Save / monitor" }));
+  const dialog = screen.getByRole("dialog");
+  fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "原始保存名称" } });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Save search" }));
+  await screen.findByText("Saving search");
+  act(() => setLocale("zh-CN"));
+  expect(within(dialog).getByLabelText("名称")).toHaveValue("原始保存名称");
+  expect(within(dialog).getByLabelText("名称")).toBeDisabled();
+  expect(within(dialog).getByRole("button", { name: "取消" })).toBeDisabled();
+  await act(async () => complete?.({ kind: "monitor_failed", reason: "RAW_MONITOR_FAILURE" }));
+  await screen.findByText("检索已保存，但监控未启用：RAW_MONITOR_FAILURE");
+  act(() => setLocale("en"));
+  expect(screen.getByText("Query saved, but monitoring was not enabled: RAW_MONITOR_FAILURE")).toBeVisible();
+  expect(saveRegulatorySearch).toHaveBeenCalledOnce();
+  expect(vi.mocked(saveRegulatorySearch).mock.calls[0]?.[0]).toEqual({
+    name: "原始保存名称",
+    filters: props.initialFilters,
+    shared: false,
+    monitor: true,
+  });
+});
+
+it("opens the existing authorized evidence drawer for the selected regulatory event", async () => {
+  renderWithQueryClient(<RegulatoryView {...props} selectedEventId={eventId} />);
+  const dialog = await screen.findByRole("dialog", { name: regulatoryEvent.title });
+  fireEvent.click(within(dialog).getByRole("button", { name: `View original evidence for ${regulatoryEvent.title}` }));
+  await screen.findByRole("dialog", { name: "Original evidence" });
+  await screen.findByText("No displayable evidence");
+  expect(loadRecordProvenance).toHaveBeenCalledOnce();
+  expect(loadRecordProvenance).toHaveBeenCalledWith(
+    {
+      resourceType: "regulatory_event",
+      resourceId: eventId,
+      label: regulatoryEvent.title,
+    },
+    expect.any(AbortSignal),
+  );
 });

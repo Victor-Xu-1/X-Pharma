@@ -31,7 +31,6 @@ export function RegulatoryResultActions({
         count={data.items.length}
         unit={t("项监管事件")}
         queriedAt={data.as_of}
-        note={t("最多对比 4 项")}
       />
       <div className="pipeline-result-actions">
         <QueryRefreshButton refreshing={refreshing} onRefresh={onRefresh} />

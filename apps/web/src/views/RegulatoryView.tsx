@@ -260,7 +260,7 @@ export function RegulatoryView({
     <>
       <section className="data-section regulatory-section">
         <div className="explorer-intro">
-          <p>{t("统一比较申报、批准、认定资格、标签版本和安全信号，追踪适用人群、风险措施及来源更新时间。")}</p>
+          <p>{t("追踪监管决定、标签与安全信号，核对适用范围和原始证据。")}</p>
         </div>
 
         <RegulatoryFilterForm
@@ -361,7 +361,7 @@ export function RegulatoryView({
                     selectedRowIds: comparedEventIds,
                     onChange: onCompareChange,
                     getRowLabel: (item) => t("对比 {title}", { title: item.title }),
-                    label: t("选择事件进行对比"),
+                    label: t("选择事件对比，最多 4 项"),
                     maxSelectedRows: 4,
                     allowSelectAll: false,
                   }}

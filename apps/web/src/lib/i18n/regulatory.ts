@@ -1,8 +1,8 @@
 import { createTranslator } from "./translator";
 
 export const regulatoryMessages = {
-  "统一比较申报、批准、认定资格、标签版本和安全信号，追踪适用人群、风险措施及来源更新时间。":
-    "Compare regulatory decisions, labels and safety signals with population scope, risk actions and source updates.",
+  "追踪监管决定、标签与安全信号，核对适用范围和原始证据。":
+    "Track regulatory decisions, labels and safety signals with linked evidence.",
   监管事件筛选: "Regulatory event filters",
   关键词: "Keyword",
   "药物、适应症、申请号、标签或安全术语": "Drug, condition, application number, label or safety term",
@@ -40,7 +40,6 @@ export const regulatoryMessages = {
   正在刷新监管事件: "Refreshing regulatory events",
   监管事件加载失败: "Regulatory events could not be loaded",
   项监管事件: "regulatory events",
-  "最多对比 4 项": "Compare up to 4 events",
   结果展示方式: "Result presentation",
   列表: "List",
   统计: "Statistics",
@@ -57,7 +56,7 @@ export const regulatoryMessages = {
   监管事件结果: "Regulatory events",
   监管事件结果分页: "Regulatory event pagination",
   "对比 {title}": "Compare {title}",
-  选择事件进行对比: "Select events to compare",
+  "选择事件对比，最多 4 项": "Compare events · max 4",
   监管: "regulatory",
   监管检索保存失败: "Regulatory query could not be saved",
   监管检索已保存并启用监控: "Regulatory query saved and monitoring enabled",
