@@ -1,6 +1,8 @@
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
+import { ApiError } from "../lib/api";
 import { createMonitoringTopic, loadMonitoring, loadSavedSearch, type SavedSearch } from "../lib/contracts/monitoring";
+import { setLocale } from "../lib/i18n";
 import { MonitoringView } from "../views/MonitoringView";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
@@ -34,6 +36,64 @@ const saved: SavedSearch = {
 beforeEach(() => {
   vi.mocked(loadMonitoring).mockResolvedValue({ searches: [saved], topics: [], alerts: [] });
   vi.mocked(loadSavedSearch).mockResolvedValue(saved);
+});
+
+it.each([401, 403])(
+  "hides a cached monitoring snapshot after read access is rejected (%s) until authorized recovery",
+  async (status) => {
+    const { queryClient } = renderWithQueryClient(
+      <MonitoringView user={user} activeTab="searches" onOpenEntity={vi.fn()} onOpenSearch={vi.fn()} />,
+    );
+    await screen.findByText(saved.name);
+    vi.mocked(loadMonitoring).mockRejectedValue(new ApiError("Read access denied / 原始诊断", status, null));
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: ["monitoring"] });
+    });
+    await screen.findByRole("alert");
+    expect(screen.queryByText(saved.name)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: `运行 ${saved.name}` })).not.toBeInTheDocument();
+    let finish!: (snapshot: Awaited<ReturnType<typeof loadMonitoring>>) => void;
+    vi.mocked(loadMonitoring).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
+    await waitFor(() => expect(finish).toBeDefined());
+    expect(screen.queryByText(saved.name)).not.toBeInTheDocument();
+    await act(async () => finish({ searches: [saved], topics: [], alerts: [] }));
+    expect(await screen.findByText(saved.name)).toBeVisible();
+  },
+);
+
+it("keeps the monitoring topic draft, selected saved query and cached snapshot when language changes", async () => {
+  setLocale("en");
+  renderWithQueryClient(
+    <MonitoringView user={user} activeTab="topics" onOpenEntity={vi.fn()} onOpenSearch={vi.fn()} />,
+  );
+  const name = await screen.findByRole("textbox", { name: "Monitoring topic name" });
+  fireEvent.change(name, { target: { value: "未提交监控草稿" } });
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("textbox", { name: "监控主题名称" })).toHaveValue("未提交监控草稿");
+  expect(screen.getByRole("combobox", { name: "选择已保存检索" })).toHaveValue(saved.id);
+  act(() => setLocale("en"));
+  expect(screen.getByRole("textbox", { name: "Monitoring topic name" })).toHaveValue("未提交监控草稿");
+  expect(loadMonitoring).toHaveBeenCalledOnce();
+  expect(createMonitoringTopic).not.toHaveBeenCalled();
+});
+
+it("shows a truthful disabled selection when no saved query supports monitoring", async () => {
+  setLocale("en");
+  vi.mocked(loadMonitoring).mockResolvedValue({ searches: [], topics: [], alerts: [] });
+  renderWithQueryClient(
+    <MonitoringView user={user} activeTab="topics" onOpenEntity={vi.fn()} onOpenSearch={vi.fn()} />,
+  );
+  const select = await screen.findByRole("combobox", { name: "Choose a saved search" });
+  expect(select).toBeDisabled();
+  expect(screen.getByDisplayValue("No searches available for monitoring")).toBe(select);
+  expect(screen.getByRole("button", { name: "Create topic" })).toBeDisabled();
+  expect(createMonitoringTopic).not.toHaveBeenCalled();
 });
 
 it("does not replay cached shared conditions after current access is rejected", async () => {

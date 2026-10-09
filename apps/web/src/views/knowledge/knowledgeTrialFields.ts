@@ -1,20 +1,9 @@
 import { formattingLocale, getLocale } from "../../lib/i18n";
-import { knowledgeFieldMessages, knowledgeFieldText } from "../../lib/i18n/knowledgeFields";
-import { professionalEnumLabel, professionalEnumMessages } from "../../lib/i18n/professionalEnums";
-import { clinicalTrialPhaseLabel, clinicalTrialStatusLabel, clinicalTrialStudyTypeLabel } from "../../lib/trialDisplay";
+import { knowledgeFieldText } from "../../lib/i18n/knowledgeFields";
+import { localizedTrialPhase, localizedTrialStatus, localizedTrialStudyType } from "../../lib/i18n/trialVocabulary";
 
 const precisionLabels = { day: "日", month: "月", year: "年" } as const;
 const enrollmentLabels = { ACTUAL: "实际人数", ESTIMATED: "预计人数" } as const;
-
-function knownVocabulary(value: string, label: (value: string) => string): string {
-  if (!value.trim()) return value;
-  const readable = label(value);
-  if (readable === value.trim().replaceAll("_", " ")) return value;
-  if (Object.hasOwn(knowledgeFieldMessages, readable))
-    return knowledgeFieldText(readable as keyof typeof knowledgeFieldMessages);
-  if (Object.hasOwn(professionalEnumMessages, readable)) return professionalEnumLabel(readable);
-  return readable;
-}
 
 /** Only a recorded calendar date and its declared precision are formatted; no local-time conversion. */
 function recordedDate(value: string, precision: unknown): string | null {
@@ -37,13 +26,11 @@ function recordedDate(value: string, precision: unknown): string | null {
 /** Null delegates unknown shapes/values to the complete literal reader. */
 export function knowledgeTrialFieldText(value: unknown, key: string, record: Record<string, unknown>): string | null {
   if (key === "phases" && Array.isArray(value) && value.length && value.every((phase) => typeof phase === "string")) {
-    return value
-      .map((phase) => knownVocabulary(phase, clinicalTrialPhaseLabel))
-      .join(formattingLocale() === "en-US" ? ", " : "、");
+    return value.map(localizedTrialPhase).join(formattingLocale() === "en-US" ? ", " : "、");
   }
   if (typeof value !== "string") return null;
-  if (key === "overall_status") return knownVocabulary(value, clinicalTrialStatusLabel);
-  if (key === "study_type") return knownVocabulary(value, clinicalTrialStudyTypeLabel);
+  if (key === "overall_status") return localizedTrialStatus(value);
+  if (key === "study_type") return localizedTrialStudyType(value);
   if (key === "enrollment_type")
     return Object.hasOwn(enrollmentLabels, value)
       ? knowledgeFieldText(enrollmentLabels[value as keyof typeof enrollmentLabels])

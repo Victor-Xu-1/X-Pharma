@@ -108,7 +108,9 @@ export async function verifyMonitoring(
   await expect(page.getByText("EGFR changes", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "将 EGFR 提醒标记已读" }).click();
   await expect.poll(() => acknowledged).toBe(true);
-  await expect(page.getByText("read", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("table", { name: "情报提醒", exact: true }).getByText("已读", { exact: true }),
+  ).toBeVisible();
   await page.getByRole("tab", { name: "已保存检索" }).click();
   await expect(page.getByText("EGFR enterprise watch", { exact: true })).toBeVisible();
   await expect(page.getByText("企业共享", { exact: true })).toBeVisible();

@@ -7,6 +7,51 @@ current-deployment evidence merely because the product version advances.
 
 ## 2026-10-07: research-first frontend craft
 
+### 2026-10-09: bilingual monitoring and truthful snapshot recovery (candidate)
+
+The monitoring shell, alerts, topics, saved queries, mobile field labels and
+metadata feedback use the existing English-first locale. Original event/source
+text, saved query JSON, opaque identifier boundaries, immutable pinned versions,
+zero/false and unknown codes stay unchanged. Existing replay/latest-intent locks
+and metadata pending locks remain; no second state/query owner is introduced.
+
+Genuine regressions reproduce cached data still visible after401/403, untranslated
+English controls, incomplete saved-condition fields, the generic "Set" summary,
+raw read-state captions and misleading duplicate empty options. The current
+snapshot is hidden on denied reads, including pending recovery, while successful
+recovery retains the tab and draft. Ordinary failed refresh identifies its old
+snapshot. The original bounded API's unread count now explicitly refers to the
+current returned results, not all historical alerts.
+
+The294-line summary and duplicate entity captions become99/181/64-line summary/
+field/value modules. A schema-derived check requires all seven professional query
+models' filters, dates, bounds and sort intent; only separately shown keyword and
+display-mode fields are excluded. Complete conditions use native disclosure with
+retained open state and no raw structure/internal IDs. Recognized scientific
+vocabularies reuse existing producers; clinical captions move to one shared
+adapter and the old knowledge translation/intermediate function are removed.
+
+Seventy-nine focused monitoring/condition and directly affected knowledge-reader
+tests pass, along with strict application/E2E types, exact formatting and original
+build limits. Two controlled Chrome155 desktop/mobile cases pass rich conditions,
+literal text, cross-tab language, pending/rejected metadata, pinned-query notices,
+access denial and recovery. Their single503 metadata PATCH is browser-only; no
+identity/provider/business write reaches a server. Two selected existing browser
+read-receipt/sharing consumers also pass; the obsolete raw read-caption assertion
+now verifies the same transition through the correct localized badge.
+
+Eighteen actual read-only Chrome155 states at1440/390/320 verify all three tabs,
+draft/cache/route continuity, reflow and WCAG tags. This preview account's monitoring
+records are empty, so populated behavior is controlled browser evidence, not real
+scientific acceptance. Initial actual mobile rendering fails at413px on a390px
+viewport: the module-owned toolbar now wraps its complete tabs and refresh button,
+without hiding overflow or relaxing limits. A real empty selection initially
+implies a choice despite having none; the single disabled option is corrected.
+An initial condition-disclosure consumer still expects protected text visible
+before expanding; it now checks hidden-then-expanded and retains the no-SMILES
+assertion. No original gate is removed. Remaining site quality, normal CI/merges,
+the actual merge counter and exact-main deployment remain independent closure.
+
 ### 2026-10-09: bilingual governed research lists (candidate, not deployed)
 
 List catalogue, members, comparison, history, shared metadata editor and export

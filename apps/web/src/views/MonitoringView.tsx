@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Bookmark, Play } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { ErrorState, Spinner } from "../components/common";
+import { ErrorState, QueryRefreshButton, Spinner } from "../components/common";
 import { FormStatus } from "../components/FormStatus";
 import { ResearchMetadataDialog } from "../components/ResearchMetadataDialog";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
+import { ApiError } from "../lib/api";
 import {
   createMonitoringTopic,
   loadMonitoring,
@@ -19,6 +20,8 @@ import {
   setSavedSearchVisibility,
   updateSavedSearchMetadata,
 } from "../lib/contracts/monitoring";
+import { useMessages } from "../lib/i18n";
+import { monitoringMessages } from "../lib/i18n/monitoring";
 import type { User } from "../lib/types";
 import type { MonitoringTab } from "../lib/workspaceRouting";
 import { MonitoringAlerts } from "./monitoring/MonitoringAlerts";
@@ -27,7 +30,7 @@ import { MonitoringTopics } from "./monitoring/MonitoringTopics";
 import { useMonitoringOperations } from "./monitoring/useMonitoringOperations";
 import "./monitoring/MonitoringRecords.css";
 
-const monitoringTabs: ReadonlyArray<ResearchTabOption<MonitoringTab>> = [
+const monitoringTabs: ReadonlyArray<ResearchTabOption<MonitoringTab> & { label: keyof typeof monitoringMessages }> = [
   { key: "alerts", label: "提醒中心", icon: <Bell size={16} aria-hidden="true" /> },
   { key: "topics", label: "监控主题", icon: <Play size={16} aria-hidden="true" /> },
   { key: "searches", label: "已保存检索", icon: <Bookmark size={16} aria-hidden="true" /> },
@@ -46,6 +49,7 @@ export function MonitoringView({
   onTabChange?: (tab: MonitoringTab) => void;
   user: User;
 }) {
+  const text = useMessages(monitoringMessages);
   const queryClient = useQueryClient();
   const [localTab, setLocalTab] = useState<MonitoringTab>("alerts");
   const tab = activeTab ?? localTab;
@@ -58,7 +62,7 @@ export function MonitoringView({
   const [editorName, setEditorName] = useState("");
   const [editorDescription, setEditorDescription] = useState("");
   const [editorPending, setEditorPending] = useState(false);
-  const [editorError, setEditorError] = useState("");
+  const [editorError, setEditorError] = useState<{ raw: string } | { fallback: true } | null>(null);
   const queryKey = monitoringKeys.all(unreadOnly);
   const monitoring = useQuery({ queryKey, queryFn: ({ signal }) => loadMonitoring(unreadOnly, signal) });
   const searches = monitoring.data?.searches ?? [];
@@ -131,20 +135,20 @@ export function MonitoringView({
     setEditingSavedSearch(saved);
     setEditorName(saved.name);
     setEditorDescription(saved.description);
-    setEditorError("");
+    setEditorError(null);
   }
 
   function closeSavedSearchEditor() {
     if (editorPending) return;
     setEditingSavedSearch(null);
-    setEditorError("");
+    setEditorError(null);
   }
 
   async function saveSavedSearchMetadata(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editingSavedSearch || !editorName.trim()) return;
     setEditorPending(true);
-    setEditorError("");
+    setEditorError(null);
     try {
       await updateSavedSearchMetadata(editingSavedSearch.id, {
         name: editorName.trim(),
@@ -153,35 +157,43 @@ export function MonitoringView({
       await load();
       setEditingSavedSearch(null);
     } catch (caught) {
-      setEditorError(caught instanceof Error ? caught.message : "已保存检索更新失败");
+      setEditorError(caught instanceof Error ? { raw: caught.message } : { fallback: true });
     } finally {
       setEditorPending(false);
     }
   }
 
-  if (monitoring.isPending) return <Spinner label="正在加载情报监控" />;
+  if (monitoring.error instanceof ApiError && [401, 403].includes(monitoring.error.status))
+    return <ErrorState message={monitoring.error.message} retry={() => void load()} />;
+  if (monitoring.isPending) return <Spinner label={text("正在加载情报监控")} />;
   if (error && !searches.length && !topics.length && !alerts.length)
     return <ErrorState message={error} retry={() => void load()} />;
   return (
     <section className="data-section monitoring-section">
-      <ResearchTabList
-        tabs={monitoringTabs}
-        activeTab={tab}
-        onChange={handleTabChange}
-        ariaLabel="监控视图"
-        idPrefix="monitoring"
-        className="view-tabs"
-      />
+      <div className="section-toolbar monitoring-toolbar">
+        <ResearchTabList
+          tabs={monitoringTabs.map((option) => ({ ...option, label: text(option.label) }))}
+          activeTab={tab}
+          onChange={handleTabChange}
+          ariaLabel={text("监控视图")}
+          idPrefix="monitoring"
+          className="view-tabs"
+        />
+        <QueryRefreshButton refreshing={monitoring.isFetching} onRefresh={() => void load()} />
+      </div>
       <FormStatus
         pending={[...operations.pending].some((key) => key.startsWith("replay:"))}
-        pendingLabel="正在核验检索条件与访问权限"
+        pendingLabel={text("正在核验检索条件与访问权限")}
         error=""
       />
       {error ? (
         <div className="inline-error" role="alert">
           <span>{error}</span>
+          {monitoring.isError && monitoring.data ? (
+            <span>{text("刷新失败，当前显示上次成功读取的监控记录。")}</span>
+          ) : null}
           <button className="text-button" type="button" onClick={() => void load()} disabled={monitoring.isFetching}>
-            {monitoring.isFetching ? "重试中" : "重试"}
+            {monitoring.isFetching ? text("重试中") : text("重试")}
           </button>
         </div>
       ) : null}
@@ -225,12 +237,12 @@ export function MonitoringView({
         ) : null}
       </section>
       <ResearchMetadataDialog
-        title="编辑已保存检索"
+        title={text("编辑已保存检索")}
         open={editingSavedSearch !== null}
         name={editorName}
         description={editorDescription}
         pending={editorPending}
-        error={editorError}
+        error={editorError ? ("raw" in editorError ? editorError.raw : text("已保存检索更新失败")) : ""}
         onNameChange={setEditorName}
         onDescriptionChange={setEditorDescription}
         onClose={closeSavedSearchEditor}
