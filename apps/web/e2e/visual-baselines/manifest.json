@@ -77,25 +77,25 @@
     },
     "research-trial-outcomes-desktop-1440.png": {
       "capture": "dossier-section",
-      "sha256": "0c64dac9273b8e624815ebe41f7161bf0c7995d298726bd89b48c93a1e49480c",
+      "sha256": "a111e9962d3739561e29ec83253c568b1c691ed2b5d87dd0f50c0bc796c4f714",
       "state": "controlled-trial-outcomes",
       "viewport": "1440x900"
     },
     "research-trial-outcomes-desktop-1920.png": {
       "capture": "dossier-section",
-      "sha256": "20fe84f3e845e88b3bd990537f5e4e3fab11e869c8452dad0127ea573be56715",
+      "sha256": "a19291888c040568fd843522af18fcfcced3c9e265d10706c813514a9e9bde82",
       "state": "controlled-trial-outcomes",
       "viewport": "1920x1080"
     },
     "research-trial-outcomes-mobile-390.png": {
       "capture": "dossier-section",
-      "sha256": "6b2ef05c4999baca16592c23df96bb97d2e225e07b0af835ae08a4b88950e844",
+      "sha256": "307bffe44a7c671354033b2e928d92cb0ac80d9820802d5df074bf37615ea872",
       "state": "controlled-trial-outcomes",
       "viewport": "390x844"
     },
     "research-trial-outcomes-tablet-1024.png": {
       "capture": "dossier-section",
-      "sha256": "2de7864816e8d4227e670d5cc25f03f231eda4a14d32c55a1e13bf03c0fd3347",
+      "sha256": "fbdbad18d08c62c298f1de2f27c2e39cd6f04d60b340c207c8d3bc3f27fb61e2",
       "state": "controlled-trial-outcomes",
       "viewport": "1024x768"
     },
@@ -124,7 +124,7 @@
       "viewport": "1024x768"
     }
   },
-  "generated_at": "2026-10-08",
+  "generated_at": "2026-10-09",
   "generator": "scripts/run-browser-acceptance.sh --update-snapshots",
   "license": "repository-owned-test-artifact",
   "schema": "pharma.workbench-visual-baselines.v3",

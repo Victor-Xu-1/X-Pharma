@@ -1,5 +1,10 @@
 export const entityFilterMessages = {
   "{label}检索与选择": "{label} search and selection",
+  "{label}多选": "{label} multiselect",
+  "已选{label}": "Selected {label}",
+  "重试已选{label} {id}": "Retry selected {label} {id}",
+  "移除{name}": "Remove {name}",
+  "已达到最多 {count} 项": "Maximum of {count} selections reached",
   正在读取实体: "Loading entity",
   所选实体不可用: "Selected entity unavailable",
   "重试已选{label}": "Retry selected {label}",

@@ -1,10 +1,11 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import { EntityMultiFilterSelect } from "../components/EntityMultiFilterSelect";
 import { getEntity, lookupEntities } from "../lib/contracts/intelligence";
 import type { EntitySearchItemRead } from "../lib/generated";
+import { setLocale } from "../lib/i18n";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/intelligence", () => ({
@@ -229,5 +230,26 @@ it("retries a failed lookup without losing selected canonical ids", async () => 
   expect(screen.queryByRole("option")).not.toBeInTheDocument();
   fireEvent.click(retry);
   await screen.findByRole("option", { name: /VX-101 Bio/ });
+  expect(onChange).not.toHaveBeenCalled();
+});
+
+it("localizes the multiselect's own captions while retaining resolved ids and names", async () => {
+  const onChange = vi.fn();
+  renderWithQueryClient(
+    <EntityMultiFilterSelect
+      label="Drug"
+      entityType="drug"
+      values={[originator.id]}
+      onChange={onChange}
+      placeholder="Drug name"
+      maxSelections={1}
+    />,
+  );
+  await screen.findByText(originator.name);
+  act(() => setLocale("en"));
+  expect(screen.getByRole("group", { name: "Drug multiselect" })).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("Maximum of 1 selections reached");
+  expect(screen.getByRole("button", { name: `Remove ${originator.name}` })).toBeInTheDocument();
+  expect(getEntity).toHaveBeenCalledTimes(1);
   expect(onChange).not.toHaveBeenCalled();
 });

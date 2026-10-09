@@ -17,6 +17,7 @@ export const trialVocabularyMessages = {
   干预性研究: "Interventional study",
   观察性研究: "Observational study",
   扩大使用: "Expanded access",
+  未记录: "Not recorded",
 } as const;
 const text = createTranslator(trialVocabularyMessages);
 function registeredCaption(value: string, label: (value: string) => string): string {
@@ -27,5 +28,7 @@ function registeredCaption(value: string, label: (value: string) => string): str
   return Object.hasOwn(professionalEnumMessages, caption) ? professionalEnumLabel(caption, value) : value;
 }
 export const localizedTrialPhase = (value: string) => registeredCaption(value, clinicalTrialPhaseLabel);
-export const localizedTrialStatus = (value: string) => registeredCaption(value, clinicalTrialStatusLabel);
-export const localizedTrialStudyType = (value: string) => registeredCaption(value, clinicalTrialStudyTypeLabel);
+export const localizedTrialStatus = (value: string | null | undefined) =>
+  value?.trim() ? registeredCaption(value, clinicalTrialStatusLabel) : text("未知");
+export const localizedTrialStudyType = (value: string | null | undefined) =>
+  value?.trim() ? registeredCaption(value, clinicalTrialStudyTypeLabel) : text("未记录");

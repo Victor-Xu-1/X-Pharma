@@ -5,8 +5,9 @@ import type {
   PipelineSearchResult,
   TrialResultEvaluation,
 } from "../generated";
-import { MonitoringService, PipelinesService } from "../generated";
+import { PipelinesService } from "../generated";
 import { developmentPhases } from "../phasePresentation";
+import { type SavedSearchCreationOutcome, saveAndSubscribeSearch } from "./savedSearchCreation";
 import { effectiveSort, type SortCriterion } from "./sorting";
 
 const phases = developmentPhases;
@@ -309,9 +310,7 @@ export function hasPipelineSearchFilter(filters: PipelineSearchFilters): boolean
   );
 }
 
-export type PipelineSaveOutcome =
-  | { kind: "saved"; monitoring: boolean }
-  | { kind: "monitor_failed"; reason: string | null };
+export type PipelineSaveOutcome = SavedSearchCreationOutcome;
 
 export async function savePipelineSearch({
   name,
@@ -328,26 +327,13 @@ export async function savePipelineSearch({
   shared: boolean;
   monitor: boolean;
 }): Promise<PipelineSaveOutcome> {
-  const saved = await contractRequest(
-    MonitoringService.createSavedSearchApiV1MonitoringSavedSearchesPost({
-      requestBody: {
-        name: name.trim(),
-        query_type: "pipeline_search",
-        query: savedPipelineQuery(filters, analysis, displayMode),
-        visibility: shared ? "tenant" : "private",
-      },
-    }),
+  return saveAndSubscribeSearch(
+    {
+      name: name.trim(),
+      query_type: "pipeline_search",
+      query: savedPipelineQuery(filters, analysis, displayMode),
+      visibility: shared ? "tenant" : "private",
+    },
+    monitor,
   );
-  if (monitor) {
-    try {
-      await contractRequest(
-        MonitoringService.createMonitoringTopicApiV1MonitoringTopicsPost({
-          requestBody: { name: name.trim(), saved_search_id: saved.id },
-        }),
-      );
-    } catch (error) {
-      return { kind: "monitor_failed", reason: error instanceof Error ? error.message : null };
-    }
-  }
-  return { kind: "saved", monitoring: monitor };
 }

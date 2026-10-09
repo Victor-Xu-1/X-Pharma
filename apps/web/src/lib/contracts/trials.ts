@@ -7,8 +7,9 @@ import type {
   TrialEntityRole,
   TrialResultEvaluation,
 } from "../generated";
-import { MonitoringService, TrialsService } from "../generated";
+import { TrialsService } from "../generated";
 import { developmentPhases } from "../phasePresentation";
+import { type SavedSearchCreationOutcome, saveAndSubscribeSearch } from "./savedSearchCreation";
 import { effectiveSort, type SortCriterion } from "./sorting";
 
 export const trialSortFields = [
@@ -295,29 +296,16 @@ export async function saveClinicalTrialSearch({
   input: TrialSavedSearchInput;
   shared: boolean;
   monitor: boolean;
-}): Promise<{ message: string }> {
-  const saved = await contractRequest(
-    MonitoringService.createSavedSearchApiV1MonitoringSavedSearchesPost({
-      requestBody: {
-        name: name.trim(),
-        query_type: "clinical_trial_search",
-        query: savedClinicalTrialQuery(input),
-        visibility: shared ? "tenant" : "private",
-      },
-    }),
+}): Promise<SavedSearchCreationOutcome> {
+  return saveAndSubscribeSearch(
+    {
+      name: name.trim(),
+      query_type: "clinical_trial_search",
+      query: savedClinicalTrialQuery(input),
+      visibility: shared ? "tenant" : "private",
+    },
+    monitor,
   );
-  if (monitor) {
-    try {
-      await contractRequest(
-        MonitoringService.createMonitoringTopicApiV1MonitoringTopicsPost({
-          requestBody: { name: name.trim(), saved_search_id: saved.id },
-        }),
-      );
-    } catch (error) {
-      return { message: `检索已保存，但监控未启用：${error instanceof Error ? error.message : "未知错误"}` };
-    }
-  }
-  return { message: monitor ? "临床试验检索已保存并启用监控" : "临床试验检索已保存" };
 }
 
 export async function searchTrials(
