@@ -8,7 +8,7 @@ import {
 import {
   dealAnalysisDimensions as canonicalDealAnalysisDimensions,
   dealSortFields as canonicalDealSortFields,
-} from "../contracts/deals";
+} from "../contracts/dealSearchModel";
 import { developmentPhases as canonicalDevelopmentPhases } from "../phasePresentation";
 import type { UserRole } from "../types";
 import {

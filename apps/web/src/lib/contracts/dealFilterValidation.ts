@@ -1,6 +1,6 @@
 import type { DealDirection, DealPartyRole, DealRightType, DealStatus } from "../generated";
 import { developmentPhases } from "../phasePresentation";
-import type { DealSearchFilters, DealSortField } from "./deals";
+import type { DealSearchFilters, DealSortField } from "./dealSearchModel";
 import { effectiveSort } from "./sorting";
 
 export const dealStatuses = new Set<DealStatus>([
