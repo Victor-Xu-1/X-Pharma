@@ -9,7 +9,8 @@ import type {
   RegulatorySafetyStatus,
   RegulatorySavedSearchQuery,
 } from "../generated";
-import { MonitoringService, RegulatoryService } from "../generated";
+import { RegulatoryService } from "../generated";
+import { type SavedSearchCreationOutcome, saveAndSubscribeSearch } from "./savedSearchCreation";
 import { effectiveSort, type SortCriterion } from "./sorting";
 
 export const regulatorySortFields = [
@@ -193,29 +194,16 @@ export async function saveRegulatorySearch({
   filters: RegulatorySearchFilters;
   shared: boolean;
   monitor: boolean;
-}): Promise<{ message: string }> {
-  const saved = await contractRequest(
-    MonitoringService.createSavedSearchApiV1MonitoringSavedSearchesPost({
-      requestBody: {
-        name: name.trim(),
-        query_type: "regulatory_search",
-        query: savedRegulatoryQuery(filters),
-        visibility: shared ? "tenant" : "private",
-      },
-    }),
+}): Promise<SavedSearchCreationOutcome> {
+  return saveAndSubscribeSearch(
+    {
+      name: name.trim(),
+      query_type: "regulatory_search",
+      query: savedRegulatoryQuery(filters),
+      visibility: shared ? "tenant" : "private",
+    },
+    monitor,
   );
-  if (monitor) {
-    try {
-      await contractRequest(
-        MonitoringService.createMonitoringTopicApiV1MonitoringTopicsPost({
-          requestBody: { name: name.trim(), saved_search_id: saved.id },
-        }),
-      );
-    } catch (error) {
-      return { message: `检索已保存，但监控未启用：${error instanceof Error ? error.message : "未知错误"}` };
-    }
-  }
-  return { message: monitor ? "监管检索已保存并启用监控" : "监管检索已保存" };
 }
 
 export const regulatoryKeys = {

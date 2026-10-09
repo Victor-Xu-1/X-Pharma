@@ -9,10 +9,14 @@ function escapeHtml(value: string): string {
 }
 
 /** ECharts owns markup; source names and unknown phase captions never own HTML. */
-export function landscapeTooltip(bucket: PipelineLandscapeBucketRead, locale: Locale): string {
+export function landscapeTooltip(bucket: PipelineLandscapeBucketRead, locale: Locale, unitLabel?: string): string {
   const phases = Object.entries(bucket.phase_counts ?? {})
     .filter(([, count]) => count > 0)
     .map(([phase, count]) => `${escapeHtml(localizedDevelopmentPhase(phase, true))}: ${count}`)
     .join("<br/>");
-  return `${escapeHtml(bucket.label)}<br/>${pipelineLandscapeText("{count} 个项目", { count: bucket.count }, locale)} · ${(bucket.share * 100).toFixed(1)}%${phases ? `<br/>${phases}` : ""}`;
+  const count =
+    unitLabel === undefined
+      ? pipelineLandscapeText("{count} 个项目", { count: bucket.count }, locale)
+      : pipelineLandscapeText("{count} {unit}", { count: bucket.count, unit: escapeHtml(unitLabel) }, locale);
+  return `${escapeHtml(bucket.label)}<br/>${count} · ${(bucket.share * 100).toFixed(1)}%${phases ? `<br/>${phases}` : ""}`;
 }

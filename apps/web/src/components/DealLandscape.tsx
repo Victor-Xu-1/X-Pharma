@@ -2,6 +2,8 @@ import { BarChart3, CircleDollarSign, Flag, List, Network, Route } from "lucide-
 import { lazy, Suspense } from "react";
 import type { DealAnalysisDimension, DealAnalysisLimit, DealAnalysisView } from "../lib/contracts/deals";
 import type { DealLandscapeBucketRead, DealLandscapeRead } from "../lib/generated";
+import { useLocale } from "../lib/i18n";
+import { domainLandscapeText } from "../lib/i18n/domainLandscape";
 import { compactPhaseLabels as phaseLabels } from "../lib/phasePresentation";
 
 const LandscapeBarChart = lazy(() =>
@@ -74,6 +76,7 @@ function Distribution({
   view: DealAnalysisView;
   onFilter: (field: DealLandscapeFilterField, value: string) => void;
 }) {
+  useLocale();
   return (
     <section
       className="pipeline-landscape-distribution"
@@ -96,6 +99,7 @@ function Distribution({
             >
               <LandscapeBarChart
                 buckets={buckets}
+                unitLabel={domainLandscapeText("笔交易")}
                 ariaLabel={`${title}交易数量分布`}
                 onSelect={(bucket) => onFilter(filterField, bucket.key)}
               />

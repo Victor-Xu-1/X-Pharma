@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import "./knowledge-structured.css";
 import { formattingLocale, useMessages } from "../../lib/i18n";
 import { knowledgeMessages } from "../../lib/i18n/knowledge";
 import { knowledgeFields } from "./knowledgeFields";
