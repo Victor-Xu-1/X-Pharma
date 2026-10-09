@@ -42,7 +42,7 @@ export function WorkspaceAccountNavigation({
           >
             <CircleUserRound size={19} />
             <span className="sidebar-account-copy">
-              <strong>{t("用户中心")}</strong>
+              <strong className="sidebar-nav-label">{t("用户中心")}</strong>
               <small>{user.display_name}</small>
             </span>
           </button>
@@ -67,7 +67,7 @@ export function WorkspaceAccountNavigation({
         aria-label={t("退出账号")}
       >
         <LogOut size={18} />
-        <span>{logoutPending ? t("退出中…") : t("退出账号")}</span>
+        <span className="sidebar-nav-label">{logoutPending ? t("退出中…") : t("退出账号")}</span>
       </button>
       {logoutError ? (
         <p className="form-error" role="alert">
