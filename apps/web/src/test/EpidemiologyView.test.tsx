@@ -53,7 +53,7 @@ beforeEach(() => {
     as_of: "2026-07-22T10:00:00Z",
     warnings: ["趋势仅比较相同口径。"],
   });
-  vi.mocked(saveEpidemiologySearch).mockResolvedValue({ message: "流行病学检索已保存并启用监控" });
+  vi.mocked(saveEpidemiologySearch).mockResolvedValue({ kind: "saved", monitoring: true });
 });
 
 it("renders governed disease burden, opens entities, comparable trends and provenance", async () => {
