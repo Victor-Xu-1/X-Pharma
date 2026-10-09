@@ -1,6 +1,7 @@
 import { createTranslator } from "./translator";
 
 export const entityMessages = {
+  来源名称范围: "Source name scope",
   靶点: "Target",
   药物: "Drug",
   机构: "Organization",

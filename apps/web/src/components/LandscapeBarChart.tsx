@@ -33,10 +33,13 @@ const phaseColors: Record<string, string> = {
 export function LandscapeBarChart({
   buckets,
   ariaLabel,
+  unitLabel,
   onSelect,
 }: {
   buckets: PipelineLandscapeBucketRead[];
   ariaLabel: string;
+  /** Domain-owned count noun; omission retains the pipeline's existing program basis. */
+  unitLabel?: string;
   onSelect?: (bucket: PipelineLandscapeBucketRead) => void;
 }) {
   const { locale } = useLocale();
@@ -68,7 +71,7 @@ export function LandscapeBarChart({
         formatter: (params: unknown) => {
           const item = params as { name?: string; value?: number; dataIndex?: number };
           const bucket = visible[item.dataIndex ?? -1];
-          return bucket ? landscapeTooltip(bucket, locale) : "";
+          return bucket ? landscapeTooltip(bucket, locale, unitLabel) : "";
         },
       },
       xAxis: {
@@ -124,7 +127,7 @@ export function LandscapeBarChart({
       window.removeEventListener("resize", resize);
       chart.dispose();
     };
-  }, [buckets, onSelect, locale]);
+  }, [buckets, onSelect, locale, unitLabel]);
 
   return <div className="landscape-bar-chart" ref={containerRef} role="img" aria-label={ariaLabel} />;
 }

@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { trialInitiationTypeLabels } from "../../../src/lib/trialFilters";
 import { verifyProfessionalRefreshLifecycle } from "../helpers";
 import type { verifyDealRegulatoryAndSavedSearch } from "./deal-regulatory-and-saved-search";
 
@@ -271,7 +272,7 @@ export async function verifyPipelineDossiers(context: Awaited<ReturnType<typeof 
   await expect(drugClinicalResults).toContainText(`Browser combination target ${fixtureKeyBase}`);
   const drugClinicalTrials = page.getByRole("table", { name: "药物关联临床试验" });
   await expect(drugClinicalTrials).toContainText("招募中");
-  await expect(drugClinicalTrials).toContainText("申办方发起（IST）");
+  await expect(drugClinicalTrials).toContainText(trialInitiationTypeLabels.ist);
   await expect(drugClinicalTrials).toContainText(`Browser intervention ${fixtureKeyBase}`);
   await expect(drugClinicalTrials).toContainText(`Browser sponsor ${fixtureKeyBase}`);
   await expect(drugClinicalTrials).toContainText("128");

@@ -1,6 +1,7 @@
 import { contractRequest } from "../contract";
 import type { NewsEventSearchItemRead, NewsEventSearchResult, NewsSavedSearchQuery } from "../generated";
-import { MonitoringService, NewsService } from "../generated";
+import { NewsService } from "../generated";
+import { type SavedSearchCreationOutcome, saveAndSubscribeSearch } from "./savedSearchCreation";
 import { effectiveSort, type SortCriterion } from "./sorting";
 
 export const newsSortFields = ["published_at", "title", "event_type", "publisher", "venue"] as const;
@@ -27,6 +28,14 @@ export interface NewsFacetCatalog {
   as_of: string;
   facets: Record<string, Record<string, number>>;
   warnings: string[];
+}
+
+export function validateNewsSearchFilters(
+  filters: Pick<NewsSearchFilters, "publishedFrom" | "publishedTo">,
+): string | null {
+  return filters.publishedFrom && filters.publishedTo && filters.publishedFrom > filters.publishedTo
+    ? "发布日期起始值不能晚于结束值"
+    : null;
 }
 
 export const newsKeys = {
@@ -86,29 +95,16 @@ export async function saveNewsSearch({
   filters: NewsSearchFilters;
   shared: boolean;
   monitor: boolean;
-}): Promise<{ message: string }> {
-  const saved = await contractRequest(
-    MonitoringService.createSavedSearchApiV1MonitoringSavedSearchesPost({
-      requestBody: {
-        name: name.trim(),
-        query_type: "news_search",
-        query: savedNewsQuery(filters),
-        visibility: shared ? "tenant" : "private",
-      },
-    }),
+}): Promise<SavedSearchCreationOutcome> {
+  return saveAndSubscribeSearch(
+    {
+      name: name.trim(),
+      query_type: "news_search",
+      query: savedNewsQuery(filters),
+      visibility: shared ? "tenant" : "private",
+    },
+    monitor,
   );
-  if (monitor) {
-    try {
-      await contractRequest(
-        MonitoringService.createMonitoringTopicApiV1MonitoringTopicsPost({
-          requestBody: { name: name.trim(), saved_search_id: saved.id },
-        }),
-      );
-    } catch (error) {
-      return { message: `检索已保存，但监控未启用：${error instanceof Error ? error.message : "未知错误"}` };
-    }
-  }
-  return { message: monitor ? "新闻与会议检索已保存并启用监控" : "新闻与会议检索已保存" };
 }
 
 export async function loadNewsEventDetail(eventId: string, signal?: AbortSignal): Promise<NewsEventSearchItemRead> {

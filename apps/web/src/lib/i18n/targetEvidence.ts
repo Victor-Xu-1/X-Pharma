@@ -29,6 +29,8 @@ export const targetEvidenceMessages = {
   未知: "Unknown",
   支持靶点假设: "Supports the target hypothesis",
   反对靶点假设: "Opposes the target hypothesis",
+  支持疾病机制: "Supports the disease mechanism",
+  反对疾病机制: "Opposes the disease mechanism",
   方向未知: "Direction unknown",
   "{shown} / {total} 条": "{shown} / {total} records",
   当前筛选条件下无匹配证据: "No evidence matches the current filters",
@@ -67,7 +69,12 @@ export const targetEvidenceDirectionKeys = {
 export function targetEvidenceTypeLabel(value: TargetEvidence["evidence_type"]): string {
   return Object.hasOwn(targetEvidenceTypeKeys, value) ? targetEvidenceText(targetEvidenceTypeKeys[value]) : value;
 }
-export function targetEvidenceDirectionLabel(value: TargetEvidence["direction"]): string {
+export function targetEvidenceDirectionLabel(
+  value: TargetEvidence["direction"],
+  subject: "target" | "disease" = "target",
+): string {
+  if (subject === "disease" && value === "supports") return targetEvidenceText("支持疾病机制");
+  if (subject === "disease" && value === "opposes") return targetEvidenceText("反对疾病机制");
   return Object.hasOwn(targetEvidenceDirectionKeys, value)
     ? targetEvidenceText(targetEvidenceDirectionKeys[value].statement)
     : value;
