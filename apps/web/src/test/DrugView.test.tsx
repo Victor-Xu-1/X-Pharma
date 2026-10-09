@@ -372,8 +372,8 @@ it("presents governed deal parties, asset stages and rights without inferring fi
   expect(deals).toHaveTextContent("许可方 · 美国 · biopharma");
   expect(deals).toHaveTextContent("被许可方 · 中国 · biotech");
   expect(deals).toHaveTextContent("交易时 II 期临床 · 当前 II 期临床 · 2026/07/24");
-  expect(deals).toHaveTextContent("首付款 USD 25.0M");
-  expect(deals).toHaveTextContent("潜在总额 USD 500.0M");
+  expect(deals).toHaveTextContent("首付款 USD 25,000,000");
+  expect(deals).toHaveTextContent("潜在总额 USD 500,000,000");
 
   const rights = screen.getByRole("table", { name: "药物交易权益归属" });
   expect(rights).toHaveTextContent("Strategic Bio");

@@ -28,6 +28,8 @@ const advancedFields = [
 export function participantFilterCount(filters: DealSearchFilters): number {
   return [
     filters.direction,
+    filters.assetEntityId,
+    filters.targetEntityId,
     filters.diseaseEntityId,
     filters.partyEntityId || filters.party.trim(),
     filters.partyRole,

@@ -1,0 +1,22 @@
+.deal-section .deal-filter-bar {
+  grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
+  align-items: end;
+}
+.deal-filter-bar .domain-query-field {
+  grid-column: auto;
+}
+.deal-filter-bar .deal-filter-actions {
+  grid-column: 1 / -1;
+}
+.deal-professional-metrics dd,
+.deal-professional-body dd {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 680px) {
+  .deal-section .deal-filter-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .deal-filter-bar .domain-query-field {
+    grid-column: 1 / -1;
+  }
+}
