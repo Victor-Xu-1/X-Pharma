@@ -111,9 +111,14 @@
   border-right: 0;
   border-left: 0;
 }
-.pipeline-advanced-filters > summary span {
+.pipeline-advanced-filters > summary > span {
+  flex: 1;
+  min-width: 0;
+}
+.pipeline-advanced-filters > summary > small {
   color: var(--ds-ink-muted);
-  font-weight: 600;
+  font-size: var(--ds-text-xs);
+  font-weight: 400;
 }
 .pipeline-advanced-grid {
   display: grid;

@@ -1,3 +1,5 @@
+import { useLocale } from "../lib/i18n";
+import { queryText as t } from "../lib/i18n/query";
 import { formatDate } from "./common";
 
 /** Query execution time is not the source's last-updated timestamp. */
@@ -18,6 +20,7 @@ export function QueryResultSummary({
   note?: string;
   showRange?: boolean;
 }) {
+  useLocale();
   const start = total > 0 && count > 0 ? offset + 1 : 0;
   const end = Math.min(offset + count, total);
   return (
@@ -26,8 +29,8 @@ export function QueryResultSummary({
       <span>{unit}</span>
       <small>
         {showRange && start > 0 ? `${start}–${end} · ` : null}
-        <time dateTime={queriedAt} title="本次查询时间，不代表来源数据的最后更新时间；来源日期请查看具体记录。">
-          查询时间 {formatDate(queriedAt, true)}
+        <time dateTime={queriedAt} title={t("本次查询时间，不代表来源数据的最后更新时间；来源日期请查看具体记录。")}>
+          {t("查询时间")} {formatDate(queriedAt, true)}
         </time>
         {note ? ` · ${note}` : null}
       </small>

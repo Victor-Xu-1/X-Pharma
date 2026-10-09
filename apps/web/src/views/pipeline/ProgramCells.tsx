@@ -1,5 +1,8 @@
 import type { CompetitiveProgramRead } from "../../lib/generated";
-import { programModalityLabel } from "../../lib/programDisplay";
+import { useLocale } from "../../lib/i18n";
+import { pipelineText as t } from "../../lib/i18n/pipeline";
+import { professionalEnumLabel } from "../../lib/i18n/professionalEnums";
+import { localizedProgramModality } from "../../lib/i18n/programVocabulary";
 
 export const organizationRoleLabels: Record<string, string> = {
   originator: "原研方",
@@ -19,7 +22,8 @@ export function EntityLink({
   name: string | null;
   onOpen: (entityId: string) => void;
 }) {
-  if (!entityId || !name) return <span className="muted-text">未披露</span>;
+  useLocale();
+  if (!entityId || !name) return <span className="muted-text">{t("未披露")}</span>;
   return (
     <button className="table-link-button" type="button" onClick={() => onOpen(entityId)}>
       {name}
@@ -34,12 +38,13 @@ export function TargetLinks({
   program: CompetitiveProgramRead;
   onOpen: (entityId: string) => void;
 }) {
+  useLocale();
   const targets = program.targets?.length
     ? program.targets
     : program.target_entity_id && program.target_name
       ? [{ entity_id: program.target_entity_id, name: program.target_name, role: "primary" as const, position: 0 }]
       : [];
-  if (!targets.length) return <span className="muted-text">未披露</span>;
+  if (!targets.length) return <span className="muted-text">{t("未披露")}</span>;
   return (
     <span className="target-link-list">
       {targets.map((target, index) => (
@@ -61,6 +66,7 @@ export function OrganizationLinks({
   program: CompetitiveProgramRead;
   onOpen: (entityId: string) => void;
 }) {
+  useLocale();
   const organizations = program.organizations?.length
     ? program.organizations
     : program.organization_entity_id && program.organization_name
@@ -75,7 +81,7 @@ export function OrganizationLinks({
           },
         ]
       : [];
-  if (!organizations.length) return <span className="muted-text">未披露</span>;
+  if (!organizations.length) return <span className="muted-text">{t("未披露")}</span>;
   return (
     <span className="domain-primary-cell">
       {organizations.map((organization) => (
@@ -84,7 +90,9 @@ export function OrganizationLinks({
             {organization.name}
           </button>
           <small className="cell-subtitle">
-            {organizationRoleLabels[organization.role] ?? organization.role}
+            {organizationRoleLabels[organization.role]
+              ? professionalEnumLabel(organizationRoleLabels[organization.role], organization.role)
+              : organization.role}
             {organization.country_region ? ` · ${organization.country_region}` : ""}
           </small>
         </span>
@@ -100,11 +108,11 @@ function values(aggregated: string[] | undefined, single: string | null): string
 }
 
 export function pipelineModalities(program: CompetitiveProgramRead): string {
-  return values(program.modalities, program.modality).map(programModalityLabel).join("、") || "--";
+  return values(program.modalities, program.modality).map(localizedProgramModality).join("、") || "--";
 }
 
 export function pipelineMechanisms(program: CompetitiveProgramRead): string {
-  return values(program.mechanisms_of_action, program.mechanism_of_action).join("、") || "未披露";
+  return values(program.mechanisms_of_action, program.mechanism_of_action).join("、") || t("未披露");
 }
 
 export function IndicationLinks({
@@ -114,6 +122,7 @@ export function IndicationLinks({
   program: CompetitiveProgramRead;
   onOpen: (id: string) => void;
 }) {
+  useLocale();
   const indications = program.indications?.length
     ? program.indications
     : [
@@ -126,7 +135,7 @@ export function IndicationLinks({
   for (const item of indications) {
     if (item.disease_entity_id && item.disease_name) unique.set(item.disease_entity_id, item.disease_name);
   }
-  if (!unique.size) return <span className="muted-text">未披露</span>;
+  if (!unique.size) return <span className="muted-text">{t("未披露")}</span>;
   return (
     <span className="domain-primary-cell">
       {[...unique].map(([id, name]) => (

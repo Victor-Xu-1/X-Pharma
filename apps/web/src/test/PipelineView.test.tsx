@@ -156,7 +156,7 @@ const pipelineResult = {
 
 beforeEach(() => {
   vi.mocked(searchPipelines).mockResolvedValue(pipelineResult);
-  vi.mocked(savePipelineSearch).mockResolvedValue({ message: "管线检索已保存并启用监控" });
+  vi.mocked(savePipelineSearch).mockResolvedValue({ kind: "saved", monitoring: true });
 });
 
 const defaultAnalysisProps = {

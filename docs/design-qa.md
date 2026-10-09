@@ -7,6 +7,38 @@ current-deployment evidence merely because the product version advances.
 
 ## 2026-10-07: research-first frontend craft
 
+### 2026-10-09: complete pipeline interface language continuity (candidate)
+
+The drug/pipeline filters, result columns, signals, applied captions, save outcomes
+and bounded competitive landscape use the single English-first locale owner.
+`PipelineView` falls from1254 to415 lines, and `PipelineLandscape` from466 to179;
+short presentation modules retain one root query/draft/selection authority.
+Phase/modality/role captions reuse existing controlled dictionaries. Raw names,
+mechanisms, regions, milestones, unknown codes, zero amounts and server reasons
+remain literal. Saved/partial/rejected results retain structured identity rather
+than pretranslated messages. No HTTP schema, database, dependency, version or
+scientific-data change belongs to this iteration.
+
+Genuine red regressions establish missing English body captions, unescaped source
+HTML in chart tooltips, Chinese empty-state copy, unnatural refresh wording and
+an uncleareable unsubmitted draft. Seventy-seven affected tests plus the selected
+existing pipeline-save consumer pass; strict app/E2E types and original build
+limits pass. Tooltip source strings are escaped; an empty result still explicitly
+distinguishes visibility/coverage from scientific absence. The exact changed-file
+formatter retains existing CSS-specificity warnings, not a relaxed gate.
+
+Read-only native Chrome155 checks cover both languages at1440/390/320, drafts,
+disclosures, reload persistence and save entry. The current preview has no matching
+EGFR programs; actual empty-result captures are not populated scientific acceptance.
+Sixteen separate browser-fixture captures cover populated results/landscape/chart,
+selection, pending/rejected saves, normal second-tab language synchronization and
+failed refresh/recovery at1440/390. Its two503 writes are fulfilled only in the
+browser; no business server mutation occurs. Reflow and selected WCAG-tag checks
+pass. Ordinary exact-head CI, normal merge, automatic version reconciliation,
+fresh backup/restore, deployment and affected deployed acceptance remain required.
+Other complete professional/dossier/internal bodies remain outstanding; this is
+not global accessibility certification or an award-quality/production claim.
+
 ### 2026-10-09: balanced shared workspace headings (candidate)
 
 Actual390px Chinese monitoring rendering ends with the single character醒.
