@@ -1,3 +1,16 @@
+.monitoring-toolbar {
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.monitoring-toolbar > .view-tabs {
+  min-width: 0;
+  flex: 1 1 280px;
+  flex-wrap: wrap;
+  margin-bottom: 0;
+}
+
 .monitoring-action-label {
   display: none;
 }
@@ -20,6 +33,14 @@
   color: var(--ds-ink-muted);
   font-size: var(--ds-text-sm);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.monitoring-record-conditions > ul {
+  max-inline-size: 42ch;
+  padding-inline-start: 18px;
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-sm);
   overflow-wrap: anywhere;
 }
 

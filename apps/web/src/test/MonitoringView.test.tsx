@@ -1,6 +1,5 @@
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-
 import {
   createMonitoringTopic,
   loadMonitoring,
@@ -13,6 +12,7 @@ import {
   setSavedSearchVisibility,
   updateSavedSearchMetadata,
 } from "../lib/contracts/monitoring";
+import { setLocale } from "../lib/i18n";
 import type { MonitoringAlert, MonitoringTopic, SavedSearch } from "../lib/types";
 import { MonitoringView } from "../views/MonitoringView";
 import { renderWithQueryClient } from "./renderWithQueryClient";
@@ -108,6 +108,15 @@ it("never substitutes the latest query when fixed replay is unavailable", async 
   fireEvent.click(await screen.findByRole("button", { name: "运行 EGFR changes 固定检索" }));
   await screen.findByText("Fixed version unavailable");
   expect(openSearch).not.toHaveBeenCalled();
+});
+
+it("renders every monitoring alert control in the initial English interface", async () => {
+  setLocale("en");
+  renderWithQueryClient(<MonitoringView user={user} onOpenEntity={vi.fn()} onOpenSearch={vi.fn()} />);
+  expect(await screen.findByRole("checkbox", { name: "Unread only" })).toBeVisible();
+  expect(screen.getByText("1 unread in the current results")).toBeVisible();
+  expect(within(screen.getByRole("table", { name: "Intelligence alerts" })).getByText("Unread")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Mark alert for EGFR as read" })).toBeVisible();
 });
 
 it("does not let a delayed fixed replay navigate after changing monitoring tabs", async () => {
@@ -253,7 +262,7 @@ it("labels global saved-search types and presentation state for quick scanning",
   fireEvent.click(await screen.findByRole("tab", { name: "已保存检索" }));
   expect(screen.getByText("基础查询 · 靶点、机构")).toBeVisible();
   expect(screen.getByText("统计表")).toBeVisible();
-  expect(screen.getByTitle("实体类型=靶点、机构")).toBeVisible();
+  expect(screen.getByTitle("实体类型=靶点、机构 · 数据状态=verified")).toBeVisible();
   expect(document.body).not.toHaveTextContent("治理=已设置");
 });
 
@@ -281,7 +290,7 @@ it("identifies and replays a saved professional pipeline query", async () => {
   fireEvent.click(await screen.findByRole("tab", { name: "已保存检索" }));
   expect(screen.getByText("药物与管线")).toBeVisible();
   expect(screen.getByText("统计图")).toBeVisible();
-  expect(screen.getByTitle(/全球阶段=已设置.*分析维度=已设置.*分析范围=已设置/)).toBeVisible();
+  expect(screen.getByTitle(/全球阶段=II期.*分析维度=targets.*分析范围=50/)).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "运行 EGFR global pipelines" }));
   await waitFor(() => expect(openSearch).toHaveBeenCalledWith(pipelineSaved));
 });
@@ -433,6 +442,9 @@ it("identifies and replays epidemiology and research-news queries", async () => 
   expect(screen.getByText("流行病学")).toBeVisible();
   expect(screen.getByText("新闻与会议")).toBeVisible();
   expect(screen.getByText("结构检索")).toBeVisible();
+  expect(screen.getByText(/结构原文受控保存/)).not.toBeVisible();
+  const structureRow = screen.getByRole("row", { name: /结构检索/ });
+  fireEvent.click(within(structureRow).getByText(/个条件/, { selector: "summary" }));
   expect(screen.getByText(/结构原文受控保存/)).toBeVisible();
   expect(screen.queryByText("CC(=O)Oc1ccccc1C(=O)O")).not.toBeInTheDocument();
   expect(screen.getByText("时间线")).toBeVisible();

@@ -3,6 +3,9 @@ import type { FormEvent } from "react";
 import { EmptyState, formatDate, StatusBadge } from "../../components/common";
 import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { MonitoringTopic, SavedSearch } from "../../lib/contracts/monitoring";
+import { useMessages } from "../../lib/i18n";
+import { monitoringMessages } from "../../lib/i18n/monitoring";
+import { MonitoringConditions } from "./MonitoringConditions";
 import { savedSearchSummary } from "./savedSearchPresentation";
 
 export function MonitoringTopics({
@@ -32,6 +35,7 @@ export function MonitoringTopics({
   onSync: (topic: MonitoringTopic, version: number) => void;
   onToggle: (topic: MonitoringTopic) => void;
 }) {
+  const text = useMessages(monitoringMessages);
   const creating = pending.has("create-topic");
   return (
     <>
@@ -39,8 +43,8 @@ export function MonitoringTopics({
         <input
           value={topicName}
           onChange={(event) => onNameChange(event.target.value)}
-          placeholder="监控主题名称"
-          aria-label="监控主题名称"
+          placeholder={text("监控主题名称")}
+          aria-label={text("监控主题名称")}
           required
           maxLength={200}
           disabled={creating}
@@ -48,43 +52,37 @@ export function MonitoringTopics({
         <select
           value={selectedSavedSearchId}
           onChange={(event) => onSearchChange(event.target.value)}
-          aria-label="选择已保存检索"
+          aria-label={text("选择已保存检索")}
           required
           disabled={creating || !monitorableSearches.length}
         >
           <option value="" disabled>
-            选择已保存检索
+            {monitorableSearches.length ? text("选择已保存检索") : text("暂无可订阅检索")}
           </option>
-          {monitorableSearches.length ? (
-            monitorableSearches.map((saved) => (
-              <option value={saved.id} key={saved.id}>
-                {saved.name}
-              </option>
-            ))
-          ) : (
-            <option value="" disabled>
-              暂无可订阅检索
+          {monitorableSearches.map((saved) => (
+            <option value={saved.id} key={saved.id}>
+              {saved.name}
             </option>
-          )}
+          ))}
         </select>
         <button
           className="primary-button"
           type="submit"
           disabled={!topicName.trim() || !selectedSavedSearchId || creating}
         >
-          {creating ? "创建中" : "创建主题"}
+          {creating ? text("创建中") : text("创建主题")}
         </button>
       </form>
       {topics.length ? (
-        <ScrollableTableRegion ariaLabel="监控主题" className="monitoring-records">
-          <table aria-label="监控主题">
+        <ScrollableTableRegion ariaLabel={text("监控主题")} className="monitoring-records">
+          <table aria-label={text("监控主题")}>
             <thead>
               <tr>
-                <th>主题</th>
-                <th>检索条件</th>
-                <th>状态</th>
-                <th>更新时间</th>
-                <th aria-label="操作" />
+                <th>{text("主题")}</th>
+                <th>{text("检索条件")}</th>
+                <th>{text("状态")}</th>
+                <th>{text("更新时间")}</th>
+                <th aria-label={text("操作")} />
               </tr>
             </thead>
             <tbody>
@@ -94,28 +92,26 @@ export function MonitoringTopics({
                 const busy = pending.has(`topic:${topic.id}`) || pending.has(`replay:topic:${topic.id}`);
                 return (
                   <tr key={topic.id}>
-                    <td className="monitoring-record-name" data-label="主题">
+                    <td className="monitoring-record-name" data-label={text("主题")}>
                       <strong>{topic.name}</strong>
                     </td>
-                    <td className="monitoring-record-body" data-label="检索条件">
-                      {saved?.name ?? "不可用"}
-                      {summary?.conditions.length ? (
-                        <small className="cell-subtitle" title={summary.conditions.join(" · ")}>
-                          条件：{summary.conditions.join(" · ")}
-                        </small>
-                      ) : null}
-                      <small className="cell-subtitle">固定于 v{topic.query_version}</small>
+                    <td className="monitoring-record-body" data-label={text("检索条件")}>
+                      {saved?.name ?? text("不可用")}
+                      <MonitoringConditions conditions={summary?.conditions ?? []} />
+                      <small className="cell-subtitle">
+                        {text("固定于 v{version}", { version: topic.query_version })}
+                      </small>
                       {saved && saved.query_version !== topic.query_version ? (
-                        <small className="cell-subtitle">已保存检索有新版本；本主题仍按固定版本运行</small>
+                        <small className="cell-subtitle">{text("已保存检索有新版本；本主题仍按固定版本运行")}</small>
                       ) : null}
                     </td>
-                    <td className="monitoring-record-meta" data-label="状态">
+                    <td className="monitoring-record-meta" data-label={text("状态")}>
                       <StatusBadge
                         value={topic.active ? "active" : "paused"}
-                        label={topic.active ? "监控中" : "已暂停"}
+                        label={topic.active ? text("监控中") : text("已暂停")}
                       />
                     </td>
-                    <td className="monitoring-record-meta" data-label="更新时间">
+                    <td className="monitoring-record-meta" data-label={text("更新时间")}>
                       {formatDate(topic.updated_at)}
                     </td>
                     <td className="monitoring-record-actions">
@@ -125,26 +121,29 @@ export function MonitoringTopics({
                             <button
                               className="icon-button"
                               type="button"
-                              title="运行固定检索"
-                              aria-label={`运行 ${topic.name} 固定检索`}
+                              title={text("运行固定检索")}
+                              aria-label={text("运行 {name} 固定检索", { name: topic.name })}
                               disabled={busy}
                               aria-busy={pending.has(`replay:topic:${topic.id}`) || undefined}
                               onClick={() => onReplay(topic.id)}
                             >
                               <Search size={16} aria-hidden="true" />
-                              <span className="monitoring-action-label">运行</span>
+                              <span className="monitoring-action-label">{text("运行")}</span>
                             </button>
                             {saved.query_version !== topic.query_version ? (
                               <button
                                 className="icon-button"
                                 type="button"
-                                title={`同步到检索 v${saved.query_version}`}
-                                aria-label={`同步 ${topic.name} 到检索 v${saved.query_version}`}
+                                title={text("同步到检索 v{version}", { version: saved.query_version })}
+                                aria-label={text("同步 {name} 到检索 v{version}", {
+                                  name: topic.name,
+                                  version: saved.query_version,
+                                })}
                                 disabled={busy}
                                 onClick={() => onSync(topic, saved.query_version)}
                               >
                                 <RefreshCw size={16} aria-hidden="true" />
-                                <span className="monitoring-action-label">同步版本</span>
+                                <span className="monitoring-action-label">{text("同步版本")}</span>
                               </button>
                             ) : null}
                           </>
@@ -152,8 +151,12 @@ export function MonitoringTopics({
                         <button
                           className="icon-button"
                           type="button"
-                          title={topic.active ? "暂停监控" : "恢复监控"}
-                          aria-label={topic.active ? `暂停 ${topic.name}` : `恢复 ${topic.name}`}
+                          title={topic.active ? text("暂停监控") : text("恢复监控")}
+                          aria-label={
+                            topic.active
+                              ? text("暂停 {name}", { name: topic.name })
+                              : text("恢复 {name}", { name: topic.name })
+                          }
                           disabled={busy}
                           onClick={() => onToggle(topic)}
                         >
@@ -162,7 +165,7 @@ export function MonitoringTopics({
                           ) : (
                             <Play size={16} aria-hidden="true" />
                           )}
-                          <span className="monitoring-action-label">{topic.active ? "暂停" : "恢复"}</span>
+                          <span className="monitoring-action-label">{topic.active ? text("暂停") : text("恢复")}</span>
                         </button>
                       </div>
                     </td>
@@ -173,7 +176,10 @@ export function MonitoringTopics({
           </table>
         </ScrollableTableRegion>
       ) : (
-        <EmptyState title="暂无监控主题" detail="先保存检索条件，再创建持续监控主题；结构检索暂不支持变更订阅" />
+        <EmptyState
+          title={text("暂无监控主题")}
+          detail={text("先保存检索条件，再创建持续监控主题；结构检索暂不支持变更订阅")}
+        />
       )}
     </>
   );

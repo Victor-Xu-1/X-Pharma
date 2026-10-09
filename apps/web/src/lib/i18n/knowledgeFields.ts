@@ -44,18 +44,5 @@ export const knowledgeFieldMessages = {
   年: "Year",
   实际人数: "Actual enrollment",
   预计人数: "Estimated enrollment",
-  尚未招募: "Not yet recruiting",
-  招募中: "Recruiting",
-  邀请入组: "Enrolling by invitation",
-  "进行中，停止招募": "Active, not recruiting",
-  暂停: "Suspended",
-  终止: "Terminated",
-  已完成: "Completed",
-  撤回: "Withdrawn",
-  未知: "Unknown",
-  不适用: "Not applicable",
-  干预性研究: "Interventional study",
-  观察性研究: "Observational study",
-  扩大使用: "Expanded access",
 } as const;
 export const knowledgeFieldText = createTranslator(knowledgeFieldMessages);

@@ -5,13 +5,16 @@ import {
   loadSavedSearch,
   type SavedSearch,
 } from "../../lib/contracts/monitoring";
+import { useMessages } from "../../lib/i18n";
+import { monitoringMessages } from "../../lib/i18n/monitoring";
 
 export function useMonitoringOperations(tab: string, onOpenSearch: (saved: SavedSearch) => void) {
+  const text = useMessages(monitoringMessages);
   const live = useRef({ mounted: true, tab, generation: 0, open: onOpenSearch });
   const locks = useRef(new Set<string>());
   const replayIntent = useRef(0);
   const [pending, setPending] = useState(new Set<string>());
-  const [error, setError] = useState("");
+  const [error, setError] = useState<{ raw: string } | { fallback: true } | null>(null);
   useLayoutEffect(() => {
     if (live.current.tab !== tab) live.current.generation += 1;
     live.current.tab = tab;
@@ -29,13 +32,13 @@ export function useMonitoringOperations(tab: string, onOpenSearch: (saved: Saved
     locks.current.add(key);
     const generation = live.current.generation;
     setPending(new Set(locks.current));
-    setError("");
+    setError(null);
     try {
       await request();
       if (live.current.mounted) await after?.();
     } catch (caught) {
       if (live.current.mounted && live.current.generation === generation)
-        setError(caught instanceof Error ? caught.message : "监控操作失败");
+        setError(caught instanceof Error ? { raw: caught.message } : { fallback: true });
     } finally {
       locks.current.delete(key);
       if (live.current.mounted) setPending(new Set(locks.current));
@@ -62,5 +65,11 @@ export function useMonitoringOperations(tab: string, onOpenSearch: (saved: Saved
       }
     });
   }
-  return { pending, error, clearError: () => setError(""), run, replay };
+  return {
+    pending,
+    error: error ? ("raw" in error ? error.raw : text("监控操作失败")) : "",
+    clearError: () => setError(null),
+    run,
+    replay,
+  };
 }
