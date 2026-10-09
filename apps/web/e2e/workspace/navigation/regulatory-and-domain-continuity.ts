@@ -22,9 +22,10 @@ export async function verifyRegulatoryAndDomainContinuity(context: Awaited<Retur
   await expect(regulatoryFilters.getByLabel("关键词")).toHaveValue(fixtureKeyBase);
   await regulatoryFilters.getByLabel("监管机构").selectOption("FDA");
   await regulatoryFilters.getByLabel("辖区").selectOption("US");
+  await regulatoryFilters.getByText("更多监管与安全条件").click();
   await regulatoryFilters.getByLabel("事件类型").selectOption("approval");
   await regulatoryFilters.getByLabel("认定资格").selectOption("breakthrough_therapy");
-  await regulatoryFilters.getByText("更多监管与安全条件").click();
+  await expect(regulatoryFilters.locator(".secondary-filter-panel")).toHaveAttribute("open", "");
   await regulatoryFilters.getByLabel("事件状态").selectOption("approved");
   await regulatoryFilters.getByLabel("标签变更").selectOption("initial_label");
   await regulatoryFilters.getByLabel("黑框警告", { exact: true }).selectOption("true");
