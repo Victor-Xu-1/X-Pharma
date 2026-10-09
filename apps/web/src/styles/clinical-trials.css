@@ -351,21 +351,38 @@
 .trial-outcome-list .table-frame {
   margin-top: 14px;
 }
+.trial-outcome-table {
+  min-width: 38rem;
+}
 .trial-analysis-list {
   display: grid;
   gap: 6px;
   margin-top: 12px;
 }
-.trial-analysis-list p {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
+.trial-statistical-analysis {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.trial-analysis-parameter {
+  color: var(--ds-ink-muted);
+  font-size: 12px;
+}
+.trial-analysis-values {
   margin: 0;
   border-left: 2px solid var(--ds-accent-strong);
   background: var(--ds-info-soft);
   padding: 8px 10px;
   color: var(--ds-ink);
-  font-size: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.trial-analysis-note {
+  margin: 0;
+  color: var(--ds-ink);
+  font-size: 14px;
+  line-height: 1.65;
 }
 .trial-status-timeline {
   display: grid;

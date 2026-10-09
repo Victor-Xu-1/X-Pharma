@@ -27,7 +27,7 @@ export function TrialOutcomes({ data }: { data: ClinicalTrialDetailRead }) {
               {outcome.description ? <p>{outcome.description}</p> : null}
               {outcome.results?.length ? (
                 <ScrollableTableRegion ariaLabel={t("结构化结果：{measure}", { measure: outcome.measure })}>
-                  <table>
+                  <table className="trial-outcome-table">
                     <thead>
                       <tr>
                         <th>{t("队列")}</th>
