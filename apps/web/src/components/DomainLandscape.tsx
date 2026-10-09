@@ -1,4 +1,7 @@
 import { lazy, Suspense } from "react";
+import { formattingLocale, useLocale } from "../lib/i18n";
+import { domainLandscapeText as t } from "../lib/i18n/domainLandscape";
+import { ScrollableTableRegion } from "./ScrollableTableRegion";
 
 const LandscapeBarChart = lazy(() =>
   import("./LandscapeBarChart").then((module) => ({ default: module.LandscapeBarChart })),
@@ -35,6 +38,7 @@ function Distribution<FilterField extends string>({
   view: DomainAnalysisView;
   onFilter: (field: FilterField, value: string) => void;
 }) {
+  useLocale();
   const { id, title, detail, buckets, filterField } = section;
   return (
     <section
@@ -52,13 +56,13 @@ function Distribution<FilterField extends string>({
             <Suspense
               fallback={
                 <div className="landscape-chart-loading" role="status" aria-live="polite" aria-atomic="true">
-                  正在绘制分布
+                  {t("正在绘制分布")}
                 </div>
               }
             >
               <LandscapeBarChart
                 buckets={buckets}
-                ariaLabel={`${title}${unitLabel}分布`}
+                ariaLabel={t("{title}{unit}分布", { title, unit: unitLabel })}
                 onSelect={
                   filterField
                     ? (bucket) => {
@@ -69,15 +73,18 @@ function Distribution<FilterField extends string>({
               />
             </Suspense>
           ) : (
-            <section className="pipeline-analysis-table-wrap" aria-label={`${title}统计表滚动区域`}>
-              <table className="pipeline-analysis-table" aria-label={`${title}统计表`}>
+            <ScrollableTableRegion
+              className="pipeline-analysis-table-wrap"
+              ariaLabel={t("{title}统计表滚动区域", { title })}
+            >
+              <table className="pipeline-analysis-table" aria-label={t("{title}统计表", { title })}>
                 <thead>
                   <tr>
-                    <th scope="col">排名</th>
-                    <th scope="col">分类</th>
+                    <th scope="col">{t("排名")}</th>
+                    <th scope="col">{t("分类")}</th>
                     <th scope="col">{unitLabel}</th>
-                    <th scope="col">占比</th>
-                    <th scope="col">操作</th>
+                    <th scope="col">{t("占比")}</th>
+                    <th scope="col">{t("操作")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -93,19 +100,19 @@ function Distribution<FilterField extends string>({
                           disabled={!filterField || bucket.key === "__missing__"}
                           onClick={() => filterField && onFilter(filterField, bucket.key)}
                         >
-                          筛选
+                          {t("筛选")}
                         </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </section>
+            </ScrollableTableRegion>
           )}
         </div>
       ) : (
         <p className="landscape-empty" role="status" aria-live="polite" aria-atomic="true">
-          当前查询没有可统计的记录。
+          {t("当前查询没有可统计的记录。")}
         </p>
       )}
     </section>
@@ -133,22 +140,23 @@ export function DomainLandscape<FilterField extends string>({
   onViewChange: (view: DomainAnalysisView) => void;
   onFilter: (field: FilterField, value: string) => void;
 }) {
+  useLocale();
   return (
     <section className="trial-landscape" aria-label={ariaLabel}>
       <header className="trial-landscape-summary">
         <div>
-          <span>完整命中集</span>
-          <strong>{total.toLocaleString()}</strong>
+          <span>{t("完整命中集")}</span>
+          <strong>{total.toLocaleString(formattingLocale())}</strong>
           <small>{totalUnit}</small>
         </div>
-        <p>统计与当前筛选、租户授权和数据时点一致，不受当前分页影响。</p>
+        <p>{t("统计与当前筛选、租户授权和数据时点一致，不受当前分页影响。")}</p>
         <fieldset className="segmented-control trial-landscape-view-toggle">
-          <legend className="sr-only">统计展示方式</legend>
+          <legend className="sr-only">{t("统计展示方式")}</legend>
           <button type="button" aria-pressed={view === "chart"} onClick={() => onViewChange("chart")}>
-            图示
+            {t("图示")}
           </button>
           <button type="button" aria-pressed={view === "table"} onClick={() => onViewChange("table")}>
-            列表
+            {t("列表")}
           </button>
         </fieldset>
       </header>

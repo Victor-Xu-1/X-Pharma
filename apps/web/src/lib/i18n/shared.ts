@@ -10,6 +10,7 @@ export const sharedMessages = {
   "当前查询已停止，筛选条件仍然保留。": "The query has stopped. Your filters are retained.",
   重新查询: "Run query again",
   数据加载失败: "Could not load data",
+  "结果可能受数据覆盖范围和来源更新时间影响。": "Results may be limited by source coverage and update timing.",
   "收起{title}": "Collapse {title}",
   "展开{title}": "Expand {title}",
   检索与筛选: "Search and filters",
