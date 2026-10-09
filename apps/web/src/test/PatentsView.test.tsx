@@ -1,89 +1,227 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
+import { ApiError } from "../lib/api";
 
 import { getEntity } from "../lib/contracts/intelligence";
 import { loadPatentFamilyDetail, savePatentSearch, searchPatentFamilies } from "../lib/contracts/patents";
+import type { SavedSearchCreationOutcome } from "../lib/contracts/savedSearchCreation";
+import { setLocale } from "../lib/i18n";
 import { PatentsView } from "../views/PatentsView";
+import { patentResult } from "./fixtures/patentsResearch";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/patents", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/contracts/patents")>();
   return {
     ...actual,
-    patentKeys: {
-      search: (...args: unknown[]) => ["patents", args],
-      detail: (familyId: string) => ["patents", "detail", familyId],
-    },
     loadPatentFamilyDetail: vi.fn(),
     savePatentSearch: vi.fn(),
     searchPatentFamilies: vi.fn(),
   };
+});
+
+function renderPatent(overrides: Partial<ComponentProps<typeof PatentsView>> = {}) {
+  return renderWithQueryClient(
+    <PatentsView
+      initialQuery=""
+      initialEntityId=""
+      initialApplicant=""
+      initialLegalStatus=""
+      initialPriorityFrom=""
+      initialPriorityTo=""
+      initialExpirationFrom=""
+      initialExpirationTo=""
+      initialSortBy="priority_date"
+      initialSortDirection="desc"
+      initialOffset={0}
+      displayMode="list"
+      analysisView="chart"
+      selectedPatentId={null}
+      activeSection="overview"
+      onSearchChange={vi.fn()}
+      onDisplayModeChange={vi.fn()}
+      onAnalysisViewChange={vi.fn()}
+      onPatentChange={vi.fn()}
+      onSectionChange={vi.fn()}
+      onOpenEntity={vi.fn()}
+      {...overrides}
+    />,
+  );
+}
+
+it("renders English patent filters and memoized columns while retaining drafts and selection on switching", async () => {
+  act(() => setLocale("en"));
+  const onSearchChange = vi.fn();
+  renderPatent({ onSearchChange, initialQuery: "EGFR" });
+  const table = await screen.findByRole("table", { name: "Patent family results" });
+  expect(within(table).getByRole("columnheader", { name: /Family and title/ })).toBeVisible();
+  expect(screen.getByLabelText("Legal status")).toBeVisible();
+  expect(screen.getByText("1 events · 1 independent claims")).toBeVisible();
+  fireEvent.change(screen.getByLabelText("Keyword"), { target: { value: "EGFR 未提交" } });
+  expect(within(table).getByText("Active", { exact: true })).toBeVisible();
+  fireEvent.click(screen.getByRole("checkbox", { name: "Select Compare INPADOC-123456" }));
+  const reads = vi.mocked(searchPatentFamilies).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByLabelText("关键词")).toHaveValue("EGFR 未提交");
+  expect(screen.getByRole("checkbox", { name: "取消选择对比 INPADOC-123456" })).toBeChecked();
+  expect(screen.getByRole("columnheader", { name: /专利族与标题/ })).toBeVisible();
+  act(() => setLocale("en"));
+  expect(screen.getByLabelText("Keyword")).toHaveValue("EGFR 未提交");
+  expect(screen.getByRole("checkbox", { name: "Deselect Compare INPADOC-123456" })).toBeChecked();
+  expect(searchPatentFamilies).toHaveBeenCalledTimes(reads);
+  expect(onSearchChange).not.toHaveBeenCalled();
+  expect(screen.getByText("EGFR kinase inhibitors for treating NSCLC")).toBeVisible();
+});
+
+it("keeps date-only and unapplied patent filters clearable without treating default sort as a filter", async () => {
+  act(() => setLocale("en"));
+  const onSearchChange = vi.fn();
+  renderPatent({ onSearchChange, initialPriorityFrom: "2021-02-03" });
+  await screen.findByRole("table", { name: "Patent family results" });
+  expect(screen.getByRole("button", { name: "Clear" })).toBeEnabled();
+  expect(screen.getByText("More patent conditions").closest("details")).toHaveAttribute("open");
+  fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+  expect(onSearchChange).toHaveBeenCalledWith(expect.objectContaining({ priorityFrom: "", priorityTo: "" }), 0);
+});
+
+it("clears an unapplied draft and validates reversed patent date ranges before applying", async () => {
+  act(() => setLocale("en"));
+  const onSearchChange = vi.fn();
+  renderPatent({ onSearchChange });
+  await screen.findByRole("table", { name: "Patent family results" });
+  expect(screen.getByRole("button", { name: "Clear" })).toBeDisabled();
+  fireEvent.change(screen.getByLabelText("Keyword"), { target: { value: "draft" } });
+  expect(screen.getByRole("button", { name: "Clear" })).toBeEnabled();
+  fireEvent.click(screen.getByText("More patent conditions"));
+  const dates = within(screen.getByRole("group", { name: "Priority dates" }));
+  fireEvent.change(dates.getByLabelText("From"), { target: { value: "2026-03-01" } });
+  fireEvent.change(dates.getByLabelText("To"), { target: { value: "2026-02-01" } });
+  fireEvent.click(screen.getByRole("button", { name: /^Search$/ }));
+  expect(screen.getByRole("alert")).toHaveTextContent("Priority start date cannot be later than its end date");
+  expect(onSearchChange).not.toHaveBeenCalled();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("alert")).toHaveTextContent("优先权日期起始值不能晚于结束值");
+  expect(dates.getByLabelText("起")).toHaveValue("2026-03-01");
+});
+
+it("rejects a mismatched patent detail identity rather than showing another family", async () => {
+  act(() => setLocale("en"));
+  vi.mocked(loadPatentFamilyDetail).mockResolvedValue({ ...patentResult.items[0], id: "another-patent" });
+  renderPatent({ selectedPatentId: "patent-1" });
+  expect(await screen.findByRole("alert")).toHaveTextContent("Patent detail does not match the requested identifier");
+  expect(screen.queryByRole("heading", { name: patentResult.items[0].title })).not.toBeInTheDocument();
+});
+
+it("hides cached patent facts and facet counts after a current permission denial", async () => {
+  act(() => setLocale("en"));
+  const { queryClient } = renderPatent();
+  await screen.findByRole("table", { name: "Patent family results" });
+  vi.mocked(searchPatentFamilies).mockRejectedValue(new ApiError("Permission changed", 403, null));
+  await act(() => queryClient.invalidateQueries({ queryKey: ["intelligence", "patents"] }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("You do not have access to these results");
+  expect(screen.queryByRole("table", { name: "Patent family results" })).not.toBeInTheDocument();
+  expect(screen.queryByText("Victor Therapeutics (101)")).not.toBeInTheDocument();
+});
+
+it("hides cached patent dossier metrics and source publications after a real transport permission denial", async () => {
+  act(() => setLocale("en"));
+  const { queryClient } = renderPatent({ selectedPatentId: "patent-1" });
+  await screen.findByRole("table", { name: "Publications" });
+  vi.mocked(loadPatentFamilyDetail).mockRejectedValue(new ApiError("RAW_DETAIL_DENIAL", 403, null));
+  await act(() => queryClient.refetchQueries({ queryKey: ["intelligence", "patents", "detail", "patent-1"] }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("RAW_DETAIL_DENIAL");
+  expect(screen.queryByRole("heading", { name: patentResult.items[0].title })).not.toBeInTheDocument();
+  expect(screen.queryByRole("table", { name: "Publications" })).not.toBeInTheDocument();
+});
+
+it("does not transform inherited or unknown patent status codes", async () => {
+  act(() => setLocale("en"));
+  vi.mocked(searchPatentFamilies).mockResolvedValue({
+    ...patentResult,
+    items: [{ ...patentResult.items[0], legal_status: "constructor" }],
+    facets: { applicant: {}, legal_status: { constructor: 1, custom_status: 2 } },
+  });
+  renderPatent();
+  const table = await screen.findByRole("table", { name: "Patent family results" });
+  expect(table).toHaveTextContent("constructor");
+  expect(screen.getByRole("option", { name: "custom_status (2)" })).toBeInTheDocument();
+});
+
+it("retains a single pending patent save and translates its partial-success framing after switching", async () => {
+  act(() => setLocale("en"));
+  let finish: (outcome: SavedSearchCreationOutcome) => void = () => {
+    throw new Error("Pending save not initialized");
+  };
+  vi.mocked(savePatentSearch).mockReturnValue(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  renderPatent({ initialQuery: "EGFR" });
+  await screen.findByRole("table", { name: "Patent family results" });
+  fireEvent.click(screen.getByRole("button", { name: "Save / subscribe" }));
+  fireEvent.change(screen.getByLabelText("Name"), { target: { value: "原始研究名称" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save search" }));
+  await waitFor(() => expect(savePatentSearch).toHaveBeenCalledTimes(1));
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByLabelText("名称")).toHaveValue("原始研究名称");
+  expect(screen.getByLabelText("名称")).toBeDisabled();
+  await act(async () => finish({ kind: "monitor_failed", reason: "原始失败 <registry>" }));
+  expect(await screen.findByText("检索已保存，但监控未启用：原始失败 <registry>")).toBeVisible();
+  act(() => setLocale("en"));
+  expect(screen.getByText("Search saved, but monitoring could not be enabled: 原始失败 <registry>")).toBeVisible();
+  expect(savePatentSearch).toHaveBeenCalledTimes(1);
+});
+
+it("renders every source publication in the patent dossier without truncating applicant names", async () => {
+  act(() => setLocale("en"));
+  vi.mocked(loadPatentFamilyDetail).mockResolvedValue({
+    ...patentResult.items[0],
+    applicants: Array.from({ length: 10 }, (_, index) => `原始申请人 ${index}`),
+    publications: [
+      {
+        publication_number: "WO2022123456A1",
+        application_number: "PCT/原始申请号",
+        jurisdiction: "WO",
+        publication_date: "2022-08-04",
+        grant_date: null,
+      },
+      { publication_number: "US-原始公开编号" },
+    ],
+  });
+  renderPatent({ selectedPatentId: "patent-1" });
+  const publications = await screen.findByRole("table", { name: "Publications" });
+  expect(publications).toHaveTextContent("PCT/原始申请号");
+  expect(publications).toHaveTextContent("US-原始公开编号");
+  expect(screen.getByText(/原始申请人 9/)).toBeVisible();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("table", { name: "公开文本" })).toHaveTextContent("US-原始公开编号");
+  expect(loadPatentFamilyDetail).toHaveBeenCalledTimes(1);
+});
+
+it("localizes patent landscape captions without changing source applicants or drill-down keys", async () => {
+  act(() => setLocale("en"));
+  const onSearchChange = vi.fn();
+  renderPatent({ displayMode: "landscape", analysisView: "table", onSearchChange });
+  const status = await screen.findByRole("table", { name: "Legal status statistics" });
+  expect(status).toHaveTextContent("Active");
+  expect(screen.getByRole("table", { name: "Leading applicants statistics" })).toHaveTextContent("Victor Therapeutics");
+  fireEvent.click(within(status).getByRole("button", { name: "Filter" }));
+  expect(onSearchChange).toHaveBeenCalledWith(expect.objectContaining({ legalStatus: "ACTIVE" }), 0);
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("table", { name: "法律状态统计表" })).toHaveTextContent("有效");
+  expect(searchPatentFamilies).toHaveBeenCalledTimes(1);
 });
 vi.mock("../lib/contracts/intelligence", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/contracts/intelligence")>();
   return { ...actual, getEntity: vi.fn(), lookupEntities: vi.fn() };
 });
 
-const patentResult = {
-  items: [
-    {
-      id: "patent-1",
-      entity_id: "550e8400-e29b-41d4-a716-446655440001",
-      family_identifier: "INPADOC-123456",
-      title: "EGFR kinase inhibitors for treating NSCLC",
-      priority_date: "2021-02-03",
-      applicants: ["Victor Therapeutics"],
-      inventors: ["Wei Chen", "Lin Zhang"],
-      publications: [{ publication_number: "WO2022123456A1" }],
-      legal_status: "ACTIVE",
-      legal_status_at: "2026-06-01T00:00:00Z",
-      legal_events: [
-        {
-          event_type: "grant",
-          status: "ACTIVE",
-          occurred_at: "2026-06-01T00:00:00Z",
-          jurisdiction: "WO",
-          publication_number: "WO2022123456A1",
-        },
-      ],
-      independent_claims: [
-        {
-          claim_number: "1",
-          claim_type: "composition" as const,
-          summary: "Composition covering an EGFR kinase inhibitor.",
-        },
-      ],
-      expiration_date: "2042-02-03",
-      linked_entity_ids: ["550e8400-e29b-41d4-a716-446655440002"],
-      source_document_id: null,
-      linked_entities: [{ id: "550e8400-e29b-41d4-a716-446655440002", name: "EGFR", entity_type: "target" as const }],
-    },
-  ],
-  total: 101,
-  limit: 100,
-  offset: 0,
-  query_schema_version: "pharma.patent.search.v2",
-  applied_filters: [],
-  sort_by: "priority_date" as const,
-  sort_direction: "desc" as const,
-  facets: {
-    applicant: { "Victor Therapeutics": 101 },
-    legal_status: { ACTIVE: 101 },
-  },
-  landscape: {
-    total_families: 101,
-    legal_status: [{ key: "ACTIVE", label: "ACTIVE", count: 101, share: 1 }],
-    top_applicants: [{ key: "Victor Therapeutics", label: "Victor Therapeutics", count: 101, share: 1 }],
-    priority_year: [{ key: "2024", label: "2024", count: 101, share: 1 }],
-  },
-  as_of: "2026-07-22T10:00:00Z",
-  warnings: ["结果受当前数据授权、法律状态时效和治理状态限制。"],
-};
-
 beforeEach(() => {
   vi.mocked(searchPatentFamilies).mockResolvedValue(patentResult);
   vi.mocked(loadPatentFamilyDetail).mockResolvedValue(patentResult.items[0]);
-  vi.mocked(savePatentSearch).mockResolvedValue({ message: "专利检索已保存并启用监控" });
+  vi.mocked(savePatentSearch).mockResolvedValue({ kind: "saved", monitoring: true });
   vi.mocked(getEntity).mockResolvedValue({
     id: "550e8400-e29b-41d4-a716-446655440099",
     canonical_entity_id: "550e8400-e29b-41d4-a716-446655440099",
