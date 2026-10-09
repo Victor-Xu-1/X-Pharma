@@ -165,6 +165,41 @@ it("presents an invalid restored query in the current language without rewriting
   expect(screen.getByRole("alert")).toHaveTextContent("交易状态包含不支持的筛选值");
 });
 
+it("does not let a late restored organization name replace a newer participant draft", async () => {
+  act(() => setLocale("en"));
+  let finish: (value: Awaited<ReturnType<typeof getSessionEntity>>) => void = () => {
+    throw new Error("Expected pending organization restoration");
+  };
+  vi.mocked(getSessionEntity).mockReturnValue(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  const entityId = "550e8400-e29b-41d4-a716-446655440002";
+  renderDeal({ initialFilters: { ...initialFilters, partyEntityId: entityId } });
+  await screen.findByRole("table", { name: "Deal results" });
+  fireEvent.change(screen.getByRole("combobox", { name: "Participating organization" }), {
+    target: { value: "New original draft" },
+  });
+  await act(async () =>
+    finish({
+      id: entityId,
+      canonical_entity_id: entityId,
+      entity_type: "organization",
+      name: "Old restored name",
+      external_ids: {},
+      attributes: {},
+      description: null,
+      review_status: "verified",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    }),
+  );
+  expect(screen.getByRole("combobox", { name: "Participating organization" })).toHaveValue("New original draft");
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("combobox", { name: "参与机构" })).toHaveValue("New original draft");
+});
+
 it("retains nested source deal terms instead of flattening them to an object placeholder", async () => {
   act(() => setLocale("en"));
   const terms = {

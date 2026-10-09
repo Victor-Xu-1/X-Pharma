@@ -178,7 +178,11 @@ export function DealsView({
       selectedParty.data.name &&
       !(selectedParty.error instanceof ApiError && [401, 403].includes(selectedParty.error.status))
     )
-      setFilters((current) => ({ ...current, party: selectedParty.data?.name ?? "" }));
+      setFilters((current) =>
+        current.partyEntityId === initialFilters.partyEntityId && !current.party
+          ? { ...current, party: selectedParty.data?.name ?? "" }
+          : current,
+      );
   }, [initialFilters.party, initialFilters.partyEntityId, selectedParty.data, selectedParty.error, setFilters]);
   function updateFilter<K extends keyof DealSearchFilters>(key: K, value: DealSearchFilters[K]) {
     setFilters((current) => ({ ...current, [key]: value }));
