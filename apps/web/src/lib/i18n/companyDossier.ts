@@ -57,7 +57,7 @@ export const companyDossierMessages = {
   "登记临床试验（{total}）": "Registered clinical studies ({total})",
   全部登记试验: "All registered studies",
   "本地已核验的注册关联，当前概览显示 {count} 项；不据此推断企业完整管线、资产所有权或批准用途。":
-    "Locally verified registry links; this overview shows {count} studies. This does not establish a complete corporate pipeline, asset ownership or approved indications.",
+    "Locally verified registry links; studies shown in this overview: {count}. This does not establish a complete corporate pipeline, asset ownership or approved indications.",
   "、": ", ",
 } as const;
 export const companyDossierText = createTranslator(companyDossierMessages);

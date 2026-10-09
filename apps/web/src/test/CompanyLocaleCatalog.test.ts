@@ -1,7 +1,20 @@
 import { expect, it } from "vitest";
-import { companyDossierMessages } from "../lib/i18n/companyDossier";
+import { setLocale } from "../lib/i18n";
+import { companyDossierMessages, companyDossierText } from "../lib/i18n/companyDossier";
 import { loadedCompanyAssets } from "../views/company/assets";
 import { program } from "./fixtures/companyDossier";
+
+it("uses a count-neutral registry summary for one returned study", () => {
+  setLocale("en");
+  expect(
+    companyDossierText(
+      "本地已核验的注册关联，当前概览显示 {count} 项；不据此推断企业完整管线、资产所有权或批准用途。",
+      {
+        count: 1,
+      },
+    ),
+  ).toContain("studies shown in this overview: 1.");
+});
 
 it("keeps company caption pairs complete and interpolation slots identical", () => {
   const slots = (text: string) => [...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/gu)].map((match) => match[1]).sort();
