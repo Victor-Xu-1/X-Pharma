@@ -4,6 +4,8 @@ import { EmptyState, ErrorState, formatDate, Spinner } from "../../components/co
 import { ResponsiveDirectory } from "../../components/ResponsiveDirectory";
 import { ResultPagination } from "../../components/ResultPagination";
 import { KNOWLEDGE_PAGE_SIZE, type KnowledgeSearchResult } from "../../lib/contracts/knowledge";
+import { formattingLocale, useMessages } from "../../lib/i18n";
+import { knowledgeMessages } from "../../lib/i18n/knowledge";
 import { type KnowledgeLocation, knowledgeTypeLabel } from "./knowledgeTypes";
 
 /** Catalogue visibility is local presentation state; the parent remains the sole query/URL authority. */
@@ -30,6 +32,8 @@ export function KnowledgeCatalog({
   onSelect: (pageId: string) => void;
   onLocationChange: (next: Partial<KnowledgeLocation>) => void;
 }) {
+  const text = useMessages(knowledgeMessages);
+  const number = new Intl.NumberFormat(formattingLocale());
   const pages = result?.items ?? [];
 
   function changeFilters(next: Partial<KnowledgeLocation>) {
@@ -39,8 +43,8 @@ export function KnowledgeCatalog({
   return (
     <ResponsiveDirectory
       selectedKey={location.pageId}
-      title="专题目录"
-      summary={result ? `${result.total} 个专题` : "检索与筛选"}
+      title={text("专题目录")}
+      summary={result ? text("{count} 个专题", { count: number.format(result.total) }) : text("检索与筛选")}
       icon={<BookOpenText size={18} aria-hidden="true" />}
       className="knowledge-index"
       contentClassName="knowledge-index-content"
@@ -52,22 +56,26 @@ export function KnowledgeCatalog({
             <input
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
-              placeholder="检索专题"
-              aria-label="检索知识专题"
+              placeholder={text("检索专题")}
+              aria-label={text("检索知识专题")}
             />
           </form>
           <div className="knowledge-count">
-            {result ? `${result.total} 个专题` : error ? "专题总量未知" : "正在统计专题…"}
+            {result
+              ? text("{count} 个专题", { count: number.format(result.total) })
+              : error
+                ? text("专题总量未知")
+                : text("正在统计专题…")}
           </div>
           <div className="knowledge-index-filters">
             <label>
-              专题类型
+              {text("专题类型")}
               <select
-                aria-label="专题类型"
+                aria-label={text("专题类型")}
                 value={location.pageType}
                 onChange={(event) => changeFilters({ pageType: event.target.value })}
               >
-                <option value="">全部类型</option>
+                <option value="">{text("全部类型")}</option>
                 {[
                   ...new Set([
                     ...Object.keys(result?.facets.page_type ?? {}),
@@ -83,25 +91,25 @@ export function KnowledgeCatalog({
               </select>
             </label>
             <label>
-              排序
+              {text("排序")}
               <select
-                aria-label="知识专题排序"
+                aria-label={text("知识专题排序")}
                 value={`${location.sortBy}:${location.sortDirection}`}
                 onChange={(event) => {
                   const latest = event.target.value === "updated_at:desc";
                   changeFilters({ sortBy: latest ? "updated_at" : "title", sortDirection: latest ? "desc" : "asc" });
                 }}
               >
-                <option value="title:asc">名称 A–Z</option>
-                <option value="updated_at:desc">最近更新</option>
+                <option value="title:asc">{text("名称 A–Z")}</option>
+                <option value="updated_at:desc">{text("最近更新")}</option>
               </select>
             </label>
           </div>
           <div className="knowledge-page-list">
             {pending ? (
-              <Spinner label="正在加载知识专题" />
+              <Spinner label={text("正在加载知识专题")} />
             ) : error && !result ? (
-              <ErrorState message={error instanceof Error ? error.message : "知识专题加载失败"} retry={onRetry} />
+              <ErrorState message={error instanceof Error ? error.message : text("知识专题加载失败")} retry={onRetry} />
             ) : pages.length ? (
               pages.map((page) => (
                 <button
@@ -125,7 +133,7 @@ export function KnowledgeCatalog({
                 </button>
               ))
             ) : (
-              <EmptyState title="暂无知识专题" />
+              <EmptyState title={text("暂无知识专题")} />
             )}
           </div>
           {result ? (
@@ -133,7 +141,7 @@ export function KnowledgeCatalog({
               totalRows={result.total}
               offset={location.offset}
               pageSize={KNOWLEDGE_PAGE_SIZE}
-              ariaLabel="知识专题分页"
+              ariaLabel={text("知识专题分页")}
               onPageChange={(offset) =>
                 onLocationChange({ offset, pageId: null, panel: "document", versionNumber: null })
               }

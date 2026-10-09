@@ -1,7 +1,9 @@
+import { formattingLocale } from "../../lib/i18n";
+import { type knowledgeFieldMessages, knowledgeFieldText as text } from "../../lib/i18n/knowledgeFields";
 import { recordValue } from "./knowledgeReading";
 import { knowledgeTrialFieldText } from "./knowledgeTrialFields";
 
-const labels: Record<string, string> = {
+const labels: Record<string, keyof typeof knowledgeFieldMessages> = {
   name: "名称",
   registry_id: "登记编号",
   registry_name: "登记来源",
@@ -51,10 +53,10 @@ const trialPrimary = [
 export type KnowledgeField = { key: string; label: string; value: string };
 
 function fieldText(value: unknown, key: string): string {
-  if (value === null || value === undefined) return "未提供";
+  if (value === null || value === undefined) return text("未提供");
   if (typeof value !== "object") return String(value);
   if (Array.isArray(value)) {
-    if (!value.length) return "0 项";
+    if (!value.length) return text("0 项");
     const names = value.map((item) => {
       if (item === null || typeof item !== "object") return String(item);
       const record = recordValue(item);
@@ -66,18 +68,23 @@ function fieldText(value: unknown, key: string): string {
         record?.title;
       return typeof name === "string" ? name : null;
     });
-    return names.every((name) => name !== null) ? names.join("、") : `${value.length} 项（完整内容见原文）`;
+    return names.every((name) => name !== null)
+      ? names.join(formattingLocale() === "en-US" ? ", " : "、")
+      : text("{count} 项（完整内容见原文）", { count: new Intl.NumberFormat(formattingLocale()).format(value.length) });
   }
   const record = recordValue(value);
-  if (key === "citation") return typeof record?.locator === "string" ? record.locator : "定位见完整原文";
+  if (key === "citation") return typeof record?.locator === "string" ? record.locator : text("定位见完整原文");
   if (typeof record?.name === "string") return record.name;
   const fields = Object.entries(record ?? {});
   if (fields.every(([, field]) => field === null || typeof field !== "object")) {
     return (
-      fields.map(([field, detail]) => `${field}: ${detail === null ? "null" : String(detail)}`).join(" · ") || "空记录"
+      fields.map(([field, detail]) => `${field}: ${detail === null ? "null" : String(detail)}`).join(" · ") ||
+      text("空记录")
     );
   }
-  return `${fields.length} 个字段（完整内容见原文）`;
+  return text("{count} 个字段（完整内容见原文）", {
+    count: new Intl.NumberFormat(formattingLocale()).format(fields.length),
+  });
 }
 
 /** All supplied top-level fields remain reachable; never infer scientific status or units. */
@@ -89,7 +96,7 @@ export function knowledgeFields(value: unknown): { primary: KnowledgeField[]; re
   const primaryKeys = record.fact_kind === "trial" ? trialPrimary : entries.slice(0, 6).map(([key]) => key);
   const fields = entries.map(([key, field]) => ({
     key,
-    label: Object.hasOwn(labels, key) ? labels[key] : key,
+    label: Object.hasOwn(labels, key) ? text(labels[key]) : key,
     value: (record.fact_kind === "trial" ? knowledgeTrialFieldText(field, key, record) : null) ?? fieldText(field, key),
   }));
   return {
