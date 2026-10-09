@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { parseWorkbenchLocation } from "../../../src/lib/workspaceRouting";
 import type { verifyNewsDealAndPatentDetails } from "./news-deal-and-patent-details";
 
 export async function verifyDealRegulatoryAndSavedSearch(
@@ -192,7 +193,23 @@ export async function verifyDealRegulatoryAndSavedSearch(
   await expect(page).toHaveURL(/target_aggregation=primary/);
   await expect(page).toHaveURL(new RegExp(`target_entity_id=${pipelineTargetId}`));
   await expect(page).toHaveURL(new RegExp(`disease_entity_id=${pipelineDiseaseId}`));
-  expect(new URL(page.url()).searchParams.getAll("sort")).toEqual(["status_date:desc"]);
+  // Canonical URLs omit the default sort; assert the effective state and actual transport instead.
+  expect(parseWorkbenchLocation("research", new URL(page.url()).search).pipelineSort).toEqual([
+    { field: "status_date", direction: "desc" },
+  ]);
+  const freshPipelineResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      response.request().method() === "GET" &&
+      url.pathname === "/api/v1/pipelines" &&
+      url.searchParams.get("target_entity_id") === pipelineTargetId &&
+      url.searchParams.get("disease_entity_id") === pipelineDiseaseId
+    );
+  });
+  await page.getByRole("button", { name: "刷新当前结果", exact: true }).click();
+  const refreshedPipeline = await freshPipelineResponse;
+  expect(refreshedPipeline.status()).toBe(200);
+  expect(new URL(refreshedPipeline.url()).searchParams.getAll("sort")).toEqual(["status_date:desc"]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(
     false,
   );
