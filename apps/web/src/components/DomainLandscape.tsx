@@ -28,12 +28,14 @@ export interface DomainLandscapeSection<FilterField extends string> {
 function Distribution<FilterField extends string>({
   section,
   unitLabel,
+  countUnit,
   domainId,
   view,
   onFilter,
 }: {
   section: DomainLandscapeSection<FilterField>;
   unitLabel: string;
+  countUnit: string;
   domainId: string;
   view: DomainAnalysisView;
   onFilter: (field: FilterField, value: string) => void;
@@ -62,6 +64,7 @@ function Distribution<FilterField extends string>({
             >
               <LandscapeBarChart
                 buckets={buckets}
+                unitLabel={countUnit}
                 ariaLabel={t("{title}{unit}分布", { title, unit: unitLabel })}
                 onSelect={
                   filterField
@@ -165,6 +168,7 @@ export function DomainLandscape<FilterField extends string>({
           key={section.id}
           section={section}
           unitLabel={unitLabel}
+          countUnit={totalUnit}
           domainId={domainId}
           view={view}
           onFilter={onFilter}

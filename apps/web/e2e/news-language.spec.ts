@@ -81,4 +81,37 @@ test("[news-language] fresh English, retained drafts and complete detail fields"
   await page.screenshot({ path: testInfo.outputPath("news-source-preserving-zh.png"), animations: "disabled" });
   expect(writes).toEqual([]);
   expect(errors).toEqual([]);
+
+  await selectInterfaceLanguage(page, "en");
+  await page.getByRole("button", { name: "Statistics", exact: true }).click();
+  const chart = page.locator(".landscape-bar-chart").first();
+  async function hoverRecordBar() {
+    await chart.scrollIntoViewIfNeeded();
+    await expect(chart.locator("svg")).toBeVisible();
+    const bar = await chart.locator("svg path").evaluateAll((nodes) =>
+      nodes
+        .map((node) => {
+          const rect = node.getBoundingClientRect();
+          return { fill: node.getAttribute("fill"), x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+        })
+        .find(
+          (node) =>
+            node.fill &&
+            !["none", "transparent"].includes(node.fill) &&
+            node.width > 20 &&
+            node.height > 8 &&
+            node.height < 40,
+        ),
+    );
+    if (!bar) throw new Error("No visible record bar in the current SVG");
+    await page.mouse.move(bar.x + bar.width / 2, bar.y + bar.height / 2);
+  }
+  await hoverRecordBar();
+  await expect(page.getByText("1 updates", { exact: false })).toBeVisible();
+  await selectInterfaceLanguage(page, "zh-CN");
+  await hoverRecordBar();
+  await expect(page.getByText("1 条动态", { exact: false })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("news-domain-count-unit-zh.png"), animations: "disabled" });
+  expect(writes).toEqual([]);
+  expect(errors).toEqual([]);
 });

@@ -60,5 +60,6 @@ export const pipelineLandscapeMessages = {
   "占比基于当前查询结果中的项目数；缺失值单独显示，不代表全球不存在。":
     "Shares use programs in the current search results. Missing values are shown separately, not treated as global absence.",
   "{count} 个项目": "{count} programs",
+  "{count} {unit}": "{count} {unit}",
 } as const;
 export const pipelineLandscapeText = createTranslator(pipelineLandscapeMessages);
