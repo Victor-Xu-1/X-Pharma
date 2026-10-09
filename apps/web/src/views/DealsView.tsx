@@ -11,6 +11,7 @@ import { ResultPagination } from "../components/ResultPagination";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
 import { type SortingState, VirtualDataTable } from "../components/VirtualDataTable";
 import { ApiError } from "../lib/api";
+import { amountSortFields, DealSearchValidationError } from "../lib/contracts/dealFilterValidation";
 import {
   type DealAnalysisDimension,
   type DealAnalysisLimit,
@@ -59,7 +60,6 @@ import "./deals/deals.css";
 const PAGE_SIZE = 100;
 const dealRowId = (deal: DealSearchItemRead) => deal.id;
 const dealEntityId = (deal: DealSearchItemRead) => deal.entity_id;
-const amountSortFields = new Set<DealSearchFilters["sortBy"]>(["upfront_amount", "total_potential_amount"]);
 
 function useDebouncedValue(value: string, delay: number) {
   const [debounced, setDebounced] = useState(value);
@@ -191,8 +191,7 @@ export function DealsView({
       setValidationError(error);
       return;
     }
-    const sortBy = amountSortFields.has(filters.sortBy) && !filters.currency ? "announced_at" : filters.sortBy;
-    onSearchChange({ ...filters, query: filters.query.trim(), party: filters.party.trim(), sortBy }, 0);
+    onSearchChange({ ...filters, query: filters.query.trim(), party: filters.party.trim() }, 0);
   }
   function clearFilters() {
     setFilters(emptyDealSearchFilters);
@@ -293,6 +292,8 @@ export function DealsView({
           !filters.partyEntityId && debouncedParty.length >= 2 && debouncedParty === filters.party.trim()
         }
         suggestionsLoading={partySuggestions.isFetching}
+        suggestionsError={partySuggestions.error instanceof Error ? partySuggestions.error.message : null}
+        onRetrySuggestions={() => void partySuggestions.refetch()}
         updateFilter={updateFilter}
         onPartyText={(party) => setFilters((current) => ({ ...current, party, partyEntityId: "" }))}
         chooseParty={(id, name) => {
@@ -323,7 +324,11 @@ export function DealsView({
         dataAvailable={Boolean(data)}
         isFetching={result.isFetching}
         isCancelled={queryCancellation.isCancelled}
-        error={result.error}
+        error={
+          result.error instanceof DealSearchValidationError
+            ? new Error(professionalValidationText(result.error.message))
+            : result.error
+        }
         loadingLabel={t("正在查询交易")}
         refreshingLabel={t("正在刷新交易")}
         fallbackError={t("交易查询失败")}

@@ -14,6 +14,8 @@ export function DealParticipantFilters({
   suggestions,
   suggestionsEnabled,
   loading,
+  error,
+  onRetry,
   onChange,
   onPartyText,
   onChooseParty,
@@ -23,6 +25,8 @@ export function DealParticipantFilters({
   suggestions: readonly EntityRead[];
   suggestionsEnabled: boolean;
   loading: boolean;
+  error: string | null;
+  onRetry: () => void;
   onChange: <K extends keyof DealSearchFilters>(key: K, value: DealSearchFilters[K]) => void;
   onPartyText: (value: string) => void;
   onChooseParty: (entityId: string, name: string) => void;
@@ -101,65 +105,80 @@ export function DealParticipantFilters({
         onChange={(entityId) => onChange("diseaseEntityId", entityId)}
         placeholder={t("输入适应症名称或别名")}
       />
-      <label
+      <fieldset
         className="deal-party-field"
+        aria-label={t("参与机构候选")}
         onBlur={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget)) setSuggestionsOpen(false);
         }}
       >
-        <span>{t("参与机构")}</span>
-        <input
-          ref={inputRef}
-          role="combobox"
-          aria-label={t("参与机构")}
-          aria-autocomplete="list"
-          aria-expanded={visibleSuggestions}
-          aria-controls={visibleSuggestions ? "deal-party-suggestions" : undefined}
-          value={filters.party}
-          onFocus={() => setSuggestionsOpen(true)}
-          onClick={() => setSuggestionsOpen(true)}
-          onKeyDown={handleSuggestionKey}
-          onChange={(event) => {
-            setSuggestionsOpen(true);
-            onPartyText(event.target.value);
-          }}
-          placeholder={t("至少输入 2 个字符")}
-          maxLength={500}
-        />
+        <label>
+          <span>{t("参与机构")}</span>
+          <input
+            ref={inputRef}
+            role="combobox"
+            aria-label={t("参与机构")}
+            aria-autocomplete="list"
+            aria-expanded={visibleSuggestions}
+            aria-controls={visibleSuggestions ? "deal-party-suggestions" : undefined}
+            value={filters.party}
+            onFocus={() => setSuggestionsOpen(true)}
+            onClick={() => setSuggestionsOpen(true)}
+            onKeyDown={handleSuggestionKey}
+            onChange={(event) => {
+              setSuggestionsOpen(true);
+              onPartyText(event.target.value);
+            }}
+            placeholder={t("至少输入 2 个字符")}
+            maxLength={500}
+          />
+        </label>
         {visibleSuggestions ? (
-          <div
-            ref={suggestionsRef}
-            className="query-suggestions deal-party-suggestions"
-            id="deal-party-suggestions"
-            role="listbox"
-            aria-label={t("参与机构候选")}
-          >
-            {loading ? <span className="suggestion-status">{t("正在查找机构")}</span> : null}
-            {suggestions.slice(0, 8).map((entity) => {
-              const identifiers = Object.values(entity.external_ids ?? {})
-                .filter(Boolean)
-                .slice(0, 2)
-                .join(" · ");
-              return (
-                <button
-                  type="button"
-                  role="option"
-                  aria-label={identifiers ? `${entity.name} · ${identifiers}` : entity.name}
-                  key={entity.id}
-                  onKeyDown={handleSuggestionKey}
-                  onClick={() => chooseParty(entity)}
-                >
-                  <span>{entity.name}</span>
-                  {identifiers ? <small>{identifiers}</small> : null}
+          <div className="query-suggestions deal-party-suggestions" id="deal-party-suggestions">
+            {loading ? (
+              <span className="suggestion-status" role="status">
+                {t("正在查找机构")}
+              </span>
+            ) : null}
+            {!loading && error !== null ? (
+              <div className="suggestion-status">
+                <p role="alert">{t("机构查询失败：{reason}", { reason: error })}</p>
+                <button type="button" onClick={onRetry}>
+                  {t("重试机构查询")}
                 </button>
-              );
-            })}
-            {!loading && suggestions.length === 0 ? (
-              <span className="suggestion-status">{t("未找到匹配机构")}</span>
+              </div>
+            ) : null}
+            {!loading && error === null && suggestions.length > 0 ? (
+              <div ref={suggestionsRef} role="listbox" aria-label={t("参与机构候选")}>
+                {suggestions.slice(0, 8).map((entity) => {
+                  const identifiers = Object.values(entity.external_ids ?? {})
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .join(" · ");
+                  return (
+                    <button
+                      type="button"
+                      role="option"
+                      aria-label={identifiers ? `${entity.name} · ${identifiers}` : entity.name}
+                      key={entity.id}
+                      onKeyDown={handleSuggestionKey}
+                      onClick={() => chooseParty(entity)}
+                    >
+                      <span>{entity.name}</span>
+                      {identifiers ? <small>{identifiers}</small> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+            {!loading && error === null && suggestions.length === 0 ? (
+              <span className="suggestion-status" role="status">
+                {t("未找到匹配机构")}
+              </span>
             ) : null}
           </div>
         ) : null}
-      </label>
+      </fieldset>
       <label>
         <span>{t("参与角色")}</span>
         <select

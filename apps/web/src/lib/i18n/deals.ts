@@ -122,6 +122,8 @@ export const dealMessages = {
   参与机构候选: "Organization suggestions",
   正在查找机构: "Finding organizations",
   未找到匹配机构: "No matching organizations",
+  "机构查询失败：{reason}": "Organization search failed: {reason}",
+  重试机构查询: "Retry organization search",
   参与角色: "Participant role",
   交易数据统计: "Deal statistics",
   全部维度: "All dimensions",

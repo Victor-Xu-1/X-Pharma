@@ -15,6 +15,8 @@ export function DealFilterForm({
   suggestions,
   suggestionsEnabled,
   suggestionsLoading,
+  suggestionsError,
+  onRetrySuggestions,
   updateFilter,
   onPartyText,
   chooseParty,
@@ -29,6 +31,8 @@ export function DealFilterForm({
   suggestions: readonly EntityRead[];
   suggestionsEnabled: boolean;
   suggestionsLoading: boolean;
+  suggestionsError: string | null;
+  onRetrySuggestions: () => void;
   updateFilter: <K extends keyof DealSearchFilters>(key: K, value: DealSearchFilters[K]) => void;
   onPartyText: (value: string) => void;
   chooseParty: (id: string, name: string) => void;
@@ -83,6 +87,8 @@ export function DealFilterForm({
         suggestions={suggestions}
         suggestionsEnabled={suggestionsEnabled}
         loading={suggestionsLoading}
+        error={suggestionsError}
+        onRetry={onRetrySuggestions}
         onChange={updateFilter}
         onPartyText={onPartyText}
         onChooseParty={chooseParty}

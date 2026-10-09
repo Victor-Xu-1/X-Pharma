@@ -6,11 +6,16 @@ export const professionalValidationMessages = {
   "{label}起始值不能晚于结束值": "{label}: the start must not be later than the end",
   "{label}起始日期不能晚于结束日期": "{label}: the start date must not be later than the end date",
   "{label}下限不能高于上限": "{label}: the minimum must not exceed the maximum",
+  "{label}必须是有效的日历日期": "{label}: enter a valid calendar date",
+  "{label}必须是有限的非负十进制金额": "{label}: enter a finite, non-negative decimal amount",
+  "{label}包含不支持的筛选值": "{label}: this filter value is not supported",
   "选择“无临床结果”时不能同时限定结果评价":
     "Result evaluation cannot be restricted when No clinical results is selected",
   "选择“无交易记录”时不能同时限定交易金额或币种":
     "Deal amount or currency cannot be restricted when No deal records is selected",
   按交易金额查询时必须选择币种: "Choose a currency to search by deal amount",
+  按交易金额排序时必须选择币种: "Choose a currency to sort by deal amount",
+  币种必须是三位大写字母代码: "Use a three-letter uppercase currency code",
   交易潜在总额下限不能大于上限: "The minimum total potential deal amount must not exceed the maximum",
   "选择“未发布结果”时不能同时限定结果评价":
     "Result evaluation cannot be restricted when Results not posted is selected",
@@ -40,9 +45,14 @@ for (const label of [
 }
 for (const label of ["初始披露日期", "终止日期", "信息更新日期"]) {
   messages.set(`${label}起始日期不能晚于结束日期`, { key: "{label}起始日期不能晚于结束日期", label });
+  messages.set(`${label}必须是有效的日历日期`, { key: "{label}必须是有效的日历日期", label });
 }
 for (const label of ["首付款", "潜在总额"]) {
   messages.set(`${label}下限不能高于上限`, { key: "{label}下限不能高于上限", label });
+  messages.set(`${label}必须是有限的非负十进制金额`, { key: "{label}必须是有限的非负十进制金额", label });
+}
+for (const label of ["交易状态", "交易方向", "参与角色", "权益类型", "交易时阶段", "当前最高阶段"]) {
+  messages.set(`${label}包含不支持的筛选值`, { key: "{label}包含不支持的筛选值", label });
 }
 for (const key of Object.keys(professionalValidationMessages) as ValidationKey[]) {
   if (!key.includes("{label}")) messages.set(key, { key });

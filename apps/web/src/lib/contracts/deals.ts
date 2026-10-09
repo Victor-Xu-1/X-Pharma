@@ -1,15 +1,14 @@
 import { contractRequest } from "../contract";
-import type {
-  DealDirection,
-  DealPartyRole,
-  DealRightType,
-  DealSavedSearchQuery,
-  DealSearchItemRead,
-  DealSearchResult,
-  DealStatus,
-} from "../generated";
+import type { DealSavedSearchQuery, DealSearchItemRead, DealSearchResult } from "../generated";
 import { DealsService } from "../generated";
 import { developmentPhases } from "../phasePresentation";
+import {
+  assertValidDealSearchFilters,
+  dealDirections,
+  dealStatuses,
+  partyRoles,
+  rightTypes,
+} from "./dealFilterValidation";
 import { type SavedSearchCreationOutcome, saveAndSubscribeSearch } from "./savedSearchCreation";
 import { effectiveSort, type SortCriterion } from "./sorting";
 
@@ -128,68 +127,7 @@ export interface DealFacetCatalog {
   warnings: string[];
 }
 
-export function validateDealSearchFilters(filters: DealSearchFilters): string | null {
-  const dateRanges: Array<[string, string, string]> = [
-    [filters.announcedFrom, filters.announcedTo, "初始披露日期"],
-    [filters.terminatedFrom, filters.terminatedTo, "终止日期"],
-    [filters.sourceUpdatedFrom, filters.sourceUpdatedTo, "信息更新日期"],
-  ];
-  for (const [minimum, maximum, label] of dateRanges) {
-    if (minimum && maximum && minimum > maximum) return `${label}起始日期不能晚于结束日期`;
-  }
-  const amountRanges: Array<[string, string, string]> = [
-    [filters.upfrontAmountMin, filters.upfrontAmountMax, "首付款"],
-    [filters.totalPotentialAmountMin, filters.totalPotentialAmountMax, "潜在总额"],
-  ];
-  for (const [minimum, maximum, label] of amountRanges) {
-    if (minimum && maximum && Number(minimum) > Number(maximum)) return `${label}下限不能高于上限`;
-  }
-  if (["inbound", "outbound"].includes(filters.direction) && !filters.directionReferenceJurisdiction.trim()) {
-    return "引进或对外许可必须选择方向参照地区";
-  }
-  return null;
-}
-
-const dealStatuses = new Set<DealStatus>([
-  "announced",
-  "active",
-  "completed",
-  "terminated",
-  "withdrawn",
-  "superseded",
-  "unknown",
-]);
-const dealDirections = new Set<DealDirection>([
-  "domestic",
-  "inbound",
-  "outbound",
-  "cross_border",
-  "global",
-  "undisclosed",
-]);
-const partyRoles = new Set<DealPartyRole>([
-  "licensor",
-  "licensee",
-  "seller",
-  "buyer",
-  "acquirer",
-  "target",
-  "partner",
-  "investor",
-  "investee",
-  "other",
-]);
-const rightTypes = new Set<DealRightType>([
-  "research",
-  "development",
-  "manufacturing",
-  "commercialization",
-  "co_development",
-  "co_promotion",
-  "distribution",
-  "option",
-  "other",
-]);
+export { validateDealSearchFilters } from "./dealFilterValidation";
 
 function enumValue<T extends string>(value: string, values: ReadonlySet<T>): T | undefined {
   return values.has(value as T) ? (value as T) : undefined;
@@ -197,8 +135,7 @@ function enumValue<T extends string>(value: string, values: ReadonlySet<T>): T |
 
 function amount(value: string): number | undefined {
   if (!value.trim()) return undefined;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+  return Number(value);
 }
 
 function savedDealQuery(
@@ -251,18 +188,10 @@ function savedDealQuery(
 }
 
 export function hasDealSearchFilter(filters: DealSearchFilters): boolean {
-  const query = savedDealQuery(filters);
-  return Object.entries(query).some(
+  return Object.entries(filters).some(
     ([key, value]) =>
-      ![
-        "sort_by",
-        "sort_direction",
-        "sort",
-        "display_mode",
-        "analysis_dimension",
-        "analysis_view",
-        "analysis_limit",
-      ].includes(key) && value !== undefined,
+      !["sortBy", "sortDirection", "sort"].includes(key) &&
+      (Array.isArray(value) ? value.length > 0 : typeof value === "string" && value.trim().length > 0),
   );
 }
 
@@ -281,6 +210,7 @@ export async function saveDealSearch({
   shared: boolean;
   monitor: boolean;
 }): Promise<SavedSearchCreationOutcome> {
+  assertValidDealSearchFilters(filters);
   return saveAndSubscribeSearch(
     {
       name: name.trim(),
@@ -318,6 +248,7 @@ export async function searchDeals(
   analysisLimit: DealAnalysisLimit,
   signal?: AbortSignal,
 ): Promise<DealSearchResult> {
+  assertValidDealSearchFilters(filters);
   return contractRequest(
     DealsService.searchDealTransactionsApiV1DealTransactionsGet({
       q: filters.query.trim() || undefined,

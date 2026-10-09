@@ -1,3 +1,14 @@
+import {
+  amountSortFields as canonicalDealAmountSortFields,
+  dealDirections as canonicalDealDirections,
+  partyRoles as canonicalDealPartyRoles,
+  rightTypes as canonicalDealRightTypes,
+  dealStatuses as canonicalDealStatuses,
+} from "../contracts/dealFilterValidation";
+import {
+  dealAnalysisDimensions as canonicalDealAnalysisDimensions,
+  dealSortFields as canonicalDealSortFields,
+} from "../contracts/deals";
 import { developmentPhases as canonicalDevelopmentPhases } from "../phasePresentation";
 import type { UserRole } from "../types";
 import {
@@ -164,30 +175,9 @@ export const trialSortFields = new Set([
   "initiation_type",
 ]);
 export const patentSortFields = new Set(["priority_date", "family_identifier", "legal_status", "expiration_date"]);
-export const dealSortFields = new Set([
-  "announced_at",
-  "name",
-  "deal_type",
-  "status",
-  "direction",
-  "territory",
-  "upfront_amount",
-  "total_potential_amount",
-]);
-export const dealAmountSortFields = new Set(["upfront_amount", "total_potential_amount"]);
-export const dealAnalysisDimensions = new Set([
-  "all",
-  "deal_type",
-  "status",
-  "direction",
-  "territory",
-  "currency",
-  "asset_modality",
-  "transaction_phase",
-  "current_phase",
-  "party_country",
-  "rights_territory",
-]);
+export const dealSortFields: ReadonlySet<string> = new Set(canonicalDealSortFields);
+export const dealAmountSortFields: ReadonlySet<string> = canonicalDealAmountSortFields;
+export const dealAnalysisDimensions: ReadonlySet<string> = new Set(canonicalDealAnalysisDimensions);
 export const dealAnalysisLimits = new Set([5, 8, 20, 50]);
 export const regulatorySortFields = new Set([
   "decision_date",
@@ -241,39 +231,10 @@ export const trialTherapyLines = new Set([
   "induction",
   "conversion",
 ]);
-export const dealStatuses = new Set([
-  "announced",
-  "active",
-  "completed",
-  "terminated",
-  "withdrawn",
-  "superseded",
-  "unknown",
-]);
-export const dealDirections = new Set(["domestic", "inbound", "outbound", "cross_border", "global", "undisclosed"]);
-export const dealPartyRoles = new Set([
-  "licensor",
-  "licensee",
-  "seller",
-  "buyer",
-  "acquirer",
-  "target",
-  "partner",
-  "investor",
-  "investee",
-  "other",
-]);
-export const dealRightTypes = new Set([
-  "research",
-  "development",
-  "manufacturing",
-  "commercialization",
-  "co_development",
-  "co_promotion",
-  "distribution",
-  "option",
-  "other",
-]);
+export const dealStatuses: ReadonlySet<string> = canonicalDealStatuses;
+export const dealDirections: ReadonlySet<string> = canonicalDealDirections;
+export const dealPartyRoles: ReadonlySet<string> = canonicalDealPartyRoles;
+export const dealRightTypes: ReadonlySet<string> = canonicalDealRightTypes;
 export const regulatoryDesignationTypes = new Set([
   "breakthrough_therapy",
   "fast_track",

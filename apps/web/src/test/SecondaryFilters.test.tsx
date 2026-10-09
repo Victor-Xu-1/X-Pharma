@@ -1,7 +1,41 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 
 import { SecondaryFilters } from "../components/SecondaryFilters";
+import { setLocale } from "../lib/i18n";
+
+it("retains a manually open blank disclosure across language switching and ordinary rerenders", async () => {
+  render(
+    <SecondaryFilters activeCount={0}>
+      <input aria-label="Original draft" defaultValue="Original value" />
+    </SecondaryFilters>,
+  );
+  const disclosure = screen.getByText("更多筛选").closest("details");
+  if (!disclosure) throw new Error("Expected filter disclosure");
+  await act(async () => {
+    disclosure.open = true;
+    fireEvent(disclosure, new Event("toggle"));
+  });
+  act(() => setLocale("en"));
+  expect(disclosure).toHaveAttribute("open");
+  expect(screen.getByLabelText("Original draft")).toHaveValue("Original value");
+  act(() => setLocale("zh-CN"));
+  expect(disclosure).toHaveAttribute("open");
+});
+
+it("keeps the current panel open after its last condition is cleared", () => {
+  const { rerender } = render(
+    <SecondaryFilters activeCount={1}>
+      <input aria-label="Draft" />
+    </SecondaryFilters>,
+  );
+  rerender(
+    <SecondaryFilters activeCount={0}>
+      <input aria-label="Draft" />
+    </SecondaryFilters>,
+  );
+  expect(screen.getByLabelText("Draft").closest("details")).toHaveAttribute("open");
+});
 
 it("keeps secondary controls collapsed until requested", () => {
   render(

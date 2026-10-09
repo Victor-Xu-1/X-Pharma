@@ -2,6 +2,7 @@ import { act, fireEvent, screen, waitFor, within } from "@testing-library/react"
 import type { ComponentProps } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ApiError } from "../lib/api";
+import { DealSearchValidationError } from "../lib/contracts/dealFilterValidation";
 
 import {
   type DealSearchFilters,
@@ -11,6 +12,7 @@ import {
   searchDeals,
 } from "../lib/contracts/deals";
 import { getEntity, lookupEntities, searchEntities } from "../lib/contracts/intelligence";
+import type { SavedSearchCreationOutcome } from "../lib/contracts/savedSearchCreation";
 import { getSessionEntity } from "../lib/contracts/session";
 import { setLocale } from "../lib/i18n";
 import { DealsView } from "../views/DealsView";
@@ -77,6 +79,65 @@ it("allows an unapplied deal draft to be cleared without treating default sort a
   expect(screen.getByRole("button", { name: /^Clear$/ })).toBeEnabled();
 });
 
+it("keeps the currency-free amount sort draft and explains why it cannot be submitted", async () => {
+  act(() => setLocale("en"));
+  const onSearchChange = vi.fn();
+  renderDeal({
+    initialFilters: {
+      ...initialFilters,
+      currency: "USD",
+      sortBy: "name",
+      sortDirection: "asc",
+      sort: [
+        { field: "name", direction: "asc" },
+        { field: "upfront_amount", direction: "desc" },
+      ],
+    },
+    onSearchChange,
+  });
+  await screen.findByRole("table", { name: "Deal results" });
+  fireEvent.change(screen.getByLabelText("Currency", { exact: true }), { target: { value: "" } });
+  fireEvent.click(screen.getByRole("button", { name: "Search" }));
+  expect(screen.getByRole("alert")).toHaveTextContent("Choose a currency to sort by deal amount");
+  expect(onSearchChange).not.toHaveBeenCalled();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("alert")).toHaveTextContent("按交易金额排序时必须选择币种");
+  expect(screen.getByLabelText("币种", { exact: true })).toHaveValue("");
+});
+
+it("shows an organization suggestion failure with current-language retry instead of a false empty match", async () => {
+  act(() => setLocale("en"));
+  vi.mocked(searchEntities).mockRejectedValue(new ApiError("RAW_ORGANIZATION_FAILURE", 503, null));
+  renderDeal();
+  await screen.findByRole("table", { name: "Deal results" });
+  fireEvent.click(screen.getByText("Participants and linked assets", { exact: true }));
+  const input = screen.getByRole("combobox", { name: "Participating organization" });
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Acme" } });
+  expect(await screen.findByRole("alert")).toHaveTextContent("Organization search failed: RAW_ORGANIZATION_FAILURE");
+  expect(screen.queryByText("No matching organizations", { exact: true })).not.toBeInTheDocument();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("alert")).toHaveTextContent("机构查询失败：RAW_ORGANIZATION_FAILURE");
+  vi.mocked(searchEntities).mockResolvedValue({
+    query_schema_version: "pharma.entity.search.v2",
+    applied_filters: [],
+    items: [],
+    total: 0,
+    limit: 100,
+    offset: 0,
+    sort_by: "relevance",
+    sort_direction: "desc",
+    engine: "opensearch",
+    suggestions: [],
+    took_ms: 3,
+    facets: {},
+    warnings: [],
+  });
+  fireEvent.click(screen.getByRole("button", { name: "重试机构查询" }));
+  expect(await screen.findByText("未找到匹配机构", { exact: true })).toBeVisible();
+  expect(screen.getByRole("combobox", { name: "参与机构" })).toHaveValue("Acme");
+});
+
 it("hides cached deal facts and facet counts after a current real-transport permission denial", async () => {
   const { queryClient } = renderDeal();
   await screen.findByRole("table", { name: "交易结果" });
@@ -95,6 +156,15 @@ it("rejects a mismatched deal dossier identity", async () => {
   expect(screen.queryByRole("heading", { name: dealResult.items[0].name })).not.toBeInTheDocument();
 });
 
+it("presents an invalid restored query in the current language without rewriting transport errors", async () => {
+  act(() => setLocale("en"));
+  vi.mocked(searchDeals).mockRejectedValue(new DealSearchValidationError("交易状态包含不支持的筛选值"));
+  renderDeal();
+  expect(await screen.findByRole("alert")).toHaveTextContent("Deal status: this filter value is not supported");
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("alert")).toHaveTextContent("交易状态包含不支持的筛选值");
+});
+
 it("retains nested source deal terms instead of flattening them to an object placeholder", async () => {
   act(() => setLocale("en"));
   const terms = {
@@ -106,6 +176,57 @@ it("retains nested source deal terms instead of flattening them to an object pla
   fireEvent.click(screen.getByText("Complete source metadata", { exact: true }));
   expect(document.querySelector(".source-metadata pre")?.textContent).toBe(JSON.stringify(terms, null, 2));
   expect(document.body).not.toHaveTextContent("[object Object]");
+});
+
+it("retains one pending deal save and renders partial-success framing in the current locale", async () => {
+  act(() => setLocale("en"));
+  let finish: (value: SavedSearchCreationOutcome) => void = () => {
+    throw new Error("Pending deal save not initialized");
+  };
+  vi.mocked(saveDealSearch).mockReturnValue(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  renderDeal();
+  await screen.findByRole("table", { name: "Deal results" });
+  fireEvent.click(screen.getByRole("button", { name: "Save / subscribe" }));
+  fireEvent.change(screen.getByLabelText("Name"), { target: { value: "原始交易检索" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save search" }));
+  await waitFor(() => expect(saveDealSearch).toHaveBeenCalledTimes(1));
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByLabelText("名称")).toHaveValue("原始交易检索");
+  expect(screen.getByLabelText("名称")).toBeDisabled();
+  await act(async () => finish({ kind: "monitor_failed", reason: "原始失败 <License>" }));
+  expect(await screen.findByText("检索已保存，但监控未启用：原始失败 <License>")).toBeVisible();
+  act(() => setLocale("en"));
+  expect(screen.getByText("Search saved, but monitoring could not be enabled: 原始失败 <License>")).toBeVisible();
+  expect(saveDealSearch).toHaveBeenCalledTimes(1);
+});
+
+it("keeps known dossier parties and assets when structured roles and transaction phases are absent", async () => {
+  act(() => setLocale("en"));
+  vi.mocked(loadDealDetail).mockResolvedValue({ ...dealResult.items[0], party_roles: [], asset_stages: [] });
+  const parties = renderDeal({ selectedDealId: dealResult.items[0].id, activeSection: "parties" });
+  await screen.findByRole("heading", { name: dealResult.items[0].name });
+  expect(screen.getByRole("button", { name: /Acme Pharma.*Role undisclosed/ })).toBeVisible();
+  parties.unmount();
+  renderDeal({ selectedDealId: dealResult.items[0].id, activeSection: "assets" });
+  await screen.findByRole("heading", { name: dealResult.items[0].name });
+  expect(screen.getByRole("button", { name: /VX-101.*Transaction phase undisclosed/ })).toBeVisible();
+});
+
+it("hides cached deal dossier values after a real current permission denial", async () => {
+  act(() => setLocale("en"));
+  const { queryClient } = renderDeal({ selectedDealId: dealResult.items[0].id });
+  await screen.findByRole("heading", { name: dealResult.items[0].name });
+  vi.mocked(loadDealDetail).mockRejectedValue(new ApiError("RAW_DEAL_DETAIL_DENIAL", 403, null));
+  await act(() =>
+    queryClient.refetchQueries({ queryKey: ["intelligence", "deals", "detail", dealResult.items[0].id] }),
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent("RAW_DEAL_DETAIL_DENIAL");
+  expect(screen.queryByRole("heading", { name: dealResult.items[0].name })).not.toBeInTheDocument();
+  expect(screen.queryByText("USD 25,000,000")).not.toBeInTheDocument();
 });
 
 vi.mock("../lib/contracts/intelligence", () => ({
@@ -368,6 +489,7 @@ it("submits role-aware advanced filters with a stable organization id", async ()
   fireEvent.change(announcedRange.getByLabelText("起"), { target: { value: "2026-01-01" } });
   fireEvent.change(announcedRange.getByLabelText("止"), { target: { value: "2026-12-31" } });
   const upfrontRange = within(screen.getByRole("group", { name: "首付款" }));
+  fireEvent.change(screen.getByLabelText("币种", { exact: true }), { target: { value: "USD" } });
   fireEvent.change(upfrontRange.getByLabelText("下限"), { target: { value: "10000000" } });
   fireEvent.change(upfrontRange.getByLabelText("上限"), { target: { value: "30000000" } });
   fireEvent.click(screen.getByRole("button", { name: "查询" }));
