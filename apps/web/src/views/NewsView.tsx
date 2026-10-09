@@ -1,25 +1,22 @@
+import { useLocale } from "../lib/i18n";
+import { newsText as t } from "../lib/i18n/news";
+import { professionalValidationText } from "../lib/i18n/professionalValidation";
+import { NewsLandscape } from "./news/NewsLandscape";
+import { NewsResultActions } from "./news/NewsResultActions";
+import { newsTypeLabel } from "./news/presentation";
+import "../styles/news-research.css";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { BookmarkPlus, CalendarDays, ExternalLink, FileText, List, Search, X } from "lucide-react";
-import { type FormEvent, useCallback, useMemo, useState } from "react";
+import { CalendarDays, List } from "lucide-react";
+import { type FormEvent, useCallback, useState } from "react";
 import { AppliedFiltersBar } from "../components/AppliedFiltersBar";
-import {
-  ErrorState,
-  formatDate,
-  ProfessionalQueryState,
-  QueryRefreshButton,
-  Spinner,
-  StatusBadge,
-} from "../components/common";
+import { ProfessionalQueryState } from "../components/common";
 import { DomainExportControl } from "../components/DomainExportControl";
-import { DomainLandscape } from "../components/DomainLandscape";
 import { EmptyQueryResult } from "../components/EmptyQueryResult";
-import { EntityFilterSelect } from "../components/EntityFilterSelect";
-import { QueryResultSummary } from "../components/QueryResultSummary";
-import { ProvenanceButton, RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
+import { RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResultPagination } from "../components/ResultPagination";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
-import { SecondaryFilters } from "../components/SecondaryFilters";
-import { type ColumnDef, type SortingState, VirtualDataTable } from "../components/VirtualDataTable";
+import { type SortingState, VirtualDataTable } from "../components/VirtualDataTable";
+import { ApiError } from "../lib/api";
 import {
   hasNewsSearchFilter,
   loadNewsEventDetail,
@@ -28,17 +25,21 @@ import {
   newsSortFields,
   saveNewsSearch,
   searchNewsEvents,
+  validateNewsSearchFilters,
 } from "../lib/contracts/news";
 import type { ProvenanceSelection } from "../lib/contracts/provenance";
 import { sortCriteriaFromTable, tableSortingFromCriteria } from "../lib/contracts/sorting";
 import { facetOptions } from "../lib/facets";
-import type { NewsEventSearchItemRead } from "../lib/generated";
-import { newsEntityTypes, newsEventTypeLabels } from "../lib/newsDisplay";
+import { newsEventTypeLabels } from "../lib/newsDisplay";
 import { publicCoverageNotice } from "../lib/publicWarnings";
 import { useFilterDraft } from "../lib/useFilterDraft";
-import { useModalFocus } from "../lib/useModalFocus";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import type { DossierEntityOpener } from "./EntityDossierView";
+import { NewsDetailDrawer } from "./news/NewsDetailDrawer";
+import { NewsFilterForm } from "./news/NewsFilterForm";
+import { NewsResearchTimeline } from "./news/NewsTimeline";
+import { type NewsSaveFeedback, newsSaveFeedback } from "./news/saveFeedback";
+import { useNewsColumns } from "./news/useNewsColumns";
 
 const PAGE_SIZE = 100;
 const defaultNewsSorting: SortingState = [{ id: "published_at", desc: true }];
@@ -55,87 +56,6 @@ const appliedFilterLabels = {
   published_to: "发布截止",
   content_scope: "内容范围",
 } as const;
-const appliedValueLabels = {
-  event_type: newsEventTypeLabels,
-  content_scope: { research: "研究发布" },
-};
-
-function detailsSummary(details: Record<string, unknown>) {
-  const entries = Object.entries(details);
-  if (!entries.length) return "未披露";
-  return entries
-    .slice(0, 4)
-    .map(([key, value]) => `${key}: ${typeof value === "object" ? JSON.stringify(value) : String(value)}`)
-    .join(" · ");
-}
-
-function NewsResearchTimeline({
-  items,
-  onOpenTypedEntity,
-  onOpenDetail,
-  onOpenProvenance,
-}: {
-  items: NewsEventSearchItemRead[];
-  onOpenTypedEntity: DossierEntityOpener;
-  onOpenDetail: (eventId: string) => void;
-  onOpenProvenance: (selection: ProvenanceSelection) => void;
-}) {
-  return (
-    <section className="news-research-timeline" aria-label="研究发布时间线">
-      {items.map((item) => (
-        <article key={item.id}>
-          <div className="news-timeline-date">
-            <time dateTime={item.published_at ?? undefined}>{formatDate(item.published_at ?? "")}</time>
-            <StatusBadge value={newsEventTypeLabels[item.event_type] ?? item.event_type} />
-          </div>
-          <div className="news-timeline-content">
-            <header>
-              <h3>
-                <button type="button" onClick={() => onOpenDetail(item.id)}>
-                  {item.title}
-                </button>
-              </h3>
-              {item.venue ? <span>{item.venue}</span> : null}
-            </header>
-            {item.summary ? <p>{item.summary}</p> : null}
-            <div className="news-timeline-links">
-              {item.publisher_entity ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    onOpenTypedEntity(
-                      item.publisher_entity?.entity_type ?? "organization",
-                      item.publisher_entity?.id ?? "",
-                    )
-                  }
-                >
-                  {item.publisher_entity.name}
-                </button>
-              ) : null}
-              {item.related_entities.map((entity) => (
-                <button type="button" key={entity.id} onClick={() => onOpenTypedEntity(entity.entity_type, entity.id)}>
-                  {entity.name}
-                </button>
-              ))}
-            </div>
-            <div className="news-timeline-actions">
-              {item.canonical_url ? (
-                <a href={item.canonical_url} target="_blank" rel="noreferrer">
-                  <ExternalLink size={14} />
-                  原始发布页
-                </a>
-              ) : null}
-              <ProvenanceButton
-                selection={{ resourceType: "news_event", resourceId: item.id, label: item.title }}
-                onOpen={onOpenProvenance}
-              />
-            </div>
-          </div>
-        </article>
-      ))}
-    </section>
-  );
-}
 
 export function NewsView({
   initialFilters,
@@ -160,13 +80,20 @@ export function NewsView({
   onOpenDisease?: (diseaseId: string) => void;
   onOpenOrganization?: (organizationId: string) => void;
 }) {
+  useLocale();
+
   const [filters, setFilters] = useFilterDraft(initialFilters);
+  const [validationRequested, setValidationRequested] = useState(false);
+  const validationError = validationRequested
+    ? professionalValidationText(validateNewsSearchFilters(filters) ?? "")
+    : "";
   const [provenanceSelection, setProvenanceSelection] = useState<ProvenanceSelection | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [saveShared, setSaveShared] = useState(false);
   const [saveMonitor, setSaveMonitor] = useState(true);
-  const [saveMessage, setSaveMessage] = useState("");
+  const [saveFeedback, setSaveFeedback] = useState<NewsSaveFeedback | null>(null);
+  const saveMessage = newsSaveFeedback(saveFeedback);
   const resultQueryKey = newsKeys.search(initialFilters, initialOffset);
   const result = useQuery({
     queryKey: resultQueryKey,
@@ -207,10 +134,14 @@ export function NewsView({
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    const error = validateNewsSearchFilters(filters);
+    setValidationRequested(Boolean(error));
+    if (error) return;
     onSearchChange({ ...filters, query: filters.query.trim() }, 0);
   }
 
   function clearFilters() {
+    setValidationRequested(false);
     const cleared: NewsSearchFilters = {
       query: "",
       entityId: "",
@@ -261,7 +192,7 @@ export function NewsView({
 
   async function submitSavedSearch(event: FormEvent) {
     event.preventDefault();
-    setSaveMessage("");
+    setSaveFeedback(null);
     try {
       const outcome = await save.mutateAsync({
         name: saveName,
@@ -270,136 +201,24 @@ export function NewsView({
         monitor: saveMonitor,
       });
       setSaveOpen(false);
-      setSaveMessage(outcome.message);
+      setSaveFeedback({ kind: "outcome", outcome });
     } catch (error) {
-      setSaveMessage(error instanceof Error ? error.message : "新闻与会议检索保存失败");
+      setSaveFeedback({ kind: "error", reason: error instanceof Error ? error.message : null });
     }
   }
 
-  const columns = useMemo<ColumnDef<NewsEventSearchItemRead, unknown>[]>(
-    () => [
-      {
-        accessorKey: "published_at",
-        header: "发布日期",
-        size: 108,
-        cell: ({ getValue }) => formatDate(String(getValue() ?? "")),
-      },
-      {
-        accessorKey: "title",
-        header: "标题与摘要",
-        size: 360,
-        cell: ({ row }) => (
-          <button
-            className="entity-name-button domain-primary-cell"
-            type="button"
-            aria-label={`打开新闻事件详情：${row.original.title}`}
-            onClick={() => onNewsEventChange(row.original.id)}
-          >
-            <strong>{row.original.title}</strong>
-            <small>{row.original.summary ?? row.original.event_identifier}</small>
-          </button>
-        ),
-      },
-      {
-        accessorKey: "event_type",
-        header: "类型",
-        size: 105,
-        cell: ({ getValue }) => {
-          const value = String(getValue() ?? "other");
-          return <StatusBadge value={newsEventTypeLabels[value] ?? value} />;
-        },
-      },
-      {
-        id: "publisher",
-        accessorFn: (row) => row.publisher_entity?.name ?? null,
-        header: "发布方",
-        size: 150,
-        cell: ({ row }) =>
-          row.original.publisher_entity ? (
-            <button
-              className="table-link-button"
-              type="button"
-              onClick={() =>
-                openNewsEntity(
-                  row.original.publisher_entity?.entity_type ?? "organization",
-                  row.original.publisher_entity?.id ?? "",
-                )
-              }
-            >
-              {row.original.publisher_entity.name}
-            </button>
-          ) : (
-            "--"
-          ),
-      },
-      {
-        id: "entities",
-        header: "关联对象",
-        size: 220,
-        enableSorting: false,
-        cell: ({ row }) =>
-          row.original.related_entities.length ? (
-            <span className="linked-entity-list">
-              {row.original.related_entities.slice(0, 3).map((entity) => (
-                <button
-                  className="table-link-button"
-                  type="button"
-                  key={entity.id}
-                  onClick={() => openNewsEntity(entity.entity_type, entity.id)}
-                >
-                  {entity.name}
-                </button>
-              ))}
-              {row.original.related_entities.length > 3 ? (
-                <small>+{row.original.related_entities.length - 3}</small>
-              ) : null}
-            </span>
-          ) : (
-            "--"
-          ),
-      },
-      {
-        accessorKey: "venue",
-        header: "会议 / 语言",
-        size: 125,
-        cell: ({ row }) => (
-          <span className="domain-primary-cell">
-            <strong>{row.original.venue ?? "--"}</strong>
-            <small>{row.original.language ?? "--"}</small>
-          </span>
-        ),
-      },
-      {
-        id: "source",
-        header: "来源",
-        size: 78,
-        enableSorting: false,
-        cell: ({ row }) => (
-          <span className="table-action-group">
-            {row.original.canonical_url ? (
-              <a
-                className="icon-button"
-                href={row.original.canonical_url}
-                target="_blank"
-                rel="noreferrer"
-                title="打开原始发布页"
-                aria-label={`打开 ${row.original.title} 原始发布页`}
-              >
-                <ExternalLink size={16} />
-              </a>
-            ) : null}
-            <ProvenanceButton
-              selection={{ resourceType: "news_event", resourceId: row.original.id, label: row.original.title }}
-              onOpen={setProvenanceSelection}
-            />
-          </span>
-        ),
-      },
-    ],
-    [onNewsEventChange, openNewsEntity],
-  );
+  const columns = useNewsColumns(onNewsEventChange, openNewsEntity, setProvenanceSelection);
 
-  const data = result.data;
+  const denied = result.error instanceof ApiError && [401, 403].includes(result.error.status);
+  const data = denied ? undefined : result.data;
+  const detailDenied = detail.error instanceof ApiError && [401, 403].includes(detail.error.status);
+  const detailMismatch = !detailDenied && detail.data && detail.data.id !== selectedNewsEventId;
+  const detailData = detailDenied || detailMismatch ? undefined : detail.data;
+  const detailError = detailMismatch
+    ? new Error(t("新闻事件与请求标识不一致"))
+    : detail.error instanceof Error
+      ? detail.error
+      : null;
   const sorting: SortingState = tableSortingFromCriteria(
     initialFilters.sort,
     initialFilters.sortBy,
@@ -409,7 +228,7 @@ export function NewsView({
   const publishers = facetOptions(data?.facets, "publisher", filters.publisher);
   const languages = facetOptions(data?.facets, "language", filters.language);
   const venues = facetOptions(data?.facets, "venue", filters.venue);
-  const hasFilters = Object.values(initialFilters).some(Boolean);
+  const hasFilters = hasNewsSearchFilter(initialFilters) || hasNewsSearchFilter(filters);
 
   function retryResult() {
     queryCancellation.reset();
@@ -420,14 +239,14 @@ export function NewsView({
     <>
       <section className="data-section news-section">
         <div className="explorer-intro">
-          <p>追踪公司公告、研发更新、论文和会议资料，并连接药物、靶点、疾病、机构及原始发布来源。</p>
+          <p>{t("追踪公告、研究发布与会议资料，连接相关实体和原始来源。")}</p>
         </div>
 
         <fieldset className="segmented-control news-display-control">
-          <legend className="sr-only">动态呈现方式</legend>
+          <legend className="sr-only">{t("动态呈现方式")}</legend>
           <button type="button" aria-pressed={filters.displayMode === "list"} onClick={() => changeDisplayMode("list")}>
             <List size={15} />
-            动态列表
+            {t("动态列表")}
           </button>
           <button
             type="button"
@@ -435,118 +254,39 @@ export function NewsView({
             onClick={() => changeDisplayMode("timeline")}
           >
             <CalendarDays size={15} />
-            研究发布时间线
+            {t("研究发布时间线")}
           </button>
           <button
             type="button"
             aria-pressed={filters.displayMode === "landscape"}
             onClick={() => changeDisplayMode("landscape")}
           >
-            统计
+            {t("统计")}
           </button>
         </fieldset>
 
-        <form className="domain-filter-bar news-filter-bar" onSubmit={submit} aria-label="新闻与会议筛选">
-          <EntityFilterSelect
-            label="关联实体"
-            entityType={newsEntityTypes}
-            value={filters.entityId}
-            onChange={(entityId) => updateFilter("entityId", entityId)}
-            placeholder="输入药品、靶点、疾病、机构或技术"
-          />
-          <label className="domain-query-field">
-            <span>关键词</span>
-            <span className="input-with-icon">
-              <Search size={16} />
-              <input
-                value={filters.query}
-                onChange={(event) => updateFilter("query", event.target.value)}
-                placeholder="标题、摘要、公司、药物、靶点或疾病"
-                maxLength={500}
-              />
-            </span>
-          </label>
-          <label>
-            <span>事件类型</span>
-            <select value={filters.eventType} onChange={(event) => updateFilter("eventType", event.target.value)}>
-              <option value="">全部</option>
-              {eventTypes.map((value) => (
-                <option value={value} key={value}>
-                  {newsEventTypeLabels[value] ?? value} ({data?.facets?.event_type?.[value] ?? 0})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>发布方</span>
-            <select value={filters.publisher} onChange={(event) => updateFilter("publisher", event.target.value)}>
-              <option value="">全部</option>
-              {publishers.map((value) => (
-                <option value={value} key={value}>
-                  {value} ({data?.facets?.publisher?.[value] ?? 0})
-                </option>
-              ))}
-            </select>
-          </label>
-          <SecondaryFilters
-            activeCount={
-              [filters.language, filters.venue, filters.publishedFrom, filters.publishedTo].filter(Boolean).length
-            }
-          >
-            <label>
-              <span>语言</span>
-              <select value={filters.language} onChange={(event) => updateFilter("language", event.target.value)}>
-                <option value="">全部</option>
-                {languages.map((value) => (
-                  <option value={value} key={value}>
-                    {value} ({data?.facets?.language?.[value] ?? 0})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>会议 / 场景</span>
-              <select value={filters.venue} onChange={(event) => updateFilter("venue", event.target.value)}>
-                <option value="">全部</option>
-                {venues.map((value) => (
-                  <option value={value} key={value}>
-                    {value} ({data?.facets?.venue?.[value] ?? 0})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>发布起始</span>
-              <input
-                type="date"
-                value={filters.publishedFrom}
-                onChange={(event) => updateFilter("publishedFrom", event.target.value)}
-              />
-            </label>
-            <label>
-              <span>发布截止</span>
-              <input
-                type="date"
-                value={filters.publishedTo}
-                onChange={(event) => updateFilter("publishedTo", event.target.value)}
-              />
-            </label>
-          </SecondaryFilters>
-          <div className="domain-filter-actions">
-            <button className="primary-button" type="submit" disabled={result.isFetching}>
-              <Search size={16} />
-              查询
-            </button>
-            <button className="secondary-button" type="button" onClick={clearFilters} disabled={!hasFilters}>
-              清除
-            </button>
-          </div>
-        </form>
+        <NewsFilterForm
+          filters={filters}
+          eventTypes={eventTypes}
+          publishers={publishers}
+          languages={languages}
+          venues={venues}
+          facets={data?.facets}
+          updateFilter={updateFilter}
+          submit={submit}
+          clearFilters={clearFilters}
+          querying={result.isFetching}
+          clearable={hasFilters}
+          validationError={validationError}
+        />
 
         <AppliedFiltersBar
           filters={data?.applied_filters}
-          labels={appliedFilterLabels}
-          valueLabels={appliedValueLabels}
+          labels={Object.fromEntries(Object.entries(appliedFilterLabels).map(([key, label]) => [key, t(label)]))}
+          valueLabels={{
+            event_type: Object.fromEntries(Object.keys(newsEventTypeLabels).map((code) => [code, newsTypeLabel(code)])),
+            content_scope: { research: t("研究发布") },
+          }}
           onClear={clearFilters}
         />
 
@@ -555,71 +295,31 @@ export function NewsView({
           isFetching={result.isFetching}
           isCancelled={queryCancellation.isCancelled}
           error={result.error}
-          loadingLabel="正在查询新闻与会议动态"
-          fallbackError="新闻与会议动态加载失败"
+          loadingLabel={t("正在查询新闻与会议动态")}
+          refreshingLabel={t("正在刷新新闻与会议动态")}
+          fallbackError={t("新闻与会议动态加载失败")}
           onCancel={queryCancellation.cancel}
           onRetry={retryResult}
           onDismissCancellation={queryCancellation.reset}
         >
           {data ? (
             <div className="domain-results">
-              <div className="pipeline-result-toolbar">
-                <QueryResultSummary
-                  total={data.total}
-                  offset={data.offset}
-                  count={data.items.length}
-                  unit={initialFilters.displayMode === "timeline" ? "项研究发布" : "项最新动态"}
-                  queriedAt={data.as_of}
-                />
-                <div className="pipeline-result-actions">
-                  <QueryRefreshButton refreshing={result.isFetching} onRefresh={retryResult} />
-                  <button
-                    className="secondary-button"
-                    type="button"
-                    disabled={!hasNewsSearchFilter(initialFilters)}
-                    title={hasNewsSearchFilter(initialFilters) ? "保存或订阅当前资讯查询" : "至少应用一个查询条件"}
-                    onClick={() => {
-                      setSaveName(initialFilters.query.trim() || "研发事件监控");
-                      setSaveMessage("");
-                      save.reset();
-                      setSaveOpen(true);
-                    }}
-                  >
-                    <BookmarkPlus size={15} />
-                    保存/订阅
-                  </button>
-                </div>
-              </div>
+              <NewsResultActions
+                data={data}
+                displayMode={initialFilters.displayMode}
+                refreshing={result.isFetching}
+                saveable={hasNewsSearchFilter(initialFilters)}
+                onRefresh={retryResult}
+                onSave={() => {
+                  setSaveName(initialFilters.query.trim() || t("研发事件监控"));
+                  setSaveFeedback(null);
+                  save.reset();
+                  setSaveOpen(true);
+                }}
+              />
               {filters.displayMode === "landscape" ? (
-                <DomainLandscape<"event_type" | "venue">
-                  domainId="news"
-                  ariaLabel="资讯统计分析"
-                  total={data.landscape.total_events}
-                  totalUnit="条动态"
-                  unitLabel="事件数"
-                  sections={[
-                    {
-                      id: "event-type",
-                      title: "事件类型",
-                      detail: "按事件类型统计完整命中集",
-                      buckets: data.landscape.event_type ?? [],
-                      filterField: "event_type",
-                    },
-                    {
-                      id: "venue",
-                      title: "会议与期刊",
-                      detail: "按会议/期刊统计完整命中集",
-                      buckets: data.landscape.venue ?? [],
-                      filterField: "venue",
-                    },
-                    {
-                      id: "published-year",
-                      title: "发布年份",
-                      detail: "按发布年份统计完整命中集",
-                      buckets: data.landscape.published_year ?? [],
-                      filterField: null,
-                    },
-                  ]}
+                <NewsLandscape
+                  landscape={data.landscape}
                   view={filters.analysisView}
                   onViewChange={(analysisView) => {
                     const next = { ...filters, analysisView };
@@ -643,7 +343,7 @@ export function NewsView({
                   />
                 ) : (
                   <VirtualDataTable
-                    ariaLabel="新闻与会议结果"
+                    ariaLabel={t("新闻与会议结果")}
                     columns={columns}
                     data={data.items}
                     getRowId={(item) => item.id}
@@ -658,7 +358,7 @@ export function NewsView({
                 )
               ) : (
                 <EmptyQueryResult
-                  domain="研究动态"
+                  domain={t("研究动态")}
                   filtered={Boolean(data.applied_filters?.length)}
                   onClear={clearFilters}
                 />
@@ -669,7 +369,7 @@ export function NewsView({
                 pageSize={PAGE_SIZE}
                 notice={publicCoverageNotice(data.warnings)}
                 onPageChange={(offset) => onSearchChange(initialFilters, offset)}
-                ariaLabel="新闻与会议结果分页"
+                ariaLabel={t("新闻与会议结果分页")}
               />
             </div>
           ) : null}
@@ -681,7 +381,7 @@ export function NewsView({
         ) : null}
         <SavedSearchDialog
           open={saveOpen}
-          domainLabel="新闻与会议"
+          domainLabel={t("新闻与会议")}
           name={saveName}
           shared={saveShared}
           monitor={saveMonitor}
@@ -696,10 +396,9 @@ export function NewsView({
       </section>
       {selectedNewsEventId ? (
         <NewsDetailDrawer
-          eventId={selectedNewsEventId}
-          data={detail.data}
+          data={detailData}
           loading={detail.isFetching}
-          error={detail.error instanceof Error ? detail.error : null}
+          error={detailError}
           onRetry={() => void detail.refetch()}
           onClose={() => onNewsEventChange(null)}
           onOpenEntity={onOpenEntity}
@@ -711,146 +410,5 @@ export function NewsView({
         <RecordProvenanceDrawer selection={provenanceSelection} onClose={() => setProvenanceSelection(null)} />
       ) : null}
     </>
-  );
-}
-
-function NewsDetailDrawer({
-  eventId,
-  data,
-  loading,
-  error,
-  onRetry,
-  onClose,
-  onOpenEntity,
-  onOpenTypedEntity,
-  onOpenProvenance,
-}: {
-  eventId: string;
-  data: NewsEventSearchItemRead | undefined;
-  loading: boolean;
-  error: Error | null;
-  onRetry: () => void;
-  onClose: () => void;
-  onOpenEntity: (entityId: string) => void;
-  onOpenTypedEntity?: DossierEntityOpener;
-  onOpenProvenance: (selection: ProvenanceSelection) => void;
-}) {
-  const dialogRef = useModalFocus<HTMLElement>(true, onClose);
-  return (
-    <div className="drawer-backdrop" role="presentation">
-      <button className="drawer-dismiss" type="button" aria-label="关闭新闻事件详情" onClick={onClose} />
-      <aside
-        ref={dialogRef}
-        className="detail-drawer news-detail-drawer"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="news-title"
-        tabIndex={-1}
-      >
-        <header className="deal-detail-header">
-          <div>
-            <span>{data?.event_identifier ?? eventId}</span>
-            <h2 id="news-title">{data?.title ?? "新闻事件详情"}</h2>
-            {data ? (
-              <div className="trial-detail-status">
-                <StatusBadge value={newsEventTypeLabels[data.event_type] ?? data.event_type} />
-                <span>{formatDate(data.published_at ?? "", true)}</span>
-                <span>{data.venue ?? "场景未披露"}</span>
-              </div>
-            ) : null}
-          </div>
-          <button
-            className="icon-button"
-            type="button"
-            aria-label="关闭新闻事件详情"
-            data-modal-autofocus="true"
-            onClick={onClose}
-          >
-            <X size={18} />
-          </button>
-        </header>
-        {loading ? (
-          <Spinner label="正在加载新闻事件详情" />
-        ) : error ? (
-          <ErrorState message={error.message || "新闻事件详情加载失败"} retry={onRetry} />
-        ) : data ? (
-          <div className="drawer-content deal-detail-content news-detail-content">
-            <section>
-              <h3>事件摘要</h3>
-              <p>{data.summary || "摘要未披露"}</p>
-              <dl className="trial-detail-grid">
-                <DetailValue term="语言" value={data.language} />
-                <DetailValue term="发布场景" value={data.venue} />
-                <DetailValue term="补充信息" value={detailsSummary(data.details)} />
-              </dl>
-            </section>
-            <section>
-              <h3>发布方与关联实体</h3>
-              <div className="deal-detail-list">
-                {data.publisher_entity ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const entityId = data.publisher_entity?.id ?? "";
-                      if (onOpenTypedEntity) {
-                        onOpenTypedEntity(data.publisher_entity?.entity_type ?? "organization", entityId);
-                        return;
-                      }
-                      onOpenEntity(entityId);
-                    }}
-                  >
-                    <strong>{data.publisher_entity.name}</strong>
-                    <span>发布方</span>
-                  </button>
-                ) : null}
-                {data.related_entities.map((entity) => (
-                  <button
-                    key={entity.id}
-                    type="button"
-                    onClick={() => {
-                      if (onOpenTypedEntity) {
-                        onOpenTypedEntity(entity.entity_type, entity.id);
-                        return;
-                      }
-                      onOpenEntity(entity.id);
-                    }}
-                  >
-                    <strong>{entity.name}</strong>
-                    <span>{entity.entity_type}</span>
-                  </button>
-                ))}
-                {!data.publisher_entity && !data.related_entities.length ? <span>暂无关联实体信息</span> : null}
-              </div>
-            </section>
-            <section>
-              <h3>原始来源与证据</h3>
-              {data.canonical_url ? (
-                <a href={data.canonical_url} target="_blank" rel="noreferrer">
-                  <ExternalLink size={15} />
-                  打开原始发布页
-                </a>
-              ) : null}
-              <p className="regulatory-source-reference">
-                <FileText size={15} />
-                {data.source_document_id ? `来源文档 ${data.source_document_id}` : "来源文档未关联"}
-              </p>
-              <ProvenanceButton
-                selection={{ resourceType: "news_event", resourceId: data.id, label: data.title }}
-                onOpen={onOpenProvenance}
-              />
-            </section>
-          </div>
-        ) : null}
-      </aside>
-    </div>
-  );
-}
-
-function DetailValue({ term, value }: { term: string; value: string | null | undefined }) {
-  return (
-    <div>
-      <dt>{term}</dt>
-      <dd>{value || "未披露"}</dd>
-    </div>
   );
 }

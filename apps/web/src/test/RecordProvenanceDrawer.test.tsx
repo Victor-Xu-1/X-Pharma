@@ -2,6 +2,7 @@ import { act, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
+import { ApiError } from "../lib/api";
 import { loadRecordProvenance } from "../lib/contracts/provenance";
 import { setLocale } from "../lib/i18n";
 import { renderWithQueryClient } from "./renderWithQueryClient";
@@ -38,6 +39,29 @@ vi.mock("../lib/contracts/provenance", async (importOriginal) => {
 });
 
 describe("RecordProvenanceDrawer", () => {
+  it.each([401, 403])("does not expose cached original evidence after the current read returns %s", async (status) => {
+    const selection = { resourceType: "target_evidence" as const, resourceId: "record-1", label: "Evidence" };
+    const rendered = renderWithQueryClient(<RecordProvenanceDrawer selection={selection} onClose={vi.fn()} />);
+    await screen.findByText("EGFR activity was observed.");
+    vi.mocked(loadRecordProvenance).mockRejectedValueOnce(new ApiError("RAW_SOURCE_DENIAL", status, null));
+    await act(async () => {
+      await rendered.queryClient.refetchQueries({ queryKey: ["provenance", "target_evidence", "record-1"] });
+    });
+    await screen.findByText("RAW_SOURCE_DENIAL");
+    expect(screen.queryByText("EGFR activity was observed.")).not.toBeInTheDocument();
+    expect(screen.queryByText("EGFR study")).not.toBeInTheDocument();
+  });
+
+  it("refuses an evidence response for a different requested resource", async () => {
+    const selection = { resourceType: "target_evidence" as const, resourceId: "record-1", label: "Evidence" };
+    const seed = await vi.mocked(loadRecordProvenance).getMockImplementation()?.(selection);
+    if (!seed) throw new Error("Expected original controlled provenance fixture");
+    vi.mocked(loadRecordProvenance).mockResolvedValueOnce({ ...seed, resource_id: "foreign" });
+    setLocale("en");
+    renderWithQueryClient(<RecordProvenanceDrawer selection={selection} onClose={vi.fn()} />);
+    await screen.findByText("Evidence response does not match the requested record");
+    expect(screen.queryByText("EGFR activity was observed.")).not.toBeInTheDocument();
+  });
   it("shows readable evidence without internal provenance identifiers", async () => {
     renderWithQueryClient(
       <RecordProvenanceDrawer

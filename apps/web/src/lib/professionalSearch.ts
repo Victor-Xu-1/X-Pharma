@@ -1,4 +1,5 @@
 import { emptyDealSearchFilters, validateDealSearchFilters } from "./contracts/deals";
+import { validateNewsSearchFilters } from "./contracts/news";
 import { emptyRegulatorySearchFilters, validateRegulatorySearchFilters } from "./contracts/regulatory";
 import { validatePipelineSignalFilters } from "./pipelineSignals";
 import { validateTrialResultFilters } from "./trialFilters";
@@ -345,10 +346,13 @@ const dateRanges: Record<
   deals: [],
   regulatory: [],
   epidemiology: [{ from: "epidemiologyPeriodStartFrom", to: "epidemiologyPeriodEndTo", label: "统计周期" }],
-  news: [{ from: "newsPublishedFrom", to: "newsPublishedTo", label: "发布日期" }],
+  news: [],
 };
 
 export function validateProfessionalSearch(draft: ProfessionalSearchDraft): string | null {
+  if (draft.domain === "news") {
+    return validateNewsSearchFilters({ publishedFrom: draft.newsPublishedFrom, publishedTo: draft.newsPublishedTo });
+  }
   for (const range of dateRanges[draft.domain]) {
     const from = draft[range.from];
     const to = draft[range.to];
