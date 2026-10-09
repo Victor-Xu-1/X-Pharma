@@ -6,7 +6,8 @@ import type {
   EpidemiologySavedSearchQuery,
   EpidemiologyTrendResult as GeneratedEpidemiologyTrendResult,
 } from "../generated";
-import { EpidemiologyService, MonitoringService } from "../generated";
+import { EpidemiologyService } from "../generated";
+import { type SavedSearchCreationOutcome, saveAndSubscribeSearch } from "./savedSearchCreation";
 import { effectiveSort, type SortCriterion } from "./sorting";
 
 export type EpidemiologyLinkedEntity = EpidemiologyLinkedEntityRead;
@@ -117,29 +118,16 @@ export async function saveEpidemiologySearch({
   filters: EpidemiologyFilters;
   shared: boolean;
   monitor: boolean;
-}): Promise<{ message: string }> {
-  const saved = await contractRequest(
-    MonitoringService.createSavedSearchApiV1MonitoringSavedSearchesPost({
-      requestBody: {
-        name: name.trim(),
-        query_type: "epidemiology_search",
-        query: savedEpidemiologyQuery(filters),
-        visibility: shared ? "tenant" : "private",
-      },
-    }),
+}): Promise<SavedSearchCreationOutcome> {
+  return saveAndSubscribeSearch(
+    {
+      name: name.trim(),
+      query_type: "epidemiology_search",
+      query: savedEpidemiologyQuery(filters),
+      visibility: shared ? "tenant" : "private",
+    },
+    monitor,
   );
-  if (monitor) {
-    try {
-      await contractRequest(
-        MonitoringService.createMonitoringTopicApiV1MonitoringTopicsPost({
-          requestBody: { name: name.trim(), saved_search_id: saved.id },
-        }),
-      );
-    } catch (error) {
-      return { message: `检索已保存，但监控未启用：${error instanceof Error ? error.message : "未知错误"}` };
-    }
-  }
-  return { message: monitor ? "流行病学检索已保存并启用监控" : "流行病学检索已保存" };
 }
 
 export async function searchEpidemiology(
