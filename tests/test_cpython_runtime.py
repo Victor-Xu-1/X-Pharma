@@ -27,6 +27,13 @@ def test_actual_cpython_tls_client_requires_a_hostname() -> None:
     namespace["verify_hostname_requirement"]()
 
 
+def test_container_test_stage_retains_runtime_contract_inputs() -> None:
+    root = Path(__file__).resolve().parents[1]
+    dockerfile = (root / "deploy/api.Dockerfile").read_text()
+    assert "COPY pyproject.toml uv.lock README.md .python-version ./" in dockerfile
+    assert "COPY deploy/security ./deploy/security" in dockerfile
+
+
 def test_native_descriptor_and_declared_minimum_match_the_fixed_release() -> None:
     root = Path(__file__).resolve().parents[1]
     project = tomllib.loads((root / "pyproject.toml").read_text())

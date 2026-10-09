@@ -34,7 +34,7 @@ RUN python /tmp/cpython-probes/verify_cpython_tarfile.py \
     && python /tmp/cpython-probes/verify_cpython_tls.py \
     && python /tmp/cpython-probes/verify_cpython_html.py \
     && rm -rf /tmp/cpython-probes
-COPY pyproject.toml uv.lock README.md ./
+COPY pyproject.toml uv.lock README.md .python-version ./
 COPY deploy/cpython/downloads.json ./deploy/cpython/downloads.json
 COPY LICENSE NOTICE THIRD_PARTY_NOTICES.md ./
 COPY licenses ./licenses
@@ -72,6 +72,7 @@ COPY tests ./tests
 COPY services ./services
 COPY docs ./docs
 COPY deploy/api.Dockerfile ./deploy/api.Dockerfile
+COPY deploy/security ./deploy/security
 COPY deploy/postgres-rdkit.Dockerfile ./deploy/postgres-rdkit.Dockerfile
 COPY deploy/commercial ./deploy/commercial
 COPY deploy/ingestion ./deploy/ingestion
