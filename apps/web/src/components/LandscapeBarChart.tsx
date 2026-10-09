@@ -5,8 +5,11 @@ import { SVGRenderer } from "echarts/renderers";
 import { useEffect, useRef } from "react";
 
 import type { PipelineLandscapeBucketRead } from "../lib/generated";
-import { spacedPhaseLabels as phaseLabels, phaseDisplayOrder as phaseOrder } from "../lib/phasePresentation";
+import { useLocale } from "../lib/i18n";
+import { localizedDevelopmentPhase } from "../lib/i18n/programVocabulary";
+import { phaseDisplayOrder as phaseOrder } from "../lib/phasePresentation";
 import { chartPalette } from "./chartPalette";
+import { landscapeTooltip } from "./pipelineLandscape/tooltip";
 
 use([BarChart, DataZoomComponent, GridComponent, LegendComponent, TooltipComponent, SVGRenderer]);
 
@@ -36,6 +39,7 @@ export function LandscapeBarChart({
   ariaLabel: string;
   onSelect?: (bucket: PipelineLandscapeBucketRead) => void;
 }) {
+  const { locale } = useLocale();
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -64,18 +68,7 @@ export function LandscapeBarChart({
         formatter: (params: unknown) => {
           const item = params as { name?: string; value?: number; dataIndex?: number };
           const bucket = visible[item.dataIndex ?? -1];
-          const phaseDetails = bucket
-            ? Object.entries(bucket.phase_counts ?? {})
-                .filter(([, count]) => count > 0)
-                .map(([phase, count]) => `${phaseLabels[phase] ?? phase}: ${count}`)
-                .join("<br/>")
-            : "";
-          return bucket
-            ? [
-                `${bucket.label}<br/>${bucket.count} 个项目 · ${(bucket.share * 100).toFixed(1)}%`,
-                phaseDetails ? `<br/>${phaseDetails}` : "",
-              ].join("")
-            : `${item.name ?? ""}: ${item.value ?? 0}`;
+          return bucket ? landscapeTooltip(bucket, locale) : "";
         },
       },
       xAxis: {
@@ -98,7 +91,7 @@ export function LandscapeBarChart({
           : undefined,
       series: stacked
         ? phases.map((phase) => ({
-            name: phaseLabels[phase],
+            name: localizedDevelopmentPhase(phase, true),
             type: "bar",
             stack: "phase",
             data: visible.map((bucket) => bucket.phase_counts?.[phase] ?? 0),
@@ -131,7 +124,7 @@ export function LandscapeBarChart({
       window.removeEventListener("resize", resize);
       chart.dispose();
     };
-  }, [buckets, onSelect]);
+  }, [buckets, onSelect, locale]);
 
   return <div className="landscape-bar-chart" ref={containerRef} role="img" aria-label={ariaLabel} />;
 }

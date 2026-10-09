@@ -309,6 +309,10 @@ export function hasPipelineSearchFilter(filters: PipelineSearchFilters): boolean
   );
 }
 
+export type PipelineSaveOutcome =
+  | { kind: "saved"; monitoring: boolean }
+  | { kind: "monitor_failed"; reason: string | null };
+
 export async function savePipelineSearch({
   name,
   filters,
@@ -323,7 +327,7 @@ export async function savePipelineSearch({
   displayMode: "list" | "landscape";
   shared: boolean;
   monitor: boolean;
-}): Promise<{ message: string }> {
+}): Promise<PipelineSaveOutcome> {
   const saved = await contractRequest(
     MonitoringService.createSavedSearchApiV1MonitoringSavedSearchesPost({
       requestBody: {
@@ -342,8 +346,8 @@ export async function savePipelineSearch({
         }),
       );
     } catch (error) {
-      return { message: `检索已保存，但监控未启用：${error instanceof Error ? error.message : "未知错误"}` };
+      return { kind: "monitor_failed", reason: error instanceof Error ? error.message : null };
     }
   }
-  return { message: monitor ? "管线检索已保存并启用监控" : "管线检索已保存" };
+  return { kind: "saved", monitoring: monitor };
 }

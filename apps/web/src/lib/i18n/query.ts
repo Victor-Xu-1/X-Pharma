@@ -1,6 +1,16 @@
 import { createTranslator } from "./translator";
 
 export const queryMessages = {
+  未找到匹配记录: "No matching records",
+  "暂无可查询的{domain}": "No queryable {domain} yet",
+  "可调整或清除筛选条件。查询仅覆盖当前组织有权访问的已发布数据，不代表相关研究不存在。":
+    "Adjust or clear the filters. This search covers only published data your organization may access; it does not imply that related research does not exist.",
+  "当前组织尚无可见的已发布记录，请确认数据接入、发布状态与访问权限。":
+    "Your organization has no visible published records yet. Check ingestion, publication status and access permissions.",
+  清除筛选条件: "Clear filters",
+  查询时间: "Query time",
+  "本次查询时间，不代表来源数据的最后更新时间；来源日期请查看具体记录。":
+    "Time of this query, not the source's last update. See individual records for source dates.",
   起: "From",
   止: "Through",
   是: "Yes",

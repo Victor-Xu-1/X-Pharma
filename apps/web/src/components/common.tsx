@@ -160,6 +160,7 @@ export function ProfessionalQueryState({
   isCancelled,
   error,
   loadingLabel,
+  refreshingLabel,
   fallbackError,
   onCancel,
   onRetry,
@@ -173,6 +174,7 @@ export function ProfessionalQueryState({
   isCancelled: boolean;
   error: unknown;
   loadingLabel: string;
+  refreshingLabel?: string;
   fallbackError: string;
   onCancel: () => void;
   onRetry: () => void;
@@ -194,7 +196,10 @@ export function ProfessionalQueryState({
   return (
     <>
       {isFetching ? (
-        <Spinner label={t("正在刷新{label}", { label: loadingLabel.replace(/^正在/, "") })} cancel={onCancel} />
+        <Spinner
+          label={refreshingLabel ?? t("正在刷新{label}", { label: loadingLabel.replace(/^正在/, "") })}
+          cancel={onCancel}
+        />
       ) : null}
       {!isFetching && isCancelled ? (
         <QueryRefreshCancelledState retry={onRetry} dismiss={onDismissCancellation} />
