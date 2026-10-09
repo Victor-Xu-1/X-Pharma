@@ -28,3 +28,28 @@ def test_browser_runner_keeps_configurable_parallelism_viewports_and_complete_co
     assert '"--workers=$browser_workers"' in runner
     assert "browser_projects=(desktop-1440 desktop-1920 tablet-1024 mobile-390)" in runner
     assert "browser acceptance scenarios are incomplete across projects" in runner
+
+
+def test_browser_ci_reuses_source_verified_rdkit_layers_without_rebuilding_loaded_image() -> None:
+    workflow = cast(dict[str, Any], yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")))
+    jobs = workflow["jobs"]
+    assert set(jobs) == {
+        "backend",
+        "frontend",
+        "postgres-contract",
+        "deployment-contract",
+        "two-entry-smoke",
+        "security-supply-chain",
+    }
+    steps = jobs["two-entry-smoke"]["steps"]
+    name = "Build source-verified PostgreSQL 18 / RDKit image"
+    database_build = next(step for step in jobs["postgres-contract"]["steps"] if step.get("name") == name)
+    cached_build = next(step for step in steps if step.get("name") == name)
+    assert cached_build["uses"] == database_build["uses"]
+    assert cached_build["with"] == database_build["with"]
+    assert cached_build["with"]["load"] is True
+    start = next(step for step in steps if step.get("name") == "Start integration stack")
+    assert steps.index(cached_build) < steps.index(start)
+    assert "docker compose build api" in start["run"]
+    assert "docker compose up -d --no-build --wait --wait-timeout 600 api worker parser otel-collector" in start["run"]
+    assert "--build --wait" not in start["run"]

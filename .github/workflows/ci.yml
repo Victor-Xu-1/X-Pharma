@@ -263,13 +263,25 @@ jobs:
           profile_args=()
           if [[ "$VISUAL_PROFILE_REVIEW" == "true" ]]; then profile_args+=(--review-update); fi
           uv run --locked python -m scripts.browser_visual_profile --browser "$("$chrome_executable" --version)" "${profile_args[@]}"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build source-verified PostgreSQL 18 / RDKit image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: deploy/postgres-rdkit.Dockerfile
+          build-args: DOCKER_LIBRARY_REGISTRY=docker.io/library
+          load: true
+          tags: pharma-postgres-rdkit:18.4-2026.03.3
+          cache-from: type=gha,scope=postgres-rdkit
+          cache-to: type=gha,mode=max,scope=postgres-rdkit
       - name: Start integration stack
         env:
           KNOWLEDGE_SOURCE_ROOT: /tmp/pharma-source
         run: |
           mkdir -p /tmp/pharma-source
           python3 scripts/configure-development.py
-          docker compose up -d --build --wait --wait-timeout 600 api worker parser otel-collector
+          docker compose build api
+          docker compose up -d --no-build --wait --wait-timeout 600 api worker parser otel-collector
           docker compose ps
       - name: Bootstrap ephemeral tenant
         run: |
