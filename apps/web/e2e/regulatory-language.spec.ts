@@ -71,6 +71,11 @@ test("[regulatory-language] English-first controls retain drafts, comparison and
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
   await expect(page.getByRole("table", { name: "监管事件对比", exact: true })).toContainText(detail.event_identifier);
+  await page.goto("/workspace/research?view=regulatory&q=EGFR&decision_from=2026-02-20&decision_to=2026-02-20");
+  await expect(page.locator(".secondary-filter-panel")).toHaveAttribute("open", "");
+  const restoredDates = page.getByRole("group", { name: "决定日期", exact: true });
+  await expect(restoredDates.getByLabel("起", { exact: true })).toHaveValue("2026-02-20");
+  await expect(restoredDates.getByLabel("止", { exact: true })).toHaveValue("2026-02-20");
   expect(
     (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze()).violations,
   ).toEqual([]);
