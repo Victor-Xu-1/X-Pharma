@@ -1,22 +1,13 @@
 import { EmptyState, formatDate, StatusBadge } from "../../components/common";
 import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { PlatformOperationsRead } from "../../lib/generated";
-
-export function queueCount(value: unknown, key: string): number {
-  if (!value || typeof value !== "object") return 0;
-  const count = (value as Record<string, unknown>)[key];
-  return typeof count === "number" ? count : 0;
-}
-
-export function deliveryDeadCount(value: unknown): number {
-  if (!value || typeof value !== "object") return 0;
-  return Object.values(value as Record<string, unknown>).reduce<number>(
-    (total, states) => total + queueCount(states, "dead"),
-    0,
-  );
-}
+import { formattingLocale, useMessages } from "../../lib/i18n";
+import { environmentOperationsMessages } from "../../lib/i18n/environmentOperations";
+import { deliveryDeadCount, queueCount } from "./platformMetrics";
 
 export function PlatformOperationsPanel({ platform }: { platform: PlatformOperationsRead }) {
+  const text = useMessages(environmentOperationsMessages);
+  const number = new Intl.NumberFormat(formattingLocale());
   const ingestion = platform.queues.ingestion;
   const outbox = platform.queues.outbox;
   const governance = platform.queues.governance;
@@ -36,19 +27,21 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
       <section aria-labelledby="platform-services-title">
         <header>
           <div>
-            <h2 id="platform-services-title">服务与责任边界</h2>
-            <p>应用内信号与外部部署探针分开呈现；没有生产遥测时不会显示为已达标。</p>
+            <h2 id="platform-services-title">{text("服务与责任边界")}</h2>
+            <p>{text("应用内信号与外部部署探针分开呈现；没有生产遥测时不会显示为已达标。")}</p>
           </div>
-          <span className="cell-subtitle">快照 {formatDate(platform.generated_at, true)}</span>
+          <span className="cell-subtitle">
+            {text("快照 {time}", { time: formatDate(platform.generated_at, true) })}
+          </span>
         </header>
-        <ScrollableTableRegion className="enterprise-table" ariaLabel="平台服务状态明细">
-          <table aria-label="平台服务状态">
+        <ScrollableTableRegion className="enterprise-table" ariaLabel={text("平台服务状态明细")}>
+          <table aria-label={text("平台服务状态")}>
             <thead>
               <tr>
-                <th>服务</th>
-                <th>负责人</th>
-                <th>状态</th>
-                <th>判定依据</th>
+                <th>{text("服务")}</th>
+                <th>{text("负责人")}</th>
+                <th>{text("状态")}</th>
+                <th>{text("判定依据")}</th>
               </tr>
             </thead>
             <tbody>
@@ -59,23 +52,34 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
                   <td>
                     <StatusBadge value={service.status} />
                     <span className="cell-subtitle">
-                      配置：{service.enabled === null ? "由部署探针确认" : service.enabled ? "已启用" : "未启用"}
+                      {text("配置：{value}", {
+                        value:
+                          service.enabled === null
+                            ? text("由部署探针确认")
+                            : service.enabled
+                              ? text("已启用")
+                              : text("未启用"),
+                      })}
                     </span>
                     <span className="cell-subtitle">
-                      存活：
-                      {service.liveness === "observed"
-                        ? "本次请求已验证"
-                        : service.liveness === "unverified"
-                          ? "尚未探测"
-                          : "不适用"}
+                      {text("存活：{value}", {
+                        value:
+                          service.liveness === "observed"
+                            ? text("本次请求已验证")
+                            : service.liveness === "unverified"
+                              ? text("尚未探测")
+                              : text("不适用"),
+                      })}
                     </span>
                     <span className="cell-subtitle">
-                      队列：
-                      {service.queue_status === "healthy"
-                        ? "未发现积压故障"
-                        : service.queue_status === "degraded"
-                          ? "存在故障"
-                          : "不适用"}
+                      {text("队列：{value}", {
+                        value:
+                          service.queue_status === "healthy"
+                            ? text("未发现积压故障")
+                            : service.queue_status === "degraded"
+                              ? text("存在故障")
+                              : text("不适用"),
+                      })}
                     </span>
                   </td>
                   <td>{service.detail}</td>
@@ -89,46 +93,47 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
       <section aria-labelledby="platform-queues-title">
         <header>
           <div>
-            <h2 id="platform-queues-title">队列、工作流与模型预算</h2>
-            <p>计数直接来自当前租户权威库；模型统计仅汇总远程 API 运行记录。</p>
+            <h2 id="platform-queues-title">{text("队列、工作流与模型预算")}</h2>
+            <p>{text("计数直接来自当前租户权威库；模型统计仅汇总远程 API 运行记录。")}</p>
           </div>
         </header>
         <dl className="platform-queue-metrics">
           {queueMetrics.map(([label, value]) => (
             <div key={label}>
-              <dt>{label}</dt>
-              <dd>{value}</dd>
+              <dt>{text(label)}</dt>
+              <dd>{value === null ? text("未观测") : number.format(value)}</dd>
             </div>
           ))}
         </dl>
         <div className="platform-runtime-grid">
           <dl>
             <div>
-              <dt>工作流引擎</dt>
+              <dt>{text("工作流引擎")}</dt>
               <dd>{platform.workflow.engine.toUpperCase()}</dd>
             </div>
             <div>
-              <dt>任务队列</dt>
+              <dt>{text("任务队列")}</dt>
               <dd className="mono-value">{platform.workflow.task_queue}</dd>
             </div>
             <div>
-              <dt>最大并发活动</dt>
-              <dd>{platform.workflow.max_concurrent_activities}</dd>
+              <dt>{text("最大并发活动")}</dt>
+              <dd>{number.format(platform.workflow.max_concurrent_activities)}</dd>
             </div>
           </dl>
           <dl>
             <div>
-              <dt>24h 模型运行</dt>
-              <dd>{platform.model_budget.run_count}</dd>
+              <dt>{text("24h 模型运行")}</dt>
+              <dd>{number.format(platform.model_budget.run_count)}</dd>
             </div>
             <div>
-              <dt>输入 / 输出 token</dt>
+              <dt>{text("输入 / 输出 token")}</dt>
               <dd>
-                {platform.model_budget.input_tokens} / {platform.model_budget.output_tokens}
+                {number.format(platform.model_budget.input_tokens)} /{" "}
+                {number.format(platform.model_budget.output_tokens)}
               </dd>
             </div>
             <div>
-              <dt>估算成本 / 单文档上限</dt>
+              <dt>{text("估算成本 / 单文档上限")}</dt>
               <dd>
                 {platform.model_budget.estimated_cost} / {platform.model_budget.max_document_cost}
               </dd>
@@ -140,19 +145,19 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
       <section aria-labelledby="platform-slo-title">
         <header>
           <div>
-            <h2 id="platform-slo-title">SLO 与告警契约</h2>
-            <p>目标来自版本化运维契约；达标结论必须由目标环境集中遥测证据给出。</p>
+            <h2 id="platform-slo-title">{text("SLO 与告警契约")}</h2>
+            <p>{text("目标来自版本化运维契约；达标结论必须由目标环境集中遥测证据给出。")}</p>
           </div>
         </header>
-        <ScrollableTableRegion className="enterprise-table" ariaLabel="平台 SLO 明细">
-          <table aria-label="平台 SLO">
+        <ScrollableTableRegion className="enterprise-table" ariaLabel={text("平台 SLO 明细")}>
+          <table aria-label={text("平台 SLO")}>
             <thead>
               <tr>
                 <th>SLO</th>
-                <th>服务</th>
-                <th>指标</th>
-                <th>目标 / 窗口</th>
-                <th>评估</th>
+                <th>{text("服务")}</th>
+                <th>{text("指标")}</th>
+                <th>{text("目标 / 窗口")}</th>
+                <th>{text("评估")}</th>
               </tr>
             </thead>
             <tbody>
@@ -180,24 +185,26 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
       <section aria-labelledby="platform-evidence-title">
         <header>
           <div>
-            <h2 id="platform-evidence-title">迁移、备份恢复与发布证据</h2>
-            <p>只接受预定义位置的机器报告；缺失、损坏或未挂载都会显式阻断发布结论。</p>
+            <h2 id="platform-evidence-title">{text("迁移、备份恢复与发布证据")}</h2>
+            <p>{text("只接受预定义位置的机器报告；缺失、损坏或未挂载都会显式阻断发布结论。")}</p>
           </div>
         </header>
         <div className="platform-migration">
-          <span>数据库迁移</span>
+          <span>{text("数据库迁移")}</span>
           <StatusBadge value={platform.migration.status} />
           <code>{platform.migration.current_revision ?? "unknown"}</code>
-          <span className="cell-subtitle">目标 {platform.migration.expected_revision ?? "unknown"}</span>
+          <span className="cell-subtitle">
+            {text("目标 {revision}", { revision: platform.migration.expected_revision ?? "unknown" })}
+          </span>
         </div>
-        <ScrollableTableRegion className="enterprise-table" ariaLabel="平台发布证据明细">
-          <table aria-label="平台发布证据">
+        <ScrollableTableRegion className="enterprise-table" ariaLabel={text("平台发布证据明细")}>
+          <table aria-label={text("平台发布证据")}>
             <thead>
               <tr>
-                <th>证据类别</th>
-                <th>状态</th>
-                <th>制品</th>
-                <th>摘要</th>
+                <th>{text("证据类别")}</th>
+                <th>{text("状态")}</th>
+                <th>{text("制品")}</th>
+                <th>{text("摘要")}</th>
               </tr>
             </thead>
             <tbody>
@@ -224,20 +231,20 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
       <section aria-labelledby="platform-events-title">
         <header>
           <div>
-            <h2 id="platform-events-title">最近平台审计事件</h2>
-            <p>保留请求关联 ID，便于从人员操作追踪到服务端日志和发布证据。</p>
+            <h2 id="platform-events-title">{text("最近平台审计事件")}</h2>
+            <p>{text("保留请求关联 ID，便于从人员操作追踪到服务端日志和发布证据。")}</p>
           </div>
         </header>
         {platform.recent_events.length ? (
-          <ScrollableTableRegion className="enterprise-table" ariaLabel="最近平台审计事件明细">
-            <table aria-label="最近平台审计事件">
+          <ScrollableTableRegion className="enterprise-table" ariaLabel={text("最近平台审计事件明细")}>
+            <table aria-label={text("最近平台审计事件")}>
               <thead>
                 <tr>
-                  <th>时间</th>
-                  <th>操作</th>
-                  <th>资源</th>
-                  <th>结果</th>
-                  <th>请求 ID</th>
+                  <th>{text("时间")}</th>
+                  <th>{text("操作")}</th>
+                  <th>{text("资源")}</th>
+                  <th>{text("结果")}</th>
+                  <th>{text("请求 ID")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -256,7 +263,7 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
             </table>
           </ScrollableTableRegion>
         ) : (
-          <EmptyState title="暂无审计事件" detail="当前租户还没有可显示的平台操作记录。" />
+          <EmptyState title={text("暂无审计事件")} detail={text("当前租户还没有可显示的平台操作记录。")} />
         )}
       </section>
     </div>
