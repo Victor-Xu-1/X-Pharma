@@ -40,4 +40,5 @@
 .page-heading:has(> .language-switcher) h1 {
   min-width: 0;
   flex: 1 1 min-content;
+  text-wrap: balance;
 }
