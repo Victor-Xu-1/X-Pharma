@@ -1,5 +1,7 @@
 import { createTranslator } from "./translator";
 export const provenanceMessages = {
+  证据响应与请求记录不一致: "Evidence response does not match the requested record",
+  显示上次可读取的原始证据: "Showing the last readable original evidence",
   "部分技术字段因来源许可限制未展示。": "Some technical fields are omitted under the source license.",
   "部分来源信息暂不可访问。": "Some source information is temporarily inaccessible.",
   "部分来源信息暂未展示。": "Some source information is not currently displayed.",

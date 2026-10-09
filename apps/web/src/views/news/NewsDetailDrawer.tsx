@@ -9,7 +9,7 @@ import { newsText as t } from "../../lib/i18n/news";
 import { useModalFocus } from "../../lib/useModalFocus";
 import type { DossierEntityOpener } from "../EntityDossierView";
 import { newsTypeLabel } from "./presentation";
-import { SourceMetadata } from "./SourceMetadata";
+import { SourceMetadata } from "../../components/SourceMetadata";
 export function NewsDetailDrawer({
   data,
   loading,

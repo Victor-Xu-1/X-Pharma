@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { ExternalLink, FileSearch, X } from "lucide-react";
-
+import { ApiError } from "../lib/api";
 import { loadRecordProvenance, type ProvenanceSelection, provenanceKeys } from "../lib/contracts/provenance";
 import { useLocale } from "../lib/i18n";
 import { provenanceText as t } from "../lib/i18n/provenance";
@@ -33,7 +33,17 @@ export function RecordProvenanceDrawer({
     queryFn: ({ signal }) => loadRecordProvenance(selection, signal),
   });
 
-  const error = provenance.error instanceof Error ? provenance.error.message : "";
+  const denied = provenance.error instanceof ApiError && [401, 403].includes(provenance.error.status);
+  const mismatch =
+    !denied &&
+    provenance.data &&
+    (provenance.data.resource_type !== selection.resourceType || provenance.data.resource_id !== selection.resourceId);
+  const data = denied || mismatch ? undefined : provenance.data;
+  const error = mismatch
+    ? t("证据响应与请求记录不一致")
+    : provenance.error instanceof Error
+      ? provenance.error.message
+      : "";
   return (
     <div className="drawer-backdrop" role="presentation">
       <button className="drawer-dismiss" type="button" aria-label={t("关闭证据面板")} onClick={onClose} />
@@ -65,15 +75,20 @@ export function RecordProvenanceDrawer({
         <div className="drawer-content">
           {provenance.isLoading ? <Spinner label={t("正在读取授权证据")} /> : null}
           {error ? <ErrorState message={error} retry={() => void provenance.refetch()} /> : null}
-          {[...new Set((provenance.data?.warnings ?? []).map(publicWarning))].map((warning) => (
+          {error && data ? (
+            <p className="inline-feedback" role="status">
+              {t("显示上次可读取的原始证据")}
+            </p>
+          ) : null}
+          {[...new Set((data?.warnings ?? []).map(publicWarning))].map((warning) => (
             <p className="provenance-warning" key={warning}>
               {warning}
             </p>
           ))}
-          {provenance.data && !provenance.data.items.length ? (
+          {data && !data.items.length ? (
             <EmptyState title={t("暂无可展示证据")} detail={t("该记录可能尚未关联公开来源，或来源暂不可访问")} />
           ) : null}
-          {provenance.data?.items.map((item) => (
+          {data?.items.map((item) => (
             <article className="provenance-record" key={item.id}>
               <div className="provenance-record-head">
                 <div>
