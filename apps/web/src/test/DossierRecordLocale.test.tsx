@@ -4,8 +4,47 @@ import { DossierActivityTable } from "../components/DossierActivityTable";
 import { DossierCoverageDisclosure } from "../components/DossierCoverageDisclosure";
 import { PatentTimeline } from "../components/PatentTimeline";
 import { setLocale } from "../lib/i18n";
-import { News, Patents, Regulatory, Relationships, Structures } from "../views/EntityDossierView";
+import {
+  Deals,
+  News,
+  Patents,
+  Programs,
+  Regulatory,
+  Relationships,
+  Structures,
+  Trials,
+} from "../views/EntityDossierView";
 import { drugDossierFixture as dossier } from "./fixtures/drugDossier";
+
+it("keeps duplicate source phase events as separate rows without colliding React identities", () => {
+  setLocale("en");
+  const warning = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  const event = dossier.programs[0].status_history?.[0];
+  if (!event) throw new Error("Explicit synthetic history fixture missing");
+  render(
+    <Programs
+      data={{ ...dossier, programs: [{ ...dossier.programs[0], status_history: [event, event] }] }}
+      onOpen={vi.fn()}
+      onOpenEntity={vi.fn()}
+    />,
+  );
+  expect(document.querySelectorAll(".program-history ol li").length).toBeGreaterThanOrEqual(2);
+  expect(warning.mock.calls.flat().map(String).join(" ")).not.toContain("same key");
+});
+
+it("localizes the remaining shared program, trial and deal empty states", () => {
+  setLocale("en");
+  render(
+    <>
+      <Programs data={{ ...dossier, programs: [] }} onOpen={vi.fn()} onOpenEntity={vi.fn()} />
+      <Trials data={{ ...dossier, clinical_trials: [] }} onOpen={vi.fn()} onOpenTrial={vi.fn()} />
+      <Deals data={{ ...dossier, deals: [] }} onOpen={vi.fn()} onOpenEntity={vi.fn()} onOpenDeal={vi.fn()} />
+    </>,
+  );
+  expect(screen.getByText("No linked development programs")).toBeInTheDocument();
+  expect(screen.getByText("No linked clinical trials")).toBeInTheDocument();
+  expect(screen.getByText("No linked deals")).toBeInTheDocument();
+});
 
 it("localizes shared missing-record states in standalone panels", () => {
   setLocale("en");

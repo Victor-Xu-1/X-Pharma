@@ -1,10 +1,11 @@
 import { ClipboardList } from "lucide-react";
-
 import { formatDate } from "../../components/common";
 import { EntityIdentityNotice } from "../../components/EntityIdentityNotice";
 import { ResearchTabList, type ResearchTabOption } from "../../components/ResearchTabList";
 import type { DiseaseDossier } from "../../lib/contracts/disease";
 import type { ProvenanceSelection } from "../../lib/contracts/provenance";
+import { useLocale } from "../../lib/i18n";
+import { type diseaseDossierMessages, diseaseDossierText as t } from "../../lib/i18n/diseaseDossier";
 import type { DiseaseDossierSection } from "../../lib/workspaceRouting";
 import { type DossierEntityOpener, Relationships, Trials } from "../EntityDossierView";
 
@@ -31,6 +32,7 @@ export function RegistryConditionDossier({
   onOpenTypedEntity: DossierEntityOpener;
   onOpenTrial: (trialId: string) => void;
 }) {
+  useLocale();
   const section = tabs.some((tab) => tab.key === activeSection) ? activeSection : "overview";
   return (
     <section className="company-profile-page disease-profile-page">
@@ -39,31 +41,31 @@ export function RegistryConditionDossier({
           <ClipboardList size={23} />
         </div>
         <div className="company-profile-identity">
-          <span>登记条件档案</span>
+          <span>{t("登记条件档案")}</span>
           <h2>{data.entity.name}</h2>
-          <p>{String(data.entity.attributes.label_provider ?? "注册来源")}</p>
+          <p>{String(data.entity.attributes.label_provider ?? t("注册来源"))}</p>
         </div>
       </header>
       <EntityIdentityNotice entity={data.entity} />
       <dl className="dossier-metrics">
         <div>
-          <dt>关联登记试验</dt>
+          <dt>{t("关联登记试验")}</dt>
           <dd>{data.summary.clinical_trial_count}</dd>
         </div>
         <div>
-          <dt>资料来源</dt>
+          <dt>{t("资料来源")}</dt>
           <dd>{data.coverage.find((item) => item.domain === "evidence")?.total ?? 0}</dd>
         </div>
         <div>
-          <dt>查询时间</dt>
+          <dt>{t("查询时间")}</dt>
           <dd>{formatDate(data.as_of, true)}</dd>
         </div>
       </dl>
       <ResearchTabList
-        tabs={tabs}
+        tabs={tabs.map((tab) => ({ ...tab, label: t(tab.label as keyof typeof diseaseDossierMessages) }))}
         activeTab={section}
         onChange={onSectionChange}
-        ariaLabel="登记条件档案视图"
+        ariaLabel={t("登记条件档案视图")}
         idPrefix="condition-dossier"
       />
       <div
@@ -73,7 +75,7 @@ export function RegistryConditionDossier({
         aria-labelledby={`condition-dossier-tab-${section}`}
       >
         {section === "overview" ? (
-          <p>以下记录使用此登记条件名称。登记标签不是已核实的标准疾病、确诊结论或药物获批用途。</p>
+          <p>{t("以下记录使用此登记条件名称。登记标签不是已核实的标准疾病、确诊结论或药物获批用途。")}</p>
         ) : null}
         {section === "relationships" ? (
           <Relationships data={data} onOpenEntity={onOpenEntity} onOpenTypedEntity={onOpenTypedEntity} />
