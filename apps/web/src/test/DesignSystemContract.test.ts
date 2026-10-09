@@ -25,6 +25,14 @@ function source(relativePath: string) {
   return url.pathname.endsWith(".css") ? stylesheetSource(url) : readFileSync(fileURLToPath(url), "utf8");
 }
 
+it("balances complete workspace headings without clipping text or changing the language control", () => {
+  const layout = source("../components/LanguageSwitcher.css");
+  const heading = ruleBody(layout, ".page-heading:has(> .language-switcher) h1");
+  expect(heading).toContain("text-wrap: balance;");
+  expect(heading).toContain("min-width: 0;");
+  expect(heading).not.toMatch(/text-overflow:\s*ellipsis|overflow:\s*hidden|font-size:/);
+});
+
 it("keeps target primary filters bounded and readable instead of a fixed three-column minimum", () => {
   const layout = source("../styles.css");
   const filters = ruleBody(layout, ".target-evidence-filters");

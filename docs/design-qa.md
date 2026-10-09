@@ -7,6 +7,19 @@ current-deployment evidence merely because the product version advances.
 
 ## 2026-10-07: research-first frontend craft
 
+### 2026-10-09: balanced shared workspace headings (candidate)
+
+Actual390px Chinese monitoring rendering ends with the single character醒.
+The native text-range regression fails before the sole language/header owner adds
+`text-wrap: balance`, with full copy, original font size and controls retained.
+Three selected heading/sidebar/toolbar contracts and original build limits pass.
+Twenty-four read-only Chrome155 captures cover monitoring, trials, environment
+and enterprise headings in both languages at1440/390/320. Full text, language
+control bounds/center-hit, page reflow and WCAG tags pass; no business operations
+occur. This is representative shared-heading acceptance, not full body, global
+accessibility, award or deployment acceptance. Ordinary CI/merge/deployment gates
+remain required.
+
 ### 2026-10-09: bilingual monitoring and truthful snapshot recovery (candidate)
 
 The monitoring shell, alerts, topics, saved queries, mobile field labels and
