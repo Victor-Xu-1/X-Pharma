@@ -320,6 +320,10 @@
   font-family: inherit;
   font-size: 11px;
   line-height: 1.65;
+}
+.trial-eligibility-criteria > pre {
+  margin: 0;
+  font: inherit;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
