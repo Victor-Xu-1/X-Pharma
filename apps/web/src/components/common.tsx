@@ -260,8 +260,7 @@ const defaultStatusLabels: Record<string, MessageKey> = {
 
 export function statusLabel(value: string): string {
   const normalized = value.toLowerCase();
-  const message = defaultStatusLabels[normalized];
-  return message ? t(message) : value.replaceAll("_", " ");
+  return Object.hasOwn(defaultStatusLabels, normalized) ? t(defaultStatusLabels[normalized]) : value;
 }
 
 export function StatusBadge({ value, label }: { value: string; label?: string }) {

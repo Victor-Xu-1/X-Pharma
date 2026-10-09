@@ -135,7 +135,12 @@ it("formats numbers, timestamps and controlled statuses without changing invalid
   );
   expect(compactNumber(1_500)).toBe("1.5K");
   expect(statusLabel("verified")).toBe("Verified");
-  expect(statusLabel("custom_status")).toBe("custom status");
+  for (const locale of ["en", "zh-CN"] as const) {
+    setLocale(locale);
+    for (const value of ["custom_status", "custom_STATUS", "__proto__", "constructor", "toString"]) {
+      expect(statusLabel(value)).toBe(value);
+    }
+  }
   expect(formatDate("bad-date")).toBe("--");
   expect(formatDate(null)).toBe("--");
 });

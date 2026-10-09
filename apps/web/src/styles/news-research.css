@@ -26,14 +26,3 @@
   font-size: var(--ds-text-sm);
   line-height: 1.65;
 }
-.news-source-metadata pre {
-  max-width: 100%;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: var(--ds-text-xs);
-  line-height: var(--ds-leading-body);
-}
-.news-source-metadata > details > summary {
-  padding: 12px 0;
-  cursor: pointer;
-}
