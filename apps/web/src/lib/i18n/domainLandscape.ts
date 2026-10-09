@@ -17,6 +17,7 @@ export const domainLandscapeMessages = {
   统计展示方式: "Statistics presentation",
   图示: "Chart",
   列表: "Table",
+  笔交易: "deals",
 } as const;
 
 export const domainLandscapeText = createTranslator(domainLandscapeMessages);

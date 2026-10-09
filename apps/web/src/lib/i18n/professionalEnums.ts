@@ -85,6 +85,8 @@ export const professionalEnumMessages = {
   共同推广: "Co-promotion",
   分销: "Distribution",
   有效: "Active",
+  待处理: "Pending",
+  未批准: "Not approved",
   审查中: "Pending",
   授权: "Granted",
   到期: "Expired",
