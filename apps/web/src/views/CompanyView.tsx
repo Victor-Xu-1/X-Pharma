@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import "../styles/company-dossier.css";
 import { Building2 } from "lucide-react";
 import { useState } from "react";
 import { EmptyState, ErrorState, formatDate, Spinner } from "../components/common";
