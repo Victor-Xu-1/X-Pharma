@@ -4,6 +4,23 @@ import { canAccessView, canAccessWorkbench, parseWorkbenchLocation, workspaceUrl
 import { pipelineFiltersFromLocation } from "../workspaces/research/locationModel";
 
 describe("workspace URL contract", () => {
+  it.each([
+    { tokens: ["status_date:desc"], canonicalTokens: [] },
+    { tokens: ["phase:asc"], canonicalTokens: ["phase:asc"] },
+    { tokens: ["phase:asc", "status_date:desc"], canonicalTokens: ["phase:asc", "status_date:desc"] },
+  ])("preserves effective pipeline sort when canonicalizing $tokens", ({ tokens, canonicalTokens }) => {
+    const params = new URLSearchParams({ view: "pipeline", q: "EGFR", analysis_dimension: "targets" });
+    for (const token of tokens) params.append("sort", token);
+    const original = parseWorkbenchLocation("research", `?${params}`);
+    const canonical = new URL(workspaceUrl(original), "https://example.test");
+    expect(canonical.searchParams.getAll("sort")).toEqual(canonicalTokens);
+    const restored = parseWorkbenchLocation("research", canonical.search);
+    expect(restored.pipelineSort).toEqual(original.pipelineSort);
+    expect(pipelineFiltersFromLocation(restored).sort).toEqual(original.pipelineSort);
+    expect(restored.query).toBe("EGFR");
+    expect(restored.pipelineAnalysisDimension).toBe("targets");
+  });
+
   it("round-trips explicit early and unknown stages without aliasing them to preclinical", () => {
     for (const stage of ["early_phase_1", "unknown"]) {
       const location = parseWorkbenchLocation("research", `?view=pipeline&phase=${stage}`);
