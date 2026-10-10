@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import ast
 import os
+import shlex
 import shutil
 import subprocess
 from pathlib import Path
@@ -8,6 +10,39 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).parents[1]
+
+
+@pytest.mark.parametrize("environment", ["development", "production"])
+def test_preflight_executes_the_actual_python_payload_without_docker(environment: str) -> None:
+    command = next(
+        line.strip()
+        for line in (ROOT / "scripts/lib/browser_projection_mode.sh").read_text().splitlines()
+        if "docker compose exec -T api python3" in line
+    )
+    arguments = shlex.split(command)
+    assert arguments[:7] == ["docker", "compose", "exec", "-T", "api", "python3", "-c"]
+    assert len(arguments) == 8, "python -c must receive the actual guard, not an accidental extra argument"
+    payload = arguments[7]
+    ast.parse(payload)
+    fixture = (
+        "import sys, types; "
+        "config = types.ModuleType('pharma_intel.config'); "
+        f"config.get_settings = lambda: types.SimpleNamespace(app_env={environment!r}); "
+        "sys.modules['pharma_intel.config'] = config; "
+        f"exec({payload!r})"
+    )
+    result = subprocess.run(  # noqa: S603 - executes only the checked repository guard with an isolated settings fixture.
+        [os.sys.executable, "-c", fixture],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    if environment == "production":
+        assert result.returncode != 0
+        assert "cannot run against production" in result.stderr
+    else:
+        assert result.returncode == 0, result.stderr
 
 
 def test_api_acceptance_mode_has_a_strict_false_default() -> None:

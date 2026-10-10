@@ -255,7 +255,7 @@ it("updates an open run graph from the current refreshed run instead of the orig
   });
   await act(() => queryClient.refetchQueries({ queryKey: ["data-factory"], exact: true }));
   expect(
-    screen.getByText("Overall progress 100% · 3 objects checked · no new versions in this run"),
+    await screen.findByText("Overall progress 100% · 3 objects checked · no new versions in this run"),
   ).toBeInTheDocument();
 });
 
