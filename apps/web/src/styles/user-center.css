@@ -145,9 +145,6 @@
   font-size: var(--ds-text-xs);
   line-height: 1.45;
 }
-.user-center-form-status.error {
-  color: var(--ds-danger);
-}
 .user-center-form .primary-button,
 .user-center-form .secondary-button {
   justify-self: start;
