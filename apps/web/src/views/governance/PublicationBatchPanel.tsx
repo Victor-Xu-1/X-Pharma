@@ -14,6 +14,9 @@ import {
   requestProjectionMaintenance,
   type StagedFact,
 } from "../../lib/contracts/governance";
+import { reviewFactTitle } from "../../lib/governancePresentation";
+import { useLocale } from "../../lib/i18n";
+import { governancePublicationMessages, governancePublicationText as t } from "../../lib/i18n/governancePublication";
 import { ProjectionMaintenancePanel } from "./ProjectionMaintenancePanel";
 
 export function PublicationBatchPanel({
@@ -23,6 +26,7 @@ export function PublicationBatchPanel({
   facts: StagedFact[];
   onQueuesChanged: () => void;
 }) {
+  useLocale();
   const [selectedFactIds, setSelectedFactIds] = useState<string[]>([]);
   const [activeBatchId, setActiveBatchId] = useState("");
   const [batchReason, setBatchReason] = useState("");
@@ -73,7 +77,9 @@ export function PublicationBatchPanel({
     },
   });
   const error =
-    localError ||
+    (Object.hasOwn(governancePublicationMessages, localError)
+      ? t(localError as keyof typeof governancePublicationMessages)
+      : localError) ||
     (previewMutation.error instanceof Error ? previewMutation.error.message : "") ||
     (commitMutation.error instanceof Error ? commitMutation.error.message : "");
   const maintenanceError = maintenanceMutation.error instanceof Error ? maintenanceMutation.error.message : "";
@@ -125,16 +131,16 @@ export function PublicationBatchPanel({
       <summary>
         <span>
           <ClipboardCheck size={16} />
-          批次发布与撤回
+          {t("批次发布与撤回")}
         </span>
-        <small>{batches.data?.length ?? 0} 个治理批次</small>
+        <small>{batches.data ? t("{count} 个治理批次", { count: batches.data.length }) : ""}</small>
       </summary>
       <div className="publication-control-body">
         <section className="publication-selection" aria-labelledby="publication-selection-title">
           <header>
             <div>
-              <h3 id="publication-selection-title">待审事实选择</h3>
-              <p>先生成固定预览，再按同一 preview hash 原子提交。</p>
+              <h3 id="publication-selection-title">{t("待审事实选择")}</h3>
+              <p>{t("先生成固定预览，再按同一 preview hash 原子提交。")}</p>
             </div>
             <button
               type="button"
@@ -144,7 +150,7 @@ export function PublicationBatchPanel({
                 setSelectedFactIds(selectedFactIds.length === facts.length ? [] : facts.map((fact) => fact.id))
               }
             >
-              {selectedFactIds.length === facts.length && facts.length ? "取消全选" : "全选"}
+              {t(selectedFactIds.length === facts.length && facts.length ? "取消全选" : "全选")}
             </button>
           </header>
           {facts.length ? (
@@ -161,7 +167,7 @@ export function PublicationBatchPanel({
                     }
                   />
                   <span>
-                    <strong>{fact.fact_kind}</strong>
+                    <strong>{reviewFactTitle(fact)}</strong>
                     <small>{fact.source_quote}</small>
                   </span>
                   <StatusBadge value={fact.status} />
@@ -169,11 +175,12 @@ export function PublicationBatchPanel({
               ))}
             </div>
           ) : (
-            <p className="field-help">当前没有可加入发布批次的待审事实。</p>
+            <p className="field-help">{t("当前没有可加入发布批次的待审事实")}</p>
           )}
           <label className="publication-reason">
-            <span>批次审核依据</span>
+            <span>{t("批次审核依据")}</span>
             <textarea
+              aria-label={t("批次审核依据")}
               rows={3}
               maxLength={4000}
               value={batchReason}
@@ -182,17 +189,23 @@ export function PublicationBatchPanel({
           </label>
           <button className="primary-button" type="button" disabled={busy} onClick={previewPublish}>
             <ClipboardCheck size={16} />
-            生成发布预览 ({selectedFactIds.length})
+            {t("生成发布预览 ({count})", { count: selectedFactIds.length })}
           </button>
         </section>
         <section className="publication-history" aria-labelledby="publication-history-title">
           <header>
-            <h3 id="publication-history-title">批次历史</h3>
-            <button className="icon-button" type="button" title="刷新批次历史" onClick={() => void batches.refetch()}>
+            <h3 id="publication-history-title">{t("批次历史")}</h3>
+            <button
+              className="icon-button"
+              type="button"
+              title={t("刷新批次历史")}
+              aria-label={t("刷新批次历史")}
+              onClick={() => void batches.refetch()}
+            >
               <RotateCcw size={15} />
             </button>
           </header>
-          {batches.isPending ? <Spinner label="正在读取发布批次" /> : null}
+          {batches.isPending ? <Spinner label={t("正在读取发布批次")} /> : null}
           {batches.error instanceof Error ? (
             <ErrorState message={batches.error.message} retry={() => void batches.refetch()} />
           ) : null}
@@ -205,19 +218,19 @@ export function PublicationBatchPanel({
                 onClick={() => setActiveBatchId(batch.id)}
               >
                 <span>
-                  <strong>{batch.operation === "publish" ? "发布" : "撤回"}</strong>
+                  <strong>{t(batch.operation === "publish" ? "发布" : "撤回")}</strong>
                   <StatusBadge value={batch.status} />
                 </span>
                 <small>
-                  {batch.expected_count} 项 · {formatDate(batch.created_at, true)}
+                  {t("{count} 项", { count: batch.expected_count })} · {formatDate(batch.created_at, true)}
                 </small>
               </button>
             ))}
           </div>
         </section>
         <section className="publication-preview" aria-labelledby="publication-preview-title">
-          <h3 id="publication-preview-title">固定预览</h3>
-          {activeBatch.isFetching ? <Spinner label="正在读取批次明细" /> : null}
+          <h3 id="publication-preview-title">{t("固定预览")}</h3>
+          {activeBatch.isFetching ? <Spinner label={t("正在读取批次明细")} /> : null}
           {activeBatch.error instanceof Error ? (
             <ErrorState message={activeBatch.error.message} retry={() => void activeBatch.refetch()} />
           ) : null}
@@ -225,17 +238,17 @@ export function PublicationBatchPanel({
             <>
               <dl>
                 <div>
-                  <dt>操作</dt>
-                  <dd>{selectedBatch.operation === "publish" ? "批次发布" : "批次撤回"}</dd>
+                  <dt>{t("操作")}</dt>
+                  <dd>{t(selectedBatch.operation === "publish" ? "批次发布" : "批次撤回")}</dd>
                 </div>
                 <div>
-                  <dt>状态</dt>
+                  <dt>{t("状态")}</dt>
                   <dd>
                     <StatusBadge value={selectedBatch.status} />
                   </dd>
                 </div>
                 <div>
-                  <dt>阻塞项</dt>
+                  <dt>{t("阻塞项")}</dt>
                   <dd>{selectedBatch.blocked_count}</dd>
                 </div>
               </dl>
@@ -263,7 +276,7 @@ export function PublicationBatchPanel({
                   }
                 >
                   <Check size={16} />
-                  原子提交{selectedBatch.operation === "publish" ? "发布" : "撤回"}
+                  {t(selectedBatch.operation === "publish" ? "原子提交发布" : "原子提交撤回")}
                 </button>
               ) : null}
               {selectedBatch.status === "committed" && selectedBatch.operation === "publish" ? (
@@ -274,12 +287,12 @@ export function PublicationBatchPanel({
                   onClick={() => previewWithdrawal(selectedBatch)}
                 >
                   <RotateCcw size={16} />
-                  基于此批次生成撤回预览
+                  {t("基于此批次生成撤回预览")}
                 </button>
               ) : null}
             </>
           ) : (
-            <p className="field-help">选择历史批次或生成新预览以查看逐项结果。</p>
+            <p className="field-help">{t("选择历史批次或生成新预览以查看逐项结果")}</p>
           )}
           {error ? (
             <p className="form-error" role="alert">

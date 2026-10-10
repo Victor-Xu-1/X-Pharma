@@ -1,0 +1,36 @@
+import { createTranslator } from "./translator";
+export const governancePublicationMessages = {
+  请先选择至少一项待审事实: "Select at least one fact for review",
+  批次发布必须填写审核依据: "Review evidence is required to preview a publication batch",
+  批次撤回必须填写具体依据: "A specific reason is required to preview a withdrawal",
+  请等待批次明细加载完成: "Wait for the batch details to finish loading",
+  批次发布与撤回: "Batch publication and withdrawal",
+  "{count} 个治理批次": "{count} review batches",
+  待审事实选择: "Select facts for review",
+  "先生成固定预览，再按同一 preview hash 原子提交。":
+    "Create an immutable preview, then commit atomically using the same preview hash.",
+  取消全选: "Clear selection",
+  全选: "Select all",
+  当前没有可加入发布批次的待审事实: "No pending facts are available for a publication batch",
+  批次审核依据: "Batch review evidence",
+  "生成发布预览 ({count})": "Preview publication ({count})",
+  批次历史: "Batch history",
+  刷新批次历史: "Refresh batch history",
+  正在读取发布批次: "Loading publication batches",
+  发布: "Publish",
+  撤回: "Withdraw",
+  "{count} 项": "{count} items",
+  固定预览: "Immutable preview",
+  正在读取批次明细: "Loading batch details",
+  操作: "Operation",
+  批次发布: "Batch publication",
+  批次撤回: "Batch withdrawal",
+  状态: "Status",
+  阻塞项: "Blocked items",
+  原子提交发布: "Commit publication atomically",
+  原子提交撤回: "Commit withdrawal atomically",
+  基于此批次生成撤回预览: "Preview withdrawal of this batch",
+  选择历史批次或生成新预览以查看逐项结果:
+    "Select a historical batch or create a preview to inspect its individual outcomes",
+} as const;
+export const governancePublicationText = createTranslator(governancePublicationMessages);

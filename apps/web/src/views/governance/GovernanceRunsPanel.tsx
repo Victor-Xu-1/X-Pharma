@@ -1,6 +1,8 @@
 import { Activity, ChevronLeft, ChevronRight } from "lucide-react";
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "../../components/common";
 import type { GovernanceRunStatus, loadGovernanceRuns } from "../../lib/contracts/governance";
+import { useLocale } from "../../lib/i18n";
+import { governanceRunText as t } from "../../lib/i18n/governanceRuns";
 import { GovernanceRunDetail } from "./GovernanceRunDetail";
 
 export function GovernanceRunsPanel({
@@ -26,49 +28,61 @@ export function GovernanceRunsPanel({
   onSelect: (value: string) => void;
   onRetry: () => void;
 }) {
-  if (loading) return <Spinner label="正在读取 AI 治理运行" />;
+  useLocale();
+  if (loading) return <Spinner label={t("正在读取AI治理运行")} />;
   if (error && !page) return <ErrorState message={error} retry={onRetry} />;
   const items = page?.items ?? [];
   const selected = items.find((item) => item.id === selectedRunId) ?? items[0] ?? null;
   const limit = page?.limit ?? 30;
   return (
     <>
+      {error ? (
+        <>
+          <p role="status" className="field-help">
+            {t("刷新失败；当前显示上次读取的运行记录。")}
+          </p>
+          <ErrorState message={error} retry={onRetry} />
+        </>
+      ) : null}
       <div className="governance-run-toolbar">
         <label>
-          <span>运行状态</span>
-          <select value={status} onChange={(event) => onStatus(event.target.value as GovernanceRunStatus | "all")}>
-            <option value="all">全部</option>
-            <option value="pending">等待中</option>
-            <option value="running">运行中</option>
-            <option value="succeeded">成功</option>
-            <option value="partial">部分成功</option>
-            <option value="failed">失败</option>
-            <option value="canceled">已取消</option>
+          <span>{t("运行状态")}</span>
+          <select
+            aria-label={t("运行状态")}
+            value={status}
+            onChange={(event) => onStatus(event.target.value as GovernanceRunStatus | "all")}
+          >
+            <option value="all">{t("全部")}</option>
+            <option value="pending">{t("等待中")}</option>
+            <option value="running">{t("运行中")}</option>
+            <option value="succeeded">{t("成功")}</option>
+            <option value="partial">{t("部分成功")}</option>
+            <option value="failed">{t("失败")}</option>
+            <option value="canceled">{t("已取消")}</option>
           </select>
         </label>
-        <span>
-          共 <strong>{page?.total ?? 0}</strong> 次运行
-        </span>
+        <span>{t("共 {count} 次运行", { count: page?.total ?? 0 })}</span>
         {page ? (
-          <code title={page.current_policy_sha256}>当前策略 {page.current_policy_sha256.slice(0, 12)}</code>
+          <code title={page.current_policy_sha256}>
+            {t("当前策略 {hash}", { hash: page.current_policy_sha256.slice(0, 12) })}
+          </code>
         ) : null}
       </div>
       {!items.length ? (
-        <EmptyState title="当前筛选下没有 AI 治理运行" />
+        <EmptyState title={t("当前筛选下没有AI治理运行")} />
       ) : (
         <section className="governance-layout">
           <aside className="review-list">
             <div className="review-list-head">
               <Activity size={19} />
-              <span>
-                <strong>{items.length}</strong> 条运行记录
-              </span>
+              <span>{t("{count} 条运行记录", { count: items.length })}</span>
             </div>
             {items.map((run) => (
               <button
                 key={run.id}
                 type="button"
                 className={selected?.id === run.id ? "active" : ""}
+                aria-pressed={selected?.id === run.id}
                 onClick={() => onSelect(run.id)}
               >
                 <div>
@@ -85,21 +99,25 @@ export function GovernanceRunsPanel({
           <GovernanceRunDetail run={selected} />
         </section>
       )}
-      <nav className="governance-run-pagination" aria-label="AI 治理运行分页">
+      <nav className="governance-run-pagination" aria-label={t("AI治理运行分页")}>
         <button
           type="button"
-          title="上一页"
-          aria-label="AI 治理运行上一页"
+          title={t("上一页")}
+          aria-label={t("AI治理运行上一页")}
           disabled={offset === 0}
           onClick={() => onOffset(Math.max(0, offset - limit))}
         >
           <ChevronLeft size={17} />
         </button>
-        <span>{page?.total ? `${offset + 1}-${Math.min(offset + limit, page.total)} / ${page.total}` : "0 / 0"}</span>
+        <span>
+          {page?.total && items.length
+            ? `${page.offset + 1}-${Math.min(page.offset + items.length, page.total)} / ${page.total}`
+            : `0 / ${page?.total ?? 0}`}
+        </span>
         <button
           type="button"
-          title="下一页"
-          aria-label="AI 治理运行下一页"
+          title={t("下一页")}
+          aria-label={t("AI治理运行下一页")}
           disabled={!page || offset + limit >= page.total}
           onClick={() => onOffset(offset + limit)}
         >

@@ -191,8 +191,7 @@
 .governance-run-toolbar code,
 .governance-fingerprints dt,
 .governance-fingerprints code,
-.review-detail section h3,
-.payload-comparison h4 {
+.review-detail section h3 {
   color: var(--ds-ink-muted);
 }
 
