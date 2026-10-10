@@ -4,6 +4,7 @@ import { ScrollableTableRegion } from "../../../components/ScrollableTableRegion
 import type { DataExportJob } from "../../../lib/contracts/commercial";
 import { useLocale } from "../../../lib/i18n";
 import { commercialLifecycleText as t } from "../../../lib/i18n/commercialLifecycle";
+import { ExportRecordDetails } from "../ExportRecordDetails";
 import type { LifecycleAction } from "./types";
 export function LifecyclePurgeRecords({
   candidates,
@@ -40,7 +41,10 @@ export function LifecyclePurgeRecords({
               <tbody>
                 {candidates.map((job) => (
                   <tr key={job.id}>
-                    <td className="mono-cell">{job.id}</td>
+                    <td className="mono-cell">
+                      {job.id}
+                      <ExportRecordDetails item={job} />
+                    </td>
                     <td>{job.dataset}</td>
                     <td>{humanBytes(job.artifact_bytes)}</td>
                     <td>{job.expires_at ? formatDate(job.expires_at, true) : "--"}</td>

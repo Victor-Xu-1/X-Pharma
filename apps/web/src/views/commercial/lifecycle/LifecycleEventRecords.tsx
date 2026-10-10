@@ -3,6 +3,7 @@ import { ScrollableTableRegion } from "../../../components/ScrollableTableRegion
 import type { DataLifecycleEvent } from "../../../lib/contracts/commercial";
 import { useLocale } from "../../../lib/i18n";
 import { commercialLifecycleText as t } from "../../../lib/i18n/commercialLifecycle";
+import { OriginalRecordValue, RecordDetails, RecordFacts, RecordList } from "../RecordDetails";
 export function LifecycleEventRecords({ events }: { events: DataLifecycleEvent[] }) {
   useLocale();
   return (
@@ -32,7 +33,23 @@ export function LifecycleEventRecords({ events }: { events: DataLifecycleEvent[]
                 {events.map((item) => (
                   <tr key={item.id}>
                     <td>{formatDate(item.created_at, true)}</td>
-                    <td className="mono-cell">{item.target_id}</td>
+                    <td className="mono-cell">
+                      {item.target_id}
+                      <RecordDetails name={item.id}>
+                        <RecordFacts
+                          fields={[
+                            { label: "事件标识", value: item.id },
+                            { label: "目标类型", value: item.target_type },
+                            { label: "数据类别", value: item.data_class },
+                            { label: "操作人", value: item.actor_user_id },
+                            { label: "操作键", value: item.idempotency_key },
+                            { label: "策略标识", value: item.policy_id },
+                            { label: "法律保全标识", value: <RecordList values={item.legal_hold_ids} /> },
+                            { label: "原始事件详情", value: <OriginalRecordValue value={item.details} /> },
+                          ]}
+                        />
+                      </RecordDetails>
+                    </td>
                     <td>{item.action}</td>
                     <td>
                       <StatusBadge value={item.outcome} />

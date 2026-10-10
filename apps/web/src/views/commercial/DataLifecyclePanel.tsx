@@ -16,7 +16,7 @@ import { LifecycleHoldRecords } from "./lifecycle/LifecycleHoldRecords";
 import { LifecyclePurgeRecords } from "./lifecycle/LifecyclePurgeRecords";
 import { LifecycleSourceRecords } from "./lifecycle/LifecycleSourceRecords";
 import { RetentionPolicyForm, type RetentionPolicyInput } from "./lifecycle/RetentionPolicyForm";
-import type { LifecycleAction } from "./lifecycle/types";
+import type { LifecycleAction, LifecycleConfirmation } from "./lifecycle/types";
 import type { LifecycleDraftState } from "./lifecycle/useLifecycleDrafts";
 
 type Props = {
@@ -67,15 +67,17 @@ export function DataLifecyclePanel(props: Props) {
         ? pendingAction.job
         : pendingAction?.asset;
   const current = Boolean(latest && captured && JSON.stringify(latest) === JSON.stringify(captured));
-  async function confirm(reason: string, key: string) {
-    if (!pendingAction || disabled || !current) return false;
-    return pendingAction.kind === "release"
-      ? props.onReleaseHold(pendingAction.hold, reason)
-      : pendingAction.kind === "purge"
-        ? props.onPurge(pendingAction.job, reason, key)
-        : pendingAction.kind === "source-purge"
-          ? props.onPurgeSource(pendingAction.asset, reason, key)
-          : props.onReauthorizeSource(pendingAction.asset, reason, key);
+  async function confirm(intent: LifecycleConfirmation) {
+    if (!pendingAction || disabled || !current || pendingAction.kind !== intent.kind) return false;
+    if (pendingAction.kind === "release" && intent.kind === "release")
+      return props.onReleaseHold(pendingAction.hold, intent.reason);
+    if (intent.kind === "release") return false;
+    if (pendingAction.kind === "purge") return props.onPurge(pendingAction.job, intent.reason, intent.key);
+    if (pendingAction.kind === "source-purge")
+      return props.onPurgeSource(pendingAction.asset, intent.reason, intent.key);
+    if (pendingAction.kind === "source-reauthorize")
+      return props.onReauthorizeSource(pendingAction.asset, intent.reason, intent.key);
+    return false;
   }
   return (
     <section className="lifecycle-workbench" aria-label={t("数据生命周期治理")}>

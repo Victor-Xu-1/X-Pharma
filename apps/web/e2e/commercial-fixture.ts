@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import type { CommercialClientRead, CommercialOverviewRead } from "../src/lib/generated";
+import type { CommercialClientRead, CommercialOverviewRead, WorkspaceExportPolicyRead } from "../src/lib/generated";
 import { installGovernanceFixture } from "./governance-fixture";
 export const controlledCommercialClient: CommercialClientRead = {
   id: "115a81e1-5555-4444-8888-111111111111",
@@ -39,13 +39,15 @@ export async function installCommercialFixture(page: Page) {
     holdPolicy: false,
     policyWrites: [] as unknown[],
     releasePolicy: undefined as (() => void) | undefined,
+    policy: null as WorkspaceExportPolicyRead | null,
+    policyReads: 0,
   };
-  let policy: unknown = null;
-  await page.route("**/api/v1/workspace/export-policy", (route) =>
-    policy === null
+  await page.route("**/api/v1/workspace/export-policy", (route) => {
+    state.policyReads++;
+    return state.policy === null
       ? route.fulfill({ status: 404, json: { detail: "CONTROLLED_POLICY_NOT_CONFIGURED" } })
-      : route.fulfill({ json: policy }),
-  );
+      : route.fulfill({ json: state.policy });
+  });
   await page.route("**/api/v1/admin/workspace-export-policy", async (route) => {
     const payload = route.request().postDataJSON();
     state.policyWrites.push(payload);
@@ -53,7 +55,7 @@ export async function installCommercialFixture(page: Page) {
       await new Promise<void>((resolve) => {
         state.releasePolicy = resolve;
       });
-    policy = {
+    state.policy = {
       ...payload,
       id: "controlled-workspace-policy",
       policy_sha256: "f".repeat(64),
@@ -61,7 +63,7 @@ export async function installCommercialFixture(page: Page) {
       created_at: overview.as_of,
       updated_at: overview.as_of,
     };
-    return route.fulfill({ json: policy });
+    return route.fulfill({ json: state.policy });
   });
   await page.route("**/api/v1/commercial/**", async (route) => {
     const request = route.request(),

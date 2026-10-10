@@ -133,6 +133,18 @@ it("hides an already opened client intent after its current authoritative read d
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(screen.queryAllByText(client.display_name)).toHaveLength(0);
 });
+it("also removes an already opened read-only record dialog after its current read denies access", async () => {
+  const { queryClient } = renderWithQueryClient(<CommercialView />);
+  fireEvent.click(await screen.findByRole("tab", { name: "Agent 客户端" }));
+  fireEvent.click(await screen.findByRole("button", { name: "查看 " + client.display_name + " 的记录详情" }));
+  expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  vi.mocked(loadCommercialClients).mockRejectedValue(new ApiError("RAW_COMMERCIAL_DENIAL", 403, null));
+  await act(() => queryClient.refetchQueries({ queryKey: commercialKeys.clients, exact: true }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("RAW_COMMERCIAL_DENIAL");
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.queryAllByText(client.display_name)).toHaveLength(0);
+  expect(executeCommercialOperation).not.toHaveBeenCalled();
+});
 it("does not replace an optional unreported organization count with an observed zero", async () => {
   const { active_client_count: _omitted, ...partial } = overview;
   vi.mocked(loadCommercialOverview).mockResolvedValue(partial);
@@ -178,4 +190,13 @@ it("retains unsent policy drafts across commercial-panel navigation", async () =
   fireEvent.click(screen.getByRole("tab", { name: "合同与额度" }));
   fireEvent.click(screen.getByRole("tab", { name: "导出策略" }));
   expect(await screen.findByRole("textbox", { name: "授权标注" })).toHaveValue("Original attribution <source>");
+});
+it("refreshes the active workspace export policy without replaying an unsent write", async () => {
+  renderWithQueryClient(<CommercialView />);
+  fireEvent.click(await screen.findByRole("tab", { name: "导出策略" }));
+  await screen.findByRole("textbox", { name: "策略版本" });
+  await waitFor(() => expect(getWorkspaceExportPolicy).toHaveBeenCalledOnce());
+  fireEvent.click(screen.getByRole("button", { name: "刷新" }));
+  await waitFor(() => expect(getWorkspaceExportPolicy).toHaveBeenCalledTimes(2));
+  expect(saveWorkspaceExportPolicy).not.toHaveBeenCalled();
 });

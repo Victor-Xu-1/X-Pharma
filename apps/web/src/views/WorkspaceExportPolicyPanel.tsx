@@ -46,6 +46,14 @@ export function WorkspaceExportPolicyPanel({
           {t("导出策略 {version} 已生效", { version: model.savedVersion })}
         </p>
       ) : null}
+      {model.conflict ? (
+        <div className="policy-conflict" role="status">
+          <p>{t("策略已在服务端更新。未提交内容已保留，请核对最新策略后再保存。")}</p>
+          <button className="text-button" type="button" disabled={busy || query.isFetching} onClick={model.useLatest}>
+            {t("使用最新策略")}
+          </button>
+        </div>
+      ) : null}
       <form className="policy-form" onSubmit={submit}>
         <fieldset className="policy-edit-boundary" disabled={busy}>
           <header>
@@ -64,28 +72,6 @@ export function WorkspaceExportPolicyPanel({
               {t("启用外部工作台人工导出")}
             </label>
           </header>
-          <fieldset className="policy-options">
-            <legend>{t("允许格式")}</legend>
-            {(["csv", "json", "xlsx"] as const).map((format) => (
-              <label className="check-control" key={format}>
-                <input
-                  type="checkbox"
-                  checked={draft.allowed_formats.includes(format)}
-                  disabled={draft.allowed_formats.length === 1 && draft.allowed_formats.includes(format)}
-                  onChange={(event) =>
-                    model.update({
-                      ...draft,
-                      allowed_formats: event.target.checked
-                        ? [...draft.allowed_formats, format]
-                        : draft.allowed_formats.filter((item) => item !== format),
-                    })
-                  }
-                />
-                {format.toUpperCase()}
-              </label>
-            ))}
-          </fieldset>
-          <WorkspacePolicyFields draft={draft} onChange={model.update} />
           <div className="policy-config-row">
             <label>
               {t("策略版本")}
@@ -115,8 +101,35 @@ export function WorkspaceExportPolicyPanel({
               />
             </label>
           </div>
+          <fieldset className="policy-options">
+            <legend>{t("允许格式")}</legend>
+            {(["csv", "json", "xlsx"] as const).map((format) => (
+              <label className="check-control" key={format}>
+                <input
+                  type="checkbox"
+                  checked={draft.allowed_formats.includes(format)}
+                  disabled={draft.allowed_formats.length === 1 && draft.allowed_formats.includes(format)}
+                  onChange={(event) =>
+                    model.update({
+                      ...draft,
+                      allowed_formats: event.target.checked
+                        ? [...draft.allowed_formats, format]
+                        : draft.allowed_formats.filter((item) => item !== format),
+                    })
+                  }
+                />
+                {format.toUpperCase()}
+              </label>
+            ))}
+          </fieldset>
+          <WorkspacePolicyFields
+            draft={draft}
+            onChange={model.update}
+            expandedGroups={draftState.expandedGroups}
+            onExpandedChange={draftState.setExpandedGroups}
+          />
         </fieldset>
-        <button className="primary-button" type="submit" disabled={busy || query.isFetching}>
+        <button className="primary-button" type="submit" disabled={busy || query.isFetching || model.conflict}>
           {busy ? t("保存中") : t("保存导出策略")}
         </button>
       </form>

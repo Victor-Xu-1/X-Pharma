@@ -4,6 +4,7 @@ import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { DataExportJob } from "../../lib/contracts/commercial";
 import { useLocale } from "../../lib/i18n";
 import { commercialWorkspaceText as t } from "../../lib/i18n/commercialWorkspace";
+import { ExportRecordDetails } from "./ExportRecordDetails";
 
 export function ExportTable({
   items,
@@ -38,6 +39,7 @@ export function ExportTable({
               <td>
                 <strong>{item.dataset}</strong>
                 <span className="cell-subtitle mono-cell">{item.id}</span>
+                <ExportRecordDetails item={item} />
               </td>
               <td>{item.format.toUpperCase()}</td>
               <td>

@@ -4,6 +4,7 @@ import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { CommercialRiskEvent } from "../../lib/contracts/commercial";
 import { useLocale } from "../../lib/i18n";
 import { commercialWorkspaceText as t } from "../../lib/i18n/commercialWorkspace";
+import { OriginalRecordValue, RecordDetails, RecordFacts } from "./RecordDetails";
 import type { RiskAction } from "./types";
 
 export function RiskTable({
@@ -39,6 +40,22 @@ export function RiskTable({
               <td>
                 <strong>{item.client_name}</strong>
                 <span className="cell-subtitle mono-cell">{item.subject_id}</span>
+                <RecordDetails name={item.id}>
+                  <RecordFacts
+                    fields={[
+                      { label: "事件标识", value: item.id },
+                      { label: "客户端标识", value: item.client_id },
+                      { label: "主体类型", value: item.actor_type },
+                      { label: "请求标识", value: item.request_id },
+                      { label: "查询摘要", value: item.query_sha256 },
+                      { label: "已有唯一记录", value: item.existing_unique_records },
+                      { label: "复核时间", value: item.reviewed_at ? formatDate(item.reviewed_at, true) : null },
+                      { label: "复核人", value: item.reviewed_by },
+                      { label: "复核说明", value: item.case_notes },
+                      { label: "原始事件详情", value: <OriginalRecordValue value={item.details} /> },
+                    ]}
+                  />
+                </RecordDetails>
               </td>
               <td>
                 <span className="risk-reason">{item.reason_code}</span>

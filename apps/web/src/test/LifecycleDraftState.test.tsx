@@ -181,6 +181,50 @@ it("reuses the captured lifecycle idempotency key on an explicit retry after fai
   await waitFor(() => expect(executeCommercialOperation).toHaveBeenCalledTimes(2));
   expect(vi.mocked(executeCommercialOperation).mock.calls[1]?.[0]).toEqual(captured);
 });
+it("does not promise an operation key for a legal-hold release endpoint that has none", async () => {
+  vi.mocked(loadLifecycleWorkspace).mockResolvedValue({
+    ...workspace,
+    legalHolds: [
+      {
+        id: "controlled-hold",
+        matter_reference: "Original matter <source>",
+        scope_type: "tenant",
+        scope_id: null,
+        status: "active",
+        reason: "Original hold basis",
+        placed_at: policy.created_at,
+        placed_by_user_id: "controlled-admin",
+        release_reason: null,
+        released_at: null,
+        released_by_user_id: null,
+      },
+    ],
+  });
+  vi.mocked(executeCommercialOperation).mockRejectedValue(new Error("RAW_RELEASE_FAILURE"));
+  renderWithQueryClient(<CommercialView />);
+  await openLifecycle();
+  fireEvent.click(screen.getByRole("button", { name: "Release legal hold Original matter <source>" }));
+  const dialog = screen.getByRole("dialog", { name: "Release legal hold" });
+  fireEvent.change(within(dialog).getByRole("textbox", { name: "Lifecycle action reason" }), {
+    target: { value: "Original release reason <source>" },
+  });
+  fireEvent.click(
+    within(dialog).getByRole("checkbox", { name: "I have checked the target and understand this action" }),
+  );
+  fireEvent.click(within(dialog).getByRole("button", { name: "Confirm action" }));
+  expect(await within(dialog).findByRole("alert")).toHaveTextContent("RAW_RELEASE_FAILURE");
+  expect(
+    within(dialog).getByText(
+      "Retry reuses the same target and reason. This release endpoint has no operation key; review the latest hold before retrying.",
+    ),
+  ).toBeInTheDocument();
+  expect(within(dialog).queryByText(/same target, reason and operation key/)).not.toBeInTheDocument();
+  expect(vi.mocked(executeCommercialOperation).mock.calls[0]?.[0]).toEqual({
+    kind: "release-legal-hold",
+    holdId: "controlled-hold",
+    requestBody: { reason: "Original release reason <source>" },
+  });
+});
 it("will not submit an old withdrawal intent when the refreshed target has changed", async () => {
   const { queryClient } = renderWithQueryClient(<CommercialView />);
   const dialog = await openWithdrawal();

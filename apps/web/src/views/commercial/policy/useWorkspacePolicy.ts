@@ -7,11 +7,12 @@ import {
   getWorkspaceExportPolicy,
 } from "../../../lib/contracts/collections";
 import type { CommercialOperationBoundary } from "../useCommercialOperationBoundary";
+import { hasPolicyEdits, policyDraft, policyIdentity, type WorkspacePolicyState } from "./policyDraftState";
 import { defaultPolicyDraft } from "./workspacePolicyFields";
 export function useWorkspacePolicyDrafts() {
-  const [draft, setDraft] = useState<CollectionPolicyDraft>(defaultPolicyDraft);
-  const initialized = useRef(false);
-  return { draft, setDraft, initialized };
+  const [state, setState] = useState<WorkspacePolicyState>(() => ({ draft: defaultPolicyDraft(), origin: undefined }));
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+  return { state, setState, expandedGroups, setExpandedGroups };
 }
 export type WorkspacePolicyDrafts = ReturnType<typeof useWorkspacePolicyDrafts>;
 export function useWorkspacePolicy(boundary: CommercialOperationBoundary, store: WorkspacePolicyDrafts) {
@@ -29,29 +30,37 @@ export function useWorkspacePolicy(boundary: CommercialOperationBoundary, store:
     queryKey: collectionsKeys.policy,
     queryFn: ({ signal }) => getWorkspaceExportPolicy(signal),
   });
+  const busy = Boolean(boundary.busy);
   useEffect(() => {
-    if (!query.isSuccess || store.initialized.current) return;
-    store.initialized.current = true;
-    const policy = query.data;
-    if (policy)
-      store.setDraft({
-        policy_version: policy.policy_version,
-        enabled: policy.enabled,
-        allowed_formats: policy.allowed_formats,
-        allowed_fields: policy.allowed_fields,
-        max_records_per_export: policy.max_records_per_export,
-        attribution: policy.attribution,
-      });
-  }, [query.data, query.isSuccess, store.initialized, store.setDraft]);
+    if (!query.isSuccess || busy) return;
+    const policy = query.data ?? null;
+    store.setState((current) => {
+      if (
+        current.origin !== undefined &&
+        (hasPolicyEdits(current) || policyIdentity(current.origin) === policyIdentity(policy))
+      )
+        return current;
+      return { draft: policyDraft(policy), origin: policy };
+    });
+  }, [query.data, query.isSuccess, busy, store.setState]);
+  const conflict =
+    query.isSuccess &&
+    store.state.origin !== undefined &&
+    hasPolicyEdits(store.state) &&
+    policyIdentity(store.state.origin) !== policyIdentity(query.data);
   function update(next: CollectionPolicyDraft) {
     if (boundary.isLocked()) return;
-    store.setDraft(next);
+    store.setState((current) => ({ ...current, draft: next }));
     setSavedVersion("");
     setMismatch(false);
   }
   async function save() {
-    if (!query.isSuccess || query.error || query.isFetching || boundary.isLocked()) return;
-    const intent = store.draft;
+    if (!query.isSuccess || query.error || query.isFetching || boundary.isLocked() || conflict) return;
+    const intent = {
+      ...store.state.draft,
+      allowed_formats: [...store.state.draft.allowed_formats],
+      allowed_fields: [...store.state.draft.allowed_fields],
+    };
     setSavedVersion("");
     setMismatch(false);
     const policy = await boundary.runWorkspacePolicy(intent);
@@ -60,17 +69,25 @@ export function useWorkspacePolicy(boundary: CommercialOperationBoundary, store:
       setMismatch(true);
       return;
     }
+    store.setState({ draft: policyDraft(policy), origin: policy });
     client.setQueryData<CollectionPolicy | null>(collectionsKeys.policy, policy);
     setSavedVersion(policy.policy_version);
   }
   return {
     query,
-    draft: store.draft,
+    draft: store.state.draft,
     update,
     save,
     savedVersion,
     mismatch,
-    busy: Boolean(boundary.busy),
+    conflict,
+    useLatest: () => {
+      if (!query.isSuccess || query.isFetching || boundary.isLocked()) return;
+      store.setState({ draft: policyDraft(query.data ?? null), origin: query.data ?? null });
+      setSavedVersion("");
+      setMismatch(false);
+    },
+    busy,
     error: boundary.actionError,
   };
 }

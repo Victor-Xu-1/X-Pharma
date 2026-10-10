@@ -17,6 +17,8 @@ export const commercialLifecycleMessages = {
     "This requests object removal for the selected target. The server still checks retention, legal holds and business dependencies.",
   "重试将复用同一目标、原因和操作键。若需修改，请取消并重新开始。":
     "Retry reuses the same target, reason and operation key. Cancel to start a different action.",
+  "重试将复用同一目标和原因。解除保全接口没有操作键；重试前请核对最新保全记录。":
+    "Retry reuses the same target and reason. This release endpoint has no operation key; review the latest hold before retrying.",
   导出对象保留策略: "Export retention policy",
   源资料保留策略: "Source retention policy",
   "保留时长（小时）": "Retention period (hours)",

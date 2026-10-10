@@ -1,6 +1,11 @@
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-import { getWorkspaceExportPolicy, saveWorkspaceExportPolicy } from "../lib/contracts/collections";
+import {
+  type CollectionPolicy,
+  collectionsKeys,
+  getWorkspaceExportPolicy,
+  saveWorkspaceExportPolicy,
+} from "../lib/contracts/collections";
 import { setLocale } from "../lib/i18n";
 import { useWorkspacePolicyDrafts } from "../views/commercial/policy/useWorkspacePolicy";
 import { useCommercialOperationBoundary } from "../views/commercial/useCommercialOperationBoundary";
@@ -45,4 +50,65 @@ it("freezes every policy input while the original versioned draft is pending", a
   });
   expect(screen.getByRole("textbox", { name: "Policy version" })).toHaveValue("original-policy-v2");
   expect(saveWorkspaceExportPolicy).toHaveBeenCalledOnce();
+});
+const policy: CollectionPolicy = {
+  id: "controlled-policy",
+  policy_version: "original-v1",
+  policy_sha256: "a".repeat(64),
+  enabled: true,
+  allowed_formats: ["csv"],
+  allowed_fields: ["id", "entity_type", "name", "unknown.source_field"],
+  attribution: "Original licensing <source>",
+  max_records_per_export: 25,
+  configured_by_user_id: "controlled-admin",
+  created_at: "2026-10-10T00:00:00Z",
+  updated_at: "2026-10-10T00:00:00Z",
+};
+it("prioritizes policy identity and limits before collapsed field groups without hiding unknown field IDs", async () => {
+  setLocale("en");
+  vi.mocked(getWorkspaceExportPolicy).mockResolvedValue(policy);
+  renderWithQueryClient(<PolicyHarness />);
+  const version = await screen.findByRole("textbox", { name: "Policy version" });
+  const summary = screen.getByText("General fields").closest("summary");
+  expect(summary).not.toBeNull();
+  expect(version.compareDocumentPosition(summary as HTMLElement) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+  expect(summary?.closest("details")).not.toHaveAttribute("open");
+  expect(screen.getByText("unknown.source_field", { exact: true })).toBeInTheDocument();
+  expect(saveWorkspaceExportPolicy).not.toHaveBeenCalled();
+});
+it("retains an unsent policy when a server update arrives and requires an explicit use-latest decision", async () => {
+  setLocale("en");
+  vi.mocked(getWorkspaceExportPolicy).mockResolvedValue(policy);
+  const { queryClient } = renderWithQueryClient(<PolicyHarness />);
+  const attribution = await screen.findByRole("textbox", { name: "Attribution" });
+  await waitFor(() => expect(attribution).toHaveValue(policy.attribution));
+  fireEvent.change(attribution, { target: { value: "Unsubmitted licensing <source>" } });
+  vi.mocked(getWorkspaceExportPolicy).mockResolvedValue({
+    ...policy,
+    policy_version: "new-v2",
+    attribution: "Updated licensing <source>",
+  });
+  await act(async () => queryClient.refetchQueries({ queryKey: collectionsKeys.policy, exact: true }));
+  const latest = await screen.findByRole("button", { name: "Use latest policy" });
+  expect(attribution).toHaveValue("Unsubmitted licensing <source>");
+  expect(screen.getByRole("button", { name: "Save export policy" })).toBeDisabled();
+  fireEvent.click(latest);
+  expect(attribution).toHaveValue("Updated licensing <source>");
+  expect(screen.getByRole("textbox", { name: "Policy version" })).toHaveValue("new-v2");
+  expect(saveWorkspaceExportPolicy).not.toHaveBeenCalled();
+});
+it("adopts refreshed policy values when the current draft has no unsent edits", async () => {
+  setLocale("en");
+  vi.mocked(getWorkspaceExportPolicy).mockResolvedValue(policy);
+  const { queryClient } = renderWithQueryClient(<PolicyHarness />);
+  const attribution = await screen.findByRole("textbox", { name: "Attribution" });
+  await waitFor(() => expect(attribution).toHaveValue(policy.attribution));
+  vi.mocked(getWorkspaceExportPolicy).mockResolvedValue({
+    ...policy,
+    policy_version: "new-v2",
+    attribution: "Updated licensing <source>",
+  });
+  await act(async () => queryClient.refetchQueries({ queryKey: collectionsKeys.policy, exact: true }));
+  await waitFor(() => expect(attribution).toHaveValue("Updated licensing <source>"));
+  expect(saveWorkspaceExportPolicy).not.toHaveBeenCalled();
 });

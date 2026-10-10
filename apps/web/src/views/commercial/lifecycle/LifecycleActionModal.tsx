@@ -4,7 +4,7 @@ import { FormStatus } from "../../../components/FormStatus";
 import { useLocale } from "../../../lib/i18n";
 import { commercialLifecycleText as t } from "../../../lib/i18n/commercialLifecycle";
 import { useModalFocus } from "../../../lib/useModalFocus";
-import type { LifecycleAction } from "./types";
+import type { LifecycleAction, LifecycleConfirmation } from "./types";
 
 export function LifecycleActionModal({
   action,
@@ -19,12 +19,12 @@ export function LifecycleActionModal({
   error: string;
   current: boolean;
   onClose: () => void;
-  onConfirm: (reason: string, key: string) => Promise<boolean>;
+  onConfirm: (intent: LifecycleConfirmation) => Promise<boolean>;
 }) {
   useLocale();
   const [reason, setReason] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
-  const [captured, setCaptured] = useState<{ reason: string; key: string } | null>(null);
+  const [captured, setCaptured] = useState<LifecycleConfirmation | null>(null);
   const dialogRef = useModalFocus<HTMLElement>(true, onClose, { closeOnEscape: !busy });
   const title =
     action.kind === "release"
@@ -45,9 +45,13 @@ export function LifecycleActionModal({
         : action.kind === "source-purge"
           ? "web.source-purge."
           : "web.source-reauthorize.";
-    const intent = captured ?? { reason: reason.trim(), key: prefix + crypto.randomUUID() };
+    const intent: LifecycleConfirmation =
+      captured ??
+      (action.kind === "release"
+        ? { kind: "release", reason: reason.trim() }
+        : { kind: action.kind, reason: reason.trim(), key: prefix + crypto.randomUUID() });
     setCaptured(intent);
-    if (await onConfirm(intent.reason, intent.key)) onClose();
+    if (await onConfirm(intent)) onClose();
   }
   return (
     <div className="modal-backdrop" role="presentation">
@@ -104,7 +108,13 @@ export function LifecycleActionModal({
             {t("我已核对目标并了解此操作")}
           </label>
           {captured ? (
-            <p className="form-footnote">{t("重试将复用同一目标、原因和操作键。若需修改，请取消并重新开始。")}</p>
+            <p className="form-footnote">
+              {t(
+                captured.kind === "release"
+                  ? "重试将复用同一目标和原因。解除保全接口没有操作键；重试前请核对最新保全记录。"
+                  : "重试将复用同一目标、原因和操作键。若需修改，请取消并重新开始。",
+              )}
+            </p>
           ) : null}
           <FormStatus pending={busy} error={error} />
           <div className="form-actions">

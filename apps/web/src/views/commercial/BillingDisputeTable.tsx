@@ -4,6 +4,7 @@ import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { BillingDispute, BillingDisputeFilter } from "../../lib/contracts/commercial";
 import { useLocale } from "../../lib/i18n";
 import { commercialWorkspaceText as t } from "../../lib/i18n/commercialWorkspace";
+import { RecordDetails, RecordFacts } from "./RecordDetails";
 
 export function BillingDisputeTable({
   items,
@@ -62,6 +63,27 @@ export function BillingDisputeTable({
                   <td>
                     <strong>{item.subject}</strong>
                     <span className="cell-subtitle mono-cell">{item.dispute_key}</span>
+                    <RecordDetails name={item.dispute_key}>
+                      <RecordFacts
+                        fields={[
+                          { label: "标识", value: item.id },
+                          { label: "版本", value: item.version },
+                          { label: "说明", value: item.description },
+                          { label: "开案时间", value: formatDate(item.opened_at, true) },
+                          { label: "开案人", value: item.opened_by },
+                          { label: "账期单标识", value: item.statement_id },
+                          { label: "订阅标识", value: item.subscription_id },
+                          { label: "账户标识", value: item.billing_account_id },
+                          { label: "发票关联标识", value: item.invoice_reference_id },
+                          { label: "外部发票标识", value: item.external_invoice_id },
+                          { label: "解决时间", value: item.resolved_at ? formatDate(item.resolved_at, true) : null },
+                          { label: "解决人", value: item.resolved_by },
+                          { label: "解决代码", value: item.resolution_code },
+                          { label: "解决说明", value: item.resolution_notes },
+                          { label: "账本调整键", value: item.resolution_adjustment_key },
+                        ]}
+                      />
+                    </RecordDetails>
                   </td>
                   <td>
                     {item.billing_account_name}

@@ -1,7 +1,6 @@
 import { CircleDollarSign, DatabaseBackup, ReceiptText, RefreshCw, Scale, ShieldAlert, Users } from "lucide-react";
 import { ErrorState, formatDate, Spinner } from "../components/common";
 import { ResearchTabList } from "../components/ResearchTabList";
-import { commercialKeys } from "../lib/contracts/commercial";
 import { useLocale } from "../lib/i18n";
 import { commercialWorkspaceText as t } from "../lib/i18n/commercialWorkspace";
 import { BillingDisputeTable } from "./commercial/BillingDisputeTable";
@@ -28,7 +27,8 @@ export function CommercialView() {
     lifecycleDrafts,
     policyDrafts,
     operationBoundary,
-    queryClient,
+    refresh,
+    refreshing,
     deliveryFilter,
     setDeliveryFilter,
     disputeFilter,
@@ -113,11 +113,8 @@ export function CommercialView() {
         <button
           className="secondary-button"
           type="button"
-          onClick={() => {
-            setActionError("");
-            void queryClient.invalidateQueries({ queryKey: commercialKeys.root, refetchType: "active" });
-          }}
-          disabled={Boolean(busy) || Boolean(paneQuery?.isFetching)}
+          onClick={() => void refresh()}
+          disabled={Boolean(busy) || refreshing}
         >
           <RefreshCw size={16} />
           {t("刷新")}

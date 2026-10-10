@@ -413,7 +413,7 @@ it("preserves a pending lifecycle confirmation and its reason after rejection, w
   expect(reason).toHaveValue("matter closed with reviewed authority");
   expect(reason).toBeDisabled();
   expect(
-    within(dialog).getByText("重试将复用同一目标、原因和操作键。若需修改，请取消并重新开始。"),
+    within(dialog).getByText("重试将复用同一目标和原因。解除保全接口没有操作键；重试前请核对最新保全记录。"),
   ).toBeInTheDocument();
   expect(executeCommercialOperation).toHaveBeenCalledOnce();
   fireEvent.keyDown(reason, { key: "Escape" });

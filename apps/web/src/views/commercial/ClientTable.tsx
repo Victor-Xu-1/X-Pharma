@@ -3,7 +3,9 @@ import { EmptyState, formatDate, StatusBadge } from "../../components/common";
 import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { CommercialClient } from "../../lib/contracts/commercial";
 import { useLocale } from "../../lib/i18n";
+import { commercialRecordText } from "../../lib/i18n/commercialRecordDetails";
 import { commercialWorkspaceText as t } from "../../lib/i18n/commercialWorkspace";
+import { RecordDetails, RecordFacts } from "./RecordDetails";
 import type { ClientAction } from "./types";
 
 export function ClientTable({
@@ -40,6 +42,29 @@ export function ClientTable({
               <td>
                 <strong>{item.display_name}</strong>
                 <span className="cell-subtitle mono-cell">{item.client_key}</span>
+                <RecordDetails name={item.display_name}>
+                  <RecordFacts
+                    fields={[
+                      { label: "客户端标识", value: item.id },
+                      { label: "订阅状态", value: item.subscription_status },
+                      { label: "创建时间", value: formatDate(item.created_at, true) },
+                    ]}
+                  />
+                  {item.subjects.length ? (
+                    item.subjects.map((subject) => (
+                      <RecordFacts
+                        key={subject.actor_type + ":" + subject.subject_id}
+                        fields={[
+                          { label: "主体标识", value: subject.subject_id },
+                          { label: "主体类型", value: subject.actor_type },
+                          { label: "已启用", value: subject.active },
+                        ]}
+                      />
+                    ))
+                  ) : (
+                    <p>{commercialRecordText("暂无主体")}</p>
+                  )}
+                </RecordDetails>
               </td>
               <td className="mono-cell">{item.subscription_key ?? "--"}</td>
               <td className="mono-cell">{item.billing_account_key ?? "--"}</td>

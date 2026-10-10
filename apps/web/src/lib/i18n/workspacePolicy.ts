@@ -10,6 +10,11 @@ export const workspacePolicyMessages = {
   启用外部工作台人工导出: "Enable human exports from the research workbench",
   允许格式: "Allowed formats",
   允许字段: "Allowed fields",
+  "以下字段未在当前界面目录中定义，保存时将原样保留。":
+    "These fields are not defined in this interface catalog and will be retained verbatim when saving.",
+  "策略已在服务端更新。未提交内容已保留，请核对最新策略后再保存。":
+    "The server policy has changed. Your unsent edits are retained; review the latest policy before saving.",
+  使用最新策略: "Use latest policy",
   通用字段: "General fields",
   序号: "Position",
   "稳定 ID": "Stable ID",

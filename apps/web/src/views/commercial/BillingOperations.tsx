@@ -4,6 +4,7 @@ import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { BillingAccount, BillingDelivery, BillingDeliveryFilter } from "../../lib/contracts/commercial";
 import { useLocale } from "../../lib/i18n";
 import { commercialWorkspaceText as t } from "../../lib/i18n/commercialWorkspace";
+import { RecordDetails, RecordFacts } from "./RecordDetails";
 
 export function BillingOperations({
   accounts,
@@ -53,6 +54,14 @@ export function BillingOperations({
                     <td>
                       <strong>{account.display_name}</strong>
                       <span className="cell-subtitle mono-cell">{account.account_key}</span>
+                      <RecordDetails name={account.account_key}>
+                        <RecordFacts
+                          fields={[
+                            { label: "账户标识", value: account.id },
+                            { label: "已配置映射", value: account.mapping_configured },
+                          ]}
+                        />
+                      </RecordDetails>
                     </td>
                     <td>{account.currency}</td>
                     <td>
@@ -128,6 +137,23 @@ export function BillingOperations({
                     <td>
                       <strong>{delivery.statement_key}</strong>
                       <span className="cell-subtitle mono-cell">{delivery.statement_id}</span>
+                      <RecordDetails name={delivery.event_id}>
+                        <RecordFacts
+                          fields={[
+                            { label: "事件标识", value: delivery.event_id },
+                            { label: "投递标识", value: delivery.delivery_id },
+                            { label: "账户标识", value: delivery.billing_account_id },
+                            { label: "创建时间", value: formatDate(delivery.created_at, true) },
+                            {
+                              label: "租约到期",
+                              value: delivery.lease_expires_at ? formatDate(delivery.lease_expires_at, true) : null,
+                            },
+                            { label: "发票服务商", value: delivery.invoice_provider },
+                            { label: "发票状态", value: delivery.invoice_status },
+                            { label: "最近错误", value: delivery.last_error },
+                          ]}
+                        />
+                      </RecordDetails>
                     </td>
                     <td>
                       {delivery.billing_account_name}

@@ -4,6 +4,7 @@ import { ScrollableTableRegion } from "../../../components/ScrollableTableRegion
 import type { DeletedSourceAsset, SourceAssetImpact } from "../../../lib/contracts/commercial";
 import { useLocale } from "../../../lib/i18n";
 import { commercialLifecycleText as t } from "../../../lib/i18n/commercialLifecycle";
+import { RecordDetails, RecordFacts, RecordList } from "../RecordDetails";
 import type { LifecycleAction } from "./types";
 export function LifecycleSourceRecords({
   sourceCandidates,
@@ -45,6 +46,28 @@ export function LifecycleSourceRecords({
                     <td>
                       <strong>{asset.file_name}</strong>
                       <span className="cell-subtitle mono-cell">{asset.logical_path}</span>
+                      <RecordDetails name={asset.id}>
+                        <RecordFacts
+                          fields={[
+                            { label: "标识", value: asset.id },
+                            { label: "原始资料源标识", value: asset.data_source_id },
+                            { label: "原始资料路径", value: asset.logical_path },
+                            { label: "原始资料状态", value: asset.state },
+                            { label: "资料版本", value: asset.version_count },
+                            { label: "原始对象", value: asset.raw_object_count },
+                            { label: "提取对象", value: asset.extracted_object_count },
+                            { label: "提取运行", value: asset.extraction_run_count },
+                            { label: "暂存事实", value: asset.staged_fact_count },
+                            { label: "已发布事实", value: asset.published_fact_count },
+                            { label: "证据声明", value: asset.evidence_claim_count },
+                            { label: "知识引用", value: asset.knowledge_citation_count },
+                            { label: "检索投影", value: asset.retrieval_projection_count },
+                            { label: "共享文档", value: asset.shared_document_count },
+                            { label: "其他文档引用", value: asset.other_document_reference_count },
+                            { label: "阻断项", value: <RecordList values={asset.blockers} /> },
+                          ]}
+                        />
+                      </RecordDetails>
                     </td>
                     <td>{asset.missing_since ? formatDate(asset.missing_since, true) : "--"}</td>
                     <td>
@@ -114,6 +137,16 @@ export function LifecycleSourceRecords({
                     <td>
                       <strong>{asset.file_name}</strong>
                       <span className="cell-subtitle mono-cell">{asset.logical_path}</span>
+                      <RecordDetails name={asset.id}>
+                        <RecordFacts
+                          fields={[
+                            { label: "标识", value: asset.id },
+                            { label: "原始资料源标识", value: asset.data_source_id },
+                            { label: "原始资料路径", value: asset.logical_path },
+                            { label: "原始资料状态", value: asset.state },
+                          ]}
+                        />
+                      </RecordDetails>
                     </td>
                     <td>{formatDate(asset.updated_at, true)}</td>
                     <td>
