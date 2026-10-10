@@ -51,6 +51,15 @@ function renderDeal(overrides: Partial<ComponentProps<typeof DealsView>> = {}) {
   );
 }
 
+it("gives the participating-organization input a unique label in both languages", async () => {
+  renderDeal();
+  await screen.findByRole("table", { name: "交易结果" });
+  fireEvent.click(screen.getByText("参与方与关联条件", { exact: true }));
+  expect(screen.getByLabelText(/参与机构/)).toHaveAttribute("role", "combobox");
+  act(() => setLocale("en"));
+  expect(screen.getByLabelText(/Participating organization/)).toHaveAttribute("role", "combobox");
+});
+
 it("renders English deal controls and memoized columns without losing source fields or drafts on switching", async () => {
   act(() => setLocale("en"));
   const onSearchChange = vi.fn();

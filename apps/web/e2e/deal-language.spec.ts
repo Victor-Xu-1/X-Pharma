@@ -9,6 +9,7 @@ test("[deal-language] English-first filters retain selection, drafts and nested 
   const { state, deal, terms } = await installDealFixture(page);
   await page.goto("/workspace/research?view=deals&q=VX-101");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.getByRole("heading", { name: "Deals & assets", level: 1, exact: true })).toBeVisible();
   const table = page.getByRole("table", { name: "Deal results", exact: true });
   await expect(table).toContainText("USD 0.000123456");
   await expect(table).toContainText("USD 25,123,456.75");
@@ -22,6 +23,7 @@ test("[deal-language] English-first filters retain selection, drafts and nested 
   const url = page.url(),
     before = state.reads;
   await selectInterfaceLanguage(page, "zh-CN");
+  await expect(page.getByRole("heading", { name: "交易与资产", level: 1, exact: true })).toBeVisible();
   expect(page.url()).toBe(url);
   expect(state.reads).toBe(before);
   await expect(page.getByRole("textbox", { name: "关键词", exact: true })).toHaveValue("未提交交易草稿");
@@ -90,6 +92,9 @@ test("[deal-language] explicit currency validation and failed organization sugge
   await page.getByRole("button", { name: "Clear", exact: true }).click();
   await expect(page.getByRole("alert")).toHaveCount(0);
   await page.getByText("Participants and linked assets", { exact: true }).click();
+  await expect(page.getByRole("form", { name: "Deal filters" }).getByLabel("Participating organization")).toHaveCount(
+    1,
+  );
   const party = page.getByRole("combobox", { name: "Participating organization", exact: true });
   await party.fill("Acme");
   await expect(page.getByRole("alert")).toHaveText("Organization search failed: RAW_ORGANIZATION_FAILURE");

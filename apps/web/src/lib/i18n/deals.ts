@@ -165,6 +165,7 @@ export const dealMessages = {
   "统计基于当前授权查询的完整命中集；多资产和多参与方维度可重叠，未披露不会推断。":
     "Statistics cover the complete accessible matching set. Asset and participant dimensions may overlap; undisclosed data is not inferred.",
   参与机构标识与返回数据不一致: "Organization data does not match the requested identifier",
+  机构检索与候选选择: "Organization search and suggestion selection",
   初始披露起: "Disclosure from",
   初始披露止: "Disclosure to",
   终止日期起: "Termination from",

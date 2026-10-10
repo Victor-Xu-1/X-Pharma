@@ -107,7 +107,7 @@ export function DealParticipantFilters({
       />
       <fieldset
         className="deal-party-field"
-        aria-label={t("参与机构候选")}
+        aria-label={t("机构检索与候选选择")}
         onBlur={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget)) setSuggestionsOpen(false);
         }}
