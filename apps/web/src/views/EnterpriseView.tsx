@@ -1,14 +1,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AccountInvitationPanel } from "../components/AccountInvitationPanel";
+import { useAccountInvitations } from "../components/accountInvitations/useAccountInvitations";
 import { ResearchTabList, type ResearchTabOption } from "../components/ResearchTabList";
 import {
-  type EnterpriseApiKeyOperation,
   type EnterpriseApiKeySecret,
   type EnterpriseAuditFilters,
-  type EnterpriseLLMProviderOperation,
-  type EnterpriseOperation,
   enterpriseKeys,
   loadEnterpriseAccess,
   loadEnterpriseAudit,
@@ -26,11 +24,13 @@ import { ApiKeyActionModal, ApiKeySecretModal } from "./enterprise/ApiKeys";
 import { AuditPanel } from "./enterprise/AuditPanel";
 import { FeatureQuery } from "./enterprise/FeatureQuery";
 import { CreateGroupModal, GroupActionModal, GroupsPanel } from "./enterprise/GroupsPanel";
+import { LLMProviderModal } from "./enterprise/LLMProviderModal";
 import { ModalShell } from "./enterprise/ModalShell";
-import { LLMProviderModal, LLMProvidersPanel } from "./enterprise/ModelsPanel";
+import { LLMProvidersPanel } from "./enterprise/ModelsPanel";
 import { EnterpriseOverview } from "./enterprise/OverviewPanel";
 import type { AccessAction, ApiKeyAction, EnterpriseTab, GroupAction, LLMAction, UserAction } from "./enterprise/types";
 import { CreateUserModal, UserActionModal, UsersPanel } from "./enterprise/UsersPanel";
+import { useEnterpriseCommands } from "./enterprise/useEnterpriseCommands";
 import {
   EnterpriseOperationContext,
   useEnterpriseOperationBoundary,
@@ -51,8 +51,10 @@ export function EnterpriseView({ user, authMode }: { user: User; authMode: AuthM
   useLocale();
   const queryClient = useQueryClient();
   const boundary = useEnterpriseOperationBoundary();
+  const { runOperation, runApiKeyOperation, runLlmOperation } = useEnterpriseCommands(boundary);
   const { busy, actionError } = boundary;
   const [tab, setTab] = useState<EnterpriseTab>("overview");
+  const invitationWorkspace = useAccountInvitations(authMode, tab === "invites", boundary);
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [userAction, setUserAction] = useState<UserAction | null>(null);
@@ -84,6 +86,9 @@ export function EnterpriseView({ user, authMode }: { user: User; authMode: AuthM
     queryFn: ({ signal }) => loadEnterpriseAccess(signal),
     enabled: tab === "access",
   });
+  useEffect(() => {
+    if (governanceReadDenied(accessQuery.error)) setApiKeySecret(null);
+  }, [accessQuery.error]);
   const modelsQuery = useQuery({
     queryKey: enterpriseKeys.models,
     queryFn: ({ signal }) => loadEnterpriseModels(signal),
@@ -93,47 +98,7 @@ export function EnterpriseView({ user, authMode }: { user: User; authMode: AuthM
     queryKey: enterpriseKeys.audit(auditFilters),
     queryFn: ({ signal }) => loadEnterpriseAudit(auditFilters, signal),
     enabled: tab === "audit",
-    placeholderData: (previous) => previous,
   });
-  function ready(read: { isSuccess: boolean; error: unknown; isFetching: boolean }) {
-    if (!read.isSuccess || read.error || read.isFetching) {
-      boundary.failCurrentRead();
-      return false;
-    }
-    return true;
-  }
-  async function runOperation(
-    busyKey: string,
-    operation: EnterpriseOperation,
-    fallback: EnterpriseMessageKey,
-  ): Promise<boolean> {
-    const read =
-      operation.kind === "create-user" ||
-      operation.kind === "update-user-role" ||
-      operation.kind === "update-user-status"
-        ? usersQuery
-        : operation.kind === "create-group" ||
-            operation.kind === "update-group" ||
-            operation.kind === "update-group-members"
-          ? groupsQuery
-          : accessQuery;
-    if (!ready(read)) return false;
-    return boundary.runOperation(busyKey, operation, fallback);
-  }
-  async function runApiKeyOperation(
-    busyKey: string,
-    operation: EnterpriseApiKeyOperation,
-    fallback: EnterpriseMessageKey,
-  ) {
-    return ready(accessQuery) ? boundary.runApiKeyOperation(busyKey, operation, fallback) : null;
-  }
-  async function runLlmOperation(
-    busyKey: string,
-    operation: EnterpriseLLMProviderOperation,
-    fallback: EnterpriseMessageKey,
-  ) {
-    return ready(modelsQuery) ? boundary.runLlmOperation(busyKey, operation, fallback) : false;
-  }
   const activeQuery = {
     overview: overviewQuery,
     users: usersQuery,
@@ -141,7 +106,7 @@ export function EnterpriseView({ user, authMode }: { user: User; authMode: AuthM
     access: accessQuery,
     models: modelsQuery,
     audit: auditQuery,
-    invites: null,
+    invites: invitationWorkspace.invitations,
   }[tab];
 
   return (
@@ -160,6 +125,7 @@ export function EnterpriseView({ user, authMode }: { user: User; authMode: AuthM
           </button>
         </div>
         {actionError &&
+        tab !== "invites" &&
         !(
           createUserOpen ||
           createGroupOpen ||
@@ -193,7 +159,7 @@ export function EnterpriseView({ user, authMode }: { user: User; authMode: AuthM
         />
 
         <div id={`enterprise-panel-${tab}`} role="tabpanel" aria-labelledby={`enterprise-tab-${tab}`}>
-          {tab === "invites" ? <AccountInvitationPanel authMode={authMode} /> : null}
+          {tab === "invites" ? <AccountInvitationPanel workspace={invitationWorkspace} /> : null}
           {tab === "overview" ? (
             <FeatureQuery query={overviewQuery}>
               {(overview) => <EnterpriseOverview overview={overview} />}
@@ -257,18 +223,16 @@ export function EnterpriseView({ user, authMode }: { user: User; authMode: AuthM
             </FeatureQuery>
           ) : null}
           {tab === "audit" ? (
-            <FeatureQuery query={auditQuery}>
-              {(page) => (
-                <AuditPanel
-                  filters={auditFilters}
-                  draftAction={auditDraftAction}
-                  setDraftAction={setAuditDraftAction}
-                  setFilters={setAuditFilters}
-                  page={page}
-                  loading={auditQuery.isFetching}
-                />
-              )}
-            </FeatureQuery>
+            <AuditPanel
+              filters={auditFilters}
+              draftAction={auditDraftAction}
+              setDraftAction={setAuditDraftAction}
+              setFilters={setAuditFilters}
+              page={auditQuery.error ? undefined : auditQuery.data}
+              loading={auditQuery.isFetching}
+              error={auditQuery.error}
+              retry={() => void auditQuery.refetch()}
+            />
           ) : null}
         </div>
 

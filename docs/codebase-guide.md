@@ -27,7 +27,7 @@
 
 ORM 的公共入口是 `models/__init__.py`，只聚合显式导出；领域表分别属于账号、组织配置、实体主数据、药物管线、临床、化学、入库、治理、检索投影及商业领域。`models/base.py` 单独拥有 SQLAlchemy registry、时间戳和 UUID；`models/enums.py` 拥有共享枚举。领域模块不导入聚合入口，避免反向依赖与重复映射。多组织迁移单独增加 `OrganizationMembership` 权限权威并保留全局身份与原业务归属，不能继续从 `User` 读取组织角色。
 
-企业管理的查询键按概况、用户、用户组、访问治理、模型与审计划分，按活动功能加载。`views/enterprise/` 拥有各功能面板及操作表单，`FeatureQuery` 负责加载和失败反馈；权限复查失败不继续显示旧管理数据，也不把失败伪装成空列表。平台面板已移至唯一 `views/environment/PlatformPanel.tsx`，不在企业页保留竞争入口。环境模块的网关版本、主机报告、安装配方、CLI 执行和平台证据分别有独立职责；只有受控本地主机可以明确执行安装，Web 不执行命令。源码/安全/部署连接见 [环境管理](environment-management.md)。
+企业管理的查询键按概况、用户、用户组、访问治理、模型与审计划分，按活动功能加载。`views/enterprise/` 拥有各功能面板及操作表单，`FeatureQuery` 负责加载和失败反馈；权限复查失败不继续显示旧管理数据，也不把失败伪装成空列表。`useEnterpriseOperationBoundary` 统一同步锁与操作对账，不将凭据放入通用 Mutation 历史；`useEnterpriseCommands` 提交前读取同一查询缓存的当前状态、目标身份与已声明版本，不改写捕获意图、不替代服务端授权。`components/accountInvitations/` 的状态所有者由工作台组装，面板与一次性代码弹窗仅呈现；没有第二条邀请提交链路。`ModelsPanel` 与 `LLMProviderModal` 分别拥有列表和配置，旧内联弹窗已移除。审计的筛选/查询仍由主视图拥有，面板保留输入、错误恢复和匹配查询的正常缓存，不显示另一组条件的旧事件。平台面板已移至唯一 `views/environment/PlatformPanel.tsx`，不在企业页保留竞争入口。环境模块的网关版本、主机报告、安装配方、CLI 执行和平台证据分别有独立职责；只有受控本地主机可以明确执行安装，Web 不执行命令。源码/安全/部署连接见 [环境管理](environment-management.md)。
 
 ## 本次整理
 

@@ -26,6 +26,7 @@ export const accountInvitationMessages = {
   受邀邮箱: "Invited email",
   有效小时: "Validity (hours)",
   "生成中…": "Issuing…",
+  "正在提交邀请操作…": "Submitting invitation operation…",
   生成注册邀请码: "Issue registration invitation",
   正在读取注册邀请: "Loading registration invitations",
   注册邀请读取失败: "Could not load registration invitations",

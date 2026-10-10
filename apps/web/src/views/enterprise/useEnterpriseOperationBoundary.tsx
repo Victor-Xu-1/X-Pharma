@@ -12,6 +12,7 @@ import {
   executeEnterpriseOperation,
 } from "../../lib/contracts/enterprise";
 import { type EnterpriseMessageKey, enterpriseWorkspaceText as t } from "../../lib/i18n/enterpriseWorkspace";
+export type EnterpriseFailure = { raw: string } | { key: EnterpriseMessageKey };
 
 /** No secret-bearing request/result is retained in generic mutation history. One mounted workspace owns the lock. */
 export function useEnterpriseOperationBoundary() {
@@ -19,7 +20,7 @@ export function useEnterpriseOperationBoundary() {
   const locked = useRef(false),
     mounted = useRef(true);
   const [busy, setBusy] = useState("");
-  const [failure, setFailure] = useState<{ raw: string } | { key: EnterpriseMessageKey } | null>(null);
+  const [failure, setFailure] = useState<EnterpriseFailure | null>(null);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -30,6 +31,7 @@ export function useEnterpriseOperationBoundary() {
     key: string,
     work: () => Promise<T>,
     fallback: EnterpriseMessageKey,
+    failurePolicy?: (error: unknown) => EnterpriseFailure,
   ): Promise<{ value: T } | null> {
     if (locked.current || !mounted.current) return null;
     locked.current = true;
@@ -41,7 +43,10 @@ export function useEnterpriseOperationBoundary() {
       await client.invalidateQueries({ queryKey: enterpriseKeys.root, refetchType: "active" });
       return mounted.current ? { value } : null;
     } catch (error) {
-      if (mounted.current) setFailure(error instanceof Error ? { raw: error.message } : { key: fallback });
+      if (mounted.current)
+        setFailure(
+          failurePolicy ? failurePolicy(error) : error instanceof Error ? { raw: error.message } : { key: fallback },
+        );
       return null;
     } finally {
       locked.current = false;
@@ -57,6 +62,9 @@ export function useEnterpriseOperationBoundary() {
     },
     failCurrentRead: () => {
       if (!locked.current) setFailure({ key: "请先恢复当前记录读取，再提交操作。" });
+    },
+    failStaleTarget: () => {
+      if (!locked.current) setFailure({ key: "记录已变更，请重新核对当前记录后提交。" });
     },
     run,
     runOperation: async (key: string, operation: EnterpriseOperation, fallback: EnterpriseMessageKey) =>

@@ -1,5 +1,10 @@
 import type { Page } from "@playwright/test";
-import type { EnterpriseOverviewRead, UserGroupRead } from "../src/lib/generated";
+import type {
+  EnterpriseAuditPageRead,
+  EnterpriseOverviewRead,
+  InvitationRead,
+  UserGroupRead,
+} from "../src/lib/generated";
 import { installGovernanceFixture } from "./governance-fixture";
 
 const time = "2026-10-11T00:00:00Z";
@@ -26,6 +31,12 @@ export async function installEnterpriseLanguageFixture(page: Page) {
   const base = await installGovernanceFixture(page);
   const state = {
     groups: [] as UserGroupRead[],
+    invitations: [] as InvitationRead[],
+    invitationWrites: [] as { kind: "issue" | "revoke"; payload: unknown }[],
+    audit: { items: [], next_cursor: null } as EnterpriseAuditPageRead,
+    auditFilters: [] as { actorType: string | null; action: string | null; cursor: string | null }[],
+    auditHold: false,
+    auditRelease: undefined as (() => void) | undefined,
     reads: 0,
     writes: [] as unknown[],
     hold: false,
@@ -39,12 +50,31 @@ export async function installEnterpriseLanguageFixture(page: Page) {
       state.reads++;
       if (path === "/api/v1/enterprise/overview") return route.fulfill({ json: overview });
       if (path === "/api/v1/enterprise/groups") return route.fulfill({ json: state.groups });
-      if (
-        path === "/api/v1/enterprise/account-invitations" ||
-        path === "/api/v1/enterprise/users" ||
-        path === "/api/v1/enterprise/llm-providers"
-      )
+      if (path === "/api/v1/enterprise/account-invitations") return route.fulfill({ json: state.invitations });
+      if (path === "/api/v1/enterprise/audit-events") {
+        const query = new URL(request.url()).searchParams;
+        state.auditFilters.push({
+          actorType: query.get("actor_type"),
+          action: query.get("action"),
+          cursor: query.get("cursor"),
+        });
+        if (state.auditHold)
+          await new Promise<void>((resolve) => {
+            state.auditRelease = resolve;
+          });
+        return route.fulfill({ json: state.audit });
+      }
+      if (path === "/api/v1/enterprise/users" || path === "/api/v1/enterprise/llm-providers")
         return route.fulfill({ json: [] });
+    }
+    if (request.method() === "POST" && path === "/api/v1/enterprise/account-invitations") {
+      state.invitationWrites.push({ kind: "issue", payload: request.postDataJSON() });
+      if (state.hold)
+        await new Promise<void>((resolve) => {
+          state.release = resolve;
+        });
+      if (state.fail) return route.fulfill({ status: 503, json: { detail: "PRIVATE_CONTROLLED_INVITATION_FAILURE" } });
+      throw new Error("Successful secret issuance is not used for screenshot acceptance");
     }
     if (request.method() === "POST" && path === "/api/v1/enterprise/groups") {
       const payload = request.postDataJSON();
@@ -69,7 +99,7 @@ export async function installEnterpriseLanguageFixture(page: Page) {
       state.groups = [group];
       return route.fulfill({ json: group });
     }
-    throw new Error("Unexpected enterprise fixture request: " + request.method() + " " + path);
+    throw new Error(`Unexpected enterprise fixture request: ${request.method()} ${path}`);
   });
   return { base, state };
 }

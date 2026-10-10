@@ -2,7 +2,8 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { EnterpriseLLMProvider } from "../lib/contracts/enterprise";
 import { setLocale } from "../lib/i18n";
-import { LLMProviderModal, LLMProvidersPanel } from "../views/enterprise/ModelsPanel";
+import { LLMProviderModal } from "../views/enterprise/LLMProviderModal";
+import { LLMProvidersPanel } from "../views/enterprise/ModelsPanel";
 
 const provider: EnterpriseLLMProvider = {
   id: "controlled-provider",

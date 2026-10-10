@@ -2,9 +2,12 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AccountInvitationPanel } from "../components/AccountInvitationPanel";
+import { useAccountInvitations } from "../components/accountInvitations/useAccountInvitations";
 import { ApiError } from "../lib/api";
 import { accountInvitations, issueAccountInvitation, revokeAccountInvitation } from "../lib/contracts/accounts";
+import type { AuthMode } from "../lib/contracts/session";
 import type { InvitationRead } from "../lib/generated";
+import { useEnterpriseOperationBoundary } from "../views/enterprise/useEnterpriseOperationBoundary";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/accounts", () => ({
@@ -24,6 +27,12 @@ const invitation: InvitationRead = {
   status: "active",
 };
 
+function InvitationHarness({ authMode = "local" }: { authMode?: AuthMode }) {
+  const boundary = useEnterpriseOperationBoundary();
+  const workspace = useAccountInvitations(authMode, true, boundary);
+  return <AccountInvitationPanel workspace={workspace} />;
+}
+
 describe("administrator account invitations", () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -33,7 +42,7 @@ describe("administrator account invitations", () => {
   });
 
   it("shows the empty state and rejects an out-of-range expiry", async () => {
-    renderWithQueryClient(<AccountInvitationPanel authMode="local" />);
+    renderWithQueryClient(<InvitationHarness />);
     await screen.findByText("暂无注册邀请");
     expect(screen.getByRole("button", { name: "生成注册邀请码" })).toBeDisabled();
     fireEvent.change(screen.getByLabelText("受邀邮箱"), { target: { value: "employee@example.test" } });
@@ -45,7 +54,7 @@ describe("administrator account invitations", () => {
   });
 
   it("shows the code once, traps focus, and clears it from the mutation cache on close", async () => {
-    const { queryClient } = renderWithQueryClient(<AccountInvitationPanel authMode="local" />);
+    const { queryClient } = renderWithQueryClient(<InvitationHarness />);
     await screen.findByText("暂无注册邀请");
     const submit = screen.getByRole("button", { name: "生成注册邀请码" });
     fireEvent.change(screen.getByLabelText("受邀邮箱"), { target: { value: "employee@example.test" } });
@@ -76,7 +85,7 @@ describe("administrator account invitations", () => {
       invitation,
       { ...invitation, id: "used", email: "used@example.test", status: "consumed", claimed_at: "2026-10-01T01:00:00Z" },
     ]);
-    renderWithQueryClient(<AccountInvitationPanel authMode="local" />);
+    renderWithQueryClient(<InvitationHarness />);
     const table = await screen.findByRole("table", { name: "注册邀请记录" });
     const buttons = within(table).getAllByRole("button", { name: "撤销邀请" });
     expect(buttons[0]).toBeEnabled();
@@ -94,7 +103,7 @@ describe("administrator account invitations", () => {
   it("allows retry after a list failure and sanitizes failed issue responses", async () => {
     vi.mocked(accountInvitations).mockRejectedValueOnce(new Error("private database stack"));
     vi.mocked(issueAccountInvitation).mockRejectedValue(new ApiError("private provider response", 500, null));
-    renderWithQueryClient(<AccountInvitationPanel authMode="local" />);
+    renderWithQueryClient(<InvitationHarness />);
     await screen.findByText("注册邀请读取失败");
     fireEvent.click(screen.getByRole("button", { name: /重试/ }));
     await screen.findByText("暂无注册邀请");
@@ -105,9 +114,33 @@ describe("administrator account invitations", () => {
   });
 
   it("does not expose a password registration alternative to enterprise identity users", () => {
-    renderWithQueryClient(<AccountInvitationPanel authMode="oidc" />);
+    renderWithQueryClient(<InvitationHarness authMode="oidc" />);
     expect(screen.getByRole("status")).toHaveTextContent("组织身份系统");
     expect(accountInvitations).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: "生成注册邀请码" })).not.toBeInTheDocument();
+  });
+
+  it("does not reveal an issued one-time code when current invitation reconciliation denies access", async () => {
+    vi.mocked(accountInvitations)
+      .mockResolvedValueOnce([])
+      .mockRejectedValue(new ApiError("Access denied", 403, null));
+    const { queryClient } = renderWithQueryClient(<InvitationHarness />);
+    await screen.findByText("暂无注册邀请");
+    fireEvent.change(screen.getByLabelText("受邀邮箱"), { target: { value: "employee@example.test" } });
+    fireEvent.click(screen.getByRole("button", { name: "生成注册邀请码" }));
+    await screen.findByText("注册邀请读取失败");
+    await waitFor(() =>
+      expect(screen.getByLabelText("受邀邮箱").closest("form")).toHaveAttribute("aria-busy", "false"),
+    );
+    expect(screen.queryByRole("dialog", { name: "新生成的注册邀请码" })).not.toBeInTheDocument();
+    expect(
+      JSON.stringify(
+        queryClient
+          .getMutationCache()
+          .getAll()
+          .map((item) => item.state),
+      ),
+    ).not.toContain("one-time-fixture-code");
+    expect(screen.getByRole("button", { name: "生成注册邀请码" })).toBeDisabled();
   });
 });
