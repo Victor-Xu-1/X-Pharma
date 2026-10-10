@@ -26276,7 +26276,7 @@
   "info": {
     "description": "Structured pharmaceutical intelligence and evidence retrieval API",
     "title": "X-Pharma",
-    "version": "0.1.35"
+    "version": "0.1.36"
   },
   "openapi": "3.1.2",
   "paths": {
