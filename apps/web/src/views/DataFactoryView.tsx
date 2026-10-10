@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ErrorState, Spinner } from "../components/common";
 import { ApiError } from "../lib/api";
 import type { DataSource, IngestionRun } from "../lib/contracts/dataFactory";
@@ -18,17 +18,19 @@ import { useLocale } from "../lib/i18n";
 import { factoryText as t } from "../lib/i18n/dataFactory";
 import type { User } from "../lib/types";
 import { FactoryAssetsPanel } from "./dataFactory/FactoryAssetsPanel";
+import { FactoryProjectionAlert } from "./dataFactory/FactoryProjectionAlert";
+import { FactoryRunsPanel } from "./dataFactory/FactoryRunsPanel";
 import { FactorySourcesPanel } from "./dataFactory/FactorySourcesPanel";
 import { FactoryStatusStrip } from "./dataFactory/FactoryStatusStrip";
-import { FactoryRunsPanel } from "./dataFactory/FactoryRunsPanel";
 import { FindingsDrawer } from "./dataFactory/FindingsDrawer";
 import { IngestionFlowOverview } from "./dataFactory/IngestionFlowOverview";
 import { CancelRunDialog, ReplayRunDialog } from "./dataFactory/IngestionRunDialogs";
 import { activeQuarantineStatuses, QuarantineCasesPanel } from "./dataFactory/QuarantineCasesPanel";
 import { QuarantineDecisionDialog } from "./dataFactory/QuarantineDecisionDialog";
-import { SearchProjectionPanel } from "./dataFactory/SearchProjectionPanel";
+import { projectionNeedsAttention, SearchProjectionPanel } from "./dataFactory/SearchProjectionPanel";
 import { SourceAssetDrawer } from "./dataFactory/SourceAssetDrawer";
 import { SourceEditorDialog } from "./dataFactory/SourceEditorDialog";
+import { useFactoryOperation } from "./dataFactory/useFactoryOperation";
 import "./dataFactory/factory.css";
 
 const RUNS_PER_PAGE = 25;
@@ -44,10 +46,11 @@ export function DataFactoryView({ user }: { user: User }) {
   const [cancelRun, setCancelRun] = useState<IngestionRun | null>(null);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [selectedQuarantineVersionId, setSelectedQuarantineVersionId] = useState<string | null>(null);
-  const [actionError, setActionError] = useState("");
-  const [busy, setBusy] = useState("");
+  const operation = useFactoryOperation();
+  const { error: actionError, busy } = operation;
   const [runPage, setRunPage] = useState(0);
   const [assetPage, setAssetPage] = useState(0);
+  const projectionPanel = useRef<HTMLDetailsElement>(null);
   const snapshot = useQuery({
     queryKey: dataFactoryKeys.all,
     queryFn: ({ signal }) => loadDataFactory(signal),
@@ -79,23 +82,17 @@ export function DataFactoryView({ user }: { user: User }) {
   const error = denied ? queryError : actionError || queryError;
 
   async function load() {
-    setActionError("");
+    operation.clear();
     void searchStatusQuery.refetch();
     await Promise.all([snapshot.refetch(), assetsQuery.refetch()]);
   }
 
   async function action(source: DataSource, kind: "scan" | "pause" | "resume") {
-    setBusy(`${source.id}:${kind}`);
-    setActionError("");
-    try {
+    await operation.execute(`${source.id}:${kind}`, "操作失败", async (current) => {
       if (kind === "scan") await triggerDataSourceScan(source.id);
       else await updateDataSourceState(source.id, kind === "pause" ? "paused" : "active");
-      await load();
-    } catch (caught) {
-      setActionError(caught instanceof Error ? caught.message : "操作失败");
-    } finally {
-      setBusy("");
-    }
+      if (current()) await load();
+    });
   }
 
   function showFindings(run: IngestionRun) {
@@ -105,42 +102,33 @@ export function DataFactoryView({ user }: { user: User }) {
   async function replay(operationKey: string, reason: string) {
     if (!replayRun) return;
     if (!["failed", "partial", "canceled"].includes(replayRun.state)) {
-      setActionError("当前运行状态不允许重放，请刷新后重试");
+      operation.reject("当前运行状态不允许重放，请刷新后重试");
       return;
     }
-    setBusy(`run:${replayRun.id}:replay`);
-    setActionError("");
-    try {
+    await operation.execute(`run:${replayRun.id}:replay`, "入库运行重放失败", async (current) => {
       await replayIngestionRun(replayRun.id, operationKey, replayRun.state as ReplayableRunState, reason);
-      setReplayRun(null);
-      await load();
-    } catch (caught) {
-      setActionError(caught instanceof Error ? caught.message : "入库运行重放失败");
-    } finally {
-      setBusy("");
-    }
+      if (current()) {
+        setReplayRun(null);
+        await load();
+      }
+    });
   }
 
   async function cancel(operationKey: string, reason: string) {
     if (!cancelRun) return;
     if (!cancelRun.cancelable || cancelRun.effective_state !== "running") {
-      setActionError("当前运行已不能取消，请刷新后重试");
+      operation.reject("当前运行已不能取消，请刷新后重试");
       return;
     }
-    setBusy(`run:${cancelRun.id}:cancel`);
-    setActionError("");
-    try {
+    await operation.execute(`run:${cancelRun.id}:cancel`, "入库运行取消失败", async (current) => {
       await cancelIngestionRun(cancelRun.id, operationKey, reason);
-      setCancelRun(null);
-      setSelectedRun(null);
-      await load();
-    } catch (caught) {
-      setActionError(caught instanceof Error ? caught.message : "入库运行取消失败");
-    } finally {
-      setBusy("");
-    }
+      if (current()) {
+        setCancelRun(null);
+        setSelectedRun(null);
+        await load();
+      }
+    });
   }
-
   if (!sources && snapshot.isPending) return <Spinner label={t("正在连接数据工厂")} />;
   if (error && !sources) return <ErrorState message={error} retry={load} />;
   return (
@@ -172,6 +160,14 @@ export function DataFactoryView({ user }: { user: User }) {
             {error}
           </div>
         ) : null}
+        {projectionNeedsAttention(searchStatus, searchStatusQuery.error) ? (
+          <FactoryProjectionAlert
+            onInspect={() => {
+              projectionPanel.current?.scrollIntoView({ behavior: "auto", block: "center" });
+              projectionPanel.current?.querySelector<HTMLElement>("summary")?.focus();
+            }}
+          />
+        ) : null}
         <FactorySourcesPanel
           sources={sources ?? []}
           readiness={readiness}
@@ -195,6 +191,7 @@ export function DataFactoryView({ user }: { user: User }) {
               />
             ) : null}
             <SearchProjectionPanel
+              panelRef={projectionPanel}
               data={searchStatus}
               pending={searchStatusQuery.isPending}
               error={searchStatusQuery.error instanceof Error ? searchStatusQuery.error : null}
@@ -204,9 +201,23 @@ export function DataFactoryView({ user }: { user: User }) {
           </>
         ) : null}
 
-        <FactoryRunsPanel runs={runs} page={runPage} pageSize={RUNS_PER_PAGE} busy={Boolean(busy) || snapshot.isFetching || snapshot.isError}
-          editable={user.role === "admin"} onPageChange={setRunPage} onOpen={showFindings}
-          onReplay={(run) => { setActionError(""); setReplayRun(run); }} onCancel={(run) => { setActionError(""); setCancelRun(run); }} />
+        <FactoryRunsPanel
+          runs={runs}
+          page={runPage}
+          pageSize={RUNS_PER_PAGE}
+          busy={Boolean(busy) || snapshot.isFetching || snapshot.isError}
+          editable={user.role === "admin"}
+          onPageChange={setRunPage}
+          onOpen={showFindings}
+          onReplay={(run) => {
+            operation.clear();
+            setReplayRun(run);
+          }}
+          onCancel={(run) => {
+            operation.clear();
+            setCancelRun(run);
+          }}
+        />
 
         <FactoryAssetsPanel
           data={assetsDenied ? undefined : assetsQuery.data}
@@ -247,7 +258,7 @@ export function DataFactoryView({ user }: { user: User }) {
         <FindingsDrawer
           run={selectedRun}
           findings={findingsQuery.data ?? null}
-          error={findingsQuery.error instanceof Error ? findingsQuery.error.message : ""}
+          error={findingsQuery.error instanceof Error ? findingsQuery.error : null}
           retry={() => void findingsQuery.refetch()}
           onClose={() => {
             setSelectedRun(null);
@@ -260,8 +271,8 @@ export function DataFactoryView({ user }: { user: User }) {
           busy={busy === `run:${replayRun.id}:replay`}
           error={actionError}
           onClose={() => {
-            if (!busy) {
-              setActionError("");
+            if (!operation.isLocked()) {
+              operation.clear();
               setReplayRun(null);
             }
           }}
@@ -274,8 +285,8 @@ export function DataFactoryView({ user }: { user: User }) {
           busy={busy === `run:${cancelRun.id}:cancel`}
           error={actionError}
           onClose={() => {
-            if (!busy) {
-              setActionError("");
+            if (!operation.isLocked()) {
+              operation.clear();
               setCancelRun(null);
             }
           }}

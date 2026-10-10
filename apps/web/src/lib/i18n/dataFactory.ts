@@ -1,12 +1,26 @@
+import { factoryDialogMessages } from "./factoryDialogs";
+import { factoryEditorMessages } from "./factoryEditor";
+import { factoryHealthMessages } from "./factoryHealth";
+import { factoryOperationMessages } from "./factoryOperations";
 import { factoryOverviewMessages } from "./factoryOverview";
+import { factoryQuarantineMessages } from "./factoryQuarantine";
 import { factoryRunMessages } from "./factoryRuns";
 import { factorySourceMessages } from "./factorySources";
+import { factoryValidationMessages } from "./factoryValidation";
+import { factoryVersionMessages } from "./factoryVersions";
 import { createTranslator } from "./translator";
 
 export const factoryMessages = {
   ...factorySourceMessages,
   ...factoryOverviewMessages,
+  ...factoryHealthMessages,
   ...factoryRunMessages,
+  ...factoryQuarantineMessages,
+  ...factoryDialogMessages,
+  ...factoryOperationMessages,
+  ...factoryVersionMessages,
+  ...factoryEditorMessages,
+  ...factoryValidationMessages,
   自动数据源: "Data sources",
   接入自动数据源: "Connect data source",
   刷新数据工厂: "Refresh data factory",

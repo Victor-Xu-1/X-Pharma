@@ -348,16 +348,18 @@
 }
 .factory-run-pagination {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-width: 620px;
+  min-width: 0;
   padding: 9px 12px;
   border-top: 1px solid var(--ds-border-subtle);
   font-size: 10px;
 }
 .factory-run-pagination > div {
   display: flex;
+  flex-shrink: 0;
   gap: 6px;
 }
 .ingestion-run-progress {
