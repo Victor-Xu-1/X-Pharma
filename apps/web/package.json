@@ -2,7 +2,7 @@
   "name": "x-pharma-workspace",
   "license": "Apache-2.0",
   "private": true,
-  "version": "0.1.38",
+  "version": "0.1.39",
   "type": "module",
   "packageManager": "pnpm@11.7.0",
   "scripts": {
