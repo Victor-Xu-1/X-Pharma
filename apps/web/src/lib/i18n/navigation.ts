@@ -5,7 +5,7 @@ export const navigationMessages = {
   化学结构检索: "Chemical structure search",
   药物与研发管线: "Drugs & development pipeline",
   临床试验与结果: "Clinical trials & results",
-  专利族与资产关联: "Patent families & linked assets",
+  专利族与资产关联: "Patent families",
   "交易、参与方与资产关联": "Deals, participants & linked assets",
   监管事件与安全时间线: "Regulatory & safety",
   流行病学与疾病负担: "Disease burden",
