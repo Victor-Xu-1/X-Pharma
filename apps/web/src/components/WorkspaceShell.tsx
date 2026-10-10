@@ -35,7 +35,7 @@ const titles: Record<ViewKey, MessageKey> = {
   collections: "对比列表",
   factory: "自动数据工厂",
   governance: "AI 信息审核",
-  commercial: "Agent 商业运营",
+  commercial: "商业运营",
   enterprise: "企业管理",
   environment: "运行环境与安装管理",
 };

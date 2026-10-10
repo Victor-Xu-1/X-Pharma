@@ -1,6 +1,8 @@
 import { X } from "lucide-react";
 import type { FormEvent } from "react";
 import { FormStatus } from "../../components/FormStatus";
+import { useLocale } from "../../lib/i18n";
+import { commercialWorkspaceText as t } from "../../lib/i18n/commercialWorkspace";
 import { useModalFocus } from "../../lib/useModalFocus";
 import type { ClientAction } from "./types";
 
@@ -21,6 +23,7 @@ export function ClientStatusModal({
   onClose: () => void;
   onSubmit: (event: FormEvent) => void;
 }) {
+  useLocale();
   const dialogRef = useModalFocus<HTMLElement>(true, onClose, { closeOnEscape: !busy });
   return (
     <div className="modal-backdrop" role="presentation">
@@ -35,9 +38,9 @@ export function ClientStatusModal({
         <header>
           <div>
             <p className="eyebrow">AGENT CLIENT</p>
-            <h2 id="client-status-title">{action.active ? "重新启用客户端" : "停用客户端"}</h2>
+            <h2 id="client-status-title">{action.active ? t("重新启用客户端") : t("停用客户端")}</h2>
           </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="关闭" disabled={busy}>
+          <button className="icon-button" type="button" onClick={onClose} aria-label={t("关闭")} disabled={busy}>
             <X size={18} />
           </button>
         </header>
@@ -47,7 +50,7 @@ export function ClientStatusModal({
             <span className="mono-cell">{action.client.client_key}</span>
           </p>
           <label>
-            <span>操作原因</span>
+            <span>{t("操作原因")}</span>
             <textarea
               disabled={busy}
               rows={4}
@@ -61,14 +64,14 @@ export function ClientStatusModal({
           <FormStatus pending={busy} error={error} />
           <div className="form-actions">
             <button className="text-button" type="button" onClick={onClose} disabled={busy}>
-              取消
+              {t("取消")}
             </button>
             <button
               className={action.active ? "primary-button" : "danger-button"}
               type="submit"
               disabled={busy || reason.trim().length < 3}
             >
-              {action.active ? "确认启用" : "确认停用"}
+              {action.active ? t("确认启用") : t("确认停用")}
             </button>
           </div>
         </form>
