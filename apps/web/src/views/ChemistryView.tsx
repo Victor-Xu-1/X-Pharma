@@ -371,7 +371,7 @@ export function ChemistryView({
         ) : null}
       </div>
 
-      <ChemistryResults result={result} busy={busy} onInspectEntity={onInspectEntity} />
+      <ChemistryResults result={result} busy={busy} failed={Boolean(error)} onInspectEntity={onInspectEntity} />
       <SavedSearchDialog
         open={saveOpen}
         domainLabel={t("结构")}

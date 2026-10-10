@@ -9,16 +9,18 @@ import { chemistryModeKeys as modeLabels, chemistryText as t } from "../../lib/i
 export function ChemistryResults({
   result,
   busy,
+  failed,
   onInspectEntity,
 }: {
   result: ChemistrySearchResult | undefined;
   busy: boolean;
+  failed: boolean;
   onInspectEntity: (entityId: string) => void;
 }) {
   useLocale();
   return (
     <div className="chemistry-results" aria-busy={busy}>
-      {!result && !busy ? <EmptyState title={t("尚未执行结构查询")} /> : null}
+      {!result && !busy && !failed ? <EmptyState title={t("尚未执行结构查询")} /> : null}
       {result ? (
         <>
           <header className="chemistry-result-head">

@@ -46,6 +46,15 @@ beforeEach(() => {
   setLocale("en");
   vi.mocked(searchChemistry).mockResolvedValue(result);
 });
+it("does not present an initial not-run state after a submitted parser failure", async () => {
+  vi.mocked(searchChemistry).mockRejectedValue(new Error(JSON.stringify({ code: "invalid_smiles" })));
+  renderWithQueryClient(<ChemistryView onInspectEntity={vi.fn()} />);
+  fireEvent.click(screen.getByRole("tab", { name: "Advanced input" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "SMILES" }), { target: { value: "invalid-structure" } });
+  fireEvent.click(screen.getByRole("button", { name: "Search" }));
+  await screen.findByRole("alert");
+  expect(screen.queryByText("No structure query has been run")).not.toBeInTheDocument();
+});
 it("renders the complete first-visit chemistry control and empty-state framing in English", () => {
   renderWithQueryClient(<ChemistryView onInspectEntity={vi.fn()} />);
   expect(screen.getByRole("tab", { name: "Draw structure" })).toBeInTheDocument();

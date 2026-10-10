@@ -38,7 +38,7 @@ export const chemistryMessages = {
   "结构检索已保存，可通过当前链接恢复": "The structure search is saved and can be restored from this link.",
   "{mode}结构检索": "{mode} structure search",
   "{mode}命中": "{mode} matches",
-  结构: "Structure",
+  结构: "structure",
   分子式: "Molecular formula",
   分子量: "Molecular weight",
   精确质量: "Exact mass",
@@ -48,6 +48,29 @@ export const chemistryMessages = {
   "复制 {name} SMILES": "Copy {name} SMILES",
   "复制 {name} InChIKey": "Copy {name} InChIKey",
   查看实体: "View entity",
+  结构式编辑器: "Structure editor",
+  正在准备结构画板: "Preparing the structure editor",
+  "结构读取失败，请重新绘制或刷新画板": "Structure reading failed. Redraw or refresh the editor.",
+  正在载入结构: "Loading the structure",
+  可以开始绘制: "Ready to draw",
+  "结构已载入，可继续编辑": "The structure is loaded and ready to edit",
+  结构载入失败: "The structure could not be loaded",
+  正在读取结构: "Reading the structure",
+  画板中尚无结构: "The editor has no structure yet",
+  结构已用于本次检索: "The structure is applied to this query",
+  结构读取失败: "The structure could not be read",
+  画板已清空: "The editor is cleared",
+  清空画板: "Clear editor",
+  应用到检索: "Apply to query",
+  请先在画板中绘制结构: "Draw a structure first",
+  "无法读取当前画板结构，请重新绘制或刷新画板后重试。":
+    "The editor structure could not be read. Redraw or refresh the editor and try again.",
+  "无法载入当前结构，请检查内容后重试。": "The structure could not be loaded. Check the input and try again.",
+  "请先在画板中绘制结构。": "Draw a structure in the editor first.",
+  "无法读取当前结构，请检查结构后重试。": "The current structure could not be read. Check it and try again.",
+  "无法清空画板，请刷新页面后重试。": "The editor could not be cleared. Refresh the page and try again.",
+  "结构编辑器无法处理当前操作，请调整结构后重试。":
+    "The editor could not handle this action. Adjust the structure and try again.",
 } as const;
 export type ChemistryMessageKey = keyof typeof chemistryMessages;
 export const chemistryText = createTranslator(chemistryMessages);
