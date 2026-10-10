@@ -6,7 +6,7 @@ import { quarantineStatusLabel } from "../../lib/quarantinePresentation";
 import type { User } from "../../lib/types";
 import { FactoryDetailsPanel } from "./FactoryDetailsPanel";
 
-const activeStatuses = new Set(["pending_review", "held", "rescan_requested"]);
+export const activeQuarantineStatuses: ReadonlySet<string> = new Set(["pending_review", "held", "rescan_requested"]);
 
 export function QuarantineCasesPanel({
   items,
@@ -19,7 +19,7 @@ export function QuarantineCasesPanel({
   stale: boolean;
   onOpen: (sourceVersionId: string) => void;
 }) {
-  const activeCount = items.filter((item) => activeStatuses.has(item.quarantine_status)).length;
+  const activeCount = items.filter((item) => activeQuarantineStatuses.has(item.quarantine_status)).length;
   return (
     <FactoryDetailsPanel
       title="恶意文件隔离"
@@ -70,7 +70,7 @@ export function QuarantineCasesPanel({
                   <td data-label="操作">
                     <button className="secondary-button" type="button" onClick={() => onOpen(item.source_version_id)}>
                       <ShieldAlert size={15} aria-hidden="true" />
-                      {role === "admin" && activeStatuses.has(item.quarantine_status) ? "处置" : "查看"}
+                      {role === "admin" && activeQuarantineStatuses.has(item.quarantine_status) ? "处置" : "查看"}
                     </button>
                   </td>
                 </tr>

@@ -2,7 +2,7 @@ import { ScanSearch, X } from "lucide-react";
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "../../components/common";
 import type { IngestionFinding, IngestionRun } from "../../lib/contracts/dataFactory";
 import { useModalFocus } from "../../lib/useModalFocus";
-import { RUN_STAGE_LABELS, RunStageGraph } from "./RunStagePresentation";
+import { runStageLabel, RunStageGraph } from "./RunStagePresentation";
 
 export function FindingsDrawer({
   run,
@@ -19,7 +19,7 @@ export function FindingsDrawer({
 }) {
   const failedStages = run.stages
     .filter((stage) => stage.status === "failed")
-    .map((stage) => RUN_STAGE_LABELS[stage.stage]);
+    .map((stage) => runStageLabel(stage.stage));
   const failureMessage = run.error_summary
     ? run.error_summary
     : failedStages.length

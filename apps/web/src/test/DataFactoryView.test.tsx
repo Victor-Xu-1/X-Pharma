@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-
+import { ApiError } from "../lib/api";
 import {
   cancelIngestionRun,
   createDataSource,
@@ -16,6 +16,7 @@ import {
   replaySourceVersion,
   updateDataSource,
 } from "../lib/contracts/dataFactory";
+import { setLocale } from "../lib/i18n";
 import type { DataSource, User } from "../lib/types";
 import { DataFactoryView } from "../views/DataFactoryView";
 import { renderWithQueryClient } from "./renderWithQueryClient";
@@ -166,6 +167,49 @@ beforeEach(() => {
   });
 });
 
+it("renders factory controls in English and retains the original source name and URI when switching", async () => {
+  act(() => setLocale("en"));
+  renderWithQueryClient(<DataFactoryView user={user} />);
+  expect(await screen.findByRole("heading", { name: "Data sources" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Connect data source" })).toBeVisible();
+  expect(screen.getByText(source.name, { exact: true })).toBeVisible();
+  expect(screen.getByText(source.root_uri, { exact: true })).toBeVisible();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("heading", { name: "自动数据源" })).toBeVisible();
+  expect(screen.getByText(source.name, { exact: true })).toBeVisible();
+  act(() => setLocale("en"));
+  expect(screen.getByRole("button", { name: "Connect data source" })).toBeVisible();
+});
+
+it("does not present a pending source asset request as an empty catalog", async () => {
+  act(() => setLocale("en"));
+  vi.mocked(loadSourceAssets).mockReturnValue(new Promise(() => undefined));
+  renderWithQueryClient(<DataFactoryView user={user} />);
+  await screen.findByText(source.name, { exact: true });
+  expect(screen.getByText("Loading source assets", { exact: true })).toBeVisible();
+  expect(screen.queryByText("No source assets yet", { exact: true })).not.toBeInTheDocument();
+  expect(screen.queryByText("暂无源对象", { exact: true })).not.toBeInTheDocument();
+});
+
+it("shows a source asset read failure and retry without converting it into a zero inventory", async () => {
+  act(() => setLocale("en"));
+  vi.mocked(loadSourceAssets).mockRejectedValue(new ApiError("RAW_ASSET_FAILURE", 503, null));
+  renderWithQueryClient(<DataFactoryView user={user} />);
+  expect(await screen.findByRole("alert")).toHaveTextContent("RAW_ASSET_FAILURE");
+  expect(screen.getByRole("button", { name: "Retry source assets" })).toBeVisible();
+  expect(screen.queryByText("No source assets yet", { exact: true })).not.toBeInTheDocument();
+});
+
+it("hides cached factory facts and source operations after a current transport permission denial", async () => {
+  const { queryClient } = renderWithQueryClient(<DataFactoryView user={user} />);
+  await screen.findByText(source.name, { exact: true });
+  vi.mocked(loadDataFactory).mockRejectedValue(new ApiError("RAW_FACTORY_DENIAL", 403, null));
+  await act(() => queryClient.refetchQueries({ queryKey: ["data-factory"], exact: true }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("RAW_FACTORY_DENIAL");
+  expect(screen.queryByText(source.name, { exact: true })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "接入自动数据源" })).not.toBeInTheDocument();
+});
+
 it("does not block the data factory on a slow search projection status request", async () => {
   vi.mocked(loadSearchProjectionStatus).mockImplementation(() => new Promise(() => undefined));
 
@@ -274,7 +318,7 @@ it("identifies governed inference as a third-party remote API", async () => {
   renderWithQueryClient(<DataFactoryView user={user} />);
 
   expect(await screen.findByText("第三方 LLM API")).toBeInTheDocument();
-  expect(screen.getByText("远程 API 已启用")).toBeInTheDocument();
+  expect(screen.getByText("远程 API 已配置")).toBeInTheDocument();
   expect(screen.getByText("远程 API · governed-extractor")).toBeInTheDocument();
   expect(screen.getByText("结构化治理")).toBeInTheDocument();
   expect(screen.getByText("官方结构化来源可直接校验")).toBeInTheDocument();
