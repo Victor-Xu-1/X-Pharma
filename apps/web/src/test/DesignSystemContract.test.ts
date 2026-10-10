@@ -3,6 +3,15 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+it("keeps responsive account ownership in its stylesheet and removes unused status rules", () => {
+  const account = source("../styles/user-center.css");
+  const chemistry = source("../styles/chemistry.css");
+  expect(account).not.toContain(".user-center-status");
+  expect(account).not.toContain(".user-center-eyebrow");
+  expect(account).toContain("@media (max-width: 760px)");
+  expect(chemistry).not.toContain(".user-center-");
+});
+
 it("keeps only the selection gutter pinned in narrow table containers so row actions remain reachable", () => {
   const layout = source("../styles.css");
   expect(ruleBody(layout, ".virtual-table-shell")).toContain("container: workbench-table / inline-size;");

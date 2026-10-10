@@ -50,6 +50,15 @@ subscriptions, exports, preferences or audit history.
 
 The account page receives the server-owned authentication mode through the same session boundary. Local email is explicitly an unverified login identifier, not proof of ownership. Enterprise mode makes the identity email read-only and removes the local password form; password and account recovery stay with the enterprise IdP, without a local-password fallback. These UI controls do not replace production OIDC configuration or actual IdP/recovery acceptance.
 
+The identity card does not infer account standing from a status-free user
+response. Local email ownership remains visibly unverified even when the longer
+sign-in/recovery guidance is collapsed. The complete guidance uses native
+keyboard-accessible disclosure, retaining its open state and profile drafts
+across language switching without another identity request. Enterprise recovery
+ownership remains explicit; no local-password fallback is introduced.
+Unbroken original names and email addresses wrap within the identity card rather
+than overflowing or being abbreviated; the email icon retains its size.
+
 In local development mode, external researchers can register an independent
 viewer account when self-registration is enabled. New internal accounts require
 an administrator-issued invitation. An existing identity instead uses the

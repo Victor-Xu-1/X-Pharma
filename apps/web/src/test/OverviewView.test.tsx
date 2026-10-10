@@ -54,7 +54,7 @@ it("keeps the user center focused on account management", () => {
   expect(screen.getByRole("heading", { name: "登录安全" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "账户操作" })).toBeInTheDocument();
   expect(screen.getByText("analyst@example.test")).toBeInTheDocument();
-  expect(screen.getByText("账户正常")).toBeInTheDocument();
+  expect(screen.queryByText("账户正常")).not.toBeInTheDocument();
   expect(screen.queryByText(/最近访问|最近更新专题|知识专题|快捷入口|可查询数据/)).not.toBeInTheDocument();
   expect(screen.queryByText(/租户|治理状态|权限角色/)).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "退出当前账号" })).toBeInTheDocument();
