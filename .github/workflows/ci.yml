@@ -224,6 +224,7 @@ jobs:
       # paid MCP concurrency is exercised independently below.
       PHARMA_BROWSER_WORKERS: "1"
       PHARMA_BROWSER_TENANT_SLUG: e2e
+      APP_IMAGE_TAG: ci-integration
       COMPOSE_PROJECT_NAME: x-pharma-ci
       COMPOSE_FILE: compose.yaml:compose.dev.yaml:compose.telemetry.yaml
       DOCKER_LIBRARY_REGISTRY: docker.io/library
@@ -274,13 +275,23 @@ jobs:
           tags: pharma-postgres-rdkit:18.4-2026.03.3
           cache-from: type=gha,scope=postgres-rdkit
           cache-to: type=gha,mode=max,scope=postgres-rdkit
+      - name: Build source-verified application integration image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: deploy/api.Dockerfile
+          build-args: DOCKER_LIBRARY_REGISTRY=docker.io/library
+          load: true
+          tags: pharma-intelligence-api:ci-integration
+          cache-from: type=gha,scope=pharma-api-security
+          cache-to: type=gha,mode=max,scope=pharma-api-security
       - name: Start integration stack
         env:
           KNOWLEDGE_SOURCE_ROOT: /tmp/pharma-source
         run: |
           mkdir -p /tmp/pharma-source
           python3 scripts/configure-development.py
-          docker compose build api otel-collector
+          docker compose build otel-collector
           docker compose up -d --no-build --wait --wait-timeout 600 api worker parser otel-collector
           docker compose ps
       - name: Bootstrap ephemeral tenant
