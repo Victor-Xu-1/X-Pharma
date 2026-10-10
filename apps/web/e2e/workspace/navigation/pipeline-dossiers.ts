@@ -298,8 +298,8 @@ export async function verifyPipelineDossiers(context: Awaited<ReturnType<typeof 
   await expect(drugDeals).toContainText(`Browser pipeline company B ${fixtureKeyBase}`);
   await expect(drugDeals).toContainText("被许可方 · 中国 · biotech");
   await expect(drugDeals).toContainText("交易时 I 期临床 · 当前 II 期临床");
-  await expect(drugDeals).toContainText("首付款 USD 25.0M");
-  await expect(drugDeals).toContainText("潜在总额 USD 500.0M");
+  await expect(drugDeals).toContainText("首付款 USD 25,000,000");
+  await expect(drugDeals).toContainText("潜在总额 USD 500,000,000");
   const drugDealRights = page.getByRole("table", { name: "药物交易权益归属" });
   await expect(drugDealRights).toContainText(`Browser pipeline company B ${fixtureKeyBase}`);
   await expect(drugDealRights).toContainText("商业化");

@@ -1,15 +1,10 @@
 import { BarChart3, CircleDollarSign, Flag, List, Network, Route } from "lucide-react";
-import { lazy, Suspense } from "react";
 import type { DealAnalysisDimension, DealAnalysisLimit, DealAnalysisView } from "../lib/contracts/deals";
+import { dealLabel, dealTypeLabels, directionLabels, phaseLabels, statusLabels } from "../lib/dealDisplay";
 import type { DealLandscapeBucketRead, DealLandscapeRead } from "../lib/generated";
 import { useLocale } from "../lib/i18n";
-import { domainLandscapeText } from "../lib/i18n/domainLandscape";
-import { compactPhaseLabels as phaseLabels } from "../lib/phasePresentation";
-
-const LandscapeBarChart = lazy(() =>
-  import("./LandscapeBarChart").then((module) => ({ default: module.LandscapeBarChart })),
-);
-
+import { type dealMessages, dealText as t } from "../lib/i18n/deals";
+import { DealDistribution } from "./dealLandscape/DealDistribution";
 export type DealLandscapeFilterField =
   | "dealType"
   | "status"
@@ -21,8 +16,7 @@ export type DealLandscapeFilterField =
   | "currentDevelopmentPhase"
   | "partyCountryRegion"
   | "rightsTerritory";
-
-const dimensionOptions: Array<{ value: DealAnalysisDimension; label: string }> = [
+const dimensionOptions: Array<{ value: DealAnalysisDimension; label: keyof typeof dealMessages }> = [
   { value: "all", label: "全部维度" },
   { value: "deal_type", label: "交易类型" },
   { value: "status", label: "交易状态" },
@@ -35,119 +29,13 @@ const dimensionOptions: Array<{ value: DealAnalysisDimension; label: string }> =
   { value: "party_country", label: "参与方地区" },
   { value: "rights_territory", label: "权益地区" },
 ];
-
-const statusLabels: Record<string, string> = {
-  announced: "已披露",
-  active: "进行中",
-  completed: "已完成",
-  terminated: "已终止",
-  withdrawn: "已撤回",
-  superseded: "已替代",
-  unknown: "未知",
-};
-const directionLabels: Record<string, string> = {
-  domestic: "境内",
-  inbound: "引进",
-  outbound: "对外授权",
-  cross_border: "跨境",
-  global: "全球",
-  undisclosed: "未披露",
-};
-
-function labeledBuckets(buckets: DealLandscapeBucketRead[], labels?: Record<string, string>) {
+function labeledBuckets(buckets: DealLandscapeBucketRead[], labels?: Readonly<Record<string, string>>) {
   return buckets.map((bucket) => ({
     ...bucket,
-    label: bucket.key === "__missing__" ? "未披露" : (labels?.[bucket.key] ?? bucket.label),
+    label:
+      bucket.key === "__missing__" ? t("未披露") : labels ? dealLabel(bucket.key, labels, bucket.label) : bucket.label,
   }));
 }
-
-function Distribution({
-  title,
-  detail,
-  buckets,
-  filterField,
-  view,
-  onFilter,
-}: {
-  title: string;
-  detail: string;
-  buckets: DealLandscapeBucketRead[];
-  filterField: DealLandscapeFilterField;
-  view: DealAnalysisView;
-  onFilter: (field: DealLandscapeFilterField, value: string) => void;
-}) {
-  useLocale();
-  return (
-    <section
-      className="pipeline-landscape-distribution"
-      data-view={view}
-      aria-labelledby={`deal-landscape-${filterField}`}
-    >
-      <header>
-        <h3 id={`deal-landscape-${filterField}`}>{title}</h3>
-        <p>{detail}</p>
-      </header>
-      {buckets.length ? (
-        <div className="pipeline-landscape-distribution-body">
-          {view === "chart" ? (
-            <Suspense
-              fallback={
-                <div className="landscape-chart-loading" role="status" aria-live="polite" aria-atomic="true">
-                  正在绘制分布
-                </div>
-              }
-            >
-              <LandscapeBarChart
-                buckets={buckets}
-                unitLabel={domainLandscapeText("笔交易")}
-                ariaLabel={`${title}交易数量分布`}
-                onSelect={(bucket) => onFilter(filterField, bucket.key)}
-              />
-            </Suspense>
-          ) : (
-            <section className="pipeline-analysis-table-wrap" aria-label={`${title}统计表滚动区域`}>
-              <table className="pipeline-analysis-table" aria-label={`${title}统计表`}>
-                <thead>
-                  <tr>
-                    <th scope="col">排名</th>
-                    <th scope="col">分类</th>
-                    <th scope="col">交易数</th>
-                    <th scope="col">占比</th>
-                    <th scope="col">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {buckets.map((bucket, index) => (
-                    <tr key={bucket.key}>
-                      <td>{index + 1}</td>
-                      <th scope="row">{bucket.label}</th>
-                      <td>{bucket.count}</td>
-                      <td>{(bucket.share * 100).toFixed(1)}%</td>
-                      <td>
-                        <button
-                          type="button"
-                          disabled={bucket.key === "__missing__"}
-                          onClick={() => onFilter(filterField, bucket.key)}
-                        >
-                          筛选
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
-          )}
-        </div>
-      ) : (
-        <p className="pipeline-landscape-missing" role="status" aria-live="polite" aria-atomic="true">
-          当前授权命中集没有可统计的该维度数据。
-        </p>
-      )}
-    </section>
-  );
-}
-
 export function DealLandscape({
   landscape,
   dimension,
@@ -167,74 +55,75 @@ export function DealLandscape({
     limit: DealAnalysisLimit;
   }) => void;
 }) {
+  useLocale();
   const distributions = [
     {
       dimension: "deal_type" as const,
-      title: "交易类型",
-      detail: "按当前授权命中集中的受治理交易类型聚合",
-      buckets: labeledBuckets(landscape.deal_type ?? []),
+      title: t("交易类型"),
+      detail: t("按当前授权命中集中的受治理交易类型聚合"),
+      buckets: labeledBuckets(landscape.deal_type ?? [], dealTypeLabels),
       filterField: "dealType" as const,
     },
     {
       dimension: "status" as const,
-      title: "交易状态",
-      detail: "按当前交易生命周期状态聚合",
+      title: t("交易状态"),
+      detail: t("按当前交易生命周期状态聚合"),
       buckets: labeledBuckets(landscape.status ?? [], statusLabels),
       filterField: "status" as const,
     },
     {
       dimension: "direction" as const,
-      title: "交易方向",
-      detail: "方向基于治理后的参照地区口径",
+      title: t("交易方向"),
+      detail: t("方向基于治理后的参照地区口径"),
       buckets: labeledBuckets(landscape.direction ?? [], directionLabels),
       filterField: "direction" as const,
     },
     {
       dimension: "territory" as const,
-      title: "交易地区",
-      detail: "交易地区与权益地区保持不同口径",
+      title: t("交易地区"),
+      detail: t("交易地区与权益地区保持不同口径"),
       buckets: labeledBuckets(landscape.territory ?? []),
       filterField: "territory" as const,
     },
     {
       dimension: "currency" as const,
-      title: "披露币种",
-      detail: "仅统计来源披露币种，不换算未披露金额",
+      title: t("披露币种"),
+      detail: t("仅统计来源披露币种，不换算未披露金额"),
       buckets: labeledBuckets(landscape.currency ?? []),
       filterField: "currency" as const,
     },
     {
       dimension: "asset_modality" as const,
-      title: "资产模态",
-      detail: "同一交易可关联多个资产模态，占比可能重叠",
+      title: t("资产模态"),
+      detail: t("同一交易可关联多个资产模态，占比可能重叠"),
       buckets: labeledBuckets(landscape.asset_modality ?? []),
       filterField: "assetModality" as const,
     },
     {
       dimension: "transaction_phase" as const,
-      title: "交易时阶段",
-      detail: "按交易发生时的结构化资产阶段聚合",
+      title: t("交易时阶段"),
+      detail: t("按交易发生时的结构化资产阶段聚合"),
       buckets: labeledBuckets(landscape.transaction_phase ?? [], phaseLabels),
       filterField: "developmentPhaseAtTransaction" as const,
     },
     {
       dimension: "current_phase" as const,
-      title: "当前最高阶段",
-      detail: "按当前数据时点的权威管线阶段聚合",
+      title: t("当前最高阶段"),
+      detail: t("按当前数据时点的权威管线阶段聚合"),
       buckets: labeledBuckets(landscape.current_phase ?? [], phaseLabels),
       filterField: "currentDevelopmentPhase" as const,
     },
     {
       dimension: "party_country" as const,
-      title: "参与方地区",
-      detail: "同一交易可包含多个参与方地区，占比可能重叠",
+      title: t("参与方地区"),
+      detail: t("同一交易可包含多个参与方地区，占比可能重叠"),
       buckets: labeledBuckets(landscape.party_country ?? []),
       filterField: "partyCountryRegion" as const,
     },
     {
       dimension: "rights_territory" as const,
-      title: "权益地区",
-      detail: "按结构化交易权益记录聚合，不从摘要推断",
+      title: t("权益地区"),
+      detail: t("按结构化交易权益记录聚合，不从摘要推断"),
       buckets: labeledBuckets(landscape.rights_territory ?? []),
       filterField: "rightsTerritory" as const,
     },
@@ -242,41 +131,41 @@ export function DealLandscape({
   const visible = dimension === "all" ? distributions : distributions.filter((item) => item.dimension === dimension);
 
   return (
-    <section className="pipeline-landscape deal-landscape" aria-label="交易数据统计">
+    <section className="pipeline-landscape deal-landscape" aria-label={t("交易数据统计")}>
       <dl className="pipeline-landscape-kpis">
         <div>
           <BarChart3 size={17} />
-          <dt>交易</dt>
+          <dt>{t("交易总数")}</dt>
           <dd>{landscape.total_deals}</dd>
         </div>
         <div>
           <Network size={17} />
-          <dt>交易类型</dt>
+          <dt>{t("交易类型")}</dt>
           <dd>{(landscape.deal_type ?? []).filter((bucket) => bucket.key !== "__missing__").length}</dd>
         </div>
         <div>
           <Route size={17} />
-          <dt>交易方向</dt>
+          <dt>{t("交易方向")}</dt>
           <dd>{(landscape.direction ?? []).filter((bucket) => bucket.key !== "__missing__").length}</dd>
         </div>
         <div>
           <Flag size={17} />
-          <dt>参与方地区</dt>
+          <dt>{t("参与方地区")}</dt>
           <dd>{(landscape.party_country ?? []).length}</dd>
         </div>
         <div>
           <CircleDollarSign size={17} />
-          <dt>披露币种</dt>
+          <dt>{t("披露币种")}</dt>
           <dd>{(landscape.currency ?? []).filter((bucket) => bucket.key !== "__missing__").length}</dd>
         </div>
       </dl>
 
       <fieldset className="pipeline-analysis-toolbar">
-        <legend className="sr-only">交易统计分析控制</legend>
+        <legend className="sr-only">{t("交易统计分析控制")}</legend>
         <label>
-          <span>分析维度</span>
+          <span>{t("分析维度")}</span>
           <select
-            aria-label="交易分析维度"
+            aria-label={t("交易分析维度")}
             value={dimension}
             onChange={(event) =>
               onAnalysisChange({ dimension: event.target.value as DealAnalysisDimension, view, limit })
@@ -284,20 +173,20 @@ export function DealLandscape({
           >
             {dimensionOptions.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {t(option.label)}
               </option>
             ))}
           </select>
         </label>
         <fieldset className="segmented-control">
-          <legend className="sr-only">交易分析展示方式</legend>
+          <legend className="sr-only">{t("交易分析展示方式")}</legend>
           <button
             type="button"
             aria-pressed={view === "chart"}
             onClick={() => onAnalysisChange({ dimension, view: "chart", limit })}
           >
             <BarChart3 size={14} />
-            图表
+            {t("图表")}
           </button>
           <button
             type="button"
@@ -305,13 +194,13 @@ export function DealLandscape({
             onClick={() => onAnalysisChange({ dimension, view: "table", limit })}
           >
             <List size={14} />
-            表格
+            {t("表格")}
           </button>
         </fieldset>
         <label>
-          <span>显示范围</span>
+          <span>{t("显示范围")}</span>
           <select
-            aria-label="交易分析显示范围"
+            aria-label={t("交易分析显示范围")}
             value={limit}
             onChange={(event) =>
               onAnalysisChange({ dimension, view, limit: Number(event.target.value) as DealAnalysisLimit })
@@ -324,14 +213,15 @@ export function DealLandscape({
           </select>
         </label>
         <output aria-live="polite">
-          {dimensionOptions.find((option) => option.value === dimension)?.label} · {view === "chart" ? "图表" : "表格"}
+          {t(dimensionOptions.find((option) => option.value === dimension)?.label ?? "全部维度")} ·{" "}
+          {view === "chart" ? t("图表") : t("表格")}
           {" · "}Top {limit}
         </output>
       </fieldset>
 
       <div className={`pipeline-landscape-grid${dimension !== "all" ? " pipeline-landscape-grid-focused" : ""}`}>
         {visible.map((distribution) => (
-          <Distribution
+          <DealDistribution
             key={distribution.dimension}
             title={distribution.title}
             detail={distribution.detail}
@@ -344,7 +234,7 @@ export function DealLandscape({
       </div>
       <footer className="pipeline-landscape-note">
         <BarChart3 size={15} />
-        <span>统计基于当前授权查询的完整命中集；多资产和多参与方维度可重叠，未披露不会推断。</span>
+        <span>{t("统计基于当前授权查询的完整命中集；多资产和多参与方维度可重叠，未披露不会推断。")}</span>
       </footer>
     </section>
   );

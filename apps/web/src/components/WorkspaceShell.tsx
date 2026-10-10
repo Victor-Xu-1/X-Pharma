@@ -20,7 +20,7 @@ const titles: Record<ViewKey, MessageKey> = {
   pipeline: "药物与研发管线",
   trials: "临床试验与结果",
   patents: "专利族与资产关联",
-  deals: "交易、参与方与资产关联",
+  deals: "交易与资产",
   regulatory: "监管事件与安全时间线",
   epidemiology: "流行病学与疾病负担",
   news: "新闻、公告与会议动态",

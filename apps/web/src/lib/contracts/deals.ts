@@ -1,125 +1,27 @@
 import { contractRequest } from "../contract";
-import type {
-  DealDirection,
-  DealPartyRole,
-  DealRightType,
-  DealSavedSearchQuery,
-  DealSearchItemRead,
-  DealSearchResult,
-  DealStatus,
-} from "../generated";
-import { DealsService, MonitoringService } from "../generated";
+import type { DealSavedSearchQuery, DealSearchItemRead, DealSearchResult } from "../generated";
+import { DealsService } from "../generated";
 import { developmentPhases } from "../phasePresentation";
-import { effectiveSort, type SortCriterion } from "./sorting";
+import {
+  assertValidDealSearchFilters,
+  dealDirections,
+  dealStatuses,
+  partyRoles,
+  rightTypes,
+} from "./dealFilterValidation";
+import type { DealAnalysisLimit, DealAnalysisOptions, DealSearchFilters } from "./dealSearchModel";
+import { type SavedSearchCreationOutcome, saveAndSubscribeSearch } from "./savedSearchCreation";
+import { effectiveSort } from "./sorting";
 
-export const dealSortFields = [
-  "announced_at",
-  "name",
-  "deal_type",
-  "status",
-  "direction",
-  "territory",
-  "upfront_amount",
-  "total_potential_amount",
-] as const;
-export type DealSortField = (typeof dealSortFields)[number];
-
-export const dealAnalysisDimensions = [
-  "all",
-  "deal_type",
-  "status",
-  "direction",
-  "territory",
-  "currency",
-  "asset_modality",
-  "transaction_phase",
-  "current_phase",
-  "party_country",
-  "rights_territory",
-] as const;
-export type DealAnalysisDimension = (typeof dealAnalysisDimensions)[number];
-export type DealAnalysisView = "chart" | "table";
-export type DealAnalysisLimit = 5 | 8 | 20 | 50;
-
-export interface DealAnalysisOptions {
-  dimension: DealAnalysisDimension;
-  view: DealAnalysisView;
-  limit: DealAnalysisLimit;
-}
-
-export interface DealSearchFilters {
-  query: string;
-  dealType: string;
-  status: string;
-  direction: string;
-  directionReferenceJurisdiction: string;
-  territory: string;
-  assetEntityId: string;
-  targetEntityId: string;
-  diseaseEntityId: string;
-  assetModalities: string[];
-  assetProgramTags: string[];
-  party: string;
-  partyEntityId: string;
-  partyRole: string;
-  partyCountryRegion: string;
-  partyOrganizationType: string;
-  developmentPhaseAtTransaction: string;
-  currentDevelopmentPhase: string;
-  rightType: string;
-  rightsTerritory: string;
-  currency: string;
-  announcedFrom: string;
-  announcedTo: string;
-  terminatedFrom: string;
-  terminatedTo: string;
-  sourceUpdatedFrom: string;
-  sourceUpdatedTo: string;
-  upfrontAmountMin: string;
-  upfrontAmountMax: string;
-  totalPotentialAmountMin: string;
-  totalPotentialAmountMax: string;
-  sortBy: DealSortField;
-  sortDirection: "asc" | "desc";
-  sort?: SortCriterion<DealSortField>[];
-}
-
-export const emptyDealSearchFilters: DealSearchFilters = {
-  query: "",
-  dealType: "",
-  status: "",
-  direction: "",
-  directionReferenceJurisdiction: "",
-  territory: "",
-  assetEntityId: "",
-  targetEntityId: "",
-  diseaseEntityId: "",
-  assetModalities: [],
-  assetProgramTags: [],
-  party: "",
-  partyEntityId: "",
-  partyRole: "",
-  partyCountryRegion: "",
-  partyOrganizationType: "",
-  developmentPhaseAtTransaction: "",
-  currentDevelopmentPhase: "",
-  rightType: "",
-  rightsTerritory: "",
-  currency: "",
-  announcedFrom: "",
-  announcedTo: "",
-  terminatedFrom: "",
-  terminatedTo: "",
-  sourceUpdatedFrom: "",
-  sourceUpdatedTo: "",
-  upfrontAmountMin: "",
-  upfrontAmountMax: "",
-  totalPotentialAmountMin: "",
-  totalPotentialAmountMax: "",
-  sortBy: "announced_at",
-  sortDirection: "desc",
-  sort: [{ field: "announced_at", direction: "desc" }],
-};
+export type {
+  DealAnalysisDimension,
+  DealAnalysisLimit,
+  DealAnalysisOptions,
+  DealAnalysisView,
+  DealSearchFilters,
+  DealSortField,
+} from "./dealSearchModel";
+export { dealAnalysisDimensions, dealSortFields, emptyDealSearchFilters } from "./dealSearchModel";
 
 export interface DealFacetCatalog {
   as_of: string;
@@ -127,68 +29,7 @@ export interface DealFacetCatalog {
   warnings: string[];
 }
 
-export function validateDealSearchFilters(filters: DealSearchFilters): string | null {
-  const dateRanges: Array<[string, string, string]> = [
-    [filters.announcedFrom, filters.announcedTo, "初始披露日期"],
-    [filters.terminatedFrom, filters.terminatedTo, "终止日期"],
-    [filters.sourceUpdatedFrom, filters.sourceUpdatedTo, "信息更新日期"],
-  ];
-  for (const [minimum, maximum, label] of dateRanges) {
-    if (minimum && maximum && minimum > maximum) return `${label}起始日期不能晚于结束日期`;
-  }
-  const amountRanges: Array<[string, string, string]> = [
-    [filters.upfrontAmountMin, filters.upfrontAmountMax, "首付款"],
-    [filters.totalPotentialAmountMin, filters.totalPotentialAmountMax, "潜在总额"],
-  ];
-  for (const [minimum, maximum, label] of amountRanges) {
-    if (minimum && maximum && Number(minimum) > Number(maximum)) return `${label}下限不能高于上限`;
-  }
-  if (["inbound", "outbound"].includes(filters.direction) && !filters.directionReferenceJurisdiction.trim()) {
-    return "引进或对外许可必须选择方向参照地区";
-  }
-  return null;
-}
-
-const dealStatuses = new Set<DealStatus>([
-  "announced",
-  "active",
-  "completed",
-  "terminated",
-  "withdrawn",
-  "superseded",
-  "unknown",
-]);
-const dealDirections = new Set<DealDirection>([
-  "domestic",
-  "inbound",
-  "outbound",
-  "cross_border",
-  "global",
-  "undisclosed",
-]);
-const partyRoles = new Set<DealPartyRole>([
-  "licensor",
-  "licensee",
-  "seller",
-  "buyer",
-  "acquirer",
-  "target",
-  "partner",
-  "investor",
-  "investee",
-  "other",
-]);
-const rightTypes = new Set<DealRightType>([
-  "research",
-  "development",
-  "manufacturing",
-  "commercialization",
-  "co_development",
-  "co_promotion",
-  "distribution",
-  "option",
-  "other",
-]);
+export { validateDealSearchFilters } from "./dealFilterValidation";
 
 function enumValue<T extends string>(value: string, values: ReadonlySet<T>): T | undefined {
   return values.has(value as T) ? (value as T) : undefined;
@@ -196,8 +37,7 @@ function enumValue<T extends string>(value: string, values: ReadonlySet<T>): T |
 
 function amount(value: string): number | undefined {
   if (!value.trim()) return undefined;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+  return Number(value);
 }
 
 function savedDealQuery(
@@ -250,18 +90,10 @@ function savedDealQuery(
 }
 
 export function hasDealSearchFilter(filters: DealSearchFilters): boolean {
-  const query = savedDealQuery(filters);
-  return Object.entries(query).some(
+  return Object.entries(filters).some(
     ([key, value]) =>
-      ![
-        "sort_by",
-        "sort_direction",
-        "sort",
-        "display_mode",
-        "analysis_dimension",
-        "analysis_view",
-        "analysis_limit",
-      ].includes(key) && value !== undefined,
+      !["sortBy", "sortDirection", "sort"].includes(key) &&
+      (Array.isArray(value) ? value.length > 0 : typeof value === "string" && value.trim().length > 0),
   );
 }
 
@@ -279,29 +111,17 @@ export async function saveDealSearch({
   analysis: DealAnalysisOptions;
   shared: boolean;
   monitor: boolean;
-}): Promise<{ message: string }> {
-  const saved = await contractRequest(
-    MonitoringService.createSavedSearchApiV1MonitoringSavedSearchesPost({
-      requestBody: {
-        name: name.trim(),
-        query_type: "deal_search",
-        query: savedDealQuery(filters, displayMode, analysis),
-        visibility: shared ? "tenant" : "private",
-      },
-    }),
+}): Promise<SavedSearchCreationOutcome> {
+  assertValidDealSearchFilters(filters);
+  return saveAndSubscribeSearch(
+    {
+      name: name.trim(),
+      query_type: "deal_search",
+      query: savedDealQuery(filters, displayMode, analysis),
+      visibility: shared ? "tenant" : "private",
+    },
+    monitor,
   );
-  if (monitor) {
-    try {
-      await contractRequest(
-        MonitoringService.createMonitoringTopicApiV1MonitoringTopicsPost({
-          requestBody: { name: name.trim(), saved_search_id: saved.id },
-        }),
-      );
-    } catch (error) {
-      return { message: `检索已保存，但监控未启用：${error instanceof Error ? error.message : "未知错误"}` };
-    }
-  }
-  return { message: monitor ? "交易检索已保存并启用监控" : "交易检索已保存" };
 }
 
 export const dealKeys = {
@@ -330,6 +150,7 @@ export async function searchDeals(
   analysisLimit: DealAnalysisLimit,
   signal?: AbortSignal,
 ): Promise<DealSearchResult> {
+  assertValidDealSearchFilters(filters);
   return contractRequest(
     DealsService.searchDealTransactionsApiV1DealTransactionsGet({
       q: filters.query.trim() || undefined,

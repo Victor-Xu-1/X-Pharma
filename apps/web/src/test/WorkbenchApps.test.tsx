@@ -479,7 +479,7 @@ it("loads the deals workbench directly from its stable research URL", async () =
   const fetchMock = mockAuthenticated("viewer");
   renderWithQueryClient(<ResearchApp />);
 
-  expect(await screen.findByRole("heading", { name: "交易、参与方与资产关联", level: 1 })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "交易与资产", level: 1 })).toBeInTheDocument();
   expect(await screen.findByText("未找到匹配记录")).toBeInTheDocument();
   expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/api/v1/deal-transactions"))).toBe(true);
   expect(window.location.search).toBe("?view=deals&q=VX-101&deal_type=license&territory=global&party=Acme+Pharma");

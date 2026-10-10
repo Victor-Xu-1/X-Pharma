@@ -1,5 +1,8 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
+import { ApiError } from "../lib/api";
+import { DealSearchValidationError } from "../lib/contracts/dealFilterValidation";
 
 import {
   type DealSearchFilters,
@@ -9,25 +12,265 @@ import {
   searchDeals,
 } from "../lib/contracts/deals";
 import { getEntity, lookupEntities, searchEntities } from "../lib/contracts/intelligence";
+import type { SavedSearchCreationOutcome } from "../lib/contracts/savedSearchCreation";
 import { getSessionEntity } from "../lib/contracts/session";
+import { setLocale } from "../lib/i18n";
 import { DealsView } from "../views/DealsView";
+import { dealResult } from "./fixtures/dealResearch";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/deals", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/contracts/deals")>();
   return {
     ...actual,
-    dealKeys: {
-      search: (filters: DealSearchFilters, offset: number, analysisLimit: number) => [
-        "deals",
-        { ...filters, offset, analysisLimit },
-      ],
-      detail: (dealId: string) => ["deals", "detail", dealId],
-    },
     searchDeals: vi.fn(),
     loadDealDetail: vi.fn(),
     saveDealSearch: vi.fn(),
   };
+});
+
+function renderDeal(overrides: Partial<ComponentProps<typeof DealsView>> = {}) {
+  return renderWithQueryClient(
+    <DealsView
+      displayMode="list"
+      analysisDimension="all"
+      analysisView="table"
+      analysisLimit={8}
+      initialFilters={initialFilters}
+      initialOffset={0}
+      selectedDealId={null}
+      activeSection="overview"
+      onSearchChange={vi.fn()}
+      onDisplayModeChange={vi.fn()}
+      onAnalysisChange={vi.fn()}
+      onDealChange={vi.fn()}
+      onSectionChange={vi.fn()}
+      onOpenEntity={vi.fn()}
+      {...overrides}
+    />,
+  );
+}
+
+it("gives the participating-organization input a unique label in both languages", async () => {
+  renderDeal();
+  await screen.findByRole("table", { name: "交易结果" });
+  fireEvent.click(screen.getByText("参与方与关联条件", { exact: true }));
+  expect(screen.getByLabelText(/参与机构/)).toHaveAttribute("role", "combobox");
+  act(() => setLocale("en"));
+  expect(screen.getByLabelText(/Participating organization/)).toHaveAttribute("role", "combobox");
+});
+
+it("renders English deal controls and memoized columns without losing source fields or drafts on switching", async () => {
+  act(() => setLocale("en"));
+  const onSearchChange = vi.fn();
+  renderDeal({ onSearchChange });
+  const table = await screen.findByRole("table", { name: "Deal results" });
+  expect(within(table).getByRole("columnheader", { name: /Deal name/ })).toBeVisible();
+  expect(within(table).getByText("Active", { exact: true })).toBeVisible();
+  fireEvent.change(screen.getByLabelText("Keyword"), { target: { value: "未提交交易草稿" } });
+  fireEvent.click(screen.getByRole("checkbox", { name: "Select Compare Acme-Beta VX-101 license" }));
+  const reads = vi.mocked(searchDeals).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByLabelText("关键词")).toHaveValue("未提交交易草稿");
+  expect(screen.getByRole("checkbox", { name: "取消选择对比 Acme-Beta VX-101 license" })).toBeChecked();
+  act(() => setLocale("en"));
+  expect(screen.getByLabelText("Keyword")).toHaveValue("未提交交易草稿");
+  expect(searchDeals).toHaveBeenCalledTimes(reads);
+  expect(onSearchChange).not.toHaveBeenCalled();
+});
+
+it("allows an unapplied deal draft to be cleared without treating default sort as an active filter", async () => {
+  act(() => setLocale("en"));
+  renderDeal({ initialFilters: emptyDealSearchFilters });
+  await screen.findByRole("table", { name: "Deal results" });
+  expect(screen.getByRole("button", { name: /^Clear$/ })).toBeDisabled();
+  fireEvent.change(screen.getByLabelText("Keyword"), { target: { value: "draft" } });
+  expect(screen.getByRole("button", { name: /^Clear$/ })).toBeEnabled();
+});
+
+it("keeps the currency-free amount sort draft and explains why it cannot be submitted", async () => {
+  act(() => setLocale("en"));
+  const onSearchChange = vi.fn();
+  renderDeal({
+    initialFilters: {
+      ...initialFilters,
+      currency: "USD",
+      sortBy: "name",
+      sortDirection: "asc",
+      sort: [
+        { field: "name", direction: "asc" },
+        { field: "upfront_amount", direction: "desc" },
+      ],
+    },
+    onSearchChange,
+  });
+  await screen.findByRole("table", { name: "Deal results" });
+  fireEvent.change(screen.getByLabelText("Currency", { exact: true }), { target: { value: "" } });
+  fireEvent.click(screen.getByRole("button", { name: "Search" }));
+  expect(screen.getByRole("alert")).toHaveTextContent("Choose a currency to sort by deal amount");
+  expect(onSearchChange).not.toHaveBeenCalled();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("alert")).toHaveTextContent("按交易金额排序时必须选择币种");
+  expect(screen.getByLabelText("币种", { exact: true })).toHaveValue("");
+});
+
+it("shows an organization suggestion failure with current-language retry instead of a false empty match", async () => {
+  act(() => setLocale("en"));
+  vi.mocked(searchEntities).mockRejectedValue(new ApiError("RAW_ORGANIZATION_FAILURE", 503, null));
+  renderDeal();
+  await screen.findByRole("table", { name: "Deal results" });
+  fireEvent.click(screen.getByText("Participants and linked assets", { exact: true }));
+  const input = screen.getByRole("combobox", { name: "Participating organization" });
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Acme" } });
+  expect(await screen.findByRole("alert")).toHaveTextContent("Organization search failed: RAW_ORGANIZATION_FAILURE");
+  expect(screen.queryByText("No matching organizations", { exact: true })).not.toBeInTheDocument();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("alert")).toHaveTextContent("机构查询失败：RAW_ORGANIZATION_FAILURE");
+  vi.mocked(searchEntities).mockResolvedValue({
+    query_schema_version: "pharma.entity.search.v2",
+    applied_filters: [],
+    items: [],
+    total: 0,
+    limit: 100,
+    offset: 0,
+    sort_by: "relevance",
+    sort_direction: "desc",
+    engine: "opensearch",
+    suggestions: [],
+    took_ms: 3,
+    facets: {},
+    warnings: [],
+  });
+  fireEvent.click(screen.getByRole("button", { name: "重试机构查询" }));
+  expect(await screen.findByText("未找到匹配机构", { exact: true })).toBeVisible();
+  expect(screen.getByRole("combobox", { name: "参与机构" })).toHaveValue("Acme");
+});
+
+it("hides cached deal facts and facet counts after a current real-transport permission denial", async () => {
+  const { queryClient } = renderDeal();
+  await screen.findByRole("table", { name: "交易结果" });
+  vi.mocked(searchDeals).mockRejectedValue(new ApiError("RAW_DEAL_DENIAL", 403, null));
+  await act(() => queryClient.refetchQueries({ queryKey: ["intelligence", "deals"] }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("当前账号无权读取这组结果");
+  expect(screen.queryByRole("option", { name: "许可 (101)" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("table", { name: "交易结果" })).not.toBeInTheDocument();
+});
+
+it("rejects a mismatched deal dossier identity", async () => {
+  act(() => setLocale("en"));
+  vi.mocked(loadDealDetail).mockResolvedValue({ ...dealResult.items[0], id: "foreign-deal" });
+  renderDeal({ selectedDealId: dealResult.items[0].id });
+  expect(await screen.findByRole("alert")).toHaveTextContent("Deal detail does not match the requested identifier");
+  expect(screen.queryByRole("heading", { name: dealResult.items[0].name })).not.toBeInTheDocument();
+});
+
+it("presents an invalid restored query in the current language without rewriting transport errors", async () => {
+  act(() => setLocale("en"));
+  vi.mocked(searchDeals).mockRejectedValue(new DealSearchValidationError("交易状态包含不支持的筛选值"));
+  renderDeal();
+  expect(await screen.findByRole("alert")).toHaveTextContent("Deal status: this filter value is not supported");
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("alert")).toHaveTextContent("交易状态包含不支持的筛选值");
+});
+
+it("does not let a late restored organization name replace a newer participant draft", async () => {
+  act(() => setLocale("en"));
+  let finish: (value: Awaited<ReturnType<typeof getSessionEntity>>) => void = () => {
+    throw new Error("Expected pending organization restoration");
+  };
+  vi.mocked(getSessionEntity).mockReturnValue(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  const entityId = "550e8400-e29b-41d4-a716-446655440002";
+  renderDeal({ initialFilters: { ...initialFilters, partyEntityId: entityId } });
+  await screen.findByRole("table", { name: "Deal results" });
+  fireEvent.change(screen.getByRole("combobox", { name: "Participating organization" }), {
+    target: { value: "New original draft" },
+  });
+  await act(async () =>
+    finish({
+      id: entityId,
+      canonical_entity_id: entityId,
+      entity_type: "organization",
+      name: "Old restored name",
+      external_ids: {},
+      attributes: {},
+      description: null,
+      review_status: "verified",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    }),
+  );
+  expect(screen.getByRole("combobox", { name: "Participating organization" })).toHaveValue("New original draft");
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("combobox", { name: "参与机构" })).toHaveValue("New original draft");
+});
+
+it("retains nested source deal terms instead of flattening them to an object placeholder", async () => {
+  act(() => setLocale("en"));
+  const terms = {
+    royalties: { lower: 0, contingent: false, clauses: ["原始条款 <License>", { region: "SOURCE_REGION" }] },
+  };
+  vi.mocked(loadDealDetail).mockResolvedValue({ ...dealResult.items[0], terms });
+  renderDeal({ selectedDealId: dealResult.items[0].id, activeSection: "terms" });
+  expect(await screen.findByRole("heading", { name: dealResult.items[0].name })).toBeVisible();
+  fireEvent.click(screen.getByText("Complete source metadata", { exact: true }));
+  expect(document.querySelector(".source-metadata pre")?.textContent).toBe(JSON.stringify(terms, null, 2));
+  expect(document.body).not.toHaveTextContent("[object Object]");
+});
+
+it("retains one pending deal save and renders partial-success framing in the current locale", async () => {
+  act(() => setLocale("en"));
+  let finish: (value: SavedSearchCreationOutcome) => void = () => {
+    throw new Error("Pending deal save not initialized");
+  };
+  vi.mocked(saveDealSearch).mockReturnValue(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  renderDeal();
+  await screen.findByRole("table", { name: "Deal results" });
+  fireEvent.click(screen.getByRole("button", { name: "Save / subscribe" }));
+  fireEvent.change(screen.getByLabelText("Name"), { target: { value: "原始交易检索" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save search" }));
+  await waitFor(() => expect(saveDealSearch).toHaveBeenCalledTimes(1));
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByLabelText("名称")).toHaveValue("原始交易检索");
+  expect(screen.getByLabelText("名称")).toBeDisabled();
+  await act(async () => finish({ kind: "monitor_failed", reason: "原始失败 <License>" }));
+  expect(await screen.findByText("检索已保存，但监控未启用：原始失败 <License>")).toBeVisible();
+  act(() => setLocale("en"));
+  expect(screen.getByText("Search saved, but monitoring could not be enabled: 原始失败 <License>")).toBeVisible();
+  expect(saveDealSearch).toHaveBeenCalledTimes(1);
+});
+
+it("keeps known dossier parties and assets when structured roles and transaction phases are absent", async () => {
+  act(() => setLocale("en"));
+  vi.mocked(loadDealDetail).mockResolvedValue({ ...dealResult.items[0], party_roles: [], asset_stages: [] });
+  const parties = renderDeal({ selectedDealId: dealResult.items[0].id, activeSection: "parties" });
+  await screen.findByRole("heading", { name: dealResult.items[0].name });
+  expect(screen.getByRole("button", { name: /Acme Pharma.*Role undisclosed/ })).toBeVisible();
+  parties.unmount();
+  renderDeal({ selectedDealId: dealResult.items[0].id, activeSection: "assets" });
+  await screen.findByRole("heading", { name: dealResult.items[0].name });
+  expect(screen.getByRole("button", { name: /VX-101.*Transaction phase undisclosed/ })).toBeVisible();
+});
+
+it("hides cached deal dossier values after a real current permission denial", async () => {
+  act(() => setLocale("en"));
+  const { queryClient } = renderDeal({ selectedDealId: dealResult.items[0].id });
+  await screen.findByRole("heading", { name: dealResult.items[0].name });
+  vi.mocked(loadDealDetail).mockRejectedValue(new ApiError("RAW_DEAL_DETAIL_DENIAL", 403, null));
+  await act(() =>
+    queryClient.refetchQueries({ queryKey: ["intelligence", "deals", "detail", dealResult.items[0].id] }),
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent("RAW_DEAL_DETAIL_DENIAL");
+  expect(screen.queryByRole("heading", { name: dealResult.items[0].name })).not.toBeInTheDocument();
+  expect(screen.queryByText("USD 25,000,000")).not.toBeInTheDocument();
 });
 
 vi.mock("../lib/contracts/intelligence", () => ({
@@ -49,131 +292,12 @@ vi.mock("../lib/contracts/session", () => ({
   getSessionEntity: vi.fn(),
 }));
 
-const dealResult = {
-  items: [
-    {
-      id: "550e8400-e29b-41d4-a716-446655440010",
-      entity_id: "550e8400-e29b-41d4-a716-446655440001",
-      name: "Acme-Beta VX-101 license",
-      deal_type: "license",
-      status: "active" as const,
-      direction: "outbound" as const,
-      direction_reference_jurisdiction: "US",
-      announced_at: "2026-01-20T00:00:00Z",
-      terminated_at: null,
-      source_updated_at: "2026-03-15T00:00:00Z",
-      parties: [],
-      asset_entity_ids: ["550e8400-e29b-41d4-a716-446655440004"],
-      territory: "global",
-      upfront_amount: 25_000_000,
-      total_potential_amount: 500_000_000,
-      currency: "USD",
-      terms: { royalties: "tiered" },
-      source_document_id: "source-1",
-      party_entities: [
-        { id: "550e8400-e29b-41d4-a716-446655440002", name: "Acme Pharma", entity_type: "organization" as const },
-        { id: "550e8400-e29b-41d4-a716-446655440003", name: "Beta Bio", entity_type: "organization" as const },
-      ],
-      asset_entities: [{ id: "550e8400-e29b-41d4-a716-446655440004", name: "VX-101", entity_type: "drug" as const }],
-      party_roles: [
-        {
-          id: "550e8400-e29b-41d4-a716-446655440002",
-          name: "Acme Pharma",
-          entity_type: "organization" as const,
-          role: "licensor" as const,
-          country_region: "US",
-          organization_type: "biopharma",
-        },
-        {
-          id: "550e8400-e29b-41d4-a716-446655440003",
-          name: "Beta Bio",
-          entity_type: "organization" as const,
-          role: "licensee" as const,
-          country_region: "China",
-          organization_type: "biotech",
-        },
-      ],
-      asset_stages: [
-        {
-          id: "550e8400-e29b-41d4-a716-446655440004",
-          name: "VX-101",
-          entity_type: "drug" as const,
-          development_phase_at_transaction: "phase_2",
-          current_development_phase: "phase_3",
-          current_phase_as_of: "2026-07-01T00:00:00Z",
-        },
-      ],
-      rights: [
-        {
-          id: "right-1",
-          holder_entity_id: "550e8400-e29b-41d4-a716-446655440003",
-          holder_name: "Beta Bio",
-          right_type: "commercialization" as const,
-          territory: "Greater China",
-          exclusive: true,
-          scope_description: "Exclusive commercialization rights",
-          source_document_id: "source-1",
-        },
-      ],
-    },
-  ],
-  total: 101,
-  limit: 100,
-  offset: 0,
-  facets: {
-    deal_type: { license: 101 },
-    status: { active: 101 },
-    direction: { outbound: 101 },
-    territory: { global: 101 },
-    currency: { USD: 101 },
-    asset: { "VX-101": 101 },
-    target: { EGFR: 101 },
-    disease: { "Lung cancer": 101 },
-    asset_modality: { antibody: 71, "small molecule": 30 },
-    asset_program_tag: { first_in_class: 61, best_in_class: 40 },
-    party: { "Acme Pharma": 101, "Beta Bio": 101 },
-    party_role: { licensor: 101, licensee: 101 },
-    party_country_region: { US: 101, China: 101 },
-    party_organization_type: { biopharma: 101, biotech: 101 },
-    development_phase_at_transaction: { phase_2: 101 },
-    current_development_phase: { phase_3: 101 },
-    right_type: { commercialization: 101 },
-    rights_territory: { "Greater China": 101 },
-  },
-  landscape: {
-    total_deals: 101,
-    limit: 8 as const,
-    deal_type: [{ key: "license", label: "license", count: 101, share: 1 }],
-    status: [{ key: "active", label: "active", count: 101, share: 1 }],
-    direction: [{ key: "outbound", label: "outbound", count: 101, share: 1 }],
-    territory: [{ key: "global", label: "global", count: 101, share: 1 }],
-    currency: [{ key: "USD", label: "USD", count: 101, share: 1 }],
-    asset_modality: [
-      { key: "antibody", label: "antibody", count: 71, share: 0.70297 },
-      { key: "small molecule", label: "small molecule", count: 30, share: 0.29703 },
-    ],
-    transaction_phase: [{ key: "phase_2", label: "phase_2", count: 101, share: 1 }],
-    current_phase: [{ key: "phase_3", label: "phase_3", count: 101, share: 1 }],
-    party_country: [
-      { key: "US", label: "US", count: 101, share: 1 },
-      { key: "China", label: "China", count: 101, share: 1 },
-    ],
-    rights_territory: [{ key: "Greater China", label: "Greater China", count: 101, share: 1 }],
-  },
-  as_of: "2026-07-22T10:00:00Z",
-  query_schema_version: "pharma.deal.search.v8",
-  sort_by: "announced_at" as const,
-  sort_direction: "desc" as const,
-  applied_filters: [{ field: "q", operator: "contains" as const, value: "VX-101" }],
-  warnings: ["未观察到交易不代表不存在；结果受数据授权、披露完整性、金额口径和治理状态限制。"],
-};
-
 const initialFilters: DealSearchFilters = { ...emptyDealSearchFilters, query: "VX-101" };
 
 beforeEach(() => {
   vi.mocked(searchDeals).mockResolvedValue(dealResult);
   vi.mocked(loadDealDetail).mockResolvedValue(dealResult.items[0]);
-  vi.mocked(saveDealSearch).mockResolvedValue({ message: "交易检索已保存并启用监控" });
+  vi.mocked(saveDealSearch).mockResolvedValue({ kind: "saved", monitoring: true });
   vi.mocked(searchEntities).mockResolvedValue({
     query_schema_version: "pharma.entity.search.v2",
     applied_filters: [],
@@ -300,8 +424,8 @@ it("keeps common deal filters first and leaves unused participant conditions col
   expect(screen.getByRole("group", { name: "关联适应症检索与选择", hidden: true }).closest("details")).toBe(
     participants,
   );
-  expect(screen.getByRole("group", { name: "交易药品检索与选择" }).closest("details")).toBeNull();
-  expect(screen.getByRole("group", { name: "关联靶点检索与选择" }).closest("details")).toBeNull();
+  expect(screen.getByRole("group", { name: "交易药品检索与选择", hidden: true }).closest("details")).toBe(participants);
+  expect(screen.getByRole("group", { name: "关联靶点检索与选择", hidden: true }).closest("details")).toBe(participants);
 });
 
 it("reveals restored participant conditions and counts a selected organization only once", async () => {
@@ -357,7 +481,7 @@ it("renders governed role, stage, rights and dense deal results", async () => {
   expect(screen.getByText("许可方")).toBeInTheDocument();
   expect(screen.getByText("II期 → 当前 III期")).toBeInTheDocument();
   expect(screen.getByText("商业化 · Greater China")).toBeInTheDocument();
-  expect(screen.getByText("USD 25.0M")).toBeInTheDocument();
+  expect(screen.getByText("USD 25,000,000")).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "已应用查询条件" })).toHaveTextContent("关键词VX-101");
 
   fireEvent.click(screen.getByRole("button", { name: /Acme Pharma许可方/ }));
@@ -409,6 +533,7 @@ it("submits role-aware advanced filters with a stable organization id", async ()
   fireEvent.change(announcedRange.getByLabelText("起"), { target: { value: "2026-01-01" } });
   fireEvent.change(announcedRange.getByLabelText("止"), { target: { value: "2026-12-31" } });
   const upfrontRange = within(screen.getByRole("group", { name: "首付款" }));
+  fireEvent.change(screen.getByLabelText("币种", { exact: true }), { target: { value: "USD" } });
   fireEvent.change(upfrontRange.getByLabelText("下限"), { target: { value: "10000000" } });
   fireEvent.change(upfrontRange.getByLabelText("上限"), { target: { value: "30000000" } });
   fireEvent.click(screen.getByRole("button", { name: "查询" }));

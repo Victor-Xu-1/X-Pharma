@@ -30,6 +30,8 @@ function renderParticipants(candidate: EntityRead = organization) {
         suggestions={[candidate]}
         suggestionsEnabled
         loading={false}
+        error={null}
+        onRetry={vi.fn()}
         onChange={vi.fn()}
         onPartyText={onPartyText}
         onChooseParty={onChooseParty}

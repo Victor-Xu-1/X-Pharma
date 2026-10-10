@@ -12,10 +12,11 @@ const operatorLabels: Record<AppliedFilterRead["operator"], "" | "起" | "止"> 
 };
 
 function displayValue(value: AppliedFilterRead["value"], labels: Readonly<Record<string, string>> | undefined): string {
+  const caption = (key: string) => (labels && Object.hasOwn(labels, key) ? labels[key] : key);
   if (typeof value === "boolean") return value ? t("是") : t("否");
-  if (Array.isArray(value)) return value.map((item) => labels?.[item] ?? item).join(t("、"));
+  if (Array.isArray(value)) return value.map((item) => caption(item)).join(t("、"));
   if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)) return value.slice(0, 10);
-  return labels?.[String(value)] ?? String(value);
+  return caption(String(value));
 }
 
 function operatorLabel(operator: AppliedFilterRead["operator"]): string {
@@ -46,9 +47,14 @@ export function AppliedFiltersBar({
       <div className="applied-filter-list">
         {filters.map((filter) => (
           <span className="applied-filter-chip" key={`${filter.field}-${filter.operator}-${String(filter.value)}`}>
-            <strong>{labels[filter.field] ?? filter.field}</strong>
+            <strong>{Object.hasOwn(labels, filter.field) ? labels[filter.field] : filter.field}</strong>
             {operatorLabels[filter.operator] ? <small>{operatorLabel(filter.operator)}</small> : null}
-            <span>{displayValue(filter.value, valueLabels?.[filter.field])}</span>
+            <span>
+              {displayValue(
+                filter.value,
+                valueLabels && Object.hasOwn(valueLabels, filter.field) ? valueLabels[filter.field] : undefined,
+              )}
+            </span>
           </span>
         ))}
       </div>
