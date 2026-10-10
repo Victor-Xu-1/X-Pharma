@@ -1,6 +1,7 @@
 import { Download } from "lucide-react";
 import { useId } from "react";
 import { EmptyState } from "../../components/common";
+import { FormStatus } from "../../components/FormStatus";
 import type { EnvironmentInstallPlanRead, EnvironmentRead } from "../../lib/generated";
 import { formattingLocale, useMessages } from "../../lib/i18n";
 import { environmentSourceText } from "../../lib/i18n/environment";
@@ -103,11 +104,10 @@ export function EnvironmentInstallationPanel({
       >
         {mutation.isPending ? text("正在生成…") : text("生成安装计划")}
       </button>
-      {mutation.isError ? (
-        <p className="form-error" role="alert">
-          {environmentSourceText(mutation.error.message)}
-        </p>
-      ) : null}
+      <FormStatus
+        pending={false}
+        error={mutation.isError ? environmentSourceText(mutation.error.message) : undefined}
+      />
       {plan ? (
         <section className="environment-plan" aria-label={text("已生成的安装计划")}>
           <h3>{text("安装计划已生成，尚未执行")}</h3>

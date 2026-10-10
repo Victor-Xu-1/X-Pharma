@@ -30,7 +30,7 @@ export function PlatformOperationsPanel({ platform }: { platform: PlatformOperat
             <h2 id="platform-services-title">{text("服务与责任边界")}</h2>
             <p>{text("应用内信号与外部部署探针分开呈现；没有生产遥测时不会显示为已达标。")}</p>
           </div>
-          <span className="cell-subtitle">
+          <span className="platform-snapshot">
             {text("快照 {time}", { time: formatDate(platform.generated_at, true) })}
           </span>
         </header>

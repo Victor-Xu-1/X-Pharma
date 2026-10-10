@@ -7,6 +7,7 @@ from pharma_intel.schemas.environment import EnvironmentProbeStatus
 
 _VERSION = re.compile(r"^(?:v|Python |uv |Corepack )?(\d+)\.(\d+)(?:\.(\d+))?(?: \([A-Za-z0-9_. -]+\))?$")
 _PIN = re.compile(r"^([A-Za-z0-9_.-]+)(?:\[[A-Za-z0-9_,.-]+\])?==([0-9][A-Za-z0-9_.+-]*)(?:;(.+))?$")
+_BOUND = re.compile(r"(>=|<)(\d+)\.(\d+)(?:\.(\d+))?")
 
 
 def version_state(observed: str | None, expected: str | None) -> EnvironmentProbeStatus:
@@ -24,15 +25,18 @@ def version_state(observed: str | None, expected: str | None) -> EnvironmentProb
     major = re.fullmatch(r"(\d+)\.x", expected)
     if major:
         return "present" if parts[0] == int(major[1]) else "mismatch"
-    bounds = re.fullmatch(r">=(\d+)\.(\d+),<(\d+)\.(\d+)", expected)
-    reverse_bounds = re.fullmatch(r"<(\d+)\.(\d+),>=(\d+)\.(\d+)", expected)
-    if reverse_bounds:
-        upper_major, upper_minor, lower_major, lower_minor = map(int, reverse_bounds.groups())
-        return "present" if (lower_major, lower_minor, 0) <= parts < (upper_major, upper_minor, 0) else "mismatch"
-    if bounds:
-        lower_major, lower_minor, upper_major, upper_minor = map(int, bounds.groups())
-        return "present" if (lower_major, lower_minor, 0) <= parts < (upper_major, upper_minor, 0) else "mismatch"
-    return "unverified"
+    declarations = expected.split(",")
+    if len(declarations) != 2:
+        return "unverified"
+    bounds: dict[str, tuple[int, ...]] = {}
+    for declaration in declarations:
+        bound = _BOUND.fullmatch(declaration)
+        if bound is None:
+            return "unverified"
+        bounds[bound[1]] = tuple(int(value or 0) for value in bound.groups()[1:])
+    if set(bounds) != {">=", "<"} or bounds[">="] >= bounds["<"]:
+        return "unverified"
+    return "present" if bounds[">="] <= parts < bounds["<"] else "mismatch"
 
 
 def pinned_dependencies(declarations: list[str]) -> dict[str, str]:

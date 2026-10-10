@@ -1,5 +1,5 @@
 import { formatDate } from "../../components/common";
-import { dependencyReadinessLabels, environmentReadiness } from "../../lib/environmentReadiness";
+import { dependencyReadinessLabels, environmentReadiness, probeReadiness } from "../../lib/environmentReadiness";
 import type { EnvironmentRead } from "../../lib/generated";
 import { formattingLocale, useMessages } from "../../lib/i18n";
 import { environmentMessages, environmentSourceText } from "../../lib/i18n/environment";
@@ -55,7 +55,7 @@ export function EnvironmentRuntimePanel({ environment }: { environment: Environm
           </p>
         ) : null}
       </section>
-      <details className="environment-disclosure" open={readiness.gateway !== "ready"}>
+      <details className="environment-disclosure" open={probeReadiness(environment.runtime) !== "ready"}>
         <summary>{text("查看网关依赖明细")}</summary>
         <p>{text("网关进程的实际版本，不代表主机或其他容器已经健康。")}</p>
         <EnvironmentProbeTable probes={environment.runtime} label={text("网关依赖版本")} />

@@ -3,6 +3,15 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+it("keeps responsive account ownership in its stylesheet and removes unused status rules", () => {
+  const account = source("../styles/user-center.css");
+  const chemistry = source("../styles/chemistry.css");
+  expect(account).not.toContain(".user-center-status");
+  expect(account).not.toContain(".user-center-eyebrow");
+  expect(account).toContain("@media (max-width: 760px)");
+  expect(chemistry).not.toContain(".user-center-");
+});
+
 it("keeps only the selection gutter pinned in narrow table containers so row actions remain reachable", () => {
   const layout = source("../styles.css");
   expect(ruleBody(layout, ".virtual-table-shell")).toContain("container: workbench-table / inline-size;");
@@ -33,6 +42,21 @@ it("stacks only primary intelligence commands at narrow widths without shrinking
   expect(commands).toContain("grid-template-columns: minmax(0, 1fr);");
   expect(commands).not.toMatch(/font-size:|overflow:\s*hidden|text-overflow:|white-space:/);
   expect(source("../views/ExplorerView.tsx")).toContain('import "../styles/entity-results.css"');
+});
+
+it("owns environment-specific controls and statuses in the environment sheet only", () => {
+  expect(source("../styles/enterprise.css")).not.toMatch(/\.environment-/);
+  const environment = source("../views/environment/environment.css");
+  expect(environment).toContain(".environment-status-missing");
+  expect(environment).toContain(".environment-status-mismatch");
+  expect(environment).toContain(".environment-recipes input");
+});
+
+it("keeps the complete platform snapshot readable rather than using a clipped cell subtitle", () => {
+  const environment = source("../views/environment/environment.css");
+  expect(ruleBody(environment, ".platform-snapshot")).toContain("white-space: normal;");
+  expect(ruleBody(environment, ".platform-snapshot")).toContain("overflow-wrap: anywhere;");
+  expect(source("../views/environment/PlatformPanel.tsx")).toContain('className="platform-snapshot"');
 });
 
 it("balances complete workspace headings without clipping text or changing the language control", () => {
