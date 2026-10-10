@@ -43,7 +43,7 @@ const labels: Record<string, string> = {
 export function governanceLabel(value: string): string {
   return value
     .split(".")
-    .map((part) => labels[part] ?? part)
+    .map((part) => (Object.hasOwn(labels, part) ? labels[part] : part))
     .join(" / ");
 }
 
