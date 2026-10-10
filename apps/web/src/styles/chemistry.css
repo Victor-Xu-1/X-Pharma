@@ -847,86 +847,6 @@
   .provenance-metadata {
     grid-template-columns: 1fr;
   }
-  .governance-layout {
-    display: block;
-  }
-  .governance-run-toolbar {
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-  }
-  .governance-run-toolbar code {
-    flex-basis: 100%;
-    min-width: 0;
-    margin-left: 0;
-    overflow-wrap: anywhere;
-  }
-  .governance-run-metadata {
-    grid-template-columns: 1fr;
-  }
-  .identity-scope-toolbar {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 7px;
-  }
-  .publication-control-body {
-    grid-template-columns: 1fr;
-  }
-  .publication-control-body > section {
-    border-right: 0;
-    border-bottom: 1px solid var(--ds-border-subtle);
-  }
-  .publication-control-body > section:last-child {
-    border-bottom: 0;
-  }
-  .projection-maintenance > header,
-  .projection-maintenance-result {
-    align-items: stretch;
-    grid-template-columns: 1fr;
-  }
-  .projection-maintenance > header {
-    display: grid;
-  }
-  .projection-maintenance > header > div {
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
-  .identity-scope-toolbar > p {
-    text-align: left;
-  }
-  .identity-scope-control {
-    width: 100%;
-  }
-  .identity-scope-control button {
-    flex: 1 1 50%;
-    justify-content: center;
-  }
-  .review-list {
-    max-height: 300px;
-  }
-  .review-list {
-    border-right: 0;
-    border-bottom: 1px solid var(--ds-border);
-  }
-  .review-detail {
-    min-height: 360px;
-    padding: 20px 15px;
-  }
-  .canonical-choice {
-    grid-template-columns: 1fr;
-  }
-  .canonical-choice small {
-    grid-column: 1;
-  }
-  .identity-impact-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .identity-impact-metrics > div:nth-child(2n) {
-    border-right: 0;
-  }
-  .identity-impact-metrics > div:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--ds-border);
-  }
   .news-display-control {
     width: 100%;
   }
@@ -960,11 +880,6 @@
   }
   .source-list .row-actions {
     grid-column: 2;
-  }
-  .review-source,
-  .payload-comparison {
-    grid-template-columns: 1fr;
-    gap: 6px;
   }
   .chemistry-query-head {
     align-items: stretch;

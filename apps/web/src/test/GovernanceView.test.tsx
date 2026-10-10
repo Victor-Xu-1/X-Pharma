@@ -24,7 +24,9 @@ import {
   previewPublicationBatch,
   requestProjectionMaintenance,
 } from "../lib/contracts/governance";
+import { sessionKeys } from "../lib/contracts/session";
 import { GovernanceView } from "../views/GovernanceView";
+import { qualityControlledAdmin } from "./QualityTestHarness";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/governance", () => ({
@@ -437,7 +439,9 @@ it("operates quality trends, ownership and SLA events without leaving the govern
     version: 2,
   });
 
-  renderWithQueryClient(<GovernanceView />);
+  renderWithQueryClient(<GovernanceView />, undefined, (client) => {
+    client.setQueryData(sessionKeys.current, { mode: "local", user: qualityControlledAdmin });
+  });
   fireEvent.click(await screen.findByRole("tab", { name: "质量运营" }));
 
   expect(await screen.findByRole("heading", { name: "数据质量运营" })).toBeInTheDocument();

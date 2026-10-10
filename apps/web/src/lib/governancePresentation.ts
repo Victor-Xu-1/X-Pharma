@@ -1,6 +1,8 @@
 import type { StagedFactRead } from "./generated";
+import { type governanceFieldMessages, governanceFieldText } from "./i18n/governanceFields";
+import { governanceReviewText } from "./i18n/governanceReview";
 
-const labels: Record<string, string> = {
+const labels: Record<string, keyof typeof governanceFieldMessages> = {
   claim: "研究结论",
   program: "研发管线",
   trial: "临床试验",
@@ -43,7 +45,7 @@ const labels: Record<string, string> = {
 export function governanceLabel(value: string): string {
   return value
     .split(".")
-    .map((part) => labels[part] ?? part)
+    .map((part) => (Object.hasOwn(labels, part) ? governanceFieldText(labels[part]) : part))
     .join(" / ");
 }
 
@@ -71,9 +73,16 @@ export function payloadDifferences(before: unknown, after: unknown, path = ""): 
 }
 
 export function reviewValue(value: unknown): string {
-  if (value === absent) return "字段不存在";
-  if (value === null) return "未披露";
-  return typeof value === "string" ? value : (JSON.stringify(value) ?? "未披露");
+  if (value === absent) return governanceReviewText("字段不存在");
+  if (value === null) return governanceReviewText("未披露");
+  return typeof value === "string" ? value : (JSON.stringify(value) ?? governanceReviewText("未披露"));
+}
+
+/** Use an explicitly reported subject, never a name inferred from a provider quote. */
+export function reviewFactTitle(fact: StagedFactRead): string {
+  const subject: unknown = fact.fact_kind === "program" ? fact.payload.drug : fact.payload.subject;
+  if (object(subject) && typeof subject.name === "string" && subject.name.trim()) return subject.name;
+  return governanceLabel(fact.fact_kind);
 }
 
 export function groupReviewFacts(facts: StagedFactRead[]): StagedFactRead[][] {
