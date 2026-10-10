@@ -37,7 +37,7 @@ const titles: Record<ViewKey, MessageKey> = {
   governance: "AI 信息审核",
   commercial: "商业运营",
   enterprise: "企业管理",
-  environment: "运行环境与安装管理",
+  environment: "环境管理",
 };
 
 export function WorkspaceShell({

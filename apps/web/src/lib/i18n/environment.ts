@@ -2,9 +2,9 @@ import type { EnvironmentProbeRead } from "../generated";
 import { createTranslator } from "./translator";
 
 export const environmentMessages = {
-  环境检测: "Environment checks",
-  安装与修复: "Installation and repair",
-  运行与发布证据: "Runtime and release evidence",
+  环境检测: "Checks",
+  安装与修复: "Installation",
+  运行与发布证据: "Evidence",
   环境管理功能: "Environment management functions",
   正在检测网关与主机环境: "Checking gateway and host environment",
   "状态读取 {time}": "Status read at {time}",

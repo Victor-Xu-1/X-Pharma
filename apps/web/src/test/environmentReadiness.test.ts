@@ -37,6 +37,34 @@ it("reports only declared, observed compatible dependencies as ready", () => {
   expect(environmentReadiness(environment).overall).toBe("ready");
 });
 
+it("keeps the separately unverified human identity visible without treating it as a dependency", () => {
+  const identity: EnvironmentProbeRead = {
+    id: "human-identity",
+    label: "人员身份与账号恢复",
+    scope: "gateway",
+    status: "unverified",
+    observed: "Original local identity",
+    expected: "Original controlled recovery policy",
+    detail: "Original identity diagnostic",
+  };
+  const runtime = [{ ...probe, id: "python", scope: "gateway" as const }, identity];
+  const result = environmentReadiness({ ...environment, runtime });
+  expect(result.gateway).toBe("ready");
+  expect(result.overall).toBe("ready");
+  expect(result.issues).toEqual([]);
+  expect(probeReadiness(runtime)).toBe("unverified");
+  expect(runtime[1]).toBe(identity);
+  expect(identity.status).toBe("unverified");
+  expect(environmentReadiness({ ...environment, runtime, host_status: "stale" }).overall).toBe("unverified");
+  expect(environmentReadiness({ ...environment, runtime: [identity] }).gateway).toBe("unverified");
+  expect(environmentReadiness({ ...environment, runtime: [{ ...identity, scope: "host" }] }).gateway).toBe(
+    "unverified",
+  );
+  expect(environmentReadiness({ ...environment, runtime: [{ ...identity, id: "unknown-probe" }] }).gateway).toBe(
+    "unverified",
+  );
+});
+
 it.each(["missing", "mismatch", "blocked"] as const)("retains actionable %s issues", (status) => {
   const result = environmentReadiness({ ...environment, runtime: [{ ...probe, status }] });
   expect(result.overall).toBe("repair");

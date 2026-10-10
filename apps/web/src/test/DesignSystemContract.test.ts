@@ -25,6 +25,21 @@ function source(relativePath: string) {
   return url.pathname.endsWith(".css") ? stylesheetSource(url) : readFileSync(fileURLToPath(url), "utf8");
 }
 
+it("owns environment-specific controls and statuses in the environment sheet only", () => {
+  expect(source("../styles/enterprise.css")).not.toMatch(/\.environment-/);
+  const environment = source("../views/environment/environment.css");
+  expect(environment).toContain(".environment-status-missing");
+  expect(environment).toContain(".environment-status-mismatch");
+  expect(environment).toContain(".environment-recipes input");
+});
+
+it("keeps the complete platform snapshot readable rather than using a clipped cell subtitle", () => {
+  const environment = source("../views/environment/environment.css");
+  expect(ruleBody(environment, ".platform-snapshot")).toContain("white-space: normal;");
+  expect(ruleBody(environment, ".platform-snapshot")).toContain("overflow-wrap: anywhere;");
+  expect(source("../views/environment/PlatformPanel.tsx")).toContain('className="platform-snapshot"');
+});
+
 it("balances complete workspace headings without clipping text or changing the language control", () => {
   const layout = source("../components/LanguageSwitcher.css");
   const heading = ruleBody(layout, ".page-heading:has(> .language-switcher) h1");

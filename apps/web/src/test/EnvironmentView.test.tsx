@@ -46,6 +46,50 @@ beforeEach(() => {
   vi.mocked(loadEnvironment).mockResolvedValue(environment);
 });
 
+it("uses three concise environment commands without changing the active report", async () => {
+  setLocale("en");
+  renderWithQueryClient(<EnvironmentView />);
+  const commands = await screen.findByRole("tablist", { name: "Environment management functions" });
+  expect(within(commands).getByRole("tab", { name: "Checks" })).toHaveAttribute("aria-selected", "true");
+  expect(within(commands).getByRole("tab", { name: "Installation" })).toBeInTheDocument();
+  expect(within(commands).getByRole("tab", { name: "Evidence" })).toBeInTheDocument();
+  expect(loadEnvironment).toHaveBeenCalledOnce();
+  expect(prepareEnvironmentPlan).not.toHaveBeenCalled();
+});
+
+it("keeps original identity uncertainty expanded while dependency readiness is evaluated separately", async () => {
+  setLocale("en");
+  vi.mocked(loadEnvironment).mockResolvedValue({
+    ...environment,
+    runtime: [
+      { ...environment.runtime[0], observed: "3.13.16", expected: ">=3.13.16,<3.14" },
+      {
+        id: "human-identity",
+        scope: "gateway",
+        label: "Original identity signal",
+        status: "unverified",
+        observed: "Original identity value",
+        expected: "Original recovery requirement",
+        detail: "Original diagnostic",
+      },
+    ],
+  });
+  renderWithQueryClient(<EnvironmentView />);
+  const readiness = await screen.findByRole("region", { name: "Dependency readiness overview" });
+  expect(within(readiness).getByText("Application gateway").nextElementSibling).toHaveTextContent(
+    "Dependencies available",
+  );
+  expect(within(readiness).getByText("Project environment").nextElementSibling).toHaveTextContent("Unverified");
+  const table = screen.getByRole("table", { name: "Gateway dependency versions" });
+  expect(table).toBeVisible();
+  expect(table).toHaveTextContent("Original identity value");
+  expect(table).toHaveTextContent("Original diagnostic");
+  expect(table).toHaveTextContent("Not verified");
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("table", { name: "网关依赖版本" })).toHaveTextContent("Original recovery requirement");
+  expect(loadEnvironment).toHaveBeenCalledOnce();
+});
+
 it("localizes readiness without re-reading reports or treating missing versions as compatible", async () => {
   vi.mocked(loadEnvironment).mockResolvedValue({
     ...environment,
@@ -75,7 +119,7 @@ it("preserves installation choices across locale switching without creating a pl
   fireEvent.click(await screen.findByRole("tab", { name: "安装与修复" }));
   fireEvent.click(screen.getByRole("checkbox"));
   act(() => setLocale("en"));
-  expect(screen.getByRole("tab", { name: "Installation and repair" })).toHaveAttribute("aria-selected", "true");
+  expect(screen.getByRole("tab", { name: "Installation" })).toHaveAttribute("aria-selected", "true");
   expect(
     screen.getByRole("checkbox", { name: "Use offline cache only (fail if unavailable; no automatic downloads)" }),
   ).not.toBeChecked();
@@ -141,7 +185,7 @@ it.each(["missing", "online-only"] as const)("does not prepare an unavailable %s
   });
   setLocale("en");
   renderWithQueryClient(<EnvironmentView />);
-  fireEvent.click(await screen.findByRole("tab", { name: "Installation and repair" }));
+  fireEvent.click(await screen.findByRole("tab", { name: "Installation" }));
   const prepare = screen.getByRole("button", { name: "Prepare installation plan" });
   expect(prepare).toBeDisabled();
   expect(prepareEnvironmentPlan).not.toHaveBeenCalled();
@@ -298,6 +342,8 @@ it("shows a failed plan request without claiming installation success", async ()
   await screen.findByRole("tab", { name: "安装与修复" });
   fireEvent.click(screen.getByRole("tab", { name: "安装与修复" }));
   fireEvent.click(screen.getByRole("button", { name: "生成安装计划" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("主机报告已过期");
+  const error = await screen.findByRole("alert");
+  expect(error).toHaveTextContent("主机报告已过期");
+  expect(error).toHaveClass("form-status-error");
   expect(screen.queryByText("安装计划已生成，尚未执行")).not.toBeInTheDocument();
 });
