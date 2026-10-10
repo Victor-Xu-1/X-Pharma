@@ -5,6 +5,7 @@ import os
 import shlex
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -32,7 +33,7 @@ def test_preflight_executes_the_actual_python_payload_without_docker(environment
         f"exec({payload!r})"
     )
     result = subprocess.run(  # noqa: S603 - executes only the checked repository guard with an isolated settings fixture.
-        [os.sys.executable, "-c", fixture],
+        [sys.executable, "-c", fixture],
         capture_output=True,
         text=True,
         timeout=10,
