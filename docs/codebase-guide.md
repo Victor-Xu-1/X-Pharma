@@ -23,6 +23,8 @@
 
 `RegistrationForm`、`AccountInvitationPanel`、`OrganizationPanel` 和 `SessionBoundary` 分别拥有注册交互、管理员邀请管理、邀请确认/组织切换和共享会话生命周期；两套工作台消费同一身份上下文和退出动作。每个账号/组织/角色使用独立的工作台 query client，旧上下文的延迟回调不能污染新缓存。表格偏好从 `SessionIdentityContext` 读取身份，不能依赖领域缓存猜测账号。注册与邀请通过生成的 OpenAPI client 调用 `accounts/` 服务。
 
+`views/account/` 唯一拥有资料/密码草稿、校验、捕获提交与反馈；`OverviewView` 只组合身份与两份短表单。`components/identity/useIdentityOperation` 统一同步锁和挂载生命周期，不把密码或邀请码放入通用 Mutation 历史；成员目录、确认草稿与读取对账归属 `useOrganizationMembership`，旧内联邀请 Mutation 已退出。`useSessionWritePending` 只订阅既有 `organizationSession` 写入计数；退出和组织切换仍由 `SessionBoundary` 最终执行，不引入第二套授权或传输合同。邀请受理后读取失败只允许重读目录，不重发邀请码。
+
 `contracts/session.loadSession` 统一拥有身份配置与当前账号读取的请求生命周期：并行读取、10 秒整体上限、失败即取消同组请求，并在退出或取消时释放定时器和监听器。只有身份配置有效且当前账号明确返回 401，才进入未登录状态；超时、配置错误或其他身份错误不开放工作台。初始会话验证不叠加普通查询的自动重试，错误页提供显式重试；组织重新确认也调用同一有界读取链路，不使用兜底身份。
 
 ORM 的公共入口是 `models/__init__.py`，只聚合显式导出；领域表分别属于账号、组织配置、实体主数据、药物管线、临床、化学、入库、治理、检索投影及商业领域。`models/base.py` 单独拥有 SQLAlchemy registry、时间戳和 UUID；`models/enums.py` 拥有共享枚举。领域模块不导入聚合入口，避免反向依赖与重复映射。多组织迁移单独增加 `OrganizationMembership` 权限权威并保留全局身份与原业务归属，不能继续从 `User` 读取组织角色。

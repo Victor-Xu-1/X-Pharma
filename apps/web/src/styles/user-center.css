@@ -114,6 +114,14 @@
   display: grid;
   gap: 12px;
 }
+.user-center-form-fields {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
 .user-center-avatar-editor {
   min-width: 0;
   display: grid;
@@ -136,9 +144,6 @@
   color: var(--ds-success);
   font-size: var(--ds-text-xs);
   line-height: 1.45;
-}
-.user-center-form-status.error {
-  color: var(--ds-danger);
 }
 .user-center-form .primary-button,
 .user-center-form .secondary-button {

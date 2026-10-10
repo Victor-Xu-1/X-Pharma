@@ -4,6 +4,7 @@ import { t, useLocale } from "../lib/i18n";
 
 import type { User } from "../lib/types";
 import type { ViewKey } from "../lib/workspaceRouting";
+import { useSessionWritePending } from "./identity/useSessionWritePending";
 import { OrganizationPanel } from "./OrganizationPanel";
 
 export function WorkspaceAccountNavigation({
@@ -28,6 +29,7 @@ export function WorkspaceAccountNavigation({
   logoutError: string | null;
 }) {
   useLocale();
+  const writePending = useSessionWritePending();
   return (
     <nav className="sidebar-account-nav" aria-label={t("账户导航")}>
       <div className="sidebar-account-row">
@@ -62,7 +64,7 @@ export function WorkspaceAccountNavigation({
         className="nav-button"
         type="button"
         onClick={onLogout}
-        disabled={logoutPending}
+        disabled={logoutPending || writePending}
         title={t("退出账号")}
         aria-label={t("退出账号")}
       >
