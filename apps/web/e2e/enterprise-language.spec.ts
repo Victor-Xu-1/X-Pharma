@@ -3,6 +3,41 @@ import { expect, test } from "@playwright/test";
 import { installEnterpriseLanguageFixture } from "./enterprise-language-fixture";
 import { selectInterfaceLanguage } from "./interface-language";
 
+test("[enterprise-language] keeps the narrow empty models command in one clear row and preserves its keyboard action", async ({
+  page,
+}, testInfo) => {
+  const { base, state } = await installEnterpriseLanguageFixture(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto("/workspace/internal?view=enterprise");
+  await page.getByRole("tab", { name: "Models", exact: true }).click();
+  await expect(page.getByText("No remote model providers", { exact: true })).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  const toolbar = page.locator(".enterprise-llm-settings .section-toolbar");
+  const create = toolbar.getByRole("button", { name: "Add model provider", exact: true });
+  const buttonBox = await create.boundingBox(),
+    summaryBox = await toolbar.locator("span").first().boundingBox();
+  if (!buttonBox || !summaryBox) throw new Error("Visible models command is missing");
+  expect(buttonBox.height).toBeLessThanOrEqual(44);
+  expect(summaryBox.y + summaryBox.height).toBeLessThanOrEqual(buttonBox.y);
+  await expect(page.locator(".enterprise-llm-settings fieldset")).toHaveCount(0);
+  const reads = state.reads;
+  await selectInterfaceLanguage(page, "zh-CN");
+  await expect(page.getByText("尚未配置远程模型", { exact: true })).toBeVisible();
+  expect(state.reads).toBe(reads);
+  const chinese = toolbar.getByRole("button", { name: "增加 LLM", exact: true });
+  await chinese.focus();
+  await chinese.press("Enter");
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toHaveCount(1);
+  await dialog.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(chinese).toBeFocused();
+  expect(base.errors).toEqual([]);
+  expect(base.writes).toEqual([]);
+  expect(state.writes).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath("enterprise-model-command-zh-320.png"), animations: "disabled" });
+});
+
 test("[enterprise-language] retains a captured group request across language changes, blocks conflicting controls and keeps a rejected draft", async ({
   page,
   context,

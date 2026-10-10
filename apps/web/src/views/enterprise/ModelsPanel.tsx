@@ -28,31 +28,33 @@ export function LLMProvidersPanel({
     : [];
   return (
     <div className="enterprise-llm-settings">
-      <div className="section-toolbar">
+      <div className="section-toolbar enterprise-model-toolbar">
         <span>
-          <BrainCircuit size={16} /> {t("{count} 个远程模型供应商", { count: providers.length })} ·{" "}
-          {t("按顺序自动故障转移")}
+          <BrainCircuit size={16} /> {t("{count} 个远程模型供应商", { count: providers.length })}
+          {providers.length ? ` · ${t("按顺序自动故障转移")}` : null}
         </span>
         <button className="primary-button" type="button" onClick={onCreate} disabled={Boolean(busy)}>
           <Plus size={16} />
           {t("增加 LLM")}
         </button>
       </div>
-      <fieldset className="enterprise-modal-subject" aria-label={t("当前 LLM 调用顺序")}>
-        <legend>{t("当前调用顺序")}</legend>
-        {primaryProvider ? (
-          <span>
-            {t("主模型：")}
-            {primaryProvider.model}
-            {fallbackProviders.length
-              ? ` → ${t("备用：")}${fallbackProviders.map((provider) => provider.model).join(" → ")}`
-              : t(" · 尚未配置备用模型")}
-          </span>
-        ) : (
-          <span>{t("尚未启用模型。请先配置已获批的模型供应商。")}</span>
-        )}
-        <span>{t("主模型发生超时、408、429、5xx 或网络故障时，系统会按顺序使用后续模型。")}</span>
-      </fieldset>
+      {providers.length ? (
+        <fieldset className="enterprise-modal-subject" aria-label={t("当前 LLM 调用顺序")}>
+          <legend>{t("当前调用顺序")}</legend>
+          {primaryProvider ? (
+            <span>
+              {t("主模型：")}
+              {primaryProvider.model}
+              {fallbackProviders.length
+                ? ` → ${t("备用：")}${fallbackProviders.map((provider) => provider.model).join(" → ")}`
+                : t(" · 尚未配置备用模型")}
+            </span>
+          ) : (
+            <span>{t("尚未启用模型。请先配置已获批的模型供应商。")}</span>
+          )}
+          <span>{t("主模型发生超时、408、429、5xx 或网络故障时，系统会按顺序使用后续模型。")}</span>
+        </fieldset>
+      ) : null}
       {providers.length ? (
         <ScrollableTableRegion className="enterprise-table" ariaLabel={t("LLM 供应商顺序滚动区域")}>
           <table aria-label={t("LLM 供应商顺序")}>
