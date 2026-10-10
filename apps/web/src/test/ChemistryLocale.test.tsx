@@ -53,6 +53,7 @@ it("does not present an initial not-run state after a submitted parser failure",
   fireEvent.change(screen.getByRole("textbox", { name: "SMILES" }), { target: { value: "invalid-structure" } });
   fireEvent.click(screen.getByRole("button", { name: "Search" }));
   await screen.findByRole("alert");
+  expect(screen.getByRole("alert")).toHaveClass("form-status-error");
   expect(screen.queryByText("No structure query has been run")).not.toBeInTheDocument();
 });
 it("renders the complete first-visit chemistry control and empty-state framing in English", () => {

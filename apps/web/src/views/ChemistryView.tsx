@@ -3,6 +3,7 @@ import { BookmarkPlus, Code2, PencilLine, Search } from "lucide-react";
 import { type FormEvent, lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 import { Spinner } from "../components/common";
+import { FormStatus } from "../components/FormStatus";
 import { ResearchTabList } from "../components/ResearchTabList";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
 import {
@@ -364,11 +365,7 @@ export function ChemistryView({
             {t("结构检索已保存，可通过当前链接恢复")}
           </p>
         ) : null}
-        {error ? (
-          <p className="form-error" role="alert">
-            {error}
-          </p>
-        ) : null}
+        <FormStatus pending={false} error={error} />
       </div>
 
       <ChemistryResults result={result} busy={busy} failed={Boolean(error)} onInspectEntity={onInspectEntity} />
