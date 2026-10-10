@@ -2,6 +2,9 @@ import { Scale } from "lucide-react";
 import { EmptyState, formatDate, StatusBadge } from "../../components/common";
 import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { BillingDispute, BillingDisputeFilter } from "../../lib/contracts/commercial";
+import { useLocale } from "../../lib/i18n";
+import { commercialWorkspaceText as t } from "../../lib/i18n/commercialWorkspace";
+import { RecordDetails, RecordFacts } from "./RecordDetails";
 
 export function BillingDisputeTable({
   items,
@@ -16,40 +19,42 @@ export function BillingDisputeTable({
   onFilter: (value: BillingDisputeFilter) => void;
   onAction: (dispute: BillingDispute) => void;
 }) {
+  useLocale();
   return (
     <div className="billing-operations">
       <div className="billing-section-heading">
-        <h2>计费争议案件</h2>
+        <h2>{t("计费争议案件")}</h2>
         <label>
-          <span>案件状态</span>
+          <span>{t("案件状态")}</span>
           <select
-            aria-label="争议状态"
+            aria-label={t("争议状态")}
+            disabled={Boolean(busy)}
             value={filter}
             onChange={(event) => onFilter(event.target.value as BillingDisputeFilter)}
           >
-            <option value="all">全部</option>
-            <option value="open">待受理</option>
-            <option value="investigating">调查中</option>
-            <option value="resolved">已解决</option>
-            <option value="rejected">已驳回</option>
-            <option value="cancelled">已取消</option>
+            <option value="all">{t("全部")}</option>
+            <option value="open">{t("待受理")}</option>
+            <option value="investigating">{t("调查中")}</option>
+            <option value="resolved">{t("已解决")}</option>
+            <option value="rejected">{t("已驳回")}</option>
+            <option value="cancelled">{t("已取消")}</option>
           </select>
         </label>
       </div>
       {items.length ? (
-        <ScrollableTableRegion className="commercial-table" ariaLabel="计费争议滚动区域">
-          <table aria-label="计费争议">
+        <ScrollableTableRegion className="commercial-table" ariaLabel={t("计费争议滚动区域")}>
+          <table aria-label={t("计费争议")}>
             <thead>
               <tr>
-                <th>案件 / 主题</th>
-                <th>计费账户</th>
-                <th>账期单</th>
-                <th>争议额度</th>
-                <th>类别</th>
-                <th>状态</th>
-                <th>负责人</th>
+                <th>{t("案件 / 主题")}</th>
+                <th>{t("计费账户")}</th>
+                <th>{t("账期单")}</th>
+                <th>{t("争议额度")}</th>
+                <th>{t("类别")}</th>
+                <th>{t("状态")}</th>
+                <th>{t("负责人")}</th>
                 <th>SLA</th>
-                <th>操作</th>
+                <th>{t("操作")}</th>
               </tr>
             </thead>
             <tbody>
@@ -58,6 +63,27 @@ export function BillingDisputeTable({
                   <td>
                     <strong>{item.subject}</strong>
                     <span className="cell-subtitle mono-cell">{item.dispute_key}</span>
+                    <RecordDetails name={item.dispute_key}>
+                      <RecordFacts
+                        fields={[
+                          { label: "标识", value: item.id },
+                          { label: "版本", value: item.version },
+                          { label: "说明", value: item.description },
+                          { label: "开案时间", value: formatDate(item.opened_at, true) },
+                          { label: "开案人", value: item.opened_by },
+                          { label: "账期单标识", value: item.statement_id },
+                          { label: "订阅标识", value: item.subscription_id },
+                          { label: "账户标识", value: item.billing_account_id },
+                          { label: "发票关联标识", value: item.invoice_reference_id },
+                          { label: "外部发票标识", value: item.external_invoice_id },
+                          { label: "解决时间", value: item.resolved_at ? formatDate(item.resolved_at, true) : null },
+                          { label: "解决人", value: item.resolved_by },
+                          { label: "解决代码", value: item.resolution_code },
+                          { label: "解决说明", value: item.resolution_notes },
+                          { label: "账本调整键", value: item.resolution_adjustment_key },
+                        ]}
+                      />
+                    </RecordDetails>
                   </td>
                   <td>
                     {item.billing_account_name}
@@ -69,7 +95,7 @@ export function BillingDisputeTable({
                   <td>
                     <StatusBadge value={item.status} />
                   </td>
-                  <td>{item.assigned_to ?? "未分配"}</td>
+                  <td>{item.assigned_to ?? t("未分配")}</td>
                   <td className={item.overdue ? "danger-text" : ""}>{formatDate(item.due_at, true)}</td>
                   <td>
                     {["resolved", "rejected", "cancelled"].includes(item.status) ? (
@@ -78,9 +104,9 @@ export function BillingDisputeTable({
                       <button
                         className="icon-button"
                         type="button"
-                        disabled={busy === `dispute:${item.id}`}
-                        title="处理计费争议"
-                        aria-label={`处理计费争议 ${item.dispute_key}`}
+                        disabled={Boolean(busy)}
+                        title={t("处理计费争议")}
+                        aria-label={t("处理计费争议 {key}", { key: item.dispute_key })}
                         onClick={() => onAction(item)}
                       >
                         <Scale size={17} />
@@ -93,7 +119,7 @@ export function BillingDisputeTable({
           </table>
         </ScrollableTableRegion>
       ) : (
-        <EmptyState title="暂无计费争议" />
+        <EmptyState title={t("暂无计费争议")} />
       )}
     </div>
   );

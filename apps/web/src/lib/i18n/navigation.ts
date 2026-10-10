@@ -21,7 +21,6 @@ export const navigationMessages = {
   对比列表: "Comparison lists",
   自动数据工厂: "Automated data factory",
   "AI 信息审核": "AI information review",
-  "Agent 商业运营": "Agent commercial operations",
   企业账户与审计: "Enterprise accounts & audit",
   运行环境与安装管理: "Runtime & installation management",
   展开导航: "Expand navigation",
