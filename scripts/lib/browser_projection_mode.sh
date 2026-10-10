@@ -3,7 +3,7 @@
 # The explicit acceptance exception belongs to both processes that read the
 # temporary aliases. It is never valid in production and is reset on cleanup.
 assert_browser_projection_environment() {
-  docker compose exec -T api python3 -c +    'import sys; from pharma_intel.config import get_settings; sys.exit("Browser acceptance cannot run against production" if get_settings().app_env.lower() == "production" else 0)'
+  docker compose exec -T api python3 -c 'import sys; from pharma_intel.config import get_settings; sys.exit("Browser acceptance cannot run against production" if get_settings().app_env.lower() == "production" else 0)'
 }
 
 enter_browser_projection_mode() {
