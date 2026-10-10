@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { ApiError } from "../lib/api";
 import {
