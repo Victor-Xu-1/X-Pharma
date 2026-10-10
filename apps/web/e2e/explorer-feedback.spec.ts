@@ -80,6 +80,13 @@ test("[explorer-feedback] retains saved outcomes across languages without recrea
         document: document.documentElement.scrollWidth,
       }));
       expect(geometry.document).toBeLessThanOrEqual(geometry.viewport);
+      await feedback.scrollIntoViewIfNeeded();
+      const feedbackBox = await feedback.boundingBox();
+      expect(feedbackBox).not.toBeNull();
+      if (feedbackBox) {
+        expect(feedbackBox.y).toBeGreaterThanOrEqual(0);
+        expect(feedbackBox.y + feedbackBox.height).toBeLessThanOrEqual(page.viewportSize()?.height ?? 0);
+      }
       await page.screenshot({ path: testInfo.outputPath(`${outcome}-${locale}.png`), animations: "disabled" });
     }
   }
