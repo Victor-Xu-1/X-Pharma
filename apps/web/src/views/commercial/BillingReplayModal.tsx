@@ -1,6 +1,8 @@
 import { X } from "lucide-react";
 import type { FormEvent } from "react";
 import { FormStatus } from "../../components/FormStatus";
+import { useLocale } from "../../lib/i18n";
+import { commercialWorkspaceText as t } from "../../lib/i18n/commercialWorkspace";
 import { useModalFocus } from "../../lib/useModalFocus";
 import type { ReplayAction } from "./types";
 
@@ -21,6 +23,7 @@ export function BillingReplayModal({
   onClose: () => void;
   onSubmit: (event: FormEvent) => void;
 }) {
+  useLocale();
   const dialogRef = useModalFocus<HTMLElement>(true, onClose, { closeOnEscape: !busy });
   return (
     <div className="modal-backdrop" role="presentation">
@@ -35,9 +38,9 @@ export function BillingReplayModal({
         <header>
           <div>
             <p className="eyebrow">DEAD LETTER</p>
-            <h2 id="billing-replay-title">重放账单投递</h2>
+            <h2 id="billing-replay-title">{t("重放账单投递")}</h2>
           </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="关闭" disabled={busy}>
+          <button className="icon-button" type="button" onClick={onClose} aria-label={t("关闭")} disabled={busy}>
             <X size={18} />
           </button>
         </header>
@@ -47,7 +50,7 @@ export function BillingReplayModal({
             <span>{action.delivery.last_error ?? "--"}</span>
           </p>
           <label>
-            <span>重放原因</span>
+            <span>{t("重放原因")}</span>
             <textarea
               disabled={busy}
               rows={4}
@@ -61,10 +64,10 @@ export function BillingReplayModal({
           <FormStatus pending={busy} error={error} />
           <div className="form-actions">
             <button className="text-button" type="button" onClick={onClose} disabled={busy}>
-              取消
+              {t("取消")}
             </button>
             <button className="primary-button" type="submit" disabled={busy || reason.trim().length < 3}>
-              确认重放
+              {t("确认重放")}
             </button>
           </div>
         </form>

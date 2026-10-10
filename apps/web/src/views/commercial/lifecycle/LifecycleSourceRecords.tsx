@@ -1,0 +1,134 @@
+import { RotateCcw, Trash2 } from "lucide-react";
+import { EmptyState, formatDate, StatusBadge } from "../../../components/common";
+import { ScrollableTableRegion } from "../../../components/ScrollableTableRegion";
+import type { DeletedSourceAsset, SourceAssetImpact } from "../../../lib/contracts/commercial";
+import { useLocale } from "../../../lib/i18n";
+import { commercialLifecycleText as t } from "../../../lib/i18n/commercialLifecycle";
+import type { LifecycleAction } from "./types";
+export function LifecycleSourceRecords({
+  sourceCandidates,
+  deletedSourceAssets,
+  busy,
+  beginAction,
+}: {
+  sourceCandidates: SourceAssetImpact[];
+  deletedSourceAssets: DeletedSourceAsset[];
+  busy: string;
+  beginAction: (action: LifecycleAction) => void;
+}) {
+  useLocale();
+  return (
+    <>
+      <section className="operations-section" data-lifecycle="source-withdrawal">
+        <header>
+          <div>
+            <p className="eyebrow">SOURCE WITHDRAWAL</p>
+            <h2>{t("源资料撤回候选")}</h2>
+          </div>
+        </header>
+        {!sourceCandidates.length ? (
+          <EmptyState title={t("暂无超过保留期的缺失源资料")} />
+        ) : (
+          <ScrollableTableRegion className="commercial-table" ariaLabel={t("源资料撤回候选滚动区域")}>
+            <table aria-label={t("源资料撤回候选")}>
+              <thead>
+                <tr>
+                  <th>{t("资料")}</th>
+                  <th>{t("缺失时间")}</th>
+                  <th>{t("依赖影响")}</th>
+                  <th>{t("状态")}</th>
+                  <th>{t("操作")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sourceCandidates.map((asset) => (
+                  <tr key={asset.id}>
+                    <td>
+                      <strong>{asset.file_name}</strong>
+                      <span className="cell-subtitle mono-cell">{asset.logical_path}</span>
+                    </td>
+                    <td>{asset.missing_since ? formatDate(asset.missing_since, true) : "--"}</td>
+                    <td>
+                      {t("{versions} 个版本 / {facts} 个治理事实", {
+                        versions: asset.version_count,
+                        facts: asset.staged_fact_count,
+                      })}
+                      <span className="cell-subtitle">
+                        {asset.blockers.length ? asset.blockers.join(", ") : t("当前未返回阻断项")}
+                      </span>
+                    </td>
+                    <td>
+                      <StatusBadge value={asset.blockers.length ? "blocked" : "eligible"} />
+                    </td>
+                    <td>
+                      <button
+                        className="icon-button danger-text"
+                        type="button"
+                        title={asset.blockers.length ? t("存在业务依赖，执行后将记录阻断事件") : t("撤回源资料")}
+                        aria-label={t("撤回源资料 {name}", { name: asset.file_name })}
+                        disabled={Boolean(busy)}
+                        onClick={() => beginAction({ kind: "source-purge", asset })}
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ScrollableTableRegion>
+        )}
+      </section>
+      <section className="operations-section" data-lifecycle="source-reauthorization">
+        <header>
+          <div>
+            <p className="eyebrow">SOURCE REAUTHORIZATION</p>
+            <h2>{t("已撤回源资料")}</h2>
+          </div>
+        </header>
+        {!deletedSourceAssets.length ? (
+          <EmptyState title={t("暂无等待重新授权的源资料")} />
+        ) : (
+          <ScrollableTableRegion className="commercial-table" ariaLabel={t("已撤回源资料滚动区域")}>
+            <table aria-label={t("已撤回源资料")}>
+              <thead>
+                <tr>
+                  <th>{t("资料")}</th>
+                  <th>{t("撤回时间")}</th>
+                  <th>{t("状态")}</th>
+                  <th>{t("操作")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {deletedSourceAssets.map((asset) => (
+                  <tr key={asset.id}>
+                    <td>
+                      <strong>{asset.file_name}</strong>
+                      <span className="cell-subtitle mono-cell">{asset.logical_path}</span>
+                    </td>
+                    <td>{formatDate(asset.updated_at, true)}</td>
+                    <td>
+                      <StatusBadge value={asset.state} />
+                    </td>
+                    <td>
+                      <button
+                        className="icon-button"
+                        type="button"
+                        title={t("重新授权并等待自动扫描")}
+                        aria-label={t("重新授权源资料 {name}", { name: asset.file_name })}
+                        disabled={Boolean(busy)}
+                        onClick={() => beginAction({ kind: "source-reauthorize", asset })}
+                      >
+                        <RotateCcw size={17} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ScrollableTableRegion>
+        )}
+      </section>
+    </>
+  );
+}

@@ -431,7 +431,6 @@ it("manages the external workbench export policy only from internal commercial o
   await waitFor(() =>
     expect(saveWorkspaceExportPolicy).toHaveBeenCalledWith(
       expect.objectContaining({ policy_version: "workspace-export-v2", max_records_per_export: 25 }),
-      expect.any(Object),
     ),
   );
   expect(await screen.findByRole("status")).toHaveTextContent("导出策略 workspace-export-v2 已生效");

@@ -2,13 +2,70 @@
 .commercial-workbench {
   min-width: 0;
 }
+.policy-edit-boundary {
+  grid-column: 1 / -1;
+  min-width: 0;
+  display: grid;
+  gap: 18px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.policy-edit-boundary > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.policy-edit-boundary .policy-field-options {
+  display: grid;
+  gap: 8px;
+}
+.policy-field-group {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: 8px;
+  padding: 12px;
+}
+.policy-field-group > summary {
+  cursor: pointer;
+  line-height: 1.5;
+}
+.policy-field-group > summary > span {
+  float: right;
+  margin-left: 12px;
+  color: var(--ds-ink-muted);
+}
+.policy-field-group > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.policy-config-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(130px, 0.6fr) minmax(200px, 1.5fr);
+  gap: 14px;
+}
+.export-policy-admin .policy-form > button {
+  grid-column: 1 / -1;
+  justify-self: end;
+}
+@media (max-width: 700px) {
+  .policy-config-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .commercial-toolbar {
   min-height: 38px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 14px;
-  margin-top: -58px;
+  margin-top: 0;
   margin-bottom: 20px;
   font-size: 12px;
 }

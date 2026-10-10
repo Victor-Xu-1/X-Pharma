@@ -2,6 +2,8 @@ import { CircleDollarSign, DatabaseBackup, ReceiptText, RefreshCw, Scale, Shield
 import { ErrorState, formatDate, Spinner } from "../components/common";
 import { ResearchTabList } from "../components/ResearchTabList";
 import { commercialKeys } from "../lib/contracts/commercial";
+import { useLocale } from "../lib/i18n";
+import { commercialWorkspaceText as t } from "../lib/i18n/commercialWorkspace";
 import { BillingDisputeTable } from "./commercial/BillingDisputeTable";
 import { BillingDisputeTransitionModal } from "./commercial/BillingDisputeTransitionModal";
 import { BillingOperations } from "./commercial/BillingOperations";
@@ -12,7 +14,7 @@ import { CreateBillingDisputeModal } from "./commercial/CreateBillingDisputeModa
 import { CustomerMappingModal } from "./commercial/CustomerMappingModal";
 import { DataLifecyclePanel } from "./commercial/DataLifecyclePanel";
 import { ExportTable } from "./commercial/ExportTable";
-import { units } from "./commercial/format";
+import { reportedCount, units } from "./commercial/format";
 import { Metric } from "./commercial/Metric";
 import { RiskPanel } from "./commercial/RiskPanel";
 import { RiskReviewModal } from "./commercial/RiskReviewModal";
@@ -21,7 +23,10 @@ import { useCommercialWorkspace } from "./commercial/useCommercialWorkspace";
 import { WorkspaceExportPolicyPanel } from "./WorkspaceExportPolicyPanel";
 
 export function CommercialView() {
+  useLocale();
   const {
+    policyDrafts,
+    operationBoundary,
     queryClient,
     deliveryFilter,
     setDeliveryFilter,
@@ -102,7 +107,9 @@ export function CommercialView() {
   return (
     <section className="commercial-workbench">
       <div className="commercial-toolbar">
-        <span>{overview ? `统计截止 ${formatDate(overview.as_of, true)}` : "商业概况尚未读取"}</span>
+        <span>
+          {overview ? t("统计截止 {time}", { time: formatDate(overview.as_of, true) }) : t("商业概况尚未读取")}
+        </span>
         <button
           className="secondary-button"
           type="button"
@@ -113,11 +120,12 @@ export function CommercialView() {
           disabled={Boolean(busy) || Boolean(paneQuery?.isFetching)}
         >
           <RefreshCw size={16} />
-          刷新
+          {t("刷新")}
         </button>
       </div>
       {visibleError &&
       tab !== "lifecycle" &&
+      tab !== "export-policy" &&
       !(clientAction || riskAction || mappingAction || replayAction || createDisputeAction || disputeCaseAction) ? (
         <p className="inline-error" role="alert">
           {visibleError}
@@ -127,45 +135,97 @@ export function CommercialView() {
         <ErrorState message={commercialQuery.error.message} retry={commercialQuery.refetch} />
       ) : null}
       {tab === "overview" && overview && !commercialQuery.isError ? (
-        <section className="commercial-metrics" aria-label="商业运营指标">
-          <Metric icon={<CircleDollarSign size={18} />} label="可用额度" value={units(metrics.available)} />
-          <Metric icon={<CircleDollarSign size={18} />} label="累计消耗" value={units(metrics.consumed)} />
-          <Metric icon={<Users size={18} />} label="活跃客户端" value={String(metrics.activeClients)} />
+        <section className="commercial-metrics" aria-label={t("商业运营指标")}>
+          <Metric icon={<CircleDollarSign size={18} />} label={t("可用额度")} value={units(metrics.available)} />
+          <Metric icon={<CircleDollarSign size={18} />} label={t("累计消耗")} value={units(metrics.consumed)} />
+          <Metric icon={<Users size={18} />} label={t("活跃客户端")} value={reportedCount(metrics.activeClients)} />
           <Metric
             icon={<ReceiptText size={18} />}
-            label="账单死信"
-            value={String(metrics.deadDeliveries)}
-            danger={metrics.deadDeliveries > 0}
+            label={t("账单死信")}
+            value={reportedCount(metrics.deadDeliveries)}
+            danger={(metrics.deadDeliveries ?? 0) > 0}
           />
           <Metric
             icon={<ShieldAlert size={18} />}
-            label="未处置风险"
-            value={String(metrics.openRisks)}
-            danger={metrics.openRisks > 0}
+            label={t("未处置风险")}
+            value={reportedCount(metrics.openRisks)}
+            danger={(metrics.openRisks ?? 0) > 0}
           />
           <Metric
             icon={<Scale size={18} />}
-            label="处理中争议"
-            value={String(metrics.openDisputes)}
-            danger={metrics.openDisputes > 0}
+            label={t("处理中争议")}
+            value={reportedCount(metrics.openDisputes)}
+            danger={(metrics.openDisputes ?? 0) > 0}
           />
-          <Metric icon={<DatabaseBackup size={18} />} label="执行中导出" value={String(metrics.pendingExports)} />
+          <Metric
+            icon={<DatabaseBackup size={18} />}
+            label={t("执行中导出")}
+            value={reportedCount(metrics.pendingExports)}
+          />
         </section>
       ) : null}
       <ResearchTabList
         idPrefix="commercial"
-        ariaLabel="商业运营视图"
+        ariaLabel={t("商业运营视图")}
         activeTab={tab}
         onChange={setTab}
         tabs={[
-          { key: "overview", label: "合同与额度", panelId: "commercial-active-panel" },
-          { key: "clients", label: "Agent 客户端", panelId: "commercial-active-panel" },
-          { key: "billing", label: "账单投递", panelId: "commercial-active-panel" },
-          { key: "disputes", label: "计费争议", panelId: "commercial-active-panel" },
-          { key: "exports", label: "数据导出", panelId: "commercial-active-panel" },
-          { key: "export-policy", label: "导出策略", panelId: "commercial-active-panel" },
-          { key: "risks", label: "风险事件", panelId: "commercial-active-panel" },
-          { key: "lifecycle", label: "数据生命周期", panelId: "commercial-active-panel" },
+          {
+            key: "overview",
+            label: t("合同与额度"),
+            panelId: "commercial-active-panel",
+            disabled: Boolean(busy),
+            disabledReason: t("正在提交操作，请稍候。"),
+          },
+          {
+            key: "clients",
+            label: t("Agent 客户端"),
+            panelId: "commercial-active-panel",
+            disabled: Boolean(busy),
+            disabledReason: t("正在提交操作，请稍候。"),
+          },
+          {
+            key: "billing",
+            label: t("账单投递"),
+            panelId: "commercial-active-panel",
+            disabled: Boolean(busy),
+            disabledReason: t("正在提交操作，请稍候。"),
+          },
+          {
+            key: "disputes",
+            label: t("计费争议"),
+            panelId: "commercial-active-panel",
+            disabled: Boolean(busy),
+            disabledReason: t("正在提交操作，请稍候。"),
+          },
+          {
+            key: "exports",
+            label: t("数据导出"),
+            panelId: "commercial-active-panel",
+            disabled: Boolean(busy),
+            disabledReason: t("正在提交操作，请稍候。"),
+          },
+          {
+            key: "export-policy",
+            label: t("导出策略"),
+            panelId: "commercial-active-panel",
+            disabled: Boolean(busy),
+            disabledReason: t("正在提交操作，请稍候。"),
+          },
+          {
+            key: "risks",
+            label: t("风险事件"),
+            panelId: "commercial-active-panel",
+            disabled: Boolean(busy),
+            disabledReason: t("正在提交操作，请稍候。"),
+          },
+          {
+            key: "lifecycle",
+            label: t("数据生命周期"),
+            panelId: "commercial-active-panel",
+            disabled: Boolean(busy),
+            disabledReason: t("正在提交操作，请稍候。"),
+          },
         ]}
       />
       <div role="tabpanel" id="commercial-active-panel" aria-labelledby={`commercial-tab-${tab}`}>
@@ -177,7 +237,7 @@ export function CommercialView() {
             }}
           />
         ) : panePending ? (
-          <Spinner label="正在读取商业运营数据" />
+          <Spinner label={t("正在读取商业运营数据")} />
         ) : (
           <>
             {tab === "overview" && overview ? <SubscriptionTable items={overview.subscriptions} /> : null}
@@ -246,7 +306,9 @@ export function CommercialView() {
             {tab === "exports" ? (
               <ExportTable items={exports} busy={busy} onAction={(job, action) => void actOnExport(job, action)} />
             ) : null}
-            {tab === "export-policy" ? <WorkspaceExportPolicyPanel /> : null}
+            {tab === "export-policy" ? (
+              <WorkspaceExportPolicyPanel boundary={operationBoundary} draftState={policyDrafts} />
+            ) : null}
             {tab === "risks" ? (
               <RiskPanel
                 items={risks}

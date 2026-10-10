@@ -1,23 +1,26 @@
 import { EmptyState, StatusBadge } from "../../components/common";
 import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { CommercialOverview } from "../../lib/contracts/commercial";
+import { useLocale } from "../../lib/i18n";
+import { commercialWorkspaceText as t } from "../../lib/i18n/commercialWorkspace";
 
 export function SubscriptionTable({ items }: { items: CommercialOverview["subscriptions"] }) {
-  if (!items.length) return <EmptyState title="暂无商业订阅" />;
+  useLocale();
+  if (!items.length) return <EmptyState title={t("暂无商业订阅")} />;
   return (
-    <ScrollableTableRegion className="commercial-table" ariaLabel="商业合同与额度滚动区域">
-      <table aria-label="商业合同与额度">
+    <ScrollableTableRegion className="commercial-table" ariaLabel={t("商业合同与额度滚动区域")}>
+      <table aria-label={t("商业合同与额度")}>
         <thead>
           <tr>
-            <th>客户 / 订阅</th>
-            <th>计费账户</th>
-            <th>状态</th>
-            <th>授予额度</th>
-            <th>已消耗</th>
-            <th>已预留</th>
-            <th>可用额度</th>
-            <th>今日记录</th>
-            <th>权益</th>
+            <th>{t("客户 / 订阅")}</th>
+            <th>{t("计费账户")}</th>
+            <th>{t("状态")}</th>
+            <th>{t("授予额度")}</th>
+            <th>{t("已消耗")}</th>
+            <th>{t("已预留")}</th>
+            <th>{t("可用额度")}</th>
+            <th>{t("今日记录")}</th>
+            <th>{t("权益")}</th>
           </tr>
         </thead>
         <tbody>

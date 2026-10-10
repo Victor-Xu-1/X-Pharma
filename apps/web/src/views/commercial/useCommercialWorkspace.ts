@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useMemo, useState } from "react";
 import {
   type BillingDeliveryFilter,
@@ -10,7 +10,6 @@ import {
   type DataExportJob,
   type DataRetentionPolicy,
   type DeletedSourceAsset,
-  executeCommercialOperation,
   type LegalHold,
   type LegalHoldScope,
   loadCommercialBilling,
@@ -22,7 +21,10 @@ import {
   loadLifecycleWorkspace,
   type SourceAssetImpact,
 } from "../../lib/contracts/commercial";
+import { type commercialWorkspaceMessages, commercialWorkspaceText as t } from "../../lib/i18n/commercialWorkspace";
+import { governanceReadDenied } from "../governance/governanceQueryState";
 import { sumUnits } from "./format";
+import { useWorkspacePolicyDrafts } from "./policy/useWorkspacePolicy";
 import type {
   ClientAction,
   CommercialTab,
@@ -32,6 +34,7 @@ import type {
   ReplayAction,
   RiskAction,
 } from "./types";
+import { useCommercialOperationBoundary } from "./useCommercialOperationBoundary";
 
 export function useCommercialWorkspace() {
   const queryClient = useQueryClient();
@@ -48,7 +51,9 @@ export function useCommercialWorkspace() {
 
   const [tab, setTab] = useState<CommercialTab>("overview");
 
-  const [actionError, setActionError] = useState("");
+  const boundary = useCommercialOperationBoundary();
+  const policyDrafts = useWorkspacePolicyDrafts();
+  const { busy, actionError, setActionError } = boundary;
 
   const [clientAction, setClientAction] = useState<ClientAction | null>(null);
 
@@ -114,14 +119,9 @@ export function useCommercialWorkspace() {
     enabled: tab === "risks",
   });
 
-  const operationMutation = useMutation({
-    mutationFn: ({ operation }: { busyKey: string; operation: CommercialOperation }) =>
-      executeCommercialOperation(operation),
-  });
-
-  const overview = commercialQuery.data ?? null;
-  const clients = clientsQuery.data ?? [];
-  const exports = exportsQuery.data ?? [];
+  const overview = governanceReadDenied(commercialQuery.error) ? null : (commercialQuery.data ?? null);
+  const clients = governanceReadDenied(clientsQuery.error) ? [] : (clientsQuery.data ?? []);
+  const exports = governanceReadDenied(exportsQuery.error) ? [] : (exportsQuery.data ?? []);
 
   const risks = riskQuery.data?.items ?? [];
 
@@ -141,29 +141,39 @@ export function useCommercialWorkspace() {
 
   const deletedSourceAssets = lifecycleQuery.data?.deletedSourceAssets ?? [];
 
-  const busy = operationMutation.isPending ? (operationMutation.variables?.busyKey ?? "operation") : "";
-
-  async function runOperation(busyKey: string, operation: CommercialOperation, fallback: string): Promise<boolean> {
-    setActionError("");
-    try {
-      await operationMutation.mutateAsync({ busyKey, operation });
-      await queryClient.invalidateQueries({ queryKey: commercialKeys.root, refetchType: "active" });
-      return true;
-    } catch (caught) {
-      setActionError(caught instanceof Error ? caught.message : fallback);
+  async function runOperation(
+    busyKey: string,
+    operation: CommercialOperation,
+    fallback: keyof typeof commercialWorkspaceMessages,
+  ): Promise<boolean> {
+    const read =
+      operation.kind === "update-client"
+        ? clientsQuery
+        : operation.kind === "transition-dispute"
+          ? disputesQuery
+          : operation.kind === "review-risk"
+            ? riskQuery
+            : operation.kind === "act-on-export"
+              ? exportsQuery
+              : ["create-dispute", "update-customer-mapping", "replay-delivery"].includes(operation.kind)
+                ? billingQuery
+                : lifecycleQuery;
+    if (!read.isSuccess || read.error || read.isFetching) {
+      setActionError(t("请先恢复当前记录读取，再提交操作。"));
       return false;
     }
+    return boundary.runOperation(busyKey, operation, fallback);
   }
 
   const metrics = useMemo(
     () => ({
       available: sumUnits(overview?.subscriptions.map((item) => item.available_units) ?? []),
       consumed: sumUnits(overview?.subscriptions.map((item) => item.consumed_units) ?? []),
-      activeClients: overview?.active_client_count ?? 0,
-      openRisks: overview?.open_risk_count ?? 0,
-      pendingExports: overview?.pending_export_count ?? 0,
-      deadDeliveries: overview?.dead_billing_delivery_count ?? 0,
-      openDisputes: overview?.open_dispute_count ?? 0,
+      activeClients: overview?.active_client_count,
+      openRisks: overview?.open_risk_count,
+      pendingExports: overview?.pending_export_count,
+      deadDeliveries: overview?.dead_billing_delivery_count,
+      openDisputes: overview?.open_dispute_count,
     }),
     [overview],
   );
@@ -417,31 +427,41 @@ export function useCommercialWorkspace() {
   const visibleError = actionError;
 
   return {
+    policyDrafts,
+    operationBoundary: boundary,
     queryClient,
     deliveryFilter,
-    setDeliveryFilter,
+    setDeliveryFilter: (value: BillingDeliveryFilter) => {
+      if (!boundary.isLocked()) setDeliveryFilter(value);
+    },
     disputeFilter,
-    setDisputeFilter,
+    setDisputeFilter: (value: BillingDisputeFilter) => {
+      if (!boundary.isLocked()) setDisputeFilter(value);
+    },
     riskFilter,
-    setRiskFilter,
+    setRiskFilter: (value: CommercialRiskFilter) => {
+      if (!boundary.isLocked()) setRiskFilter(value);
+    },
     riskCursor,
     setRiskCursor,
     riskCursorHistory,
     setRiskCursorHistory,
     tab,
-    setTab,
+    setTab: (value: CommercialTab) => {
+      if (!boundary.isLocked()) setTab(value);
+    },
     setActionError,
-    clientAction,
+    clientAction: governanceReadDenied(clientsQuery.error) ? null : clientAction,
     setClientAction,
-    riskAction,
+    riskAction: governanceReadDenied(riskQuery.error) ? null : riskAction,
     setRiskAction,
-    mappingAction,
+    mappingAction: governanceReadDenied(billingQuery.error) ? null : mappingAction,
     setMappingAction,
-    replayAction,
+    replayAction: governanceReadDenied(billingQuery.error) ? null : replayAction,
     setReplayAction,
-    createDisputeAction,
+    createDisputeAction: governanceReadDenied(billingQuery.error) ? null : createDisputeAction,
     setCreateDisputeAction,
-    disputeCaseAction,
+    disputeCaseAction: governanceReadDenied(disputesQuery.error) ? null : disputeCaseAction,
     setDisputeCaseAction,
     externalReference,
     setExternalReference,
