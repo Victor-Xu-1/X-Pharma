@@ -23,6 +23,7 @@ export const governanceReviewMessages = {
   当前没有待审核事实: "No facts are waiting for review",
   "{count} 项待审核": "{count} facts awaiting review",
   "{count} 条候选": "{count} candidates",
+  "1 条候选": "1 candidate",
   引证待核对: "Citation needs review",
   原文引证: "Original citation",
   文档: "Document",

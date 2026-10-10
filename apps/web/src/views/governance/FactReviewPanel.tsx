@@ -20,7 +20,8 @@ export function FactReviewPanel({ review }: { review: GovernanceReviewController
         {groupReviewFacts(facts).map((group) => (
           <details key={group[0].id} open>
             <summary>
-              {reviewFactTitle(group[0])} · {t("{count} 条候选", { count: group.length })}
+              {reviewFactTitle(group[0])} ·{" "}
+              {group.length === 1 ? t("1 条候选") : t("{count} 条候选", { count: group.length })}
             </summary>
             {group.map((fact) => (
               <button

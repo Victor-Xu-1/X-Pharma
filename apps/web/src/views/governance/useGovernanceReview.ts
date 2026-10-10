@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   decideEntityResolution,
   decideStagedFact,
@@ -12,6 +12,7 @@ import {
 import { useLocale } from "../../lib/i18n";
 import { type governanceReviewMessages, governanceReviewText as t } from "../../lib/i18n/governanceReview";
 import { governanceReadDenied } from "./governanceQueryState";
+import { useGovernanceActivity } from "./useGovernanceActivity";
 
 export type GovernanceMode = "facts" | "identity" | "quality" | "runs";
 export type IdentityScope = "pending" | "history";
@@ -29,15 +30,8 @@ export function useGovernanceReview() {
   const [canonicalChoices, setCanonicalChoices] = useState<Record<string, string>>({});
   const [failure, setFailure] = useState<Feedback | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const locked = useRef(false);
-  const mounted = useRef(true);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
+  const activity = useGovernanceActivity();
+  const busy = activity.busy;
   const queues = useQuery({
     queryKey: governanceKeys.queues,
     queryFn: ({ signal }) => loadGovernanceQueues(signal),
@@ -111,59 +105,57 @@ export function useGovernanceReview() {
     setSubmitted(false);
   }
   function changeMode(next: GovernanceMode) {
-    if (locked.current) return;
+    if (activity.isLocked()) return;
     setMode(next);
     clearFeedback();
   }
   function changeIdentityScope(next: IdentityScope) {
-    if (locked.current) return;
+    if (activity.isLocked()) return;
     setIdentityScope(next);
     setSelectedIdentityId("");
     clearFeedback();
   }
   function selectFact(id: string) {
-    if (locked.current) return;
+    if (activity.isLocked()) return;
     setSelectedFactId(id);
     clearFeedback();
   }
   function selectIdentity(id: string) {
-    if (locked.current) return;
+    if (activity.isLocked()) return;
     setSelectedIdentityId(id);
     clearFeedback();
   }
   function setNotes(value: string) {
-    if (!locked.current) setDrafts((previous) => ({ ...previous, [draftKey]: value }));
+    if (!activity.isLocked()) setDrafts((previous) => ({ ...previous, [draftKey]: value }));
   }
   function setCanonicalEntityId(value: string) {
-    if (!locked.current && selectedIdentity && options.includes(value))
+    if (!activity.isLocked() && selectedIdentity && options.includes(value))
       setCanonicalChoices((previous) => ({ ...previous, [selectedIdentity.id]: value }));
   }
   async function execute(work: () => Promise<unknown>, refresh: () => Promise<unknown>) {
-    if (locked.current || !mounted.current) return;
-    locked.current = true;
-    setBusy(true);
+    if (!activity.acquire("review")) return;
     clearFeedback();
     const submittedKey = draftKey;
     try {
       await work();
-      if (!mounted.current) return;
+      if (!activity.isCurrent()) return;
       setDrafts((previous) => ({ ...previous, [submittedKey]: "" }));
       setSubmitted(true);
       await refresh();
     } catch (caught) {
-      if (mounted.current)
+      if (activity.isCurrent())
         setFailure(
           caught instanceof Error
             ? { kind: "raw", message: caught.message }
             : { kind: "interface", key: "审核操作失败" },
         );
     } finally {
-      locked.current = false;
-      if (mounted.current) setBusy(false);
+      activity.release();
     }
   }
   function decide(decision: "approve" | "reject") {
-    if (!selected || locked.current || !factReady || !["review_pending", "conflict"].includes(selected.status)) return;
+    if (!selected || activity.isLocked() || !factReady || !["review_pending", "conflict"].includes(selected.status))
+      return;
     if ((decision === "reject" || selected.status === "conflict") && !notes.trim()) {
       setFailure({
         kind: "interface",
@@ -178,7 +170,7 @@ export function useGovernanceReview() {
     );
   }
   function decideIdentity(action: "approve" | "reject" | "revert") {
-    if (!selectedIdentity || locked.current || !identityReady) return;
+    if (!selectedIdentity || activity.isLocked() || !identityReady) return;
     if (
       action === "revert"
         ? selectedIdentity.status !== "approved" || !impact?.rollback_available
@@ -237,6 +229,7 @@ export function useGovernanceReview() {
     notes,
     setNotes,
     busy,
+    activity,
     error,
     submitted,
     queueReady,

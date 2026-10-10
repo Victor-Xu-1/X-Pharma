@@ -354,10 +354,7 @@
 .source-list article,
 .source-version-list article,
 .source-text-preview,
-.publication-control,
-:root .publication-fact-list label,
-.publication-batch-list button,
-.publication-preview-items article {
+.publication-control {
   border-color: var(--ds-border);
   border-radius: var(--ds-radius-panel);
   background: var(--ds-surface);
@@ -413,8 +410,7 @@
   color: var(--ds-ink);
 }
 
-.source-text-preview,
-.publication-preview > code {
+.source-text-preview {
   background: var(--ds-surface-muted);
   color: var(--ds-ink);
   font-family: var(--ds-font-mono);

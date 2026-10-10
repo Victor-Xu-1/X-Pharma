@@ -87,7 +87,7 @@ export function GovernanceView() {
             <RefreshCw size={15} />
             {t("刷新审核队列")}
           </button>
-          {busy ? (
+          {review.activity.intent === "review" ? (
             <p role="status">{t("正在提交审核决策")}</p>
           ) : review.submitted ? (
             <p role="status">{t("审核决策已提交；是否可见以最新权威记录为准。")}</p>
@@ -98,7 +98,12 @@ export function GovernanceView() {
         {mode === "facts" ? (
           <>
             <fieldset className="governance-review-lock" disabled={busy}>
-              <PublicationBatchPanel facts={facts} onQueuesChanged={() => void queues.refetch()} />
+              <PublicationBatchPanel
+                facts={facts}
+                ready={review.queueReady}
+                activity={review.activity}
+                onQueuesChanged={() => queues.refetch()}
+              />
             </fieldset>
             <FactReviewPanel review={review} />
           </>
