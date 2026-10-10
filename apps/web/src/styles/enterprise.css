@@ -320,6 +320,28 @@ fieldset.enterprise-modal-subject legend {
   text-overflow: ellipsis;
 }
 
+.enterprise-model-toolbar {
+  align-items: flex-start;
+  gap: 12px;
+}
+.enterprise-model-toolbar > span {
+  min-width: 0;
+  line-height: 1.5;
+}
+.enterprise-model-toolbar .primary-button {
+  flex: 0 0 auto;
+}
+@media (max-width: 560px) {
+  .enterprise-model-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .enterprise-model-toolbar .primary-button {
+    align-self: flex-start;
+    max-width: 100%;
+    white-space: nowrap;
+  }
+}
 @media (max-width: 1100px) {
   .enterprise-metrics {
     grid-template-columns: repeat(4, minmax(100px, 1fr));

@@ -27,6 +27,51 @@ const provider: EnterpriseLLMProvider = {
   last_test_message: null,
 };
 beforeEach(() => setLocale("en"));
+it("presents one actionable empty configuration without a second empty routing explanation", () => {
+  const create = vi.fn();
+  const { rerender } = render(
+    <LLMProvidersPanel
+      providers={[]}
+      busy=""
+      onCreate={create}
+      onEdit={vi.fn()}
+      onPrimary={vi.fn()}
+      onTest={vi.fn()}
+    />,
+  );
+  expect(screen.getByText("No remote model providers")).toBeInTheDocument();
+  expect(screen.queryByRole("group")).not.toBeInTheDocument();
+  expect(screen.queryByText("Automatic failover in configured order")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Add model provider" }));
+  expect(create).toHaveBeenCalledTimes(1);
+  rerender(
+    <LLMProvidersPanel
+      providers={[]}
+      busy="create-llm-provider"
+      onCreate={create}
+      onEdit={vi.fn()}
+      onPrimary={vi.fn()}
+      onTest={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("button", { name: "Add model provider" })).toBeDisabled();
+});
+it("keeps the real inactive provider and routing status when configuration exists", () => {
+  render(
+    <LLMProvidersPanel
+      providers={[{ ...provider, active: false }]}
+      busy=""
+      onCreate={vi.fn()}
+      onEdit={vi.fn()}
+      onPrimary={vi.fn()}
+      onTest={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("group")).toBeInTheDocument();
+  expect(screen.getByText("No active model provider. Configure an approved provider first.")).toBeInTheDocument();
+  expect(screen.getByText(provider.name)).toBeInTheDocument();
+  expect(screen.getByText(/ORIGINAL_MODEL/)).toBeInTheDocument();
+});
 it("keeps the visible primary row consistent with the effective ordered primary when no provider has priority zero", () => {
   render(
     <LLMProvidersPanel
@@ -65,6 +110,7 @@ it("does not present a provider-specific adoption recommendation as the empty co
       onTest={vi.fn()}
     />,
   );
-  expect(screen.getByText("No active model provider. Configure an approved provider first.")).toBeInTheDocument();
+  expect(screen.getByText("No remote model providers")).toBeInTheDocument();
+  expect(screen.getByText(/Add an approved OpenAI-compatible HTTPS provider/)).toBeInTheDocument();
   expect(screen.queryByText(/first.*MiMo/i)).not.toBeInTheDocument();
 });
