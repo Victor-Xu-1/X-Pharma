@@ -21,7 +21,7 @@ it.each(["research", "internal"] as const)(
         workspace
       </WorkspaceShell>,
     );
-    const button = screen.getByRole("button", { name: "退出账号", exact: true });
+    const button = screen.getByRole("button", { name: "退出账号" });
     let release: (() => void) | undefined;
     act(() => {
       release = trackSessionWrite("POST");

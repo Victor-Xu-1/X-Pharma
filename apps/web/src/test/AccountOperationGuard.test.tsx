@@ -26,7 +26,7 @@ beforeEach(() => {
   vi.resetAllMocks();
 });
 function formFor(name: string) {
-  const form = screen.getByRole("button", { name, exact: true }).closest("form");
+  const form = screen.getByRole("button", { name }).closest("form");
   if (!form) throw new Error("The account form is missing");
   return form;
 }

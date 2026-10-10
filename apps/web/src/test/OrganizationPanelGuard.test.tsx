@@ -34,12 +34,12 @@ async function openPanel() {
       <OrganizationPanel />
     </OrganizationContext>,
   );
-  fireEvent.click(screen.getByRole("button", { name: "组织与账号", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "组织与账号" }));
   await screen.findByText(organization.name, { selector: "strong" });
   return rendered;
 }
 function invitationForm() {
-  const button = screen.getByRole("button", { name: "确认加入组织", exact: true });
+  const button = screen.getByRole("button", { name: "确认加入组织" });
   const form = button.closest("form");
   if (!form) throw new Error("Organization invitation form is missing");
   fireEvent.change(screen.getByLabelText("管理员邀请码"), { target: { value: "CONTROLLED-NOT-A-REAL-CODE" } });
@@ -64,7 +64,7 @@ it("holds one invitation intent and prevents input, close and Escape until it se
   expect(joinOrganization).toHaveBeenCalledTimes(1);
   expect(screen.getByLabelText("管理员邀请码")).toBeDisabled();
   expect(screen.getByRole("checkbox")).toBeDisabled();
-  expect(screen.getByRole("button", { name: "关闭", exact: true })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "关闭" })).toBeDisabled();
   fireEvent.keyDown(document, { key: "Escape" });
   expect(screen.getByRole("dialog")).toBeInTheDocument();
   expect(queryClient.getMutationCache().getAll()).toEqual([]);
@@ -90,11 +90,11 @@ it("keeps the dialog locked while the current membership catalog is reconciled",
   );
   fireEvent.submit(invitationForm());
   await waitFor(() => expect(loadOrganizations).toHaveBeenCalledTimes(2));
-  expect(screen.getByRole("button", { name: "关闭", exact: true })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "关闭" })).toBeDisabled();
   expect(screen.getByLabelText("管理员邀请码")).toBeDisabled();
   await act(async () => finishRead?.([organization]));
   expect(await screen.findByText("已加入组织，请从上方选择切换。")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "关闭", exact: true })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "关闭" })).toBeEnabled();
 });
 
 it("does not accept an invitation while the current membership read has failed", async () => {
@@ -105,7 +105,7 @@ it("does not accept an invitation while the current membership read has failed",
   fireEvent.submit(form);
   expect(joinOrganization).not.toHaveBeenCalled();
   expect(screen.getByLabelText("管理员邀请码")).toHaveValue("");
-  expect(screen.getByRole("button", { name: "确认加入组织", exact: true })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "确认加入组织" })).toBeDisabled();
 });
 
 it("sanitizes unknown invitation failures and releases the form for an explicit new attempt", async () => {
@@ -135,7 +135,7 @@ it("distinguishes accepted membership from a failed catalog refresh without repl
   fireEvent.submit(invitationForm());
   expect(await screen.findByText("已加入组织，请重试成员资格读取后再切换。")).toBeInTheDocument();
   expect(screen.getByLabelText("管理员邀请码")).toHaveValue("");
-  fireEvent.click(screen.getByRole("button", { name: "重试", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "重试" }));
   await screen.findByText(organization.name, { selector: "strong" });
   expect(joinOrganization).toHaveBeenCalledTimes(1);
 });
@@ -167,14 +167,14 @@ it("captures a current active switch target and blocks a second same-tick switch
       }),
   );
   await openPanel();
-  const button = screen.getByRole("button", { name: "切换到 Other original organization", exact: true });
+  const button = screen.getByRole("button", { name: "切换到 Other original organization" });
   act(() => {
     fireEvent.click(button);
     fireEvent.click(button);
   });
   expect(switchOrganization).toHaveBeenCalledTimes(1);
   expect(switchOrganization).toHaveBeenCalledWith("organization-b");
-  expect(screen.getByRole("button", { name: "关闭", exact: true })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "关闭" })).toBeDisabled();
   await act(async () => finish?.());
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
