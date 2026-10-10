@@ -422,19 +422,19 @@ it("adds an OpenAI-compatible LLM without ever displaying a stored secret", asyn
   });
 });
 
-it("offers MiMo primary and GLM fallback presets without filling a credential", async () => {
+it("offers existing MiMo and GLM presets without filling a credential or requiring a vendor choice", async () => {
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
   await selectEnterpriseTab("\u6a21\u578b\u8bbe\u7f6e");
   fireEvent.click(screen.getByRole("button", { name: "\u589e\u52a0 LLM" }));
 
-  fireEvent.click(screen.getByRole("button", { name: "\u4f7f\u7528 MiMo v2.5 \u4e3b\u6a21\u578b\u9884\u8bbe" }));
+  fireEvent.click(screen.getByRole("button", { name: "使用 MiMo v2.5 预设" }));
   expect(screen.getByLabelText("\u4f9b\u5e94\u5546\u540d\u79f0")).toHaveValue("mimo");
   expect(screen.getByLabelText("\u6a21\u578b ID")).toHaveValue("mimo-v2.5");
   expect(screen.getByLabelText("API \u6839\u5730\u5740")).toHaveValue("https://token-plan-cn.xiaomimimo.com/v1");
   expect(screen.getByLabelText("API Key")).toHaveValue("");
   expect(screen.getByLabelText("\u5c1d\u8bd5\u6b21\u6570")).toHaveValue(2);
 
-  fireEvent.click(screen.getByRole("button", { name: "\u4f7f\u7528 GLM 5.2 \u5907\u7528\u9884\u8bbe" }));
+  fireEvent.click(screen.getByRole("button", { name: "使用 GLM 5.2 预设" }));
   expect(screen.getByLabelText("\u4f9b\u5e94\u5546\u540d\u79f0")).toHaveValue("glm");
   expect(screen.getByLabelText("\u6a21\u578b ID")).toHaveValue("GLM-5.2");
   expect(screen.getByLabelText("API \u6839\u5730\u5740")).toHaveValue("https://chatapi.weixin.qq.com/openai/v1");

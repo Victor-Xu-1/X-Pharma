@@ -1,7 +1,10 @@
 import { formatDate, StatusBadge } from "../../components/common";
 import type { EnterpriseOverviewRead } from "../../lib/generated";
+import { useLocale } from "../../lib/i18n";
+import { enterpriseWorkspaceText as t } from "../../lib/i18n/enterpriseWorkspace";
 
 export function EnterpriseOverview({ overview }: { overview: EnterpriseOverviewRead }) {
+  useLocale();
   const metrics = [
     ["用户总数", overview.user_count],
     ["活跃用户", overview.active_user_count],
@@ -13,31 +16,31 @@ export function EnterpriseOverview({ overview }: { overview: EnterpriseOverviewR
   ] as const;
   return (
     <>
-      <section className="enterprise-metrics" aria-label="租户运营指标">
+      <section className="enterprise-metrics" aria-label={t("租户运营指标")}>
         {metrics.map(([label, value]) => (
           <div key={label}>
             <strong>{value}</strong>
-            <small>{label}</small>
+            <small>{t(label)}</small>
           </div>
         ))}
       </section>
       <dl className="enterprise-tenant-details">
         <div>
-          <dt>租户标识</dt>
+          <dt>{t("租户标识")}</dt>
           <dd>{overview.tenant.slug}</dd>
         </div>
         <div>
-          <dt>运行状态</dt>
+          <dt>{t("运行状态")}</dt>
           <dd>
             <StatusBadge value={overview.tenant.active ? "active" : "disabled"} />
           </dd>
         </div>
         <div>
-          <dt>创建时间</dt>
+          <dt>{t("创建时间")}</dt>
           <dd>{formatDate(overview.tenant.created_at, true)}</dd>
         </div>
         <div>
-          <dt>租户 ID</dt>
+          <dt>{t("租户 ID")}</dt>
           <dd className="mono-value">{overview.tenant.id}</dd>
         </div>
       </dl>

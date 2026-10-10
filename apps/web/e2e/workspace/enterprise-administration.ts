@@ -280,7 +280,7 @@ export async function verifyEnterpriseAdministration({
   await page.goto("/workspace/internal?view=enterprise");
   await selectInterfaceLanguage(page, "zh-CN");
   expect(await page.evaluate(() => document.documentElement.dataset.workbench)).toBe("internal");
-  await expect(page.getByRole("heading", { name: "企业账户与审计" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "企业管理" })).toBeVisible();
   await expect(page.getByText("Browser Pharma Tenant", { exact: true })).toBeVisible();
   await page.getByRole("tab", { name: "用户与角色" }).click();
   await expect(page.getByRole("button", { name: "调整 Browser Admin 的角色" })).toBeDisabled();

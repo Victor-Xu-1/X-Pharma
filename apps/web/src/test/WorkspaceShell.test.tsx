@@ -391,3 +391,27 @@ it("moves focus into the mobile navigation and restores it after closing", async
   await waitFor(() => expect(openNavigation).toHaveFocus());
   expect(openNavigation.closest(".workspace-main")).not.toHaveAttribute("inert");
 });
+it("uses the same concise enterprise title as its navigation in English and Chinese", () => {
+  setLocale("en");
+  render(
+    <WorkspaceShell
+      user={{
+        id: "admin",
+        tenant_id: "tenant",
+        email: "admin@example.test",
+        display_name: "Original name",
+        role: "admin",
+      }}
+      activeWorkbench="internal"
+      activeView="enterprise"
+      onView={vi.fn()}
+      onLogout={vi.fn()}
+    >
+      workspace
+    </WorkspaceShell>,
+  );
+  expect(screen.getByRole("heading", { name: "Enterprise management" })).toBeInTheDocument();
+  fireEvent.change(screen.getByRole("combobox", { name: "Interface language" }), { target: { value: "zh-CN" } });
+  expect(screen.getByRole("heading", { name: "企业管理" })).toBeInTheDocument();
+  expect(screen.queryByText("企业账户与审计")).not.toBeInTheDocument();
+});
