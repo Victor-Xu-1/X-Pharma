@@ -24,6 +24,7 @@ import {
 import { type commercialWorkspaceMessages, commercialWorkspaceText as t } from "../../lib/i18n/commercialWorkspace";
 import { governanceReadDenied } from "../governance/governanceQueryState";
 import { sumUnits } from "./format";
+import { useLifecycleDrafts } from "./lifecycle/useLifecycleDrafts";
 import { useWorkspacePolicyDrafts } from "./policy/useWorkspacePolicy";
 import type {
   ClientAction,
@@ -140,6 +141,10 @@ export function useCommercialWorkspace() {
   const sourcePurgeCandidates = lifecycleQuery.data?.sourcePurgeCandidates ?? [];
 
   const deletedSourceAssets = lifecycleQuery.data?.deletedSourceAssets ?? [];
+  const lifecycleDrafts = useLifecycleDrafts(
+    retentionPolicies,
+    lifecycleQuery.isSuccess && !lifecycleQuery.error && !lifecycleQuery.isFetching,
+  );
 
   async function runOperation(
     busyKey: string,
@@ -370,37 +375,37 @@ export function useCommercialWorkspace() {
     );
   }
 
-  async function purgeExport(job: DataExportJob, reason: string) {
+  async function purgeExport(job: DataExportJob, reason: string, key: string) {
     return runOperation(
       `lifecycle:purge:${job.id}`,
       {
         kind: "purge-export",
         jobId: job.id,
-        requestBody: { idempotency_key: `web.purge.${crypto.randomUUID()}`, reason },
+        requestBody: { idempotency_key: key, reason },
       },
       "导出对象清除失败",
     );
   }
 
-  async function purgeSourceAsset(asset: SourceAssetImpact, reason: string) {
+  async function purgeSourceAsset(asset: SourceAssetImpact, reason: string, key: string) {
     return runOperation(
       `lifecycle:source-purge:${asset.id}`,
       {
         kind: "purge-source",
         assetId: asset.id,
-        requestBody: { idempotency_key: `web.source-purge.${crypto.randomUUID()}`, reason },
+        requestBody: { idempotency_key: key, reason },
       },
       "源资料清除失败",
     );
   }
 
-  async function reauthorizeSourceAsset(asset: DeletedSourceAsset, reason: string) {
+  async function reauthorizeSourceAsset(asset: DeletedSourceAsset, reason: string, key: string) {
     return runOperation(
       `lifecycle:source-reauthorize:${asset.id}`,
       {
         kind: "reauthorize-source",
         assetId: asset.id,
-        requestBody: { idempotency_key: `web.source-reauthorize.${crypto.randomUUID()}`, reason },
+        requestBody: { idempotency_key: key, reason },
       },
       "源资料重新授权失败",
     );
@@ -427,6 +432,7 @@ export function useCommercialWorkspace() {
   const visibleError = actionError;
 
   return {
+    lifecycleDrafts,
     policyDrafts,
     operationBoundary: boundary,
     queryClient,

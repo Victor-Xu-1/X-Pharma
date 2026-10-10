@@ -102,6 +102,25 @@
   gap: 16px;
 }
 
+.retention-policy-form > header {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lifecycle-action-target {
+  display: grid;
+  gap: 8px;
+  overflow-wrap: anywhere;
+  padding: 14px;
+  background: var(--ds-surface-muted);
+  border-radius: 8px;
+  margin-bottom: 18px;
+}
+
+.lifecycle-action-target p {
+  margin: 0;
+}
+
 .operations-form h2,
 .operations-section h2 {
   margin: 2px 0 0;

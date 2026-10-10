@@ -22,7 +22,6 @@ export function LifecycleSourceRecords({
       <section className="operations-section" data-lifecycle="source-withdrawal">
         <header>
           <div>
-            <p className="eyebrow">SOURCE WITHDRAWAL</p>
             <h2>{t("源资料撤回候选")}</h2>
           </div>
         </header>
@@ -58,7 +57,18 @@ export function LifecycleSourceRecords({
                       </span>
                     </td>
                     <td>
-                      <StatusBadge value={asset.blockers.length ? "blocked" : "eligible"} />
+                      <StatusBadge
+                        value={
+                          asset.blockers.length ? "blocked" : asset.retention_eligible ? "eligible" : "not_eligible"
+                        }
+                        label={t(
+                          asset.blockers.length
+                            ? "已阻断"
+                            : asset.retention_eligible
+                              ? "本次读取符合保留期"
+                              : "本次读取不符合保留期",
+                        )}
+                      />
                     </td>
                     <td>
                       <button
@@ -82,7 +92,6 @@ export function LifecycleSourceRecords({
       <section className="operations-section" data-lifecycle="source-reauthorization">
         <header>
           <div>
-            <p className="eyebrow">SOURCE REAUTHORIZATION</p>
             <h2>{t("已撤回源资料")}</h2>
           </div>
         </header>

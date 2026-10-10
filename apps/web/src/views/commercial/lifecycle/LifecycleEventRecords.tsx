@@ -10,7 +10,6 @@ export function LifecycleEventRecords({ events }: { events: DataLifecycleEvent[]
       <section className="operations-section">
         <header>
           <div>
-            <p className="eyebrow">IMMUTABLE AUDIT</p>
             <h2>{t("生命周期审计")}</h2>
           </div>
         </header>

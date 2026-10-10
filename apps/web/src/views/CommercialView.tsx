@@ -25,6 +25,7 @@ import { WorkspaceExportPolicyPanel } from "./WorkspaceExportPolicyPanel";
 export function CommercialView() {
   useLocale();
   const {
+    lifecycleDrafts,
     policyDrafts,
     operationBoundary,
     queryClient,
@@ -80,7 +81,6 @@ export function CommercialView() {
     billingAccounts,
     billingDeliveries,
     billingDisputes,
-    retentionPolicies,
     legalHolds,
     lifecycleEvents,
     purgeCandidates,
@@ -342,7 +342,8 @@ export function CommercialView() {
             ) : null}
             {tab === "lifecycle" && lifecycleQuery.data ? (
               <DataLifecyclePanel
-                policies={retentionPolicies}
+                drafts={lifecycleDrafts}
+                refreshing={lifecycleQuery.isFetching}
                 holds={legalHolds}
                 events={lifecycleEvents}
                 candidates={purgeCandidates}

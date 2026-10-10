@@ -20,7 +20,6 @@ export function LifecyclePurgeRecords({
       <section className="operations-section">
         <header>
           <div>
-            <p className="eyebrow">PURGE CANDIDATES</p>
             <h2>{t("到期导出对象")}</h2>
           </div>
         </header>

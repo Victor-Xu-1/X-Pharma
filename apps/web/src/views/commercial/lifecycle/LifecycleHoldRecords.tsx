@@ -20,7 +20,6 @@ export function LifecycleHoldRecords({
       <section className="operations-section">
         <header>
           <div>
-            <p className="eyebrow">ACTIVE HOLDS</p>
             <h2>{t("法律保全记录")}</h2>
           </div>
         </header>

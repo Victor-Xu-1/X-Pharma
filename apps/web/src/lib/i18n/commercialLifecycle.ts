@@ -1,6 +1,22 @@
 import { createTranslator } from "./translator";
 export const commercialLifecycleMessages = {
   数据生命周期治理: "Data lifecycle governance",
+  已启用: "Active",
+  未启用: "Inactive",
+  尚未配置: "Not configured",
+  已阻断: "Blocked",
+  本次读取符合保留期: "Retention eligible at this read",
+  本次读取不符合保留期: "Not retention eligible at this read",
+  使用最新策略: "Use latest policy",
+  "策略已在服务端更新。未提交内容已保留，请核对最新策略后再保存。":
+    "The server policy has changed. Your unsent edits are retained; review the latest policy before saving.",
+  "此目标已更新。请关闭此对话框并核对最新记录。":
+    "This target has changed. Close this dialog and review its latest record.",
+  我已核对目标并了解此操作: "I have checked the target and understand this action",
+  "这将请求清除该目标的对象；服务端仍将核对保留策略、法律保全与业务依赖。":
+    "This requests object removal for the selected target. The server still checks retention, legal holds and business dependencies.",
+  "重试将复用同一目标、原因和操作键。若需修改，请取消并重新开始。":
+    "Retry reuses the same target, reason and operation key. Cancel to start a different action.",
   导出对象保留策略: "Export retention policy",
   源资料保留策略: "Source retention policy",
   "保留时长（小时）": "Retention period (hours)",
