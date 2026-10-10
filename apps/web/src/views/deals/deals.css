@@ -27,29 +27,11 @@
 .deal-filter-bar .compact-range-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--ds-space-2);
+  gap: 8px;
   border: 0;
   min-width: 0;
   padding: 0;
   margin: 0;
-}
-.deal-professional-body .deal-rights-table {
-  min-width: 860px;
-}
-.deal-professional-body .deal-rights-holder-column {
-  width: 20%;
-}
-.deal-professional-body .deal-rights-type-column {
-  width: 20%;
-}
-.deal-professional-body .deal-rights-territory-column {
-  width: 15%;
-}
-.deal-professional-body .deal-rights-exclusivity-column {
-  width: 15%;
-}
-.deal-professional-body .deal-rights-scope-column {
-  width: 30%;
 }
 @media (max-width: 680px) {
   .deal-section .deal-filter-bar {
