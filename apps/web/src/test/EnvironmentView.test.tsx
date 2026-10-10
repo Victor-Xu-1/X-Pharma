@@ -46,6 +46,39 @@ beforeEach(() => {
   vi.mocked(loadEnvironment).mockResolvedValue(environment);
 });
 
+it("keeps original identity uncertainty expanded while dependency readiness is evaluated separately", async () => {
+  setLocale("en");
+  vi.mocked(loadEnvironment).mockResolvedValue({
+    ...environment,
+    runtime: [
+      { ...environment.runtime[0], observed: "3.13.16", expected: ">=3.13.16,<3.14" },
+      {
+        id: "human-identity",
+        scope: "gateway",
+        label: "Original identity signal",
+        status: "unverified",
+        observed: "Original identity value",
+        expected: "Original recovery requirement",
+        detail: "Original diagnostic",
+      },
+    ],
+  });
+  renderWithQueryClient(<EnvironmentView />);
+  const readiness = await screen.findByRole("region", { name: "Dependency readiness overview" });
+  expect(within(readiness).getByText("Application gateway").nextElementSibling).toHaveTextContent(
+    "Dependencies available",
+  );
+  expect(within(readiness).getByText("Project environment").nextElementSibling).toHaveTextContent("Unverified");
+  const table = screen.getByRole("table", { name: "Gateway dependency versions" });
+  expect(table).toBeVisible();
+  expect(table).toHaveTextContent("Original identity value");
+  expect(table).toHaveTextContent("Original diagnostic");
+  expect(table).toHaveTextContent("Not verified");
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("table", { name: "网关依赖版本" })).toHaveTextContent("Original recovery requirement");
+  expect(loadEnvironment).toHaveBeenCalledOnce();
+});
+
 it("localizes readiness without re-reading reports or treating missing versions as compatible", async () => {
   vi.mocked(loadEnvironment).mockResolvedValue({
     ...environment,

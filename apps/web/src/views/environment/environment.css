@@ -135,6 +135,23 @@
   align-items: center;
   gap: 10px;
 }
+:root .environment-recipes input,
+:root .environment-offline input {
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
+  margin-top: 3px;
+  flex: none;
+}
+.environment-status-missing,
+.environment-status-blocked {
+  color: var(--ds-danger);
+  background: var(--ds-danger-soft);
+}
+.environment-status-mismatch {
+  color: var(--ds-warning);
+  background: var(--ds-warning-soft);
+}
 .environment-installation > .primary-button {
   justify-self: start;
 }

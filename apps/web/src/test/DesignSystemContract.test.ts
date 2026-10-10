@@ -25,6 +25,14 @@ function source(relativePath: string) {
   return url.pathname.endsWith(".css") ? stylesheetSource(url) : readFileSync(fileURLToPath(url), "utf8");
 }
 
+it("owns environment-specific controls and statuses in the environment sheet only", () => {
+  expect(source("../styles/enterprise.css")).not.toMatch(/\.environment-/);
+  const environment = source("../views/environment/environment.css");
+  expect(environment).toContain(".environment-status-missing");
+  expect(environment).toContain(".environment-status-mismatch");
+  expect(environment).toContain(".environment-recipes input");
+});
+
 it("balances complete workspace headings without clipping text or changing the language control", () => {
   const layout = source("../components/LanguageSwitcher.css");
   const heading = ruleBody(layout, ".page-heading:has(> .language-switcher) h1");

@@ -5,6 +5,31 @@ import { WorkspaceShell } from "../components/WorkspaceShell";
 import { setLocale } from "../lib/i18n";
 import { PRODUCT_RELEASE } from "../lib/product";
 
+it("keeps the environment heading compact in both interface languages without changing identity", () => {
+  setLocale("en");
+  render(
+    <WorkspaceShell
+      user={{
+        id: "admin",
+        tenant_id: "tenant",
+        email: "admin@example.test",
+        display_name: "Original 科研",
+        role: "admin",
+      }}
+      activeWorkbench="internal"
+      activeView="environment"
+      onView={vi.fn()}
+      onLogout={vi.fn()}
+    >
+      environment
+    </WorkspaceShell>,
+  );
+  expect(screen.getByRole("heading", { name: "Environment" })).toBeInTheDocument();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("heading", { name: "环境管理" })).toBeInTheDocument();
+  expect(screen.getByText("Original 科研")).toBeInTheDocument();
+});
+
 it.each(["research", "internal"] as const)(
   "marks every controlled %s primary label for readable wrapping",
   (workbench) => {
@@ -32,9 +57,9 @@ it.each(["research", "internal"] as const)(
     for (const button of buttons) expect(button.querySelector("span")).toHaveClass("sidebar-nav-label");
     expect(
       within(primary).getByRole("button", {
-        name: workbench === "research" ? "Competitive intelligence" : "Environment management",
+        name: workbench === "research" ? "Competitive intelligence" : "Environment",
       }),
-    ).toHaveTextContent(workbench === "research" ? "Competitive intelligence" : "Environment management");
+    ).toHaveTextContent(workbench === "research" ? "Competitive intelligence" : "Environment");
     if (workbench === "internal") expect(screen.getByText("原始用户名字")).not.toHaveClass("sidebar-nav-label");
   },
 );

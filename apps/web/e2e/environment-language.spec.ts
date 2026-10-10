@@ -3,6 +3,84 @@ import { expect, test } from "@playwright/test";
 import { environmentLanguageFixture } from "./fixtures/environment-language";
 import { selectInterfaceLanguage } from "./interface-language";
 
+test("[environment-language] keeps a compact narrow heading and separates dependency facts from visible identity uncertainty", async ({
+  page,
+}, testInfo) => {
+  const fixture = environmentLanguageFixture();
+  fixture.environment.runtime[0] = {
+    ...fixture.environment.runtime[0],
+    observed: "3.13.16",
+    expected: ">=3.13.16,<3.14",
+  };
+  fixture.environment.runtime.push({
+    id: "human-identity",
+    label: "Original identity signal",
+    scope: "gateway",
+    status: "unverified",
+    observed: "Original identity value",
+    expected: "Original recovery policy",
+    detail: "Original identity diagnostic",
+  });
+  let reads = 0;
+  const errors: string[] = [],
+    writes: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.route("**/api/v1/**", (route) => {
+    const request = route.request(),
+      path = new URL(request.url()).pathname;
+    if (path === "/api/v1/workspace/web-vitals" && request.method() === "POST")
+      return route.fulfill({ status: 202, json: {} });
+    if (!["GET", "HEAD", "OPTIONS"].includes(request.method())) {
+      writes.push(`${request.method()} ${path}`);
+      return route.abort("blockedbyclient");
+    }
+    if (path === "/api/v1/auth/config") return route.fulfill({ json: { mode: "local" } });
+    if (path === "/api/v1/auth/me")
+      return route.fulfill({
+        json: {
+          id: "controlled-environment-user",
+          tenant_id: "controlled-environment-tenant",
+          email: "environment@example.test",
+          display_name: "Original 科研",
+          role: "admin",
+        },
+      });
+    if (path === "/api/v1/enterprise/environment") {
+      reads++;
+      return route.fulfill({ json: fixture.environment });
+    }
+    return route.fulfill({ json: [] });
+  });
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto("/workspace/internal?view=environment");
+  const title = page.getByRole("heading", { name: "Environment", exact: true });
+  await expect(title).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  expect((await title.boundingBox())?.height).toBeLessThanOrEqual(44);
+  const readiness = page.getByRole("region", { name: "Dependency readiness overview", exact: true });
+  await expect(readiness.getByText("Application gateway", { exact: true }).locator("+ dd")).toHaveText(
+    "Dependencies available",
+  );
+  const table = page.getByRole("table", { name: "Gateway dependency versions", exact: true });
+  await expect(table).toBeVisible();
+  await expect(table).toContainText("Original identity diagnostic");
+  await expect(table).toContainText("Not verified");
+  await selectInterfaceLanguage(page, "zh-CN");
+  await expect(page.getByRole("heading", { name: "环境管理", exact: true })).toBeVisible();
+  await expect(page.getByRole("table", { name: "网关依赖版本", exact: true })).toContainText(
+    "Original recovery policy",
+  );
+  expect(reads).toBe(1);
+  expect(writes).toEqual([]);
+  expect(errors).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  expect(
+    (await new AxeBuilder({ page }).include("main").withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze())
+      .violations,
+  ).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath("environment-compact-zh-320.png"), animations: "disabled" });
+});
+
 test("[environment-language] preserves report truth, plan lifecycle, drafts and cached reads without executing installation", async ({
   page,
 }, testInfo) => {

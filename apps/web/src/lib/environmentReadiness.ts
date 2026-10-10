@@ -11,7 +11,10 @@ export function probeReadiness(probes: EnvironmentProbeRead[]): DependencyReadin
 }
 
 export function environmentReadiness(environment: EnvironmentRead) {
-  const gateway = probeReadiness(environment.runtime);
+  const runtimeDependencies = environment.runtime.filter(
+    (probe) => !(probe.id === "human-identity" && probe.scope === "gateway"),
+  );
+  const gateway = probeReadiness(runtimeDependencies);
   const host =
     environment.host_status === "current" && environment.host?.clean_source
       ? probeReadiness(environment.host.probes)
@@ -23,7 +26,7 @@ export function environmentReadiness(environment: EnvironmentRead) {
         ? "ready"
         : "unverified";
   const issues = [
-    ...environment.runtime,
+    ...runtimeDependencies,
     ...(environment.host_status === "current" ? (environment.host?.probes ?? []) : []),
   ].filter((probe) => ["missing", "mismatch", "blocked"].includes(probe.status));
   return { gateway, host, overall, issues };
