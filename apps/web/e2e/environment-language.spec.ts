@@ -55,6 +55,13 @@ test("[environment-language] keeps a compact narrow heading and separates depend
   await page.goto("/workspace/internal?view=environment");
   const title = page.getByRole("heading", { name: "Environment", exact: true });
   await expect(title).toBeVisible();
+  const commands = page.getByRole("tablist", { name: "Environment management functions", exact: true });
+  for (const name of ["Checks", "Installation", "Evidence"]) {
+    const box = await commands.getByRole("tab", { name, exact: true }).boundingBox();
+    if (!box) throw new Error("Visible environment command is missing");
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(320);
+  }
   await page.evaluate(() => document.fonts.ready);
   expect((await title.boundingBox())?.height).toBeLessThanOrEqual(44);
   const readiness = page.getByRole("region", { name: "Dependency readiness overview", exact: true });
@@ -152,7 +159,7 @@ test("[environment-language] preserves report truth, plan lifecycle, drafts and 
   await expect(probes).not.toContainText("Meets declared requirements");
   await expect(probes).toContainText("原始探针诊断 / controlled fixture");
   await audit("runtime-unverified-en");
-  await page.getByRole("tab", { name: "Installation and repair", exact: true }).click();
+  await page.getByRole("tab", { name: "Installation", exact: true }).click();
   await page.getByRole("button", { name: "Prepare installation plan", exact: true }).click();
   await expect(page.getByRole("button", { name: "Preparing…", exact: true })).toBeDisabled();
   await expect(page.getByRole("radio", { name: "Frontend dependencies", exact: true })).toBeDisabled();
@@ -177,12 +184,21 @@ test("[environment-language] preserves report truth, plan lifecycle, drafts and 
   );
   await expect(page.getByRole("button", { name: "Execute installation", exact: true })).toHaveCount(0);
   await audit("plan-prepared-en");
-  await page.getByRole("tab", { name: "Runtime and release evidence", exact: true }).click();
+  await page.getByRole("tab", { name: "Evidence", exact: true }).click();
+  const snapshot = page.locator(".platform-snapshot");
+  await expect(snapshot).toBeVisible();
+  const snapshotBounds = await snapshot.evaluate((node) => ({
+    width: node.clientWidth,
+    content: node.scrollWidth,
+    whiteSpace: getComputedStyle(node).whiteSpace,
+  }));
+  expect(snapshotBounds.content).toBeLessThanOrEqual(snapshotBounds.width + 1);
+  expect(snapshotBounds.whiteSpace).toBe("normal");
   const queueCount = page.locator(".platform-queue-metrics > div").first();
   await expect(queueCount).toContainText("Not observed");
   await expect(page.locator(".platform-queue-metrics > div").nth(3)).toContainText("0");
   await audit("unobserved-queues-en");
-  await page.getByRole("tab", { name: "Installation and repair", exact: true }).click();
+  await page.getByRole("tab", { name: "Installation", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Installation plan prepared, not executed", exact: true }),
   ).toBeVisible();

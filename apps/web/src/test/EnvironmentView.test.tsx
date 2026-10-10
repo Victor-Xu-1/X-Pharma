@@ -46,6 +46,17 @@ beforeEach(() => {
   vi.mocked(loadEnvironment).mockResolvedValue(environment);
 });
 
+it("uses three concise environment commands without changing the active report", async () => {
+  setLocale("en");
+  renderWithQueryClient(<EnvironmentView />);
+  const commands = await screen.findByRole("tablist", { name: "Environment management functions" });
+  expect(within(commands).getByRole("tab", { name: "Checks" })).toHaveAttribute("aria-selected", "true");
+  expect(within(commands).getByRole("tab", { name: "Installation" })).toBeInTheDocument();
+  expect(within(commands).getByRole("tab", { name: "Evidence" })).toBeInTheDocument();
+  expect(loadEnvironment).toHaveBeenCalledOnce();
+  expect(prepareEnvironmentPlan).not.toHaveBeenCalled();
+});
+
 it("keeps original identity uncertainty expanded while dependency readiness is evaluated separately", async () => {
   setLocale("en");
   vi.mocked(loadEnvironment).mockResolvedValue({
@@ -108,7 +119,7 @@ it("preserves installation choices across locale switching without creating a pl
   fireEvent.click(await screen.findByRole("tab", { name: "安装与修复" }));
   fireEvent.click(screen.getByRole("checkbox"));
   act(() => setLocale("en"));
-  expect(screen.getByRole("tab", { name: "Installation and repair" })).toHaveAttribute("aria-selected", "true");
+  expect(screen.getByRole("tab", { name: "Installation" })).toHaveAttribute("aria-selected", "true");
   expect(
     screen.getByRole("checkbox", { name: "Use offline cache only (fail if unavailable; no automatic downloads)" }),
   ).not.toBeChecked();
@@ -174,7 +185,7 @@ it.each(["missing", "online-only"] as const)("does not prepare an unavailable %s
   });
   setLocale("en");
   renderWithQueryClient(<EnvironmentView />);
-  fireEvent.click(await screen.findByRole("tab", { name: "Installation and repair" }));
+  fireEvent.click(await screen.findByRole("tab", { name: "Installation" }));
   const prepare = screen.getByRole("button", { name: "Prepare installation plan" });
   expect(prepare).toBeDisabled();
   expect(prepareEnvironmentPlan).not.toHaveBeenCalled();
