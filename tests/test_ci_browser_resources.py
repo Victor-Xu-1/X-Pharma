@@ -6,6 +6,28 @@ import yaml
 ROOT = Path(__file__).parents[1]
 
 
+def test_browser_ci_builds_current_application_with_shared_source_cache_before_startup() -> None:
+    workflow = cast(dict[str, Any], yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")))
+    browser = workflow["jobs"]["two-entry-smoke"]
+    steps = browser["steps"]
+    cached = next(step for step in steps if step.get("name") == "Build source-verified application integration image")
+    security = next(
+        step
+        for step in workflow["jobs"]["security-supply-chain"]["steps"]
+        if step.get("name") == "Build application release image"
+    )
+    assert cached["uses"] == security["uses"]
+    for key in ("context", "file", "build-args", "load", "cache-from", "cache-to"):
+        assert cached["with"][key] == security["with"][key]
+    assert cached["with"]["load"] is True
+    assert cached["with"]["tags"] == "pharma-intelligence-api:" + browser["env"]["APP_IMAGE_TAG"]
+    start = next(step for step in steps if step.get("name") == "Start integration stack")
+    assert steps.index(cached) < steps.index(start)
+    assert "docker compose build api" not in start["run"]
+    assert "docker compose build otel-collector" in start["run"]
+    assert "--no-build --wait --wait-timeout 600 api worker parser otel-collector" in start["run"]
+
+
 def test_full_stack_browser_ci_serializes_quality_measurements_but_keeps_mcp_concurrency() -> None:
     workflow = cast(dict[str, Any], yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")))
     job = workflow["jobs"]["two-entry-smoke"]
@@ -50,7 +72,8 @@ def test_browser_ci_reuses_source_verified_rdkit_layers_without_rebuilding_loade
     assert cached_build["with"]["load"] is True
     start = next(step for step in steps if step.get("name") == "Start integration stack")
     assert steps.index(cached_build) < steps.index(start)
-    assert "docker compose build api" in start["run"]
+    assert "docker compose build api" not in start["run"]
+    assert any(step.get("name") == "Build source-verified application integration image" for step in steps)
     assert "docker compose up -d --no-build --wait --wait-timeout 600 api worker parser otel-collector" in start["run"]
     assert "--build --wait" not in start["run"]
 
@@ -66,4 +89,11 @@ def test_browser_ci_prebuilds_the_selected_telemetry_image_as_well_as_shared_app
     assert application_image == base["services"]["worker"]["image"] == base["services"]["parser"]["image"]
     assert telemetry["services"]["otel-collector"]["build"]
     assert telemetry["services"]["otel-collector"]["image"] != application_image
-    assert "docker compose build api otel-collector" in start["run"]
+    cached = next(
+        step
+        for step in workflow["jobs"]["two-entry-smoke"]["steps"]
+        if step.get("name") == "Build source-verified application integration image"
+    )
+    tag = workflow["jobs"]["two-entry-smoke"]["env"]["APP_IMAGE_TAG"]
+    assert application_image.replace("${APP_IMAGE_TAG:-latest}", tag) == cached["with"]["tags"]
+    assert "docker compose build otel-collector" in start["run"]
