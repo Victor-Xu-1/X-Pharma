@@ -481,9 +481,6 @@
   .commercial-metrics > div:nth-child(-n + 4) {
     border-bottom: 1px solid var(--ds-border-subtle);
   }
-  .user-center-settings-grid {
-    grid-template-columns: 1fr;
-  }
   .dossier-metrics {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -610,25 +607,6 @@
   }
   .factory-main .section-actions .primary-button {
     white-space: nowrap;
-  }
-  .user-center-identity-card {
-    grid-template-columns: 52px minmax(0, 1fr);
-  }
-  .user-center-identity-avatar {
-    width: 48px;
-    height: 48px;
-  }
-  .user-center-status {
-    grid-column: 2;
-    justify-self: start;
-  }
-  .user-center-account-actions {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .user-center-account-actions .secondary-button {
-    align-self: flex-start;
   }
   .query-toolbar {
     grid-template-columns: 1fr;

@@ -111,8 +111,9 @@ export const identityMessages = {
   两次输入的新密码不一致: "The new passwords do not match.",
   "密码已修改，其他登录会话已退出": "Password changed. Other sign-in sessions have been signed out.",
   密码修改失败: "Could not change your password.",
-  账户信息: "Account details",
-  账户正常: "Account active",
+  "邮箱归属未验证。": "Email ownership is unverified.",
+  "登录与恢复由企业身份服务管理。": "Sign-in and recovery are managed by your enterprise identity provider.",
+  登录与恢复说明: "Sign-in & recovery",
   "本地账号：邮箱仅作为登录标识，尚未验证邮箱归属；忘记密码请联系本地管理员。正式部署需要企业身份与恢复策略。":
     "Local account: email is a sign-in identifier; ownership has not been verified. Contact your local administrator if you forget your password. Production deployments need enterprise identity and account recovery policies.",
   "企业账号：登录、邮箱身份、密码及恢复由企业身份服务管理。":
