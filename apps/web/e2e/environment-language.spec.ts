@@ -205,6 +205,7 @@ test("[environment-language] preserves report truth, plan lifecycle, drafts and 
   await page.getByRole("radio", { name: "Python dependencies", exact: true }).check();
   await page.getByRole("button", { name: "Prepare installation plan", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("原始计划错误 — controlled browser fixture");
+  await expect(page.getByRole("alert")).toHaveClass(/form-status-error/);
   await expect(page.getByRole("region", { name: "Prepared installation plan", exact: true })).toHaveCount(0);
   await audit("plan-error-en");
   expect(plans).toBe(2);

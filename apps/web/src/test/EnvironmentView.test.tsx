@@ -342,6 +342,8 @@ it("shows a failed plan request without claiming installation success", async ()
   await screen.findByRole("tab", { name: "安装与修复" });
   fireEvent.click(screen.getByRole("tab", { name: "安装与修复" }));
   fireEvent.click(screen.getByRole("button", { name: "生成安装计划" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("主机报告已过期");
+  const error = await screen.findByRole("alert");
+  expect(error).toHaveTextContent("主机报告已过期");
+  expect(error).toHaveClass("form-status-error");
   expect(screen.queryByText("安装计划已生成，尚未执行")).not.toBeInTheDocument();
 });
