@@ -933,6 +933,7 @@
   }
   .chemistry-search-button {
     min-width: 120px;
+    align-self: flex-end;
   }
   .chemistry-result-head {
     display: block;
