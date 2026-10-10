@@ -3,6 +3,36 @@ import { expect, test } from "@playwright/test";
 import { installGovernanceFixture } from "./governance-fixture";
 import { selectInterfaceLanguage } from "./interface-language";
 
+test("[explorer-feedback] keeps 320px search and save commands at a standard single-line height", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  const base = await installGovernanceFixture(page);
+  await page.route("**/api/v1/entities?**", (route) =>
+    route.fulfill({
+      json: { items: [], total: 0, offset: 0, limit: 100, facets: {}, warnings: [], applied_filters: [] },
+    }),
+  );
+  await page.goto("/workspace/research?view=explorer&q=EGFR&review=verified");
+  for (const locale of ["en", "zh-CN"] as const) {
+    await selectInterfaceLanguage(page, locale);
+    const row = page.locator(".intelligence-query-panel > .query-row").first();
+    const buttons = row.locator(":scope > button");
+    await expect(buttons).toHaveCount(2);
+    for (const button of await buttons.all()) {
+      const box = await button.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box?.height).toBeLessThanOrEqual(44);
+      expect(box?.x).toBeGreaterThanOrEqual(0);
+      expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(320);
+      expect((await button.locator("svg").boundingBox())?.width).toBeGreaterThanOrEqual(14);
+    }
+    await page.screenshot({ path: testInfo.outputPath(`commands-${locale}-320.png`), animations: "disabled" });
+  }
+  expect(base.errors).toEqual([]);
+  expect(base.writes).toEqual([]);
+});
+
 test("[explorer-feedback] retains saved outcomes across languages without recreating the query or translating source reasons", async ({
   page,
 }, testInfo) => {

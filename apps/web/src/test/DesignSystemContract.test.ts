@@ -25,6 +25,16 @@ function source(relativePath: string) {
   return url.pathname.endsWith(".css") ? stylesheetSource(url) : readFileSync(fileURLToPath(url), "utf8");
 }
 
+it("stacks only primary intelligence commands at narrow widths without shrinking or hiding their labels", () => {
+  const layout = source("../styles/entity-results.css");
+  const narrow = layout.split("@media (max-width: 360px)")[1];
+  expect(narrow).toBeDefined();
+  const commands = ruleBody(narrow ?? "", ".intelligence-query-panel > .query-row:first-child");
+  expect(commands).toContain("grid-template-columns: minmax(0, 1fr);");
+  expect(commands).not.toMatch(/font-size:|overflow:\s*hidden|text-overflow:|white-space:/);
+  expect(source("../views/ExplorerView.tsx")).toContain('import "../styles/entity-results.css"');
+});
+
 it("balances complete workspace headings without clipping text or changing the language control", () => {
   const layout = source("../components/LanguageSwitcher.css");
   const heading = ruleBody(layout, ".page-heading:has(> .language-switcher) h1");
