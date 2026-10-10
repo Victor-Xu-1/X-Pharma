@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
-
+import { ApiError } from "../lib/api";
 import {
   actOnDataQualityIssue,
   type DataQualityIssue,
@@ -13,7 +13,11 @@ import {
   loadDataQualityOwners,
   loadDataQualitySnapshots,
 } from "../lib/contracts/governance";
-import { EmptyState, formatDate, Spinner, StatusBadge, statusLabel } from "./common";
+import { useLocale } from "../lib/i18n";
+import { governanceQualityText as t } from "../lib/i18n/governanceQuality";
+import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge, statusLabel } from "./common";
+import { QualityMetricCards } from "./quality/QualityMetricCards";
+import { qualityPercent } from "./quality/qualityMetricPresentation";
 import { ScrollableTableRegion } from "./ScrollableTableRegion";
 
 const METRIC_ORDER = [
@@ -33,6 +37,7 @@ const ACTOR_LABELS: Record<string, string> = {
 };
 
 export function QualityOperationsPanel() {
+  useLocale();
   const [issueStatus, setIssueStatus] = useState("all");
   const [selectedIssueId, setSelectedIssueId] = useState("");
   const [ownerUserId, setOwnerUserId] = useState("");
@@ -77,12 +82,13 @@ export function QualityOperationsPanel() {
     setOwnerUserId(selectedIssue?.owner_user_id ?? "");
   }, [selectedIssue?.owner_user_id]);
 
-  const latest = snapshots.data?.[0] ?? null;
-  const trend = [...(snapshots.data ?? [])].slice(0, 12).reverse();
+  const snapshotDenied = snapshots.error instanceof ApiError && [401, 403].includes(snapshots.error.status);
+  const snapshotData = snapshotDenied ? undefined : snapshots.data;
+  const latest = snapshotData?.[0] ?? null;
+  const trend = [...(snapshotData ?? [])].slice(0, 12).reverse();
   const activeQualityIssues = (issues.data ?? []).filter((issue) => ACTIVE_STATUSES.has(issue.status));
   const overdueQualityIssues = activeQualityIssues.filter((issue) => new Date(issue.sla_due_at).getTime() < Date.now());
   const error =
-    (snapshots.error instanceof Error ? snapshots.error.message : "") ||
     (coverage.error instanceof Error ? coverage.error.message : "") ||
     (issues.error instanceof Error ? issues.error.message : "") ||
     (owners.error instanceof Error ? owners.error.message : "") ||
@@ -105,7 +111,10 @@ export function QualityOperationsPanel() {
         <header>
           <div>
             <h2 id="quality-overview-title">数据质量运营</h2>
-            <p>指标定义 {latest?.definitions_version ?? "quality-v1"} · 所有处置写入不可变事件历史。</p>
+            <p>
+              {t("指标定义 {version}", { version: latest?.definitions_version ?? t("未上报") })} ·{" "}
+              {t("所有处置写入不可变事件历史。")}
+            </p>
           </div>
           <button
             className="primary-button"
@@ -117,31 +126,15 @@ export function QualityOperationsPanel() {
             立即评估
           </button>
         </header>
-        {snapshots.isPending ? <Spinner label="正在读取质量快照" /> : null}
+        {snapshots.isPending ? <Spinner label={t("正在读取质量快照")} /> : null}
+        {snapshots.error instanceof Error ? (
+          <ErrorState message={snapshots.error.message} retry={() => void snapshots.refetch()} />
+        ) : null}
         {latest ? (
-          <div className="quality-metric-grid">
-            {METRIC_ORDER.map((key) => {
-              const metric = latest.metrics[key];
-              if (!metric) return null;
-              return (
-                <article key={key}>
-                  <span>
-                    <strong>{String(metric.label)}</strong>
-                    <StatusBadge value={String(metric.status)} />
-                  </span>
-                  <b>{metric.applicable ? `${(Number(metric.value) * 100).toFixed(1)}%` : "N/A"}</b>
-                  <small>
-                    样本 {String(metric.numerator)}/{String(metric.denominator)} · 阈值
-                    {metric.comparison === "gte" ? " ≥ " : " ≤ "}
-                    {(Number(metric.threshold) * 100).toFixed(1)}%
-                  </small>
-                </article>
-              );
-            })}
-          </div>
-        ) : (
-          <EmptyState title="尚无质量快照" detail="运行一次评估以建立首个质量基线。" />
-        )}
+          <QualityMetricCards metrics={latest.metrics} />
+        ) : !snapshots.isPending && !snapshots.error ? (
+          <EmptyState title={t("尚无质量快照")} detail={t("运行一次评估以建立首个质量基线")} />
+        ) : null}
         {activeQualityIssues.length ? (
           <div className="factory-warning" role="status">
             <AlertTriangle size={17} />
@@ -249,7 +242,13 @@ export function QualityOperationsPanel() {
                     {METRIC_ORDER.map((key) => {
                       const metric = snapshot.metrics[key];
                       return (
-                        <td key={key}>{metric?.applicable ? `${(Number(metric.value) * 100).toFixed(1)}%` : "-"}</td>
+                        <td key={key}>
+                          {metric
+                            ? metric.applicable === false
+                              ? t("不适用")
+                              : qualityPercent(metric.value)
+                            : t("未上报")}
+                        </td>
                       );
                     })}
                   </tr>
