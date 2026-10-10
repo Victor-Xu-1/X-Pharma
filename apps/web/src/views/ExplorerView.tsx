@@ -57,6 +57,7 @@ import { useCommittedCallback } from "../lib/useCommittedCallback";
 import { usePagedEntitySelection } from "../lib/usePagedEntitySelection";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import type { WorkspaceLocation } from "../lib/workspaceRouting";
+import { type ExplorerFeedback, explorerSaveFeedback } from "./explorer/saveFeedback";
 import "../styles/entity-results.css";
 
 const PUBLIC_REVIEW_STATUS = "verified";
@@ -185,7 +186,7 @@ export function ExplorerView({
   const [saveName, setSaveName] = useState("");
   const [shared, setShared] = useState(false);
   const [monitor, setMonitor] = useState(true);
-  const [saveMessage, setSaveMessage] = useState("");
+  const [saveMessage, setSaveMessage] = useState<ExplorerFeedback>("");
 
   const searchQueryKey = intelligenceKeys.search(
     initialQuery,
@@ -218,12 +219,12 @@ export function ExplorerView({
   } = usePagedEntitySelection(search.data?.items ?? [], intelligenceEntityId, intelligenceEntityId);
   const save = useMutation({
     mutationFn: saveEntitySearch,
-    onSuccess: ({ message }) => {
-      setSaveMessage(message);
+    onSuccess: (outcome) => {
+      setSaveMessage(outcome);
       setSaveOpen(false);
       setSaveName("");
     },
-    onError: (caught) => setSaveMessage(caught instanceof Error ? caught.message : "保存失败"),
+    onError: (caught) => setSaveMessage({ kind: "failed", reason: caught instanceof Error ? caught.message : null }),
   });
   useEffect(() => {
     setQuery(initialQuery);
@@ -481,9 +482,7 @@ export function ExplorerView({
   );
   const selectedSearchHit = result?.items.find((item) => item.id === selectedEntity?.id);
   const canSubmit = Boolean(query.trim() || selectedEntityTypes.length);
-  const saveFeedback = Object.hasOwn(explorerMessages, saveMessage)
-    ? t(saveMessage as keyof typeof explorerMessages)
-    : saveMessage;
+  const saveFeedback = explorerSaveFeedback(saveMessage);
   const activeDomain =
     selectedEntityTypes.length === 0
       ? t("全部情报")

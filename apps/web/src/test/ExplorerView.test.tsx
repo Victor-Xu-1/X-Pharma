@@ -214,7 +214,7 @@ beforeEach(() => {
     target_evidence_count: 0,
     as_of: "2026-08-12T00:00:00Z",
   });
-  vi.mocked(saveEntitySearch).mockResolvedValue({ message: "已保存并启用监控" });
+  vi.mocked(saveEntitySearch).mockResolvedValue({ kind: "saved", monitoring: true });
   vi.mocked(loadCollectionCatalog).mockResolvedValue({
     items: [comparisonSet],
     total: [comparisonSet].length,
@@ -1012,7 +1012,7 @@ it("restores field sorting from canonical URL state into the accessible table he
 });
 
 it("saves the normalized query and reports a partial monitoring outcome without retrying the write", async () => {
-  vi.mocked(saveEntitySearch).mockResolvedValue({ message: "检索已保存，但监控未启用：上游不可用" });
+  vi.mocked(saveEntitySearch).mockResolvedValue({ kind: "monitor_failed", reason: "上游不可用" });
   renderWithQueryClient(
     <ExplorerView
       initialQuery="EGFR"
@@ -1046,6 +1046,59 @@ it("saves the normalized query and reports a partial monitoring outcome without 
   expect(saveEntitySearch).toHaveBeenCalledOnce();
 });
 
+it("retains a structured partial outcome across language switches without replaying its save or query", async () => {
+  setLocale("en");
+  vi.mocked(saveEntitySearch).mockResolvedValue({ kind: "monitor_failed", reason: "Original <EGFR> 科研 reason" });
+  renderWithQueryClient(
+    <ExplorerView
+      initialQuery="EGFR"
+      initialEntityType="target"
+      initialReviewStatus="verified"
+      onSearchChange={vi.fn()}
+      onOpenEntity={vi.fn()}
+      onOpenSpecializedSearch={vi.fn()}
+    />,
+  );
+  await screen.findByRole("table", { name: "Entity search results" });
+  fireEvent.click(screen.getByRole("button", { name: "Save search" }));
+  const dialog = screen.getByRole("dialog", { name: "Save current search" });
+  fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "Original saved query 科研" } });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Save search" }));
+  expect(
+    await screen.findByText("Search saved, but monitoring was not enabled: Original <EGFR> 科研 reason"),
+  ).toBeVisible();
+  const reads = vi.mocked(searchEntities).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("检索已保存，但监控未启用：Original <EGFR> 科研 reason")).toBeVisible();
+  act(() => setLocale("en"));
+  expect(screen.getByText("Search saved, but monitoring was not enabled: Original <EGFR> 科研 reason")).toBeVisible();
+  expect(saveEntitySearch).toHaveBeenCalledOnce();
+  expect(searchEntities).toHaveBeenCalledTimes(reads);
+});
+
+it("keeps the completed saved-and-monitored notice in the active language", async () => {
+  setLocale("en");
+  renderWithQueryClient(
+    <ExplorerView
+      initialQuery="EGFR"
+      initialEntityType="target"
+      initialReviewStatus="verified"
+      onSearchChange={vi.fn()}
+      onOpenEntity={vi.fn()}
+      onOpenSpecializedSearch={vi.fn()}
+    />,
+  );
+  await screen.findByRole("table", { name: "Entity search results" });
+  fireEvent.click(screen.getByRole("button", { name: "Save search" }));
+  fireEvent.click(
+    within(screen.getByRole("dialog", { name: "Save current search" })).getByRole("button", { name: "Save search" }),
+  );
+  expect(await screen.findByText("Search saved and monitoring enabled")).toBeVisible();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("基础查询检索已保存并启用监控")).toBeVisible();
+  expect(saveEntitySearch).toHaveBeenCalledOnce();
+});
+
 it("saves the statistics presentation state with the entity query", async () => {
   renderWithQueryClient(
     <ExplorerView
@@ -1074,7 +1127,7 @@ it("saves the statistics presentation state with the entity query", async () => 
 it("presents a rejected save in the active dialog and retains the same query for an explicit retry", async () => {
   vi.mocked(saveEntitySearch)
     .mockRejectedValueOnce(new Error("暂时无法保存，请重试"))
-    .mockResolvedValueOnce({ message: "检索已保存" });
+    .mockResolvedValueOnce({ kind: "saved", monitoring: false });
   renderWithQueryClient(
     <ExplorerView
       initialQuery="EGFR"
@@ -1100,7 +1153,7 @@ it("presents a rejected save in the active dialog and retains the same query for
   expect(saveEntitySearch).toHaveBeenCalledOnce();
   const submitted = vi.mocked(saveEntitySearch).mock.calls[0];
   fireEvent.click(within(dialog).getByRole("button", { name: "确认保存" }));
-  expect(await screen.findByText("检索已保存")).toBeVisible();
+  expect(await screen.findByText("基础查询检索已保存")).toBeVisible();
   expect(saveEntitySearch).toHaveBeenCalledTimes(2);
   expect(vi.mocked(saveEntitySearch).mock.calls[1]).toEqual(submitted);
   fireEvent.click(opener);
