@@ -2,6 +2,15 @@
 .enterprise-workbench {
   min-width: 0;
 }
+.enterprise-form-boundary {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.enterprise-modal-panel > .form-status {
+  margin: 0 20px 12px;
+}
 .account-invitation-form,
 .account-invitation-content {
   display: grid;
