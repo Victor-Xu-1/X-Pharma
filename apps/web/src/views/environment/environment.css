@@ -209,3 +209,8 @@
     padding: 16px;
   }
 }
+@media (max-width: 480px) {
+  .environment-readiness-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

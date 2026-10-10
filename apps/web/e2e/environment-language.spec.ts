@@ -68,11 +68,33 @@ test("[environment-language] keeps a compact narrow heading and separates depend
   await expect(readiness.getByText("Application gateway", { exact: true }).locator("+ dd")).toHaveText(
     "Dependencies available",
   );
+  async function assertReadinessTextFits() {
+    const labels = await page.locator(".environment-readiness-grid :is(dt, dd)").evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const bounds = node.getBoundingClientRect();
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        return {
+          left: bounds.left,
+          right: bounds.right,
+          lines: Array.from(range.getClientRects(), (rect) => ({ left: rect.left, right: rect.right })),
+        };
+      }),
+    );
+    for (const label of labels) {
+      for (const line of label.lines) {
+        expect(line.left).toBeGreaterThanOrEqual(label.left - 1);
+        expect(line.right).toBeLessThanOrEqual(label.right + 1);
+      }
+    }
+  }
+  await assertReadinessTextFits();
   const table = page.getByRole("table", { name: "Gateway dependency versions", exact: true });
   await expect(table).toBeVisible();
   await expect(table).toContainText("Original identity diagnostic");
   await expect(table).toContainText("Not verified");
   await selectInterfaceLanguage(page, "zh-CN");
+  await assertReadinessTextFits();
   await expect(page.getByRole("heading", { name: "环境管理", exact: true })).toBeVisible();
   await expect(page.getByRole("table", { name: "网关依赖版本", exact: true })).toContainText(
     "Original recovery policy",
