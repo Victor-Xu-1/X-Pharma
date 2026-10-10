@@ -67,6 +67,13 @@ export const identityMessages = {
   使用企业身份确认加入: "Confirm with enterprise identity",
   验证账号并加入组织: "Verify account and join",
   "组织切换失败，请重试": "Could not switch organizations. Please try again.",
+  "操作正在提交，请等待完成后再尝试。": "An operation is being submitted. Wait until it finishes before trying again.",
+  "操作正在提交，请等待完成后再退出账号。":
+    "An operation is being submitted. Wait until it finishes before signing out.",
+  "账号身份已变化，请重新确认后重试。": "The account identity has changed. Confirm your session and try again.",
+  "请先恢复组织成员资格读取，再提交操作。": "Restore the organization membership read before submitting an operation.",
+  "组织成员资格已变化，请重新核对后再切换。":
+    "Organization membership has changed. Review the current membership before switching.",
   组织与账号: "Organizations & account",
   "每次会话只访问一个组织。切换不会合并或转移研究、数据、授权与历史记录。":
     "Each session accesses one organization. Switching does not merge or transfer research, data, permissions or history.",
@@ -83,6 +90,7 @@ export const identityMessages = {
     "I agree to join the invited organization. My original organization's data will not be shared.",
   "邀请接受失败，请重试": "Could not accept the invitation. Please try again.",
   "已加入组织，请从上方选择切换。": "Organization joined. Select it above to switch.",
+  "已加入组织，请重试成员资格读取后再切换。": "Organization joined. Retry the membership read before switching.",
   "接受中…": "Accepting…",
   确认加入组织: "Confirm and join organization",
   "操作正在提交，请等待完成后再切换组织":

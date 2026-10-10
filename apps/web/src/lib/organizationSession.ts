@@ -2,6 +2,16 @@ type IdentityContext = { id: string; tenant_id: string };
 let identity: IdentityContext | null = null;
 let suspended = false;
 let pendingWrites = 0;
+const pendingWriteListeners = new Set<() => void>();
+
+export function subscribeSessionWrites(listener: () => void): () => void {
+  pendingWriteListeners.add(listener);
+  return () => pendingWriteListeners.delete(listener);
+}
+
+function notifyPendingWrites() {
+  for (const listener of pendingWriteListeners) listener();
+}
 
 export function hasPendingSessionWrites(): boolean {
   return pendingWrites > 0;
@@ -10,11 +20,13 @@ export function hasPendingSessionWrites(): boolean {
 export function trackSessionWrite(method: string): () => void {
   if (["GET", "HEAD", "OPTIONS"].includes(method)) return () => {};
   pendingWrites += 1;
+  if (pendingWrites === 1) notifyPendingWrites();
   let released = false;
   return () => {
     if (released) return;
     released = true;
     pendingWrites -= 1;
+    if (pendingWrites === 0) notifyPendingWrites();
   };
 }
 

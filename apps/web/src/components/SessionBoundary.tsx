@@ -39,6 +39,7 @@ export function SessionBoundary({
   const unauthorizedProbe = useRef<Promise<void> | null>(null);
   const channel = useRef<BroadcastChannel | null>(null);
   const workspaceClient = useRef<QueryClient | null>(null);
+  const logoutIntent = useRef(false);
   const bindWorkspaceClient = useCallback((client: QueryClient | null) => {
     workspaceClient.current = client;
   }, []);
@@ -176,6 +177,9 @@ export function SessionBoundary({
     onError: (error) => {
       if (error instanceof ApiError && error.status === 401) finishLogout();
     },
+    onSettled: () => {
+      logoutIntent.current = false;
+    },
   });
   const updateUser = useCallback(
     (nextUser: User) => {
@@ -298,7 +302,16 @@ export function SessionBoundary({
           {children({
             authMode,
             user,
-            logout: () => logoutRequest.mutate(),
+            logout: () => {
+              if (logoutIntent.current) return;
+              if (hasPendingSessionWrites()) {
+                setContextNotice("操作正在提交，请等待完成后再退出账号。");
+                return;
+              }
+              logoutIntent.current = true;
+              setContextNotice("");
+              logoutRequest.mutate();
+            },
             logoutPending: logoutRequest.isPending,
             logoutError: logoutRequest.isError ? t("退出失败，请重试") : null,
             updateUser,

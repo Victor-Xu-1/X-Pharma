@@ -78,6 +78,21 @@ the local protocol tests do not attest a production IdP configuration.
 
 ## Session and browser behavior
 
+Account profile/password forms share one synchronous local intent owner. Pending
+inputs and account exit are disabled until settlement; repeated submission does
+not create another request, and unmounted account responses do not publish UI
+updates. Organization dialogs similarly freeze input, Close and Escape through
+invitation acceptance and active membership reconciliation. If acceptance succeeds
+but the catalog read fails, retry only the read, not the invitation. Passwords and
+invitation codes stay local to the current form, are absent from generic mutation
+history, and are not echoed in credential error feedback. The existing session
+write counter also governs sidebar exit and same-tab switch protection; it is not
+a second authorization model. Enterprise password ownership remains with the IdP.
+
+These frontend controls require focused component and rendered-interaction checks
+on the identified candidate. They do not replace server authorization, invitation
+transactions, real IdP acceptance or exact-main deployment verification.
+
 `POST /api/v1/auth/login` can accept an optional organization ID. Without one,
 the service chooses an active home membership or another active membership; it
 never creates a membership during login. The authenticated organization catalog

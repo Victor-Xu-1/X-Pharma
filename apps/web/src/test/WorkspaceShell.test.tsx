@@ -3,7 +3,38 @@ import { expect, it, vi } from "vitest";
 
 import { WorkspaceShell } from "../components/WorkspaceShell";
 import { setLocale } from "../lib/i18n";
+import { trackSessionWrite } from "../lib/organizationSession";
 import { PRODUCT_RELEASE } from "../lib/product";
+
+it.each(["research", "internal"] as const)(
+  "observes pending writes at the %s account exit without mislabeling them as logout",
+  (workbench) => {
+    const onLogout = vi.fn();
+    render(
+      <WorkspaceShell
+        user={{ id: "admin", tenant_id: "tenant", email: "admin@example.test", display_name: "Admin", role: "admin" }}
+        activeWorkbench={workbench}
+        activeView={workbench === "research" ? "overview" : "factory"}
+        onView={vi.fn()}
+        onLogout={onLogout}
+      >
+        workspace
+      </WorkspaceShell>,
+    );
+    const button = screen.getByRole("button", { name: "退出账号", exact: true });
+    let release: (() => void) | undefined;
+    act(() => {
+      release = trackSessionWrite("POST");
+    });
+    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent("退出账号");
+    expect(button).not.toHaveTextContent("退出中");
+    fireEvent.click(button);
+    expect(onLogout).not.toHaveBeenCalled();
+    act(() => release?.());
+    expect(button).toBeEnabled();
+  },
+);
 
 it.each(["research", "internal"] as const)(
   "marks every controlled %s primary label for readable wrapping",

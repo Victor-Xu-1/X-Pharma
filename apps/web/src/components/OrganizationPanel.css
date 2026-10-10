@@ -31,6 +31,14 @@
   border-top: 1px solid var(--ds-border);
   border-radius: 0;
 }
+.organization-form-fields {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
 .organization-panel .modal-form label:has(input[type="checkbox"]) {
   display: flex;
   align-items: flex-start;
