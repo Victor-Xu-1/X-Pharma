@@ -2,6 +2,7 @@ import { expect, type PlaywrightTestArgs, type PlaywrightWorkerArgs, type TestIn
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
 import type { DiseaseDossierResponse } from "../../src/lib/generated";
 import { selectInterfaceLanguage } from "../interface-language";
+import { verifyInternalReviewOverviews } from "./internal-review-overviews";
 import { verifyResearchNavigationHierarchy } from "./research-navigation";
 
 export async function verifyResearcherReview(
@@ -84,19 +85,7 @@ export async function verifyResearcherReview(
   await expect(page.getByLabel("试验简称", { exact: true })).toHaveValue("Researcher check");
   await noOverflow();
   await page.screenshot({ path: testInfo.outputPath("researcher-clinical-filters.png"), fullPage: true });
-  for (const view of ["factory", "governance", "commercial", "enterprise"]) {
-    await page.goto(`/workspace/internal?view=${view}`);
-    await expect(page.locator(".page-heading h1")).toBeVisible();
-    if (view === "factory") await expect(page.getByRole("heading", { name: "自动数据源", exact: true })).toBeVisible();
-    else {
-      const label = view === "governance" ? "治理队列" : view === "commercial" ? "商业运营视图" : "企业管理视图";
-      await expect(page.getByRole("tablist", { name: label, exact: true })).toBeVisible();
-    }
-    await expect(page.locator("main .spinner")).toHaveCount(0);
-    await expect(page.locator("main [role=alert]")).toHaveCount(0);
-    await noOverflow();
-    await page.screenshot({ path: testInfo.outputPath(`researcher-${view}.png`), fullPage: true });
-  }
+  await verifyInternalReviewOverviews(page, testInfo);
   await page.goto("/workspace/internal?view=environment");
   await expect(page.getByRole("heading", { name: "运行环境与安装管理", exact: true })).toBeVisible();
   await expect(page.getByRole("region", { name: "依赖就绪概览", exact: true })).toBeVisible();
