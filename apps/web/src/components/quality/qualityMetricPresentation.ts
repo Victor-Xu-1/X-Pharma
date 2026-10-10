@@ -25,6 +25,10 @@ export function qualityMetricKeys(metrics: Record<string, Record<string, unknown
 export function qualityMetricLabel(key: string, metric: Record<string, unknown>): string {
   return Object.hasOwn(labels, key) ? t(labels[key]) : typeof metric.label === "string" ? metric.label : key;
 }
+/** Unknown metrics have no implied unit; their values stay literal until a contract defines them. */
+export function qualityMetricValue(key: string, value: unknown): string {
+  return QUALITY_METRIC_ORDER.some((known) => known === key) ? qualityPercent(value) : qualityReportedValue(value);
+}
 export function qualityReportedValue(value: unknown): string {
   return value === null || value === undefined
     ? t("未上报")

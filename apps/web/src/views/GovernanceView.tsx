@@ -4,6 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { ErrorState, Spinner } from "../components/common";
 import { QualityOperationsPanel } from "../components/QualityOperationsPanel";
+import { useQualityDrafts } from "../components/quality/useQualityDrafts";
 import { ResearchTabList } from "../components/ResearchTabList";
 import { type GovernanceRunStatus, governanceKeys, loadGovernanceRuns } from "../lib/contracts/governance";
 import { governanceReviewText as t } from "../lib/i18n/governanceReview";
@@ -16,6 +17,7 @@ import { useGovernanceReview } from "./governance/useGovernanceReview";
 
 export function GovernanceView() {
   const review = useGovernanceReview();
+  const qualityDrafts = useQualityDrafts();
   const { mode, queues, data, facts, identityCases, busy } = review;
   const [selectedRunId, setSelectedRunId] = useState("");
   const [runStatus, setRunStatus] = useState<GovernanceRunStatus | "all">("all");
@@ -110,7 +112,7 @@ export function GovernanceView() {
         ) : mode === "identity" ? (
           <IdentityReviewPanel review={review} />
         ) : mode === "quality" ? (
-          <QualityOperationsPanel />
+          <QualityOperationsPanel activity={review.activity} ready={review.queueReady} draftState={qualityDrafts} />
         ) : (
           <GovernanceRunsPanel
             page={runPage ?? null}

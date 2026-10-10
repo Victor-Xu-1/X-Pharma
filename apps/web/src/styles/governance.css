@@ -291,7 +291,9 @@
 .quality-operations > section {
   min-width: 0;
   border: 1px solid var(--ds-border);
-  padding: 14px;
+  border-radius: 12px;
+  padding: 18px;
+  background: var(--ds-surface);
 }
 .quality-operations > section > header,
 .quality-overview > header,
@@ -312,10 +314,69 @@
 }
 .quality-operations header p {
   margin-top: 3px;
+  color: var(--ds-ink-muted);
+  line-height: 1.6;
+}
+.quality-operations .state-message {
+  min-height: 108px;
+  padding: 20px 12px;
+}
+.quality-operation-status,
+.quality-issue-toolbar {
+  margin-top: 12px;
+}
+.quality-table-scroll td > small {
+  display: block;
+  margin-top: 4px;
+  color: var(--ds-ink-muted);
+}
+.quality-raw-record {
+  margin-top: 10px;
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-xs);
+}
+.quality-raw-record summary {
+  cursor: pointer;
+  padding-block: 7px;
+  text-align: left;
+  white-space: normal;
+}
+.quality-raw-scroll {
+  max-width: 100%;
+  max-height: 300px;
+  overflow: auto;
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--ds-ink);
+  background: var(--ds-surface);
+}
+.quality-raw-record pre {
+  margin: 0;
+  font-family: var(--ds-font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.quality-table-scroll .quality-raw-record {
+  max-width: 320px;
+}
+.quality-issue-measurements {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-block: 16px;
+}
+.quality-issue-measurements dt {
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-xs);
+}
+.quality-issue-measurements dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
 }
 .quality-metric-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(125px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 7px;
   margin-top: 12px;
 }
@@ -343,6 +404,8 @@
   letter-spacing: 0;
 }
 .quality-metric-grid article small {
+  display: block;
+  margin-top: 4px;
   color: var(--ds-ink-muted);
 }
 .quality-table-scroll {
@@ -404,6 +467,11 @@
   border-bottom: 1px solid var(--ds-border-subtle);
   padding: 9px;
   text-align: left;
+  border-radius: 8px;
+}
+.quality-issue-list > button[aria-pressed="true"] {
+  background: var(--ds-surface-muted);
+  box-shadow: inset 3px 0 var(--ds-accent);
 }
 .quality-issue-list > button > span {
   display: flex;
