@@ -27,6 +27,9 @@ export const factoryDialogMessages = {
   文档解析: "Document parsing",
   运行发现项: "Run findings",
   运行说明: "Run note",
+  刷新运行详情: "Refresh run details",
+  "阶段信息来自上次读取，尚未重新确认当前状态。":
+    "Stages reflect the previous read; current state has not been reconfirmed.",
   "上次读取的发现项（非实时）": "Previously read findings (not live)",
   可重试: "Retryable",
   不可重试: "Not retryable",

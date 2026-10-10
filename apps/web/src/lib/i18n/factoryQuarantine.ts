@@ -37,7 +37,9 @@ export const factoryQuarantineMessages = {
   恶意文件隔离: "Malware quarantine",
   "上次读取 · ": "Previously read · ",
   "{count} 个待处置案件": "{count} cases require attention",
+  "1 个待处置案件": "1 case requires attention",
   "{count} 待处置": "{count} require attention",
+  "1 待处置": "1 requires attention",
   "安全扫描命中的源版本不会进入解析、AI 治理或检索发布，必须经过受审计的人工处置。":
     "Source versions flagged by security scanning cannot enter parsing, AI governance or publication. Audited human review is required.",
   恶意文件隔离案件: "Malware quarantine cases",

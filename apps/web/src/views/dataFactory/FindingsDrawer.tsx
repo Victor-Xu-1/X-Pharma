@@ -1,4 +1,4 @@
-import { ScanSearch, X } from "lucide-react";
+import { RefreshCw, ScanSearch, X } from "lucide-react";
 import { EmptyState, ErrorState, formatDate, Spinner, StatusBadge } from "../../components/common";
 import { ApiError } from "../../lib/api";
 import type { IngestionFinding, IngestionRun } from "../../lib/contracts/dataFactory";
@@ -13,12 +13,16 @@ export function FindingsDrawer({
   error,
   retry,
   onClose,
+  historical = false,
+  refreshing = false,
 }: {
   run: IngestionRun;
   findings: IngestionFinding[] | null;
   error: Error | null;
   retry: () => void;
   onClose: () => void;
+  historical?: boolean;
+  refreshing?: boolean;
 }) {
   useLocale();
   const denied = error instanceof ApiError && [401, 403].includes(error.status);
@@ -51,11 +55,26 @@ export function FindingsDrawer({
             <h2 id="finding-title">{t("运行发现项")}</h2>
             {!denied ? <small className="mono-cell">{run.workflow_id}</small> : null}
           </div>
+          <button
+            className="icon-button"
+            type="button"
+            onClick={retry}
+            disabled={refreshing}
+            title={t("刷新运行详情")}
+            aria-label={t("刷新运行详情")}
+          >
+            <RefreshCw size={18} aria-hidden="true" />
+          </button>
           <button className="icon-button" type="button" onClick={onClose} title={t("关闭")} aria-label={t("关闭")}>
             <X size={18} />
           </button>
         </header>
         <div className="drawer-content">
+          {!denied && historical ? (
+            <p className="field-help" role="status">
+              {t("阶段信息来自上次读取，尚未重新确认当前状态。")}
+            </p>
+          ) : null}
           {!denied ? <RunStageGraph run={run} /> : null}
           {failureMessage ? (
             <div className="factory-warning" role="status">

@@ -32,10 +32,10 @@ export function QuarantineCasesPanel({
         <span
           className={activeCount > 0 ? "quarantine-count" : undefined}
           role="status"
-          aria-label={`${stale ? t("上次读取 · ") : ""}${t("{count} 个待处置案件", { count: activeCount })}`}
+          aria-label={`${stale ? t("上次读取 · ") : ""}${t(activeCount === 1 ? "1 个待处置案件" : "{count} 个待处置案件", { count: activeCount })}`}
         >
           {stale ? t("上次读取 · ") : ""}
-          {t("{count} 待处置", { count: activeCount })}
+          {t(activeCount === 1 ? "1 待处置" : "{count} 待处置", { count: activeCount })}
         </span>
       }
     >

@@ -219,6 +219,46 @@ it("does not block the data factory on a slow search projection status request",
   expect(loadSearchProjectionStatus).toHaveBeenCalledOnce();
 });
 
+it("updates an open run graph from the current refreshed run instead of the originally selected object", async () => {
+  act(() => setLocale("en"));
+  const snapshot = await loadDataFactory();
+  const run = {
+    id: "current-run",
+    data_source_id: source.id,
+    workflow_id: "Original workflow",
+    state: "running" as const,
+    effective_state: "running" as const,
+    cancelable: true,
+    cancel_requested_at: null,
+    total_versions: 0,
+    completed_versions: 0,
+    counters: { discovered: 3 },
+    progress_percent: 10,
+    stages: [],
+    result: {},
+    error_summary: null,
+    created_at: "2026-01-01T00:00:00Z",
+    started_at: null,
+    heartbeat_at: null,
+    completed_at: null,
+    temporal_run_id: null,
+    temporal_workflow_id: null,
+  };
+  vi.mocked(loadDataFactory).mockResolvedValue({ ...snapshot, runs: [run] });
+  vi.mocked(loadIngestionFindings).mockResolvedValue([]);
+  const { queryClient } = renderWithQueryClient(<DataFactoryView user={user} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Run details" }));
+  await screen.findByRole("heading", { name: "Run stages" });
+  vi.mocked(loadDataFactory).mockResolvedValue({
+    ...snapshot,
+    runs: [{ ...run, state: "succeeded", effective_state: "succeeded", progress_percent: 100, cancelable: false }],
+  });
+  await act(() => queryClient.refetchQueries({ queryKey: ["data-factory"], exact: true }));
+  expect(
+    screen.getByText("Overall progress 100% · 3 objects checked · no new versions in this run"),
+  ).toBeInTheDocument();
+});
+
 it("collapses healthy operational details and flow guidance without removing source controls", async () => {
   vi.mocked(loadSearchProjectionStatus).mockResolvedValue({
     available: true,

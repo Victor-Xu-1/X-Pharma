@@ -75,6 +75,7 @@ export function DataFactoryView({ user }: { user: User }) {
   const readiness = snapshot.data?.readiness ?? [];
   const searchStatus = searchStatusQuery.data;
   const runs = snapshot.data?.runs ?? [];
+  const currentRun = selectedRun ? runs.find((run) => run.id === selectedRun.id) : undefined;
   const quarantineCases = snapshot.data?.quarantineCases ?? [];
   const quarantineNeedsAttention = quarantineCases.some((item) => activeQuarantineStatuses.has(item.quarantine_status));
   const assetsDenied = assetsQuery.error instanceof ApiError && [401, 403].includes(assetsQuery.error.status);
@@ -256,10 +257,15 @@ export function DataFactoryView({ user }: { user: User }) {
       ) : null}
       {selectedRun ? (
         <FindingsDrawer
-          run={selectedRun}
+          run={currentRun ?? selectedRun}
+          historical={snapshot.isError || !currentRun}
+          refreshing={snapshot.isFetching || findingsQuery.isFetching}
           findings={findingsQuery.data ?? null}
           error={findingsQuery.error instanceof Error ? findingsQuery.error : null}
-          retry={() => void findingsQuery.refetch()}
+          retry={() => {
+            void snapshot.refetch();
+            void findingsQuery.refetch();
+          }}
           onClose={() => {
             setSelectedRun(null);
           }}

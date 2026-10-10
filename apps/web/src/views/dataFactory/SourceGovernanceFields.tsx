@@ -47,6 +47,7 @@ export function SourceGovernanceFields({
         <label className="source-path-field">
           <span>{t("授权范围编号（每行一个）")}</span>
           <textarea
+            aria-label={t("授权范围编号（每行一个）")}
             value={draft.authorizationScopes}
             onChange={(event) => change("authorizationScopes", event.target.value)}
             required

@@ -32,9 +32,19 @@ export function sourceReadinessGuidance(check: { code: string; message: string }
 }
 
 /** Omit only exact application-owned boilerplate; retain variable/provider diagnostics. */
-export function sourceReadinessRawDiagnostic(check: { code: string; message: string }, freshnessAge: number | null): string | null {
+export function sourceReadinessRawDiagnostic(
+  check: { code: string; message: string },
+  freshnessAge: number | null,
+): string | null {
   if (!Object.hasOwn(guidance, check.code) && check.code !== "freshness") return null;
-  if (check.code === "freshness" && check.message === (freshnessAge === null ? "Source has not completed its first scan" : `Source is stale by policy (${freshnessAge}s old)`)) return null;
+  if (
+    check.code === "freshness" &&
+    check.message ===
+      (freshnessAge === null
+        ? "Source has not completed its first scan"
+        : `Source is stale by policy (${freshnessAge}s old)`)
+  )
+    return null;
   if (check.code === "owner" && check.message === "A named accountable data owner is required") return null;
   return check.message;
 }

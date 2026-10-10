@@ -66,7 +66,7 @@ export function FactoryReasonDialog({
     <div className="modal-backdrop" role="presentation">
       <section
         ref={dialogRef}
-        className="modal-panel"
+        className="modal-panel factory-reason-dialog"
         role="dialog"
         aria-modal="true"
         aria-busy={busy}
@@ -92,6 +92,7 @@ export function FactoryReasonDialog({
           <label>
             <span>{reasonLabel}</span>
             <textarea
+              aria-label={reasonLabel}
               disabled={busy}
               value={reason}
               onChange={(event) => setReason(event.target.value)}

@@ -5,7 +5,11 @@ import { useLocale } from "../../lib/i18n";
 import { factoryText as t } from "../../lib/i18n/dataFactory";
 import { sourceRecordRows } from "../../lib/sourceRecordRows";
 import { SourceSyncStatus } from "./SourceSyncStatus";
-import { sourceOperationalLabel, sourceReadinessGuidance, sourceReadinessRawDiagnostic } from "./sourceReadinessPresentation";
+import {
+  sourceOperationalLabel,
+  sourceReadinessGuidance,
+  sourceReadinessRawDiagnostic,
+} from "./sourceReadinessPresentation";
 
 export type FactorySourceAction = "scan" | "pause" | "resume";
 
@@ -95,7 +99,9 @@ export function FactorySourceCard({
           ({ key, value: check }) => (
             <p className="source-error" key={key}>
               {sourceReadinessGuidance(check, readiness?.freshness_age_seconds ?? null)}
-              {sourceReadinessRawDiagnostic(check, readiness?.freshness_age_seconds ?? null) ? <small>{sourceReadinessRawDiagnostic(check, readiness?.freshness_age_seconds ?? null)}</small> : null}
+              {sourceReadinessRawDiagnostic(check, readiness?.freshness_age_seconds ?? null) ? (
+                <small>{sourceReadinessRawDiagnostic(check, readiness?.freshness_age_seconds ?? null)}</small>
+              ) : null}
             </p>
           ),
         )}

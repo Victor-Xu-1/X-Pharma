@@ -137,6 +137,7 @@ export function QuarantineDecisionDialog({
                 <label>
                   <span>{t("处置原因")}</span>
                   <textarea
+                    aria-label={t("处置原因")}
                     value={reason}
                     onChange={(event) => setReason(event.target.value)}
                     minLength={3}
