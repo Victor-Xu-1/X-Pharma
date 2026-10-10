@@ -103,6 +103,7 @@ fi
 export SEARCH_ALLOW_NON_AUTHORITATIVE_PROJECTION=true
 source "$ROOT_DIR/scripts/lib/browser_fonts.sh"
 source "$ROOT_DIR/scripts/lib/browser_runtime_health.sh"
+source "$ROOT_DIR/scripts/lib/browser_projection_mode.sh"
 verify_browser_fonts
 if [[ "$recover_interrupted_run" != true ]]; then
   source "$ROOT_DIR/scripts/lib/browser_runtime.sh"
@@ -128,6 +129,7 @@ if [[ "$api_runtime_state" != "true healthy" && "$recover_interrupted_run" != tr
 fi
 
 package_manager=$(node -p "require('./apps/web/package.json').packageManager")
+assert_browser_projection_environment
 if [[ ! "$package_manager" =~ ^pnpm@[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "apps/web/package.json must pin packageManager to an exact pnpm version" >&2
   exit 1
@@ -853,10 +855,7 @@ restore_runtime_projection() {
   # The acceptance build moves the shared aliases to browser-scoped indices. Rebuild
   # through a one-off worker while the long-running worker is stopped so its startup
   # guard never observes the temporary aliases and enters a crash loop.
-  docker compose run --rm --no-deps worker pharma-search rebuild --build-id "runtime-$run_id" >/dev/null
-  SEARCH_ALLOW_NON_AUTHORITATIVE_PROJECTION=false docker compose up -d --no-deps --force-recreate worker >/dev/null
-  wait_for_worker_healthy
-  wait_for_browser_container_healthy "$api_container_id" api 30
+  restore_browser_projection_runtime "$run_id" || return 1
   cleanup_worker_was_running=false
   cleanup_worker_stopped=false
 }
@@ -2109,6 +2108,7 @@ SQL
 printf 'evidence|%s:claim:%s\n' "$tenant_id" "$evidence_claim_id_1" >> "$projection_ids_path"
 printf 'evidence|%s:claim:%s\n' "$tenant_id" "$evidence_claim_id_2" >> "$projection_ids_path"
 printf 'knowledge|%s:%s\n' "$tenant_id" "$knowledge_page_id" >> "$projection_ids_path"
+enter_browser_projection_mode
 docker compose up -d --no-deps --force-recreate worker >/dev/null
 pause_worker_for_cleanup
 docker compose run --rm --no-deps worker pharma-search rebuild --build-id "browser-$run_id" >/dev/null

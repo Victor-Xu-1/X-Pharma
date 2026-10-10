@@ -1,33 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { ShieldAlert, X } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
-import { ErrorState, formatDate, Spinner, StatusBadge } from "../../components/common";
+import { ErrorState, Spinner } from "../../components/common";
 import { FormStatus } from "../../components/FormStatus";
-import type { QuarantineAction, QuarantineCase } from "../../lib/contracts/dataFactory";
+import { ApiError } from "../../lib/api";
+import type { QuarantineAction } from "../../lib/contracts/dataFactory";
 import { dataFactoryKeys, decideQuarantineCase, loadQuarantineCase } from "../../lib/contracts/dataFactory";
-import { quarantineStatusLabel } from "../../lib/quarantinePresentation";
+import { useLocale } from "../../lib/i18n";
+import { factoryText as t } from "../../lib/i18n/dataFactory";
+import { quarantineActionLabel, quarantineActions } from "../../lib/quarantinePresentation";
 import { useModalFocus } from "../../lib/useModalFocus";
-
-const QUARANTINE_ACTION_LABELS: Record<QuarantineAction, string> = {
-  hold: "留置待审",
-  reject: "永久拒绝",
-  rescan: "重新安全扫描",
-};
-
-const QUARANTINE_DECISION_LABELS: Record<string, string> = {
-  scan_detected: "扫描发现威胁",
-  hold: "留置待审",
-  reject: "永久拒绝",
-  rescan: "申请重新扫描",
-  scan_clean: "复扫结果清洁",
-  rescan_failed: "复扫启动失败",
-};
-
-function availableQuarantineActions(status: QuarantineCase["quarantine_status"]): QuarantineAction[] {
-  if (status === "pending_review") return ["hold", "reject", "rescan"];
-  if (status === "held") return ["reject", "rescan"];
-  return [];
-}
+import { QuarantineCaseDetails } from "./QuarantineCaseDetails";
+import { useFactoryOperation } from "./useFactoryOperation";
 
 export function QuarantineDecisionDialog({
   versionId,
@@ -40,53 +24,60 @@ export function QuarantineDecisionDialog({
   onClose: () => void;
   onDecided: () => Promise<void>;
 }) {
+  useLocale();
   const quarantine = useQuery({
     queryKey: dataFactoryKeys.quarantine(versionId),
     queryFn: ({ signal }) => loadQuarantineCase(versionId, signal),
   });
-  const caseData = quarantine.data;
-  const actions = caseData ? availableQuarantineActions(caseData.quarantine_status) : [];
-  const [action, setAction] = useState<QuarantineAction>("hold");
-  const [reason, setReason] = useState("");
+  const denied = quarantine.error instanceof ApiError && [401, 403].includes(quarantine.error.status);
+  const mismatch = Boolean(quarantine.data && quarantine.data.source_version_id !== versionId);
+  const data = denied || mismatch ? undefined : quarantine.data,
+    actions = data ? quarantineActions(data.quarantine_status) : [];
+  const [action, setAction] = useState<QuarantineAction>("hold"),
+    [reason, setReason] = useState("");
   const [operationKey, setOperationKey] = useState(() => `quarantine-decision:${crypto.randomUUID()}`);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [accepted, setAccepted] = useState("");
-  const dialogRef = useModalFocus<HTMLElement>(true, onClose, { closeOnEscape: !busy });
-
+  const [accepted, setAccepted] = useState<{ action: string; workflowId: string | null } | null>(null);
+  const operation = useFactoryOperation(),
+    busy = Boolean(operation.busy);
+  const dismiss = () => {
+    if (!operation.isLocked()) onClose();
+  };
+  const dialogRef = useModalFocus<HTMLElement>(true, dismiss, { closeOnEscape: !busy });
   useEffect(() => {
-    if (actions.length > 0 && !actions.includes(action)) setAction(actions[0]);
+    if (actions.length && !actions.includes(action)) setAction(actions[0]);
   }, [action, actions]);
-
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!caseData || !actions.includes(action) || reason.trim().length < 3 || busy) return;
-    setBusy(true);
-    setError("");
-    setAccepted("");
-    try {
+    if (
+      !canManage ||
+      !data ||
+      quarantine.isError ||
+      quarantine.isFetching ||
+      !actions.includes(action) ||
+      reason.trim().length < 3 ||
+      reason.trim().length > 500
+    )
+      return;
+    await operation.execute(`quarantine:${versionId}:decision`, "隔离案件处置失败", async (current) => {
       const result = await decideQuarantineCase(versionId, {
         operation_key: operationKey,
-        expected_version: caseData.quarantine_version,
+        expected_version: data.quarantine_version,
         action,
         reason: reason.trim(),
       });
-      setAccepted(
-        result.action === "rescan"
-          ? `复扫工作流已提交：${result.workflow_id ?? "等待运行标识"}`
-          : `处置已记录：${QUARANTINE_ACTION_LABELS[result.action]}`,
-      );
+      if (!current()) return;
+      setAccepted({ action: result.action, workflowId: result.workflow_id });
       setReason("");
       setOperationKey(`quarantine-decision:${crypto.randomUUID()}`);
       await onDecided();
-      await quarantine.refetch();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "隔离案件处置失败");
-    } finally {
-      setBusy(false);
-    }
+      if (current()) await quarantine.refetch();
+    });
   }
-
+  const acceptedLabel = accepted
+    ? accepted.action === "rescan"
+      ? t("复扫工作流已提交：{id}", { id: accepted.workflowId ?? t("等待运行标识") })
+      : t("处置已记录：{action}", { action: quarantineActionLabel(accepted.action) })
+    : "";
   return (
     <div className="modal-backdrop" role="presentation">
       <section
@@ -99,113 +90,54 @@ export function QuarantineDecisionDialog({
         tabIndex={-1}
       >
         <header>
-          <div>
-            <p className="eyebrow">MALWARE QUARANTINE</p>
-            <h2 id="quarantine-dialog-title">隔离案件处置</h2>
-          </div>
+          <h2 id="quarantine-dialog-title">{t(canManage ? "隔离案件处置" : "隔离案件详情")}</h2>
           <button
             className="icon-button"
             type="button"
-            onClick={onClose}
+            onClick={dismiss}
             disabled={busy}
-            title="关闭隔离案件"
-            aria-label="关闭隔离案件"
+            title={t("关闭隔离案件")}
+            aria-label={t("关闭隔离案件")}
           >
-            <X size={18} />
+            <X size={18} aria-hidden="true" />
           </button>
         </header>
-        {quarantine.isPending ? <Spinner label="正在读取隔离案件" /> : null}
+        {quarantine.isPending ? <Spinner label={t("正在读取隔离案件")} /> : null}
         {quarantine.error instanceof Error ? (
           <div className="quarantine-dialog-state">
             <ErrorState message={quarantine.error.message} retry={() => void quarantine.refetch()} />
           </div>
         ) : null}
-        {caseData ? (
+        {mismatch ? (
+          <ErrorState message={t("隔离案件与请求版本不一致")} retry={() => void quarantine.refetch()} />
+        ) : null}
+        {data ? (
           <form onSubmit={submit}>
-            <dl className="quarantine-case-summary">
-              <div>
-                <dt>文件</dt>
-                <dd>{caseData.file_name}</dd>
-              </div>
-              <div>
-                <dt>状态</dt>
-                <dd>
-                  <StatusBadge
-                    value={caseData.quarantine_status}
-                    label={quarantineStatusLabel(caseData.quarantine_status)}
-                  />
-                </dd>
-              </div>
-              <div>
-                <dt>来源路径</dt>
-                <dd className="mono-cell">{caseData.logical_path}</dd>
-              </div>
-              <div>
-                <dt>威胁签名</dt>
-                <dd className="quarantine-threat">{caseData.threat_name ?? "未披露"}</dd>
-              </div>
-              <div>
-                <dt>决策版本</dt>
-                <dd>v{caseData.quarantine_version}</dd>
-              </div>
-              <div>
-                <dt>最近变更</dt>
-                <dd>{formatDate(caseData.updated_at, true)}</dd>
-              </div>
-            </dl>
-
-            <div className="quarantine-safety-note" role="note">
-              <ShieldAlert size={17} />
-              <span>重新扫描只会从恶意文件扫描阶段启动，仍强制经过 ClamAV；不会直接进入解析、AI 治理或检索发布。</span>
-            </div>
-
-            <section className="quarantine-history" aria-labelledby="quarantine-history-title">
-              <h3 id="quarantine-history-title">不可变处置历史</h3>
-              {caseData.decisions?.length ? (
-                <ol>
-                  {caseData.decisions.map((decision) => (
-                    <li key={decision.id}>
-                      <span className="quarantine-history-version">v{decision.resulting_version}</span>
-                      <span>
-                        <strong>{QUARANTINE_DECISION_LABELS[decision.action] ?? decision.action}</strong>
-                        <small>
-                          {decision.actor_id} · {formatDate(decision.created_at, true)}
-                        </small>
-                        <p>{decision.reason}</p>
-                      </span>
-                      <StatusBadge value={decision.resulting_status} />
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                <p className="field-help">尚无处置历史，案件数据不完整，请联系平台管理员。</p>
-              )}
-            </section>
-
+            {quarantine.isError ? <p className="field-help">{t("上次读取的隔离案件（非实时）")}</p> : null}
+            <QuarantineCaseDetails data={data} />
             {canManage && actions.length ? (
-              <>
+              <fieldset className="source-form-fields" disabled={busy || quarantine.isError || quarantine.isFetching}>
                 <label>
-                  <span>处置动作</span>
+                  <span>{t("处置动作")}</span>
                   <select
-                    disabled={busy}
                     value={action}
                     onChange={(event) => {
                       setAction(event.target.value as QuarantineAction);
                       setOperationKey(`quarantine-decision:${crypto.randomUUID()}`);
-                      setError("");
+                      operation.clear();
                     }}
                   >
                     {actions.map((item) => (
                       <option key={item} value={item}>
-                        {QUARANTINE_ACTION_LABELS[item]}
+                        {quarantineActionLabel(item)}
                       </option>
                     ))}
                   </select>
                 </label>
                 <label>
-                  <span>处置原因</span>
+                  <span>{t("处置原因")}</span>
                   <textarea
-                    disabled={busy}
+                    aria-label={t("处置原因")}
                     value={reason}
                     onChange={(event) => setReason(event.target.value)}
                     minLength={3}
@@ -213,30 +145,40 @@ export function QuarantineDecisionDialog({
                     required
                   />
                 </label>
-              </>
+              </fieldset>
             ) : (
               <p className="field-help">
-                {canManage ? "当前案件状态没有可执行的人工动作。" : "当前账号仅可查看隔离案件与审计历史。"}
+                {t(canManage ? "当前案件状态没有可执行的人工动作。" : "当前账号仅可查看隔离案件与审计历史。")}
               </p>
             )}
             {accepted ? (
               <div className="inline-success" role="status">
-                {accepted}
+                {acceptedLabel}
               </div>
             ) : null}
             <FormStatus
               pending={busy}
-              error={error}
-              pendingLabel={accepted ? "正在刷新隔离案件状态" : "正在提交隔离处置"}
+              error={operation.error}
+              pendingLabel={t(accepted ? "正在刷新隔离案件状态" : "正在提交隔离处置")}
             />
             <div className="form-actions">
-              <button className="secondary-button" type="button" onClick={onClose} disabled={busy}>
-                关闭
+              <button className="secondary-button" type="button" onClick={dismiss} disabled={busy}>
+                {t("关闭")}
               </button>
               {canManage && actions.length ? (
-                <button className="primary-button" type="submit" disabled={busy || reason.trim().length < 3}>
-                  <ShieldAlert size={15} />
-                  {busy ? "正在提交" : "提交处置"}
+                <button
+                  className="primary-button"
+                  type="submit"
+                  disabled={
+                    busy ||
+                    quarantine.isError ||
+                    quarantine.isFetching ||
+                    reason.trim().length < 3 ||
+                    reason.trim().length > 500
+                  }
+                >
+                  <ShieldAlert size={15} aria-hidden="true" />
+                  {t(busy ? "正在提交" : "提交处置")}
                 </button>
               ) : null}
             </div>

@@ -1,0 +1,15 @@
+export const factoryValidationMessages = {
+  授权生效时间无效: "Authorization start time is invalid",
+  授权结束时间必须晚于生效时间: "Authorization end time must be later than its start",
+  注册失败: "Source registration failed",
+  "单批记录数必须是 1–1000 的整数": "Records per batch must be an integer from 1 to 1000",
+  "每页请求数量必须是 1–{maximum} 的整数": "Records per request page must be an integer from 1 to {maximum}",
+  "活性补充每批最多 25 条机制记录": "Activity collection supports at most 25 mechanism records per batch",
+  "请填写有效的 ChEMBL 靶点编号": "Enter a valid ChEMBL target ID",
+  "每个药物的活性样本上限必须是 1–10 的整数": "Activity samples per drug must be an integer from 1 to 10",
+  检索主题不能为空: "Search query cannot be blank",
+  持续同步需要明确的历史起始日期: "Continuous sync requires a valid historical start date",
+  "日期分区必须是 1–366 天的整数": "Date window must be an integer from 1 to 366 days",
+  "更新回看必须是 1–30 天的整数": "Update overlap must be an integer from 1 to 30 days",
+  "完整复核周期必须是 1–365 天的整数": "Reconciliation interval must be an integer from 1 to 365 days",
+} as const;

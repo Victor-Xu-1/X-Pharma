@@ -43,6 +43,18 @@ viewports, resource budgets, protocol/load gates and job timeout remain active.
 This is a CI build optimization, not a prebuilt-image substitute or local-runtime
 restart instruction.
 
+Browser acceptance uses temporary, explicitly non-authoritative search indices.
+The selected development API and projector must both enter the existing
+acceptance mode before those aliases are activated. The driver rejects a
+production API before fixture setup, and cleanup resets both services to the
+strict false-default mode even if the authoritative rebuild fails. A failed
+rebuild remains a failed recovery, not a healthy runtime. Production validation
+continues to forbid the exception, and ordinary runtime queries still reject
+acceptance/test aliases. This bounded restart applies only to the explicitly
+selected Compose project; it is not authority to restart shared WSL or other
+projects. Preserve the original browser cases, viewports, no-alert assertions,
+resource budgets, retry policy and deadlines.
+
 After changing API schemas:
 
 ```bash
