@@ -17,6 +17,9 @@
   min-height: 36px;
   padding-block: 6px;
 }
+.topbar .language-switcher select {
+  min-height: 44px;
+}
 .language-switcher small {
   display: block;
   max-width: 240px;

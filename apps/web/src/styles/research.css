@@ -58,12 +58,24 @@
   gap: 8px;
   min-height: var(--ds-control-height);
 }
+.secondary-filter-panel > summary > svg {
+  flex-shrink: 0;
+}
+.secondary-filter-panel > summary > span {
+  min-width: 0;
+  flex: 1;
+}
 .secondary-filter-panel > summary small {
   margin-left: auto;
   color: var(--ds-ink-muted);
   font-weight: 400;
   font-size: var(--ds-text-xs);
   white-space: nowrap;
+}
+@media (max-width: 560px) {
+  .secondary-filter-panel[data-active-count="0"] > summary > small {
+    display: none;
+  }
 }
 .secondary-filter-grid {
   display: grid;

@@ -17,7 +17,7 @@
     },
     "research-deal-rights-mobile-390.png": {
       "capture": "dossier-section",
-      "sha256": "8c8037d02a9391c21bf6577f2de0b7059724b5a6cfb246d8fd58e51f671d0479",
+      "sha256": "a67aeccc644883a7cf002d7d580a2246cda5ad7e34a11786e0b07da2457526a7",
       "state": "controlled-deal-rights",
       "viewport": "390x844"
     },
@@ -41,7 +41,7 @@
     },
     "research-dense-results-mobile-390.png": {
       "capture": "table-shell",
-      "sha256": "9f896626ede48e9ff5ea28ef416720113290cff89b05d5747075a9cec3d55503",
+      "sha256": "26e5fa27cb27da1b427a10330dad0132d952e9ad2a0349aff6c7a47f7f5428e7",
       "state": "controlled-dense-results",
       "viewport": "390x844"
     },
@@ -89,7 +89,7 @@
     },
     "research-trial-outcomes-mobile-390.png": {
       "capture": "dossier-section",
-      "sha256": "307bffe44a7c671354033b2e928d92cb0ac80d9820802d5df074bf37615ea872",
+      "sha256": "703ed83fe099c9b7aa7326890aacfe9224a215438173825db791b575b278bb94",
       "state": "controlled-trial-outcomes",
       "viewport": "390x844"
     },
@@ -113,7 +113,7 @@
     },
     "research-workbench-mobile-390.png": {
       "capture": "full-page",
-      "sha256": "c09ed4eabd9cb9ccef1f617ce411e456ecbaf430f42c5cf989e94ac49ff1ba7c",
+      "sha256": "2b415d4f94b407eeda453272e2a1d46ba9143c2acb153b8596b6020f7eec93f7",
       "state": "controlled-no-result",
       "viewport": "390x844"
     },

@@ -766,6 +766,19 @@ tbody tr:last-child td {
 /* Wide tables keep their identity column; narrow containers reserve the scroll
    lane for data/actions instead of covering it with a nearly full-width name. */
 @container workbench-table (max-width: 640px) {
+  .virtual-table-toolbar {
+    gap: 6px;
+    padding-inline: 6px;
+  }
+  .table-selection-status[data-empty="true"] {
+    display: none;
+  }
+  :root .workspace-shell .virtual-table-toolbar .table-column-menu:not([open]) summary {
+    min-width: 31px;
+    justify-content: center;
+    gap: 0;
+    font-size: 0;
+  }
   .virtual-table-heading:first-child:not(.virtual-table-selection-heading),
   .virtual-table-cell:first-child:not(.virtual-table-selection-cell),
   .has-row-selection .virtual-table-heading:nth-child(2),
@@ -809,9 +822,6 @@ tbody tr:last-child td {
   }
 }
 @media (max-width: 560px) {
-  .virtual-table-toolbar {
-    flex-wrap: wrap;
-  }
   .virtual-table-toolbar > span {
     width: 100%;
     flex: 1 0 100%;

@@ -171,8 +171,13 @@
   transform: none;
 }
 .mobile-workspace-context {
+  min-width: 0;
+  flex: 1;
   color: var(--ds-ink-muted);
   font-size: var(--ds-text-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .mobile-only {
   display: none;

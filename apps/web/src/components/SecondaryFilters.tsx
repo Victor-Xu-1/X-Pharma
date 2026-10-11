@@ -21,6 +21,7 @@ export function SecondaryFilters({
   return (
     <details
       className="advanced-filter-panel secondary-filter-panel"
+      data-active-count={activeCount}
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >

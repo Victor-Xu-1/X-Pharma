@@ -543,3 +543,49 @@ actual durations and zero when no interaction exists. The ineffective
 wait-only workaround was removed; no synthetic count, delay or timing is used
 to pass a gate. This is local browser-probe verification, not field P75, full
 WCAG, scientific/UAT or whole-product acceptance.
+
+## 2026-10-11: reviewed compact workspace and table reflow
+
+PR99 source `33e3120d93cffa2f3ed773964f40a033829d86aa` moves the one compact
+language control into the existing topbar and gives the page title its full
+width. Narrow tables remove only the empty-selection instruction from layout
+and use the accessibly named column icon until its configuration is opened.
+Existing data, selections, actions, column tracks and row geometry remain.
+
+Original CI `38120462673` finished with 291 full-stack browser instances passing
+in 34.2 minutes and one mobile workbench flow rejected by four soft screenshot
+comparisons. This was not another timeout; downstream MCP/load checks did not
+run and that CI remains failed. Official artifact `11696445218` was verified
+against ZIP SHA-256
+`9e7b7e5a2b966c7f2fdf169193dffc63d4668865a5de9188913650389df69af4`.
+Each previous, actual and diff image was inspected individually. The full-page
+capture has one topbar language control and a full-width heading; the dense
+table keeps every action and readable records in its shorter toolbar. The
+clinical-outcome and deal-rights crops retain their original controlled content
+and source fields. These are original CI fixtures, not real-data coverage claims.
+
+Only these four mobile references are adopted from that exact original run:
+
+- `research-workbench-mobile-390.png`: `2b415d4f94b407eeda453272e2a1d46ba9143c2acb153b8596b6020f7eec93f7`
+- `research-dense-results-mobile-390.png`: `26e5fa27cb27da1b427a10330dad0132d952e9ad2a0349aff6c7a47f7f5428e7`
+- `research-trial-outcomes-mobile-390.png`: `703ed83fe099c9b7aa7326890aacfe9224a215438173825db791b575b278bb94`
+- `research-deal-rights-mobile-390.png`: `a67aeccc644883a7cf002d7d580a2246cda5ad7e34a11786e0b07da2457526a7`
+
+The other sixteen PNG hashes are unchanged. Previous references, manifest and
+binding are retained in the E-drive review evidence. The sole original manifest
+generator binds these hashes to manifest SHA-256
+`39d6a5fd73dcec2d3995989dbd1ab85b2a8e38bf58ccc023ba36a3e4c72954f2`;
+its generation date does not mean twenty new captures. Chrome
+`155.0.8059.39`, package/executable digests, font installation, original masks,
+pixel tolerance `0.001`, all four projects, workers/retries and all performance
+budgets are unchanged. Fresh complete exact-head CI and main deployment remain
+required; this scoped reference maintenance is not release acceptance.
+
+The initial binding entry at `cf118f3` accidentally repeated one character.
+CI `38123320006` correctly rejected it before installing the browser. The
+existing actual-repository metadata test reproduced one failure with nine
+negative cases passing. The binding is corrected to the retained generator's
+64-character file digest above; no validator or browser selection is changed.
+The earlier 22 profile/pair checks did not include this metadata test and were
+insufficient evidence for the actual artifact binding. Subsequent focused
+verification reuses all three existing test modules and the original CLI.

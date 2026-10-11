@@ -199,9 +199,14 @@ export function WorkspaceShell({
           >
             <Menu size={20} />
           </button>
-          <span className="mobile-workspace-context" aria-hidden="true">
-            {researchWorkbench ? t("X-Pharma · 研究工作台") : t("X-Pharma · 内部管理")}
+          <span
+            className="mobile-workspace-context"
+            aria-hidden="true"
+            title={researchWorkbench ? t("X-Pharma · 研究工作台") : t("X-Pharma · 内部管理")}
+          >
+            {compact ? PRODUCT_NAME : researchWorkbench ? t("X-Pharma · 研究工作台") : t("X-Pharma · 内部管理")}
           </span>
+          {compact ? <LanguageSwitcher /> : null}
         </header>
         <main
           ref={mainRef}
@@ -215,7 +220,7 @@ export function WorkspaceShell({
             <h1 id="workspace-page-title" ref={pageHeadingRef} tabIndex={-1} style={{ outline: "none" }}>
               {heading}
             </h1>
-            <LanguageSwitcher />
+            {!compact ? <LanguageSwitcher /> : null}
           </div>
           {researchWorkbench && !researchDetail ? (
             <ResearchViewNavigation activeView={navigationView} onView={navigate} />

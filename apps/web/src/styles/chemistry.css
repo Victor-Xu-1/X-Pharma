@@ -718,9 +718,6 @@
     max-height: 190px;
     box-shadow: none;
   }
-  .virtual-table-toolbar {
-    flex-wrap: wrap;
-  }
   .table-column-menu[open],
   .table-sort-menu[open] {
     flex: 1 0 100%;

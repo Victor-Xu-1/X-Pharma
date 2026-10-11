@@ -2,6 +2,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { PublicResearchCoverage } from "../src/lib/generated";
 import { patentResult } from "../src/test/fixtures/patentsResearch";
+import { expectCompactSecondaryFilters } from "./fixtures/compact-secondary-filters";
+import { expectCompactTableToolbar, expectCompactWorkspaceHeading } from "./fixtures/compact-workspace-reading";
 import { expectPublicResearchFormLayout } from "./fixtures/public-research-reading";
 import { expectResearchReadingLayout } from "./fixtures/reading-layout";
 import { installReadOnlyTablePreference } from "./fixtures/table-preferences";
@@ -63,6 +65,24 @@ test("[patent-language] English-first filters keep drafts, selection and source 
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   const results = page.getByRole("table", { name: "Patent family results", exact: true });
   await expect(results).toContainText(patent.title);
+  await expectCompactTableToolbar(page, false);
+  await expectCompactWorkspaceHeading(page);
+  await expectCompactSecondaryFilters(page);
+  const originalViewport = page.viewportSize();
+  if (testInfo.project.name === "mobile-390" && originalViewport) {
+    await page.setViewportSize({ width: 320, height: originalViewport.height });
+    try {
+      await expectCompactTableToolbar(page, false);
+      await expectCompactWorkspaceHeading(page);
+      await expectCompactSecondaryFilters(page);
+      await page
+        .locator(".virtual-table-shell")
+        .screenshot({ path: testInfo.outputPath("compact-toolbar-320-en.png"), animations: "disabled" });
+    } finally {
+      await page.setViewportSize(originalViewport);
+    }
+  }
+  await page.screenshot({ path: testInfo.outputPath("compact-reading-empty-en.png"), animations: "disabled" });
   await expect(page.getByLabel("Applicant", { exact: true })).toHaveValue("");
   await expect(page.getByLabel("Legal status", { exact: true })).toHaveValue("");
   await expect(results.getByText("Active", { exact: true })).toBeVisible();
@@ -86,6 +106,10 @@ test("[patent-language] English-first filters keep drafts, selection and source 
   ).toBeChecked();
   await expect(page.locator(".secondary-filter-panel")).toHaveAttribute("open", "");
   await expectResearchReadingLayout(page, page.locator(".virtual-data-table"));
+  await expectCompactWorkspaceHeading(page);
+  await expectCompactTableToolbar(page, true);
+  await expectCompactSecondaryFilters(page);
+  await page.screenshot({ path: testInfo.outputPath("compact-reading-selected-zh.png"), animations: "disabled" });
   await expectPublicResearchFormLayout(page);
   await page.getByRole("button", { name: `打开专利族详情：${patent.family_identifier}`, exact: true }).click();
   await expect(page.getByRole("table", { name: "公开文本", exact: true })).toContainText("WO2022123456A1");
