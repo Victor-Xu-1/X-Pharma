@@ -17,7 +17,7 @@ def test_browser_clients_prepare_explicit_official_https_transport() -> None:
     font_install = 'sudo apt-get install --yes --no-install-recommends "$BROWSER_FONT_PACKAGE=$BROWSER_FONT_VERSION"'
     assert font_install in browser_setup
     assert "verify_browser_fonts" in browser_setup
-    assert workflow.count("bash scripts/prepare-ci-browser.sh") == 2
+    assert workflow.count("bash scripts/prepare-ci-browser.sh") == 3
     assert "inputs.refresh_visual_baselines && 60 || 45" in workflow
 
 

@@ -287,4 +287,5 @@ def test_version_workflow_is_trusted_main_only_and_preserves_six_original_gates(
         "deployment-contract",
         "two-entry-smoke",
         "security-supply-chain",
+        "company-controlled",
     }

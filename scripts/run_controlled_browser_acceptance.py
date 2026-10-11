@@ -27,7 +27,7 @@ from scripts.browser_phase_runtime import (
     stop_group,
     validate_destination,
 )
-from scripts.browser_phases import verify_results
+from scripts.browser_phases import UI_PHASES, Phase, verify_results
 
 
 def browser_profile() -> tuple[str, str]:
@@ -63,7 +63,9 @@ def ready(process: subprocess.Popen[bytes], origin: str) -> None:
     raise RuntimeError("Controlled frontend readiness exceeded its bounded startup")
 
 
-def run(output: Path) -> None:
+def run(output: Path, phase: Phase = "controlled") -> None:
+    if phase not in UI_PHASES:
+        raise ValueError("The isolated UI runner cannot execute real stack cases")
     validate_destination(output)
     if not (WEB / "dist/research.html").is_file() or not (WEB / "dist/internal.html").is_file():
         raise ValueError("The existing frontend job must build both workbenches before controlled acceptance")
@@ -107,7 +109,7 @@ def run(output: Path) -> None:
                 execute(
                     [
                         *command,
-                        *phase_arguments(manifest, "controlled"),
+                        *phase_arguments(manifest, phase),
                         "--workers=1",
                         "--fail-on-flaky-tests",
                         "--reporter=line,json",
@@ -118,7 +120,7 @@ def run(output: Path) -> None:
                     environment,
                     300,
                 )
-                coverage = verify_results(manifest, load(state / "results.json"), "controlled")
+                coverage = verify_results(manifest, load(state / "results.json"), phase)
                 if source_revision() != manifest["revision"]:
                     raise ValueError("Controlled browser source changed during execution")
                 save(
@@ -134,7 +136,10 @@ def run(output: Path) -> None:
                         "credentials_recorded": False,
                     },
                 )
-                print(f"CONTROLLED_BROWSER_ACCEPTANCE passed={coverage['passed']} projects=4 workers=1 backend=false")
+                print(
+                    f"CONTROLLED_BROWSER_ACCEPTANCE phase={phase} passed={coverage['passed']} "
+                    "projects=4 workers=1 backend=false"
+                )
             finally:
                 stop_group(process)
 
@@ -142,7 +147,9 @@ def run(output: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
-    run(parser.parse_args().output)
+    parser.add_argument("--phase", choices=UI_PHASES, default="controlled")
+    args = parser.parse_args()
+    run(args.output, args.phase)
 
 
 if __name__ == "__main__":

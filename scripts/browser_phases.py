@@ -9,8 +9,9 @@ from typing import Literal
 
 from scripts.browser_cases import PROJECTS, BrowserCase, collect_cases, mapping, sequence, text
 
-Phase = Literal["controlled", "full-stack"]
-PHASES: tuple[Phase, Phase] = ("controlled", "full-stack")
+Phase = Literal["controlled", "company-controlled", "full-stack"]
+PHASES: tuple[Phase, ...] = ("controlled", "company-controlled", "full-stack")
+UI_PHASES: tuple[Phase, ...] = ("controlled", "company-controlled")
 CONTROLLED_FILES = frozenset(
     {
         "deal-language.spec.ts",
@@ -23,7 +24,8 @@ CONTROLLED_FILES = frozenset(
         "table-preference-intent.spec.ts",
     }
 )
-SCHEMA = "x-pharma.browser-phase-manifest.v1"
+COMPANY_FILES = frozenset({"company-language.spec.ts"})
+SCHEMA = "x-pharma.browser-phase-manifest.v2"
 
 
 def fingerprint(cases: dict[str, BrowserCase]) -> str:
@@ -32,14 +34,24 @@ def fingerprint(cases: dict[str, BrowserCase]) -> str:
 
 
 def partition(cases: dict[str, BrowserCase], phase: Phase) -> dict[str, BrowserCase]:
-    return {key: case for key, case in cases.items() if (case.file in CONTROLLED_FILES) == (phase == "controlled")}
+    if CONTROLLED_FILES & COMPANY_FILES:
+        raise ValueError("Browser phase file ownership must be disjoint")
+
+    def owner(case: BrowserCase) -> Phase:
+        if case.file in CONTROLLED_FILES:
+            return "controlled"
+        if case.file in COMPANY_FILES:
+            return "company-controlled"
+        return "full-stack"
+
+    return {key: case for key, case in cases.items() if owner(case) == phase}
 
 
 def create_manifest(discovery: dict[str, object], revision: str) -> dict[str, object]:
     if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
         raise ValueError("Browser manifest requires an exact clean source revision")
     cases = collect_cases(discovery)
-    if not CONTROLLED_FILES.issubset({case.file for case in cases.values()}):
+    if not (CONTROLLED_FILES | COMPANY_FILES).issubset({case.file for case in cases.values()}):
         raise ValueError("An audited controlled browser file is missing from original discovery")
     for phase in PHASES:
         assigned = partition(cases, phase)
@@ -90,11 +102,19 @@ def verify_results(manifest: dict[str, object], results: dict[str, object], phas
 
 
 def close_coverage(
-    manifest: dict[str, object], controlled: dict[str, object], full_stack: dict[str, object]
+    manifest: dict[str, object],
+    controlled: dict[str, object],
+    full_stack: dict[str, object],
+    *,
+    company: dict[str, object],
 ) -> dict[str, object]:
     cases = manifest_cases(manifest)
     observed: dict[str, BrowserCase] = {}
-    receipts: tuple[tuple[Phase, dict[str, object]], ...] = (("controlled", controlled), ("full-stack", full_stack))
+    receipts: tuple[tuple[Phase, dict[str, object]], ...] = (
+        ("controlled", controlled),
+        ("company-controlled", company),
+        ("full-stack", full_stack),
+    )
     for phase, receipt in receipts:
         if (
             receipt.get("phase") != phase
@@ -126,6 +146,7 @@ def close_coverage(
         "total": len(cases),
         "projects": {project: sum(case.project == project for case in cases.values()) for project in PROJECTS},
         "controlled": len(partition(cases, "controlled")),
+        "company_controlled": len(partition(cases, "company-controlled")),
         "full_stack": len(partition(cases, "full-stack")),
         "complete": True,
     }
