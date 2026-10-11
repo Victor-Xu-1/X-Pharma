@@ -210,6 +210,51 @@ it("localizes only the known application coverage warning while retaining origin
   expect(searchPipelines).toHaveBeenCalledTimes(reads);
 });
 
+it("keeps a compact target header without removing identifiers, query qualification or raw aliases", async () => {
+  const base = await vi.mocked(loadTargetDossier)("template", new AbortController().signal);
+  vi.mocked(loadTargetDossier).mockResolvedValue({
+    ...base,
+    profile: { ...base.profile, entity: { ...base.profile.entity, aliases: ["ERBB1", "原始靶点代号"] } },
+  });
+  setLocale("en");
+  renderTargetView();
+  await screen.findByRole("heading", { name: "EGFR" });
+  const header = screen.getByRole("region", { name: "Target profile summary" });
+  expect(header.querySelectorAll(".target-header-stats > div")).toHaveLength(3);
+  expect(within(header).getByText("P00533", { exact: true })).toBeVisible();
+  expect(within(header).getByText("Query time", { exact: true })).toBeVisible();
+  const disclosure = header.querySelector("details.target-header-details");
+  expect(disclosure).not.toHaveAttribute("open");
+  expect(within(header).getByText("原始靶点代号", { exact: true })).not.toBeVisible();
+  fireEvent.click(within(header).getByText("Identifiers and aliases", { exact: true }));
+  expect(disclosure).toHaveAttribute("open");
+  expect(within(header).getByText("原始靶点代号", { exact: true })).toBeVisible();
+  expect(within(header).getByText("Gene symbol", { exact: true })).toBeVisible();
+  expect(within(header).getByText("Dossier query time, not the last update of every source")).toBeVisible();
+  const reads = vi.mocked(loadTargetDossier).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("标识与别名", { exact: true })).toBeVisible();
+  expect(disclosure).toHaveAttribute("open");
+  expect(screen.getByText("原始靶点代号", { exact: true })).toBeVisible();
+  expect(loadTargetDossier).toHaveBeenCalledTimes(reads);
+});
+
+it("retains absent identifiers and an unknown target class in the compact header", async () => {
+  const base = await vi.mocked(loadTargetDossier)("template", new AbortController().signal);
+  vi.mocked(loadTargetDossier).mockResolvedValue({
+    ...base,
+    profile: { ...base.profile, gene_symbol: null, uniprot_accession: null, target_class: "future_raw_class" },
+  });
+  setLocale("en");
+  renderTargetView();
+  await screen.findByRole("heading", { name: "EGFR" });
+  const header = screen.getByRole("region", { name: "Target profile summary" });
+  expect(header).toHaveTextContent("future_raw_class");
+  expect(within(header).getByText("UniProt", { exact: true }).parentElement).toHaveTextContent("--");
+  fireEvent.click(within(header).getByText("Identifiers and aliases", { exact: true }));
+  expect(within(header).getByText("Gene symbol", { exact: true }).parentElement).toHaveTextContent("--");
+});
+
 function renderTargetView({
   onOpenEntity = vi.fn(),
   onOpenDrug,

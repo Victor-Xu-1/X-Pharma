@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { targetLanguageFixture, targetPipelineLanguageFixture } from "./fixtures/target-language";
 import { selectInterfaceLanguage } from "./interface-language";
+import { renderedPaintEvidence } from "./rendered-paint-evidence";
 
 test("[target-language] preserves target narratives, complete counts, filters, registry identity and cached reads", async ({
   page,
@@ -65,6 +66,13 @@ test("[target-language] preserves target narratives, complete counts, filters, r
     return route.fulfill({ json: [] });
   });
   async function audit(name: string) {
+    await page.evaluate(() => document.fonts.ready);
+    const before = await renderedPaintEvidence(page);
+    await page.screenshot({
+      path: testInfo.outputPath(`${name}-before-axe.png`),
+      fullPage: false,
+      animations: "disabled",
+    });
     const rail = page.getByRole("tablist").filter({ has: page.locator('[data-tab-key="pipeline"]') });
     const horizontalBounds = await rail.evaluate((node) => {
       const selected = node.querySelector('[aria-selected="true"]');
@@ -96,6 +104,10 @@ test("[target-language] preserves target narratives, complete counts, filters, r
     expect(bounds.document).toBeLessThanOrEqual(bounds.viewport);
     expect(errors).toEqual([]);
     await page.screenshot({ path: testInfo.outputPath(`${name}.png`), fullPage: false, animations: "disabled" });
+    await testInfo.attach(`${name}-paint-before-after`, {
+      body: JSON.stringify({ before, after: await renderedPaintEvidence(page) }),
+      contentType: "application/json",
+    });
   }
   await page.goto(`/workspace/research?view=target&entity=${fixture.entity.id}&section=overview`);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
@@ -103,6 +115,29 @@ test("[target-language] preserves target narratives, complete counts, filters, r
   await expect(page.locator(".narrative-section p")).toHaveText(fixture.entity.description ?? "");
   await expect(page.getByText("1,200 related records; 50 currently shown", { exact: true })).toBeVisible();
   await expect(page.getByText("137 recruiting trials", { exact: true })).toBeVisible();
+  const header = page.getByRole("region", { name: "Target profile summary", exact: true });
+  const identity = header.locator(".target-header-details");
+  await expect(header.locator(".target-header-stats > div")).toHaveCount(3);
+  await expect(identity).not.toHaveAttribute("open", "");
+  await expect(header.getByText("原始靶点代号", { exact: true })).not.toBeVisible();
+  await identity.locator(":scope > summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(identity).toHaveAttribute("open", "");
+  await header.getByText("More aliases (1)", { exact: true }).click();
+  await expect(header.getByText("原始长别名 / Source alias", { exact: true })).toBeVisible();
+  await selectInterfaceLanguage(page, "zh-CN");
+  await expect(identity).toHaveAttribute("open", "");
+  await expect(
+    page
+      .getByRole("region", { name: "靶点档案摘要", exact: true })
+      .getByText("原始长别名 / Source alias", { exact: true }),
+  ).toBeVisible();
+  expect(dossierReads).toBe(1);
+  await selectInterfaceLanguage(page, "en");
+  await identity.locator(":scope > summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(identity).not.toHaveAttribute("open", "");
+  await page.evaluate(() => window.scrollTo(0, 0));
   await audit("target-overview-en");
   await page.getByRole("tab", { name: "Translational evidence", exact: true }).click();
   const filterLayout = await page.locator(".target-evidence-filters").evaluate((node) => {
