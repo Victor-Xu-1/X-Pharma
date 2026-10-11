@@ -34,7 +34,7 @@
 若结果加载替换了表格，但同一会话中的旧写入已经抵达服务器，只使捕获的
 精确活动偏好查询失效并重读；不重放写入或把旧快照直接塞入新页面。
 
-研究阅读版面仍由 `data-surfaces.css` 与 `research.css` 共用规则拥有：排序表头完整换行，数据列仍可横向滚动，不改虚拟窗口、68/46 行高或原始字段。次要筛选项自然顶端对齐，日期组不能拉伸相邻单行控件。`PublicResearchPanel` 的标题、说明和可见展开状态分轨呈现；仍沿用原披露与显式查询链路，不因版面或语言变化提交草稿、自动查询公开来源或写入事实。
+研究阅读版面仍由 `data-surfaces.css` 与 `research.css` 共用规则拥有：排序表头保留词表原大小写并按完整单词换行，`components/table/columnLayout` 为窄排序列保留 120px 最小轨道，不加宽原动作列或选择槽；较宽数据列仍保留既有最小尺寸，整表与各行共用同一轨道计算。数据列仍可横向滚动，不改虚拟窗口、68/46 行高或原始字段。次要筛选项自然顶端对齐，日期组不能拉伸相邻单行控件。`PublicResearchPanel` 的标题、说明和可见展开状态分轨呈现；仍沿用原披露与显式查询链路，不因版面或语言变化提交草稿、自动查询公开来源或写入事实。
 
 `views/account/` 唯一拥有资料/密码草稿、校验、捕获提交与反馈；`OverviewView` 只组合身份与两份短表单。`components/identity/useIdentityOperation` 统一同步锁和挂载生命周期，不把密码或邀请码放入通用 Mutation 历史；成员目录、确认草稿与读取对账归属 `useOrganizationMembership`，旧内联邀请 Mutation 已退出。`useSessionWritePending` 只订阅既有 `organizationSession` 写入计数；退出和组织切换仍由 `SessionBoundary` 最终执行，不引入第二套授权或传输合同。邀请受理后读取失败只允许重读目录，不重发邀请码。
 

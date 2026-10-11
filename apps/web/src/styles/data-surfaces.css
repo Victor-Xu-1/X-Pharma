@@ -685,7 +685,7 @@ tbody tr:last-child td {
 .virtual-table-heading {
   min-height: 44px;
   font-weight: 700;
-  text-transform: uppercase;
+  text-transform: none;
 }
 .virtual-table-heading button {
   width: 100%;
@@ -702,7 +702,7 @@ tbody tr:last-child td {
 }
 .virtual-table-heading button > span {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
   white-space: normal;
   text-wrap: balance;
 }
