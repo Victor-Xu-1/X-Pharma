@@ -85,6 +85,30 @@ it("localizes the target pipeline while retaining scientific names, selection an
   expect(searchPipelines).toHaveBeenCalledTimes(reads);
 });
 
+it("keeps the target's advanced group open through clearing its last condition and the resulting query", async () => {
+  renderTargetView({
+    initialSection: "pipeline",
+    initialPipelineFilters: {
+      ...emptyPipelineSearchFilters(),
+      targetEntityId: target.id,
+      innovationTypes: ["First-in-Class"],
+    },
+  });
+  await screen.findByRole("table", { name: "靶点研发药物概览" });
+  expect(document.querySelector(".target-pipeline-panel .pipeline-advanced-filters")).toHaveAttribute("open");
+  fireEvent.click(screen.getByRole("button", { name: "重置筛选" }));
+  await waitFor(() =>
+    expect(searchPipelines).toHaveBeenCalledWith(
+      expect.objectContaining({ innovationTypes: [] }),
+      expect.anything(),
+      expect.any(AbortSignal),
+      "drug",
+    ),
+  );
+  await screen.findByRole("table", { name: "靶点研发药物概览" });
+  expect(document.querySelector(".target-pipeline-panel .pipeline-advanced-filters")).toHaveAttribute("open");
+});
+
 function renderTargetView({
   onOpenEntity = vi.fn(),
   onOpenDrug,

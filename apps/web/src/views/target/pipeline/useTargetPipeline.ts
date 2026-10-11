@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import type { PipelineLandscapeFilterField } from "../../../components/PipelineLandscape";
+import { useSecondaryFiltersState } from "../../../components/SecondaryFilters";
 import {
   emptyPipelineSearchFilters,
   type PipelineAnalysisDimension,
@@ -77,7 +78,9 @@ export function useTargetPipeline({
     comparisonSetId: string;
     entityIds: string[];
   } | null>(null);
-  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
+  const { open: advancedFiltersOpen, setOpen: setAdvancedFiltersOpen } = useSecondaryFiltersState(
+    countAdvancedPipelineFilters(filters),
+  );
   const targetFacetCache = useRef<{
     targetId: string;
     values: Partial<Record<TargetFacetKey, Record<string, number>>>;
@@ -100,10 +103,6 @@ export function useTargetPipeline({
     return targetFacetOptions(cachedValues);
   }
 
-  const advancedFilterCountForState = countAdvancedPipelineFilters(filters);
-  useEffect(() => {
-    setAdvancedFiltersOpen(advancedFilterCountForState > 0);
-  }, [advancedFilterCountForState]);
   const [debouncedPipelineQuery, setDebouncedPipelineQuery] = useState(effectiveInitialFilters.query);
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedPipelineQuery(filters.query), 250);
