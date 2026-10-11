@@ -70,12 +70,7 @@ export function TargetPipeline(props: TargetPipelineProps) {
         onOpenComparison={props.onOpenComparison}
       />
       <TargetPipelineFeedback state={state} targetName={props.targetName} />
-      <PipelinePrimaryFilters
-        state={state}
-        data={optionData}
-        hasUserFilters={hasUserFilters}
-        onFiltersChange={props.onFiltersChange}
-      />
+      <PipelinePrimaryFilters state={state} data={optionData} hasUserFilters={hasUserFilters} />
       <AppliedFiltersBar
         filters={targetPipelineAppliedFilters(filters, hasCurrentResult ? result.data?.landscape : undefined)}
         labels={Object.fromEntries(
@@ -101,6 +96,7 @@ export function TargetPipeline(props: TargetPipelineProps) {
         data={optionData}
         advancedFilterCount={countAdvancedPipelineFilters(filters)}
         programTagOptions={programTagOptions}
+        onFiltersChange={props.onFiltersChange}
       />
       <TargetPipelineResults state={state} props={props} hasUserFilters={hasUserFilters} />
     </div>

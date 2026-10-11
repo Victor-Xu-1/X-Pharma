@@ -39,6 +39,7 @@ export function targetLanguageFixture(): TargetDossier {
     canonical_entity_id: "550e8400-e29b-41d4-a716-446655440020",
     entity_type: "target" as const,
     name: "EGFR (controlled browser fixture)",
+    aliases: ["ERBB1", "原始靶点代号", "CODE-3", "CODE-4", "CODE-5", "CODE-6", "原始长别名 / Source alias"],
     description: "原始来源摘要 — controlled browser fixture, not a real study",
     attributes: {},
     external_ids: { uniprot: "P00533" },

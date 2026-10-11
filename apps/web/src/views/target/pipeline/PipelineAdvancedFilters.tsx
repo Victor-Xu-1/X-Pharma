@@ -7,7 +7,9 @@ import { professionalEnumLabel } from "../../../lib/i18n/professionalEnums";
 import { targetPipelineMessages } from "../../../lib/i18n/targetPipeline";
 import { pipelineResultEvaluationLabels } from "../../../lib/pipelineSignals";
 import { TargetPipelineDateRange, TargetPipelineSelect } from "./PipelineFilterControls";
+import { PipelineSecondaryFilters } from "./PipelineSecondaryFilters";
 import { developmentPhaseLabel, organizationRoleLabel } from "./presentation";
+import type { TargetPipelineProps } from "./types";
 import type { TargetPipelineState } from "./useTargetPipeline";
 
 export function PipelineAdvancedFilters({
@@ -15,14 +17,22 @@ export function PipelineAdvancedFilters({
   data,
   advancedFilterCount,
   programTagOptions,
+  onFiltersChange,
 }: {
   state: Pick<
     TargetPipelineState,
-    "filters" | "cachedFacetOptions" | "updateFilter" | "advancedFiltersOpen" | "setAdvancedFiltersOpen"
+    | "filters"
+    | "cachedFacetOptions"
+    | "updateFilter"
+    | "advancedFiltersOpen"
+    | "setAdvancedFiltersOpen"
+    | "setFilters"
+    | "setComparisonMessage"
   >;
   data: Pick<PipelineSearchResult, "facets">;
   advancedFilterCount: number;
   programTagOptions: ReturnType<TargetPipelineState["cachedFacetOptions"]>;
+  onFiltersChange: TargetPipelineProps["onFiltersChange"];
 }) {
   const text = useMessages(targetPipelineMessages);
   const { filters, cachedFacetOptions, updateFilter, advancedFiltersOpen, setAdvancedFiltersOpen } = state;
@@ -34,6 +44,7 @@ export function PipelineAdvancedFilters({
       contentClassName="pipeline-advanced-grid"
       state={{ open: advancedFiltersOpen, setOpen: setAdvancedFiltersOpen }}
     >
+      <PipelineSecondaryFilters state={state} data={data} onFiltersChange={onFiltersChange} />
       <FacetMultiSelect
         label={text("创新类型")}
         options={cachedFacetOptions("innovation_type", data.facets?.innovation_type, filters.innovationTypes)}

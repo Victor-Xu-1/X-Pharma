@@ -8,6 +8,8 @@ export const targetDossierMessages = {
   "正在加载 {name} 全景档案": "Loading the dossier for {name}",
   "{name} 靶点档案": "{name} target profile",
   靶点档案视图: "Target dossier views",
+  靶点档案摘要: "Target profile summary",
+  标识与别名: "Identifiers and aliases",
   概览: "Overview",
   关系网络: "Relationship network",
   转化证据: "Translational evidence",
