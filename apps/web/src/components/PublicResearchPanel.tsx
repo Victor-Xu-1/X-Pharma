@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 import { type FormEvent, useId, useState } from "react";
 import { loadPublicCoverage, type PublicResearchTopic, searchPublicResearch } from "../lib/contracts/publicResearch";
 import { entityLabels } from "../lib/entityPresentation";
@@ -68,15 +69,16 @@ export function PublicResearchPanel({
 
   return (
     <details
-      className="advanced-filters"
+      className="advanced-filters public-research-panel"
       data-testid="public-research-panel"
       onToggle={(event) => {
         setExpanded(event.currentTarget.open);
       }}
     >
       <summary>
-        {t("公开来源调研")}
+        <strong>{t("公开来源调研")}</strong>
         <span>{t("补充本地覆盖 · 按需联网查询")}</span>
+        <ChevronDown className="disclosure-chevron" size={16} aria-hidden="true" />
       </summary>
       <section aria-label={t("公开来源调研")}>
         <details>

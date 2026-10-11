@@ -702,9 +702,12 @@ tbody tr:last-child td {
 }
 .virtual-table-heading button > span {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  text-wrap: balance;
+}
+.virtual-table-heading button > svg {
+  flex-shrink: 0;
 }
 .sort-priority {
   min-width: 14px;
