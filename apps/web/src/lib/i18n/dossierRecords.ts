@@ -1,9 +1,17 @@
 import { createTranslator } from "./translator";
 
 export const dossierRecordMessages = {
+  当前可查看范围和数据更新时间内暂无记录: "No records observed within the current visibility and update window",
+  实体级证据通过证据检索和记录来源接口按许可读取:
+    "Entity evidence is available through evidence search and record provenance, subject to source permissions",
+  已返回当前匹配记录: "Current matching records returned",
+  "返回前 {count} 条，完整结果请使用对应分页接口":
+    "First {count} records returned; use the matching paginated endpoint for complete results",
   尚未选择领域实体: "No domain entity selected",
   请从基础查询结果中打开一个实体: "Open an entity from search results.",
   领域档案加载失败: "Entity dossier could not be loaded",
+  领域档案与请求实体不一致: "Entity dossier does not match the requested identity",
+  公司时间线与请求实体不一致: "Organization timeline does not match the requested identity",
   "正在加载 {name} 领域档案": "Loading entity dossier for {name}",
   暂无实体摘要: "No entity summary available",
   关联记录: "Linked records",
