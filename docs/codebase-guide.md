@@ -27,6 +27,8 @@
 
 `EntityDossierHeader` 是通用档案标题、完整别名、服务端覆盖统计和查询时间的唯一呈现模块；父视图先验证返回身份，再传入这些事实，不引入第二条查询。标题样式独立于公司和药物档案，窄屏采用顶部对齐及 20px 标题层级，完整来源名称仍参与正常换行，不使用省略、裁剪或固定行数。共享的身份换行基础规则保留，旧内联标题及旧重复布局声明移除。
 
+通用概览的 `dossierCoverageNoteText` 仅本地化服务端 `entity_dossier.py` 明确定义的三种覆盖提示和分页模板；未知说明、来源警告、临床标题及科学正文保持原文。分页数量按原始数字字符串插入，不将大整数转换成可能丢失精度的 JavaScript 数字。
+
 `researchRouteEntity` 统一选择当前请求 ID 对应的已选实体或已载入元数据，四类专业实体在只有已选记录时仍按原分节映射跳转，不要求第二份元数据缓存。错误 ID 的元数据在读取第二份档案前明确报错；路由反馈归属小型 `entityRoute` 双语目录，不翻译实体名称或上游错误原文。
 
 `RegistrationForm`、`AccountInvitationPanel`、`OrganizationPanel` 和 `SessionBoundary` 分别拥有注册交互、管理员邀请管理、邀请确认/组织切换和共享会话生命周期；两套工作台消费同一身份上下文和退出动作。每个账号/组织/角色使用独立的工作台 query client，旧上下文的延迟回调不能污染新缓存。表格偏好从 `SessionIdentityContext` 读取身份，不能依赖领域缓存猜测账号。注册与邀请通过生成的 OpenAPI client 调用 `accounts/` 服务。

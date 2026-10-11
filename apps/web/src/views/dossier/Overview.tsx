@@ -1,6 +1,7 @@
 import { ShieldCheck } from "lucide-react";
 import type { EntityDossier } from "../../lib/contracts/entityDossier";
 import { useLocale } from "../../lib/i18n";
+import { dossierCoverageNoteText } from "../../lib/i18n/dossierCoverageNote";
 import { dossierRecordText as t } from "../../lib/i18n/dossierRecords";
 import { publicEntityAttributeLabel, publicEntityAttributes } from "../../lib/publicEntity";
 import type { EntityDossierSection } from "../../lib/workspaceRouting";
@@ -46,7 +47,7 @@ export function DossierOverview({
             <article key={item.domain} className={item.status}>
               <span>{dossierDomainLabel(item.domain)}</span>
               <strong>{item.total}</strong>
-              <small>{item.note}</small>
+              <small>{dossierCoverageNoteText(item.note)}</small>
               {coverageSectionMap[item.domain] ? (
                 <button
                   className="coverage-open-button"
