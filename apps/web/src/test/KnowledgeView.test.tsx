@@ -75,6 +75,52 @@ describe("compact knowledge reading", () => {
     expect(screen.getByLabelText("检索知识专题")).not.toBeVisible();
     expect(screen.getByRole("button", { name: "展开专题目录" })).toBeVisible();
   });
+  it("retains the complete original topic title on the bounded catalogue entry and selected document", async () => {
+    const title = "Original topic / 原始标题 — ".repeat(12);
+    vi.mocked(searchKnowledgePages).mockResolvedValue({
+      query_schema_version: "pharma.knowledge.search.v1",
+      items: [{ ...summary, title }],
+      total: 1,
+      limit: 50,
+      offset: 0,
+      sort_by: "title",
+      sort_direction: "asc",
+      facets: { page_type: { target: 1 } },
+      as_of: summary.updated_at,
+    });
+    vi.mocked(getKnowledgePage).mockResolvedValue({
+      ...summary,
+      title,
+      rendered_markdown: "# Original source\n\nUnchanged content.",
+      source_snapshot_at: summary.updated_at,
+      version_number: 2,
+    });
+    renderWithQueryClient(<KnowledgeView />);
+    const entry = await screen.findByRole("button", { name: /Original topic \/ 原始标题/ });
+    expect(entry).toHaveAttribute("title", title);
+    expect(entry.querySelector("strong")).toHaveTextContent(title.trim());
+    const reads = vi.mocked(searchKnowledgePages).mock.calls.length;
+    act(() => setLocale("en"));
+    expect(entry).toHaveAttribute("title", title);
+    expect(entry.querySelector("strong")).toHaveTextContent(title.trim());
+    expect(searchKnowledgePages).toHaveBeenCalledTimes(reads);
+    fireEvent.click(entry);
+    const heading = await screen.findByRole("heading", { name: title.trim() });
+    await waitFor(() => expect(heading).toHaveFocus());
+    expect(entry).toHaveAttribute("aria-current", "true");
+    expect(getKnowledgePage).toHaveBeenCalledWith(summary.id, expect.any(AbortSignal));
+  });
+  it("uses the singular English topic count while preserving the source title and query on language change", async () => {
+    setLocale("en");
+    renderWithQueryClient(<KnowledgeView />);
+    expect(await screen.findByText("1 topic", { exact: true })).toBeVisible();
+    const entry = screen.getByRole("button", { name: /EGFR landscape/ });
+    const reads = vi.mocked(searchKnowledgePages).mock.calls.length;
+    act(() => setLocale("zh-CN"));
+    expect(screen.getByText("1 个专题", { exact: true })).toBeVisible();
+    expect(entry).toHaveAttribute("title", summary.title);
+    expect(searchKnowledgePages).toHaveBeenCalledTimes(reads);
+  });
   it("keeps a failed selection recoverable without stranding focus in the hidden catalogue", async () => {
     vi.mocked(getKnowledgePage).mockRejectedValueOnce(new Error("专题暂时无法读取"));
     renderWithQueryClient(<KnowledgeView />);

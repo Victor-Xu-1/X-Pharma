@@ -3,6 +3,7 @@ import { createTranslator } from "./translator";
 export const knowledgeMessages = {
   专题目录: "Topic directory",
   "{count} 个专题": "{count} topics",
+  "1 个专题": "1 topic",
   检索与筛选: "Search and filters",
   检索专题: "Search topics",
   检索知识专题: "Search knowledge topics",

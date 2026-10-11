@@ -65,6 +65,24 @@ test("[knowledge-language] retains drafts, original values, version selection an
     expect(errors).toEqual([]);
     await page.screenshot({ path: testInfo.outputPath(`${name}.png`), fullPage: false, animations: "disabled" });
   }
+  await page.goto("/workspace/research?view=knowledge");
+  const originalTitle = page.locator(".knowledge-page-list strong").first();
+  await expect(originalTitle).toHaveText(fixture.detail.title);
+  await expect(page.locator(".knowledge-count")).toHaveText("1 topic");
+  const originalEntry = page.locator(".knowledge-page-list > button").first();
+  await expect(originalEntry).toHaveAccessibleName(new RegExp(fixture.detail.title.split(" — ")[0]));
+  const preview = await originalTitle.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return { height: node.getBoundingClientRect().height, lineHeight: Number.parseFloat(style.lineHeight) };
+  });
+  expect(preview.height).toBeLessThanOrEqual(preview.lineHeight * 3 + 1);
+  await expect(originalEntry).toHaveAttribute("title", fixture.detail.title);
+  await audit("controlled-knowledge-catalogue-preview");
+  await originalEntry.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(new RegExp(`page=${fixture.detail.id}`));
+  await expect(page.getByRole("heading", { name: fixture.detail.title, exact: true })).toBeFocused();
+  await audit("controlled-knowledge-selected-title");
   await page.goto(`/workspace/research?view=knowledge&page=${fixture.detail.id}`);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.getByRole("heading", { name: fixture.detail.title, exact: true })).toBeVisible();
@@ -104,6 +122,7 @@ test("[knowledge-language] retains drafts, original values, version selection an
     before = reads.length;
   await selectInterfaceLanguage(page, "zh-CN");
   await expect(page.getByRole("textbox", { name: "检索知识专题", exact: true })).toHaveValue("未提交研究草稿");
+  await expect(page.locator(".knowledge-count")).toHaveText("1 个专题");
   await expect(page.getByRole("button", { name: "收起补充字段", exact: true })).toHaveAttribute(
     "aria-expanded",
     "true",

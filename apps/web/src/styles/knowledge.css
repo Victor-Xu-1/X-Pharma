@@ -210,6 +210,13 @@
   white-space: normal;
   overflow-wrap: anywhere;
 }
+/* Bound browse-only previews without shortening original text or the selected title. */
+.knowledge-page-list > button:not(.active) strong {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
 .knowledge-page-list small {
   margin-top: 3px;
   color: var(--ds-ink-muted);
