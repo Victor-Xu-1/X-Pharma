@@ -187,9 +187,12 @@
   overflow-wrap: anywhere;
 }
 .pipeline-result-actions {
+  min-width: 0;
   display: flex;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
 }
 .segmented-control {
