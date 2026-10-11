@@ -25,15 +25,26 @@ export async function verifyDossierSummaryHierarchy(
     summary: { ...diseaseFixture.summary, highest_phase: "SOURCE_FUTURE_PHASE", latest_activity_at: null },
   };
   const reads = { company: 0, disease: 0 };
-  await page.route(`**/api/v1/entities/${diseaseId}`, (route) => route.fulfill({ json: disease.entity }));
-  await page.route(`**/api/v1/companies/${company.entity.id}/dossier`, (route) => {
-    reads.company++;
-    return route.fulfill({ json: company });
-  });
-  await page.route(`**/api/v1/diseases/${diseaseId}/dossier`, (route) => {
-    reads.disease++;
-    return route.fulfill({ json: disease });
-  });
+  await page.route(
+    (url) => url.pathname === `/api/v1/entities/${diseaseId}`,
+    (route) => (route.request().method() === "GET" ? route.fulfill({ json: disease.entity }) : route.fallback()),
+  );
+  await page.route(
+    (url) => url.pathname === `/api/v1/companies/${company.entity.id}/dossier`,
+    (route) => {
+      if (route.request().method() !== "GET") return route.fallback();
+      reads.company++;
+      return route.fulfill({ json: company });
+    },
+  );
+  await page.route(
+    (url) => url.pathname === `/api/v1/diseases/${diseaseId}/dossier`,
+    (route) => {
+      if (route.request().method() !== "GET") return route.fallback();
+      reads.disease++;
+      return route.fulfill({ json: disease });
+    },
+  );
 
   for (const [kind, data] of [
     ["company", company],
