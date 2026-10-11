@@ -25,6 +25,7 @@ from scripts.browser_phase_runtime import (
     save,
     source_revision,
     stop_group,
+    validate_destination,
 )
 from scripts.browser_phases import verify_results
 
@@ -63,6 +64,7 @@ def ready(process: subprocess.Popen[bytes], origin: str) -> None:
 
 
 def run(output: Path) -> None:
+    validate_destination(output)
     if not (WEB / "dist/research.html").is_file() or not (WEB / "dist/internal.html").is_file():
         raise ValueError("The existing frontend job must build both workbenches before controlled acceptance")
     manifest = discover()

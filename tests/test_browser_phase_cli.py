@@ -5,9 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from scripts import browser_phase_cli
+from scripts import browser_phase_cli, browser_phase_runtime
+from scripts import run_controlled_browser_acceptance as controlled_runner
 from scripts.browser_cases import mapping
-from scripts.browser_phase_runtime import load, save
+from scripts.browser_phase_runtime import load, save, validate_destination
 from scripts.browser_phases import CONTROLLED_FILES, create_manifest, verify_results
 from tests.test_browser_phases import report
 
@@ -118,3 +119,35 @@ def test_attachment_verifies_actual_execution_before_preserving_the_original_rep
             )
         assert not (tmp_path / "stack-verified.json").exists()
     assert load(tmp_path / "stack.json") == stack
+
+
+def test_controlled_destination_readiness_precedes_browser_collection(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "existing.json"
+    output.write_text("original", encoding="utf-8")
+
+    def unexpected_discovery() -> dict[str, object]:
+        pytest.fail("Destination readiness must fail before any browser collection or execution")
+
+    monkeypatch.setattr(controlled_runner, "discover", unexpected_discovery)
+    with pytest.raises(FileExistsError):
+        controlled_runner.run(output)
+    assert output.read_text(encoding="utf-8") == "original"
+
+
+def test_preflight_checks_capability_without_publishing_the_target(tmp_path: Path) -> None:
+    validate_destination(tmp_path / "unpublished.json")
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_unsupported_filesystem_is_explicit_and_has_no_publication_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def unsupported_save(path: Path, value: dict[str, object]) -> None:
+        raise PermissionError("Atomic link publication is unavailable")
+
+    monkeypatch.setattr(browser_phase_runtime, "save", unsupported_save)
+    with pytest.raises(ValueError, match="atomic exclusive"):
+        validate_destination(tmp_path / "unsupported.json")
+    assert list(tmp_path.iterdir()) == []

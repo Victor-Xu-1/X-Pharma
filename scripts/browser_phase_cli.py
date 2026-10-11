@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 
 from scripts.browser_cases import mapping
-from scripts.browser_phase_runtime import discover, load, phase_arguments, save, source_revision
+from scripts.browser_phase_runtime import discover, load, phase_arguments, save, source_revision, validate_destination
 from scripts.browser_phases import Phase, close_coverage, verify_results
 
 
@@ -85,6 +85,7 @@ def main() -> None:
     args = parser.parse_args()
     phase: Phase = "controlled" if getattr(args, "phase", None) == "controlled" else "full-stack"
     if args.command == "prepare":
+        validate_destination(args.manifest)
         manifest = discover()
         save(args.manifest, manifest)
         with args.arguments.open("x", encoding="utf-8") as handle:

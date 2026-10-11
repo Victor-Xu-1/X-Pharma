@@ -40,6 +40,21 @@ def save(path: Path, value: dict[str, object]) -> None:
         temporary.unlink(missing_ok=True)
 
 
+def validate_destination(path: Path) -> None:
+    """Fail before browsers start; never replace immutable publication with a silent fallback."""
+    if path.exists() or path.is_symlink():
+        raise FileExistsError(path)
+    if not path.parent.is_dir():
+        raise ValueError("Browser evidence parent directory must already exist")
+    with tempfile.TemporaryDirectory(prefix=".browser-evidence-check-", dir=path.parent) as temporary:
+        try:
+            save(Path(temporary) / "probe.json", {"scope": "output-readiness-only"})
+        except OSError as error:
+            raise ValueError(
+                "Browser evidence requires a filesystem supporting atomic exclusive publication"
+            ) from error
+
+
 def source_revision() -> str:
     git = shutil.which("git")
     if git is None:
