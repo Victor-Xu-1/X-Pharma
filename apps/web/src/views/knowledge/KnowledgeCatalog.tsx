@@ -35,6 +35,11 @@ export function KnowledgeCatalog({
   const text = useMessages(knowledgeMessages);
   const number = new Intl.NumberFormat(formattingLocale());
   const pages = result?.items ?? [];
+  const topicCount = result
+    ? result.total === 1
+      ? text("1 个专题")
+      : text("{count} 个专题", { count: number.format(result.total) })
+    : null;
 
   function changeFilters(next: Partial<KnowledgeLocation>) {
     onLocationChange({ ...next, offset: 0, pageId: null, panel: "document", versionNumber: null });
@@ -44,7 +49,7 @@ export function KnowledgeCatalog({
     <ResponsiveDirectory
       selectedKey={location.pageId}
       title={text("专题目录")}
-      summary={result ? text("{count} 个专题", { count: number.format(result.total) }) : text("检索与筛选")}
+      summary={topicCount ?? text("检索与筛选")}
       icon={<BookOpenText size={18} aria-hidden="true" />}
       className="knowledge-index"
       contentClassName="knowledge-index-content"
@@ -61,11 +66,7 @@ export function KnowledgeCatalog({
             />
           </form>
           <div className="knowledge-count">
-            {result
-              ? text("{count} 个专题", { count: number.format(result.total) })
-              : error
-                ? text("专题总量未知")
-                : text("正在统计专题…")}
+            {result ? topicCount : error ? text("专题总量未知") : text("正在统计专题…")}
           </div>
           <div className="knowledge-index-filters">
             <label>

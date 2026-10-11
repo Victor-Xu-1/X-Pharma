@@ -110,6 +110,17 @@ describe("compact knowledge reading", () => {
     expect(entry).toHaveAttribute("aria-current", "true");
     expect(getKnowledgePage).toHaveBeenCalledWith(summary.id, expect.any(AbortSignal));
   });
+  it("uses the singular English topic count while preserving the source title and query on language change", async () => {
+    setLocale("en");
+    renderWithQueryClient(<KnowledgeView />);
+    expect(await screen.findByText("1 topic", { exact: true })).toBeVisible();
+    const entry = screen.getByRole("button", { name: /EGFR landscape/ });
+    const reads = vi.mocked(searchKnowledgePages).mock.calls.length;
+    act(() => setLocale("zh-CN"));
+    expect(screen.getByText("1 个专题", { exact: true })).toBeVisible();
+    expect(entry).toHaveAttribute("title", summary.title);
+    expect(searchKnowledgePages).toHaveBeenCalledTimes(reads);
+  });
   it("keeps a failed selection recoverable without stranding focus in the hidden catalogue", async () => {
     vi.mocked(getKnowledgePage).mockRejectedValueOnce(new Error("专题暂时无法读取"));
     renderWithQueryClient(<KnowledgeView />);

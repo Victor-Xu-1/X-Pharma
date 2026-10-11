@@ -68,6 +68,7 @@ test("[knowledge-language] retains drafts, original values, version selection an
   await page.goto("/workspace/research?view=knowledge");
   const originalTitle = page.locator(".knowledge-page-list strong").first();
   await expect(originalTitle).toHaveText(fixture.detail.title);
+  await expect(page.locator(".knowledge-count")).toHaveText("1 topic");
   const originalEntry = page.locator(".knowledge-page-list > button").first();
   await expect(originalEntry).toHaveAccessibleName(new RegExp(fixture.detail.title.split(" — ")[0]));
   const preview = await originalTitle.evaluate((node) => {
@@ -121,6 +122,7 @@ test("[knowledge-language] retains drafts, original values, version selection an
     before = reads.length;
   await selectInterfaceLanguage(page, "zh-CN");
   await expect(page.getByRole("textbox", { name: "检索知识专题", exact: true })).toHaveValue("未提交研究草稿");
+  await expect(page.locator(".knowledge-count")).toHaveText("1 个专题");
   await expect(page.getByRole("button", { name: "收起补充字段", exact: true })).toHaveAttribute(
     "aria-expanded",
     "true",
