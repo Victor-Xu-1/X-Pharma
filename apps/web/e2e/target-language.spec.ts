@@ -236,7 +236,9 @@ test("[target-language] preserves target narratives, complete counts, filters, r
   await expect(panel.getByRole("button", { name: "Select this page", exact: true })).toBeDisabled();
   await audit("controlled-target-pipeline-failed-en");
   await panel.getByRole("button", { name: "Reset filters", exact: true }).click();
-  await expect(panel.getByRole("table", { name: "Target drug development overview", exact: true })).toBeVisible();
+  await expect(
+    panel.getByText(`No development program records for ${fixture.entity.name}`, { exact: true }),
+  ).toBeVisible();
   await expect(searchInput).toHaveValue("");
   await expect(panel.getByRole("alert")).toHaveCount(0);
   expect(dossierReads).toBe(1);
