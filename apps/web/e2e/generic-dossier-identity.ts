@@ -5,6 +5,7 @@ import { selectInterfaceLanguage } from "./interface-language";
 /** Controlled response boundaries; no extra test registrations or service writes. */
 export function genericDossierIdentityFixture(data: CompanyDossier) {
   let dossierMode: "valid" | "id" | "type" = "valid";
+  let legacyCompanyReads = 0;
   const entityId = "00000000-0000-4000-a000-000000000097";
   // Only a non-specialized entity reaches EntityDossierView in the actual route model.
   const entity = {
@@ -24,6 +25,14 @@ export function genericDossierIdentityFixture(data: CompanyDossier) {
   } as const;
 
   function response(path: string) {
+    if (path === `/api/v1/entities/${data.entity.id}/dossier`) {
+      legacyCompanyReads++;
+      return { json: data };
+    }
+    if (path === `/api/v1/companies/${data.entity.id}/timeline`) {
+      legacyCompanyReads++;
+      return { json: data.timeline };
+    }
     if (path === `/api/v1/entities/${entityId}`) return { json: entity };
     if (path === `/api/v1/entities/${entityId}/dossier`)
       return {
@@ -65,6 +74,16 @@ export function genericDossierIdentityFixture(data: CompanyDossier) {
     await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
     await expect(page.getByRole("heading", { name: entity.name, exact: true })).toBeVisible();
     await expect(page.locator("#entity-dossier-tab-relationships")).toHaveAttribute("aria-selected", "true");
+    // Cached popstate navigation keeps the generic module loaded: it must not start
+    // a competing generic organization dossier/timeline before specialization.
+    const beforeSpecialization = legacyCompanyReads;
+    await page.evaluate((id) => {
+      history.pushState(null, "", `/workspace/research?view=entity&entity=${id}&section=overview`);
+      dispatchEvent(new PopStateEvent("popstate"));
+    }, data.entity.id);
+    await expect(page).toHaveURL(new RegExp(`view=company&entity=${data.entity.id}`));
+    await expect(page.getByRole("heading", { name: data.entity.name, exact: true })).toBeVisible();
+    expect(legacyCompanyReads - beforeSpecialization).toBe(0);
   }
   return { response, verify };
 }
