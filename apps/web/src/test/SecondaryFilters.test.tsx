@@ -4,6 +4,17 @@ import { expect, it, vi } from "vitest";
 import { SecondaryFilters } from "../components/SecondaryFilters";
 import { setLocale } from "../lib/i18n";
 
+it.each([0, 2])("marks %s active conditions without changing counter copy or disclosure state", (activeCount) => {
+  render(
+    <SecondaryFilters activeCount={activeCount}>
+      <input aria-label="Original filter draft" defaultValue="原始 EGFR" />
+    </SecondaryFilters>,
+  );
+  expect(screen.getByText("更多筛选").closest("details")).toHaveAttribute("data-active-count", String(activeCount));
+  expect(screen.getByText(activeCount ? `已选 ${activeCount} 项` : "按需展开")).toBeInTheDocument();
+  expect(screen.getByRole("textbox", { name: "Original filter draft" })).toHaveValue("原始 EGFR");
+});
+
 it("retains a manually open blank disclosure across language switching and ordinary rerenders", async () => {
   render(
     <SecondaryFilters activeCount={0}>
