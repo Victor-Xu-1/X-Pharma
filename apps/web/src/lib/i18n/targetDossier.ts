@@ -5,6 +5,8 @@ export const targetDossierMessages = {
   尚未选择靶点: "No target selected",
   请从情报检索结果中打开一个靶点: "Open a target from intelligence search results",
   靶点档案加载失败: "Could not load the target dossier",
+  靶点档案与请求实体不一致: "Target dossier does not match the requested identity",
+  "该深链接不是靶点实体，无法打开靶点档案": "This link is not a target entity",
   "正在加载 {name} 全景档案": "Loading the dossier for {name}",
   "{name} 靶点档案": "{name} target profile",
   靶点档案视图: "Target dossier views",
