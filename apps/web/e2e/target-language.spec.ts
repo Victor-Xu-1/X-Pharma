@@ -238,8 +238,12 @@ test("[target-language] preserves target narratives, complete counts, filters, r
     const bounds = node.getBoundingClientRect();
     const hit = document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
     const feedback = document.querySelector(".target-pipeline-feedback")?.getBoundingClientRect();
+    const label = (node.closest("label") ?? node).getBoundingClientRect();
+    const header = document.querySelector(".topbar")?.getBoundingClientRect();
     return {
       inputNotObscured: hit === node,
+      captionNotObscured: label.top >= Math.max(feedback?.bottom ?? 0, header?.bottom ?? 0) + 8,
+      labelTop: label.top,
       top: bounds.top,
       bottom: bounds.bottom,
       left: bounds.left,
@@ -255,9 +259,14 @@ test("[target-language] preserves target narratives, complete counts, filters, r
     body: JSON.stringify(inputGeometry),
     contentType: "application/json",
   });
-  expect({ compactFeedback: feedbackHeight <= 160, inputNotObscured: inputGeometry.inputNotObscured }).toEqual({
+  expect({
+    compactFeedback: feedbackHeight <= 160,
+    inputNotObscured: inputGeometry.inputNotObscured,
+    captionNotObscured: inputGeometry.captionNotObscured,
+  }).toEqual({
     compactFeedback: true,
     inputNotObscured: true,
+    captionNotObscured: true,
   });
   expect(failedPipelineReplies).toBe(3);
   await expect(searchInput).toBeFocused();

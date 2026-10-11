@@ -4,13 +4,20 @@ import { revealFocusedPipelineControl } from "../views/target/pipeline/focusVisi
 
 afterEach(() => vi.restoreAllMocks());
 
-function fixture(top: number, feedback: boolean) {
+function fixture(top: number, feedback: boolean, labelled = false) {
   render(
     <div className="workspace-main">
       <header className="topbar" />
       <div data-testid="pipeline">
         <fieldset className="target-evidence-filters">
-          <input aria-label="Pipeline query" />
+          {labelled ? (
+            <label>
+              Source field caption
+              <input aria-label="Pipeline query" />
+            </label>
+          ) : (
+            <input aria-label="Pipeline query" />
+          )}
         </fieldset>
         {feedback ? <section className="target-pipeline-feedback" /> : null}
       </div>
@@ -21,8 +28,9 @@ function fixture(top: number, feedback: boolean) {
     input = screen.getByRole("textbox", { name: "Pipeline query" });
   let inputTop = top;
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
-    const y = this === input ? inputTop : this.className === "topbar" ? 0 : 72;
-    const height = this === input ? 44 : this.className === "topbar" ? 64 : 128;
+    const y =
+      this === input ? inputTop : this.tagName === "LABEL" ? inputTop - 24 : this.className === "topbar" ? 0 : 72;
+    const height = this === input ? 44 : this.tagName === "LABEL" ? 68 : this.className === "topbar" ? 64 : 128;
     return { top: y, bottom: y + height, left: 15, right: 305, width: 290, height, x: 15, y, toJSON() {} };
   });
   const scroll = vi.spyOn(window, "scrollBy").mockImplementation((options: ScrollToOptions | number) => {
@@ -61,4 +69,11 @@ it("does not move a field or focus belonging to another view", () => {
   revealFocusedPipelineControl(root);
   expect(scroll).not.toHaveBeenCalled();
   expect(other).toHaveFocus();
+});
+
+it("reveals the complete field caption with the focused control", () => {
+  const { root, input, scroll } = fixture(80, true, true);
+  revealFocusedPipelineControl(root);
+  expect(scroll).toHaveBeenCalledExactlyOnceWith({ top: -152, behavior: "instant" });
+  expect(input).toHaveFocus();
 });

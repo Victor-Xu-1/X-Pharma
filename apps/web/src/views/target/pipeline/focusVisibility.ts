@@ -10,7 +10,7 @@ export function revealFocusedPipelineControl(root: HTMLElement | null): void {
     return;
   const viewport = root.ownerDocument.defaultView;
   if (!viewport) return;
-  const bounds = active.getBoundingClientRect();
+  const bounds = (active.closest("label") ?? active).getBoundingClientRect();
   if (!bounds.width || !bounds.height) return;
   const header = root.closest(".workspace-main")?.querySelector(".topbar")?.getBoundingClientRect();
   const feedback = root.querySelector(".target-pipeline-feedback")?.getBoundingClientRect();
