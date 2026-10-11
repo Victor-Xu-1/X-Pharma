@@ -231,6 +231,17 @@ test("[target-language] preserves target narratives, complete counts, filters, r
   releaseFailureReply(503);
   await expect(panel.getByRole("alert")).toContainText("Controlled pipeline refinement failed");
   await expect(panel.getByRole("alert")).toBeInViewport();
+  const feedbackHeight = await panel
+    .locator(".target-pipeline-feedback")
+    .evaluate((node) => node.getBoundingClientRect().height);
+  const inputNotObscured = await searchInput.evaluate((node) => {
+    const bounds = node.getBoundingClientRect();
+    return document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2) === node;
+  });
+  expect({ compactFeedback: feedbackHeight <= 160, inputNotObscured }).toEqual({
+    compactFeedback: true,
+    inputNotObscured: true,
+  });
   expect(failedPipelineReplies).toBe(3);
   await expect(searchInput).toBeFocused();
   await expect(searchInput).toHaveValue("Controlled delayed refinement");
