@@ -51,7 +51,7 @@
   --ds-danger-soft: #f9e9e7;
   --ds-danger-border: #d49a98;
   --ds-scrim: rgb(13 13 13 / 40%);
-  --ds-topbar: rgb(255 255 255 / 96%);
+  --ds-topbar: var(--ds-surface);
   --ds-shadow-color: 13 13 13;
   --ds-shadow-sm: none;
   --ds-shadow-md: 0 16px 48px rgb(var(--ds-shadow-color) / 12%);

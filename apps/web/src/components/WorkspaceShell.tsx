@@ -199,8 +199,12 @@ export function WorkspaceShell({
           >
             <Menu size={20} />
           </button>
-          <span className="mobile-workspace-context" aria-hidden="true">
-            {researchWorkbench ? t("X-Pharma · 研究工作台") : t("X-Pharma · 内部管理")}
+          <span
+            className="mobile-workspace-context"
+            aria-hidden="true"
+            title={researchWorkbench ? t("X-Pharma · 研究工作台") : t("X-Pharma · 内部管理")}
+          >
+            {compact ? PRODUCT_NAME : researchWorkbench ? t("X-Pharma · 研究工作台") : t("X-Pharma · 内部管理")}
           </span>
           {compact ? <LanguageSwitcher /> : null}
         </header>

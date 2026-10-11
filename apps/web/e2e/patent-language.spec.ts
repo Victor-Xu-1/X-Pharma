@@ -66,6 +66,19 @@ test("[patent-language] English-first filters keep drafts, selection and source 
   await expect(results).toContainText(patent.title);
   await expectCompactTableToolbar(page, false);
   await expectCompactWorkspaceHeading(page);
+  const originalViewport = page.viewportSize();
+  if (testInfo.project.name === "mobile-390" && originalViewport) {
+    await page.setViewportSize({ width: 320, height: originalViewport.height });
+    try {
+      await expectCompactTableToolbar(page, false);
+      await expectCompactWorkspaceHeading(page);
+      await page
+        .locator(".virtual-table-shell")
+        .screenshot({ path: testInfo.outputPath("compact-toolbar-320-en.png"), animations: "disabled" });
+    } finally {
+      await page.setViewportSize(originalViewport);
+    }
+  }
   await page.screenshot({ path: testInfo.outputPath("compact-reading-empty-en.png"), animations: "disabled" });
   await expect(page.getByLabel("Applicant", { exact: true })).toHaveValue("");
   await expect(page.getByLabel("Legal status", { exact: true })).toHaveValue("");

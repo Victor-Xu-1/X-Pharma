@@ -766,6 +766,10 @@ tbody tr:last-child td {
 /* Wide tables keep their identity column; narrow containers reserve the scroll
    lane for data/actions instead of covering it with a nearly full-width name. */
 @container workbench-table (max-width: 640px) {
+  .virtual-table-toolbar {
+    gap: 6px;
+    padding-inline: 6px;
+  }
   .table-selection-status[data-empty="true"] {
     display: none;
   }

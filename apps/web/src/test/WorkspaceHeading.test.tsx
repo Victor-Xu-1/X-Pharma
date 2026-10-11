@@ -39,6 +39,7 @@ it.each(["research", "internal"] as const)(
       );
       const language = screen.getByRole("combobox", { name: "Interface language" });
       expect(language.closest(".topbar")).not.toBeNull();
+      expect(document.querySelector(".mobile-workspace-context")).toHaveTextContent(/^X-Pharma$/);
       expect(document.querySelector(".page-heading select")).toBeNull();
       fireEvent.change(language, { target: { value: "zh-CN" } });
       expect(screen.getAllByRole("combobox", { name: "界面语言" })).toHaveLength(1);

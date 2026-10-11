@@ -36,4 +36,14 @@ export async function expectCompactTableToolbar(page: Page, selected: boolean) {
   await expect(toolbar.locator(".table-density-control button")).toHaveCount(2);
   await expect(toolbar.locator(".table-column-menu summary")).toBeVisible();
   await expect(toolbar.locator(".table-view-reset")).toBeVisible();
+  const columns = toolbar.locator(".table-column-menu");
+  const trigger = columns.locator("summary");
+  await trigger.focus();
+  await trigger.press("Enter");
+  await expect(columns).toHaveAttribute("open", "");
+  await expect(columns.locator("fieldset").first()).toBeVisible();
+  expect(await trigger.evaluate((node) => parseFloat(getComputedStyle(node).fontSize))).toBeGreaterThanOrEqual(12);
+  await trigger.press("Escape");
+  await expect(columns).not.toHaveAttribute("open", "");
+  await expect(trigger).toBeFocused();
 }
