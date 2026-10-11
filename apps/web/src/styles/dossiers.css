@@ -39,7 +39,6 @@
 .entity-dossier-page {
   min-width: 0;
 }
-.entity-dossier-title,
 .drug-profile-header,
 .company-profile-header {
   display: grid;
@@ -47,7 +46,6 @@
   align-items: center;
   gap: 20px;
 }
-.entity-dossier-symbol,
 .drug-profile-symbol,
 .company-profile-symbol {
   width: 72px;
@@ -58,7 +56,6 @@
   background: var(--ds-surface-muted);
   color: var(--ds-accent-strong);
 }
-.entity-dossier-title span,
 .drug-profile-identity span,
 .company-profile-identity span,
 .drug-profile-section > header span,
@@ -67,13 +64,11 @@
   font-size: var(--ds-text-xs);
   font-weight: 600;
 }
-.entity-dossier-title h2,
 .drug-profile-identity h2,
 .company-profile-identity h2 {
   margin: 2px 0 0;
   font-size: 30px;
 }
-.entity-dossier-title p,
 .drug-profile-identity p,
 .company-profile-identity p {
   max-width: 900px;
@@ -850,17 +845,6 @@
   }
   .company-asset-list > li > span:not(.badge) {
     grid-column: 1;
-  }
-  .entity-dossier-title {
-    grid-template-columns: 40px minmax(0, 1fr);
-  }
-  .entity-dossier-title > .badge {
-    grid-column: 2;
-    justify-self: start;
-  }
-  .entity-dossier-symbol {
-    width: 40px;
-    height: 40px;
   }
   .entity-dossier-metrics,
   .entity-attribute-grid,

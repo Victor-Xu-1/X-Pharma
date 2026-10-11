@@ -12,7 +12,7 @@ import {
   workbenchForView,
   workspaceUrl,
 } from "../../lib/workspaceRouting";
-import { specializedSectionByEntitySection } from "./locationModel";
+import { researchRouteEntity, specializedResearchView, specializedSectionByEntitySection } from "./locationModel";
 import { savedSearchLocation } from "./savedSearchLocation";
 import { useRouteEntity } from "./useRouteEntity";
 
@@ -100,19 +100,18 @@ export function useResearchNavigation() {
   );
 
   useEffect(() => {
-    if (location.view !== "entity" || !routeEntity.data || routeEntity.data.id !== location.entityId) return;
-    const specializedView =
-      routeEntity.data.entity_type === "target"
-        ? "target"
-        : routeEntity.data.entity_type === "drug"
-          ? "drug"
-          : routeEntity.data.entity_type === "organization"
-            ? "company"
-            : routeEntity.data.entity_type === "disease"
-              ? "disease"
-              : null;
+    if (
+      location.view !== "entity" ||
+      location.invalidEntityId ||
+      routeEntity.error ||
+      (routeEntity.data && routeEntity.data.id !== location.entityId)
+    )
+      return;
+    const entity = researchRouteEntity(location.entityId, selectedEntity, routeEntity.data);
+    if (!entity) return;
+    const specializedView = specializedResearchView(entity.entity_type);
     if (!specializedView) return;
-    setSelectedEntity(routeEntity.data);
+    setSelectedEntity(entity);
     const mappedSection = specializedSectionByEntitySection[location.entitySection ?? "overview"];
     navigate(
       {
@@ -128,7 +127,7 @@ export function useResearchNavigation() {
       },
       true,
     );
-  }, [location, navigate, routeEntity.data]);
+  }, [location, navigate, routeEntity.data, routeEntity.error, selectedEntity]);
 
   const navigateToView = useCallback(
     (view: ViewKey) => {
@@ -157,16 +156,7 @@ export function useResearchNavigation() {
   }
 
   function openEntity(entity: Entity) {
-    const view =
-      entity.entity_type === "target"
-        ? "target"
-        : entity.entity_type === "drug"
-          ? "drug"
-          : entity.entity_type === "organization"
-            ? "company"
-            : entity.entity_type === "disease"
-              ? "disease"
-              : "entity";
+    const view = specializedResearchView(entity.entity_type) ?? "entity";
     setSelectedEntity(entity);
     navigate({
       workbench: "research",
