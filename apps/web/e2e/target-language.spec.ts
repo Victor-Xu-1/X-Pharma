@@ -115,7 +115,7 @@ test("[target-language] preserves target narratives, complete counts, filters, r
   await expect(page.locator(".narrative-section p")).toHaveText(fixture.entity.description ?? "");
   await expect(page.getByText("1,200 related records; 50 currently shown", { exact: true })).toBeVisible();
   await expect(page.getByText("137 recruiting trials", { exact: true })).toBeVisible();
-  const header = page.getByRole("region", { name: "Target profile summary", exact: true });
+  const header = page.getByRole("region", { name: /^(Target profile summary|靶点档案摘要)$/ });
   const identity = header.locator(".target-header-details");
   await expect(header.locator(".target-header-stats > div")).toHaveCount(3);
   await expect(identity).not.toHaveAttribute("open", "");
