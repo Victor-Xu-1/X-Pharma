@@ -1,6 +1,9 @@
 .target-evidence-filters.target-pipeline-primary-filters {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
 }
+.target-pipeline-primary-filters > button {
+  min-height: var(--ds-control-height);
+}
 @media (max-width: 480px) {
   .target-evidence-filters.target-pipeline-primary-filters {
     grid-template-columns: minmax(0, 1fr);

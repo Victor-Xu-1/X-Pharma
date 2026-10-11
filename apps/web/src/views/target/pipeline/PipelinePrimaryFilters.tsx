@@ -113,7 +113,7 @@ export function PipelinePrimaryFilters({
           <option value="mechanism_of_action:asc">{text("作用机制")}</option>
         </select>
       </label>
-      <button type="button" onClick={resetFilters} disabled={!hasUserFilters}>
+      <button type="button" className="secondary-button" onClick={resetFilters} disabled={!hasUserFilters}>
         {text("重置筛选")}
       </button>
     </fieldset>
