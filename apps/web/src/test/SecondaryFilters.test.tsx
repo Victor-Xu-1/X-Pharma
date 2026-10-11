@@ -4,6 +4,19 @@ import { expect, it, vi } from "vitest";
 import { SecondaryFilters } from "../components/SecondaryFilters";
 import { setLocale } from "../lib/i18n";
 
+it("retains a consumer's existing panel and body layout through the shared disclosure", () => {
+  render(
+    <SecondaryFilters activeCount={0} className="pipeline-advanced-filters" contentClassName="pipeline-advanced-grid">
+      <input aria-label="Unchanged date draft" defaultValue="2026-01-02" />
+    </SecondaryFilters>,
+  );
+  const panel = screen.getByText("更多筛选").closest("details");
+  expect(panel).toHaveClass("secondary-filter-panel", "pipeline-advanced-filters");
+  expect(screen.getByRole("textbox", { name: "Unchanged date draft" }).parentElement).toHaveClass(
+    "pipeline-advanced-grid",
+  );
+});
+
 it.each([0, 2])("marks %s active conditions without changing counter copy or disclosure state", (activeCount) => {
   render(
     <SecondaryFilters activeCount={activeCount}>

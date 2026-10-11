@@ -8,10 +8,14 @@ export function SecondaryFilters({
   activeCount,
   children,
   label = t("更多筛选"),
+  className,
+  contentClassName = "secondary-filter-grid",
 }: {
   activeCount: number;
   children: ReactNode;
   label?: string;
+  className?: string;
+  contentClassName?: string;
 }) {
   useLocale();
   const [open, setOpen] = useState(activeCount > 0);
@@ -20,7 +24,7 @@ export function SecondaryFilters({
   }, [activeCount]);
   return (
     <details
-      className="advanced-filter-panel secondary-filter-panel"
+      className={`advanced-filter-panel secondary-filter-panel${className ? ` ${className}` : ""}`}
       data-active-count={activeCount}
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
@@ -31,7 +35,7 @@ export function SecondaryFilters({
         <small>{activeCount > 0 ? t("已选 {count} 项", { count: activeCount }) : t("按需展开")}</small>
         <ChevronDown className="disclosure-chevron" size={16} aria-hidden="true" />
       </summary>
-      <div className="secondary-filter-grid">{children}</div>
+      <div className={contentClassName}>{children}</div>
     </details>
   );
 }

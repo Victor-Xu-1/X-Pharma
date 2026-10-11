@@ -1,4 +1,3 @@
-import { FileBadge, SlidersHorizontal } from "lucide-react";
 import { useMessages } from "../../lib/i18n";
 import { professionalEnumLabel } from "../../lib/i18n/professionalEnums";
 import { professionalQueryMessages } from "../../lib/i18n/professionalQuery";
@@ -8,6 +7,7 @@ import {
   trialResultEvaluationLabels,
   trialTherapyLineLabels,
 } from "../../lib/trialFilters";
+import { SecondaryFilters } from "../SecondaryFilters";
 import { DateRange } from "./fields";
 
 import { trialPhases } from "./presentation";
@@ -117,122 +117,114 @@ export function TrialsFields({
         to={draft.trialResultsPostedTo}
         onChange={(from, to) => updateDateRange("trialResultsPostedFrom", "trialResultsPostedTo", from, to)}
       />
-      <details className="professional-more-fields" open={trialProfileConditionCount > 0 || undefined}>
-        <summary>
-          <SlidersHorizontal size={14} />
-          <span>{t("试验属性与结果评价")}</span>
-          <small>
-            {trialProfileConditionCount ? t("已选 {count} 项", { count: trialProfileConditionCount }) : t("按需展开")}
-          </small>
-        </summary>
-        <div className="professional-more-fields-grid">
-          <label>
-            <span>{t("试验简称")}</span>
-            <input
-              value={draft.trialAcronym}
-              onChange={(event) => update("trialAcronym", event.target.value)}
-              placeholder={t("如 KEYNOTE、CheckMate")}
-              maxLength={240}
-            />
-          </label>
-          <label>
-            <span>{t("发起类型")}</span>
-            <select
-              value={draft.trialInitiationType}
-              aria-label={t("发起类型")}
-              onChange={(event) => update("trialInitiationType", event.target.value)}
-            >
-              <option value="">{t("全部")}</option>
-              {Object.entries(trialInitiationTypeLabels).map(([value, label]) => (
-                <option value={value} key={value}>
-                  {professionalEnumLabel(label, value)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>{t("治疗线次")}</span>
-            <select
-              aria-label={t("治疗线次")}
-              value={draft.trialTherapyLine}
-              onChange={(event) => update("trialTherapyLine", event.target.value)}
-            >
-              <option value="">{t("全部")}</option>
-              {Object.entries(trialTherapyLineLabels).map(([value, label]) => (
-                <option value={value} key={value}>
-                  {professionalEnumLabel(label, value)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>{t("结果最优评价")}</span>
-            <select
-              value={draft.trialResultEvaluation}
-              aria-label={t("结果最优评价")}
-              disabled={draft.trialHasResults === "false"}
-              onChange={(event) => update("trialResultEvaluation", event.target.value)}
-            >
-              <option value="">{t("全部")}</option>
-              {Object.entries(trialResultEvaluationLabels).map(([value, label]) => (
-                <option value={value} key={value}>
-                  {professionalEnumLabel(label, value)}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </details>
-      <details className="professional-more-fields" open={trialEvidenceConditionCount > 0 || undefined}>
-        <summary>
-          <FileBadge size={14} />
-          <span>{t("关键结果与发表证据")}</span>
-          <small>
-            {trialEvidenceConditionCount ? t("已选 {count} 项", { count: trialEvidenceConditionCount }) : t("按需展开")}
-          </small>
-        </summary>
-        <div className="professional-more-fields-grid">
-          <label>
-            <span>{t("关键结果")}</span>
-            <select
-              value={draft.trialHasKeyResult}
-              aria-label={t("关键结果")}
-              onChange={(event) => update("trialHasKeyResult", event.target.value)}
-            >
-              <option value="">{t("全部")}</option>
-              {Object.entries(trialKeyResultLabels).map(([value, label]) => (
-                <option value={value} key={value}>
-                  {professionalEnumLabel(label, value)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>{t("发表编号")}</span>
-            <input
-              value={draft.trialPublicationId}
-              onChange={(event) => update("trialPublicationId", event.target.value)}
-              placeholder={t("PMID、DOI 或会议摘要编号")}
-              maxLength={240}
-            />
-          </label>
-          <label>
-            <span>{t("会议")}</span>
-            <input
-              value={draft.trialConference}
-              onChange={(event) => update("trialConference", event.target.value)}
-              placeholder={t("如 ASCO、AACR")}
-              maxLength={500}
-            />
-          </label>
-          <DateRange
-            label={t("结果披露日期")}
-            from={draft.trialDisclosedFrom}
-            to={draft.trialDisclosedTo}
-            onChange={(from, to) => updateDateRange("trialDisclosedFrom", "trialDisclosedTo", from, to)}
+      <SecondaryFilters
+        activeCount={trialProfileConditionCount}
+        label={t("试验属性与结果评价")}
+        className="professional-more-fields"
+        contentClassName="professional-more-fields-grid"
+      >
+        <label>
+          <span>{t("试验简称")}</span>
+          <input
+            value={draft.trialAcronym}
+            onChange={(event) => update("trialAcronym", event.target.value)}
+            placeholder={t("如 KEYNOTE、CheckMate")}
+            maxLength={240}
           />
-        </div>
-      </details>
+        </label>
+        <label>
+          <span>{t("发起类型")}</span>
+          <select
+            value={draft.trialInitiationType}
+            aria-label={t("发起类型")}
+            onChange={(event) => update("trialInitiationType", event.target.value)}
+          >
+            <option value="">{t("全部")}</option>
+            {Object.entries(trialInitiationTypeLabels).map(([value, label]) => (
+              <option value={value} key={value}>
+                {professionalEnumLabel(label, value)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>{t("治疗线次")}</span>
+          <select
+            aria-label={t("治疗线次")}
+            value={draft.trialTherapyLine}
+            onChange={(event) => update("trialTherapyLine", event.target.value)}
+          >
+            <option value="">{t("全部")}</option>
+            {Object.entries(trialTherapyLineLabels).map(([value, label]) => (
+              <option value={value} key={value}>
+                {professionalEnumLabel(label, value)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>{t("结果最优评价")}</span>
+          <select
+            value={draft.trialResultEvaluation}
+            aria-label={t("结果最优评价")}
+            disabled={draft.trialHasResults === "false"}
+            onChange={(event) => update("trialResultEvaluation", event.target.value)}
+          >
+            <option value="">{t("全部")}</option>
+            {Object.entries(trialResultEvaluationLabels).map(([value, label]) => (
+              <option value={value} key={value}>
+                {professionalEnumLabel(label, value)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </SecondaryFilters>
+      <SecondaryFilters
+        activeCount={trialEvidenceConditionCount}
+        label={t("关键结果与发表证据")}
+        className="professional-more-fields"
+        contentClassName="professional-more-fields-grid"
+      >
+        <label>
+          <span>{t("关键结果")}</span>
+          <select
+            value={draft.trialHasKeyResult}
+            aria-label={t("关键结果")}
+            onChange={(event) => update("trialHasKeyResult", event.target.value)}
+          >
+            <option value="">{t("全部")}</option>
+            {Object.entries(trialKeyResultLabels).map(([value, label]) => (
+              <option value={value} key={value}>
+                {professionalEnumLabel(label, value)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>{t("发表编号")}</span>
+          <input
+            value={draft.trialPublicationId}
+            onChange={(event) => update("trialPublicationId", event.target.value)}
+            placeholder={t("PMID、DOI 或会议摘要编号")}
+            maxLength={240}
+          />
+        </label>
+        <label>
+          <span>{t("会议")}</span>
+          <input
+            value={draft.trialConference}
+            onChange={(event) => update("trialConference", event.target.value)}
+            placeholder={t("如 ASCO、AACR")}
+            maxLength={500}
+          />
+        </label>
+        <DateRange
+          label={t("结果披露日期")}
+          from={draft.trialDisclosedFrom}
+          to={draft.trialDisclosedTo}
+          onChange={(from, to) => updateDateRange("trialDisclosedFrom", "trialDisclosedTo", from, to)}
+        />
+      </SecondaryFilters>
     </>
   );
 }
