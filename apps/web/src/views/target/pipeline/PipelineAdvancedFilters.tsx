@@ -20,7 +20,7 @@ export function PipelineAdvancedFilters({
     TargetPipelineState,
     "filters" | "cachedFacetOptions" | "updateFilter" | "advancedFiltersOpen" | "setAdvancedFiltersOpen"
   >;
-  data: PipelineSearchResult;
+  data: Pick<PipelineSearchResult, "facets">;
   advancedFilterCount: number;
   programTagOptions: ReturnType<TargetPipelineState["cachedFacetOptions"]>;
 }) {

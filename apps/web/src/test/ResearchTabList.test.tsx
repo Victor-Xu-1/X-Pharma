@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { expect, it, vi } from "vitest";
 
@@ -124,4 +124,77 @@ it("shows record counts and skips sections that are known to be empty", () => {
   fireEvent.keyDown(overview, { key: "ArrowRight" });
   expect(patents).toHaveFocus();
   expect(onChange).toHaveBeenCalledWith("patents");
+});
+
+it("keeps the selected tab horizontally visible when translated labels change without changing selection", () => {
+  let activeLeft = 120;
+  const bounds = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
+    this: HTMLElement,
+  ) {
+    const left = this.getAttribute("role") === "tablist" ? 100 : activeLeft;
+    const width = this.getAttribute("role") === "tablist" ? 200 : 120;
+    return { left, right: left + width, top: 0, bottom: 48, width, height: 48, x: left, y: 0, toJSON() {} };
+  });
+  try {
+    const onChange = vi.fn();
+    const view = render(
+      <ResearchTabList tabs={tabs} activeTab="patents" onChange={onChange} ariaLabel="研究分区" idPrefix="research" />,
+    );
+    const rail = screen.getByRole("tablist");
+    activeLeft = 400;
+    view.rerender(
+      <ResearchTabList
+        tabs={tabs.map((tab) => ({ ...tab, label: `${tab.label} translated label` }))}
+        activeTab="patents"
+        onChange={onChange}
+        ariaLabel="Research sections"
+        idPrefix="research"
+      />,
+    );
+    expect(rail.scrollLeft).toBe(220);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole("tab", { selected: true })).toHaveAttribute("data-tab-key", "patents");
+  } finally {
+    bounds.mockRestore();
+  }
+});
+
+it("realigns after a rail resize without moving focus and disconnects its observer on unmount", () => {
+  let activeLeft = 120;
+  let resized!: ResizeObserverCallback;
+  const disconnect = vi.fn();
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      constructor(callback: ResizeObserverCallback) {
+        resized = callback;
+      }
+      observe() {}
+      disconnect = disconnect;
+    },
+  );
+  const bounds = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
+    this: HTMLElement,
+  ) {
+    const left = this.getAttribute("role") === "tablist" ? 100 : activeLeft;
+    const width = this.getAttribute("role") === "tablist" ? 200 : 120;
+    return { left, right: left + width, top: 1000, bottom: 1048, width, height: 48, x: left, y: 1000, toJSON() {} };
+  });
+  try {
+    const view = render(
+      <ResearchTabList tabs={tabs} activeTab="patents" onChange={vi.fn()} ariaLabel="研究分区" idPrefix="research" />,
+    );
+    const rail = screen.getByRole("tablist");
+    const focus = document.activeElement;
+    rail.scrollLeft = 200;
+    activeLeft = -50;
+    act(() => resized([], {} as ResizeObserver));
+    expect(rail.scrollLeft).toBe(50);
+    expect(document.activeElement).toBe(focus);
+    view.unmount();
+    expect(disconnect).toHaveBeenCalledOnce();
+  } finally {
+    bounds.mockRestore();
+    vi.unstubAllGlobals();
+  }
 });

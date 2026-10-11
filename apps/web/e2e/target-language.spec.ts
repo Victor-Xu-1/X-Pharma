@@ -9,11 +9,21 @@ test("[target-language] preserves target narratives, complete counts, filters, r
   const fixture = targetLanguageFixture();
   let dossierReads = 0;
   let pipelineReads = 0;
+  let nextPipelineReply: Promise<number> | undefined;
+  let failedPipelineUrl: string | undefined;
+  let failedPipelineReplies = 0;
+  function holdNextPipelineReply() {
+    let release!: (status: number) => void;
+    nextPipelineReply = new Promise((resolve) => {
+      release = resolve;
+    });
+    return release;
+  }
   const writes: string[] = [];
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   // Only controlled API fixtures. No real identity, facts, provider calls or server mutations.
-  await page.route("**/api/v1/**", (route) => {
+  await page.route("**/api/v1/**", async (route) => {
     const request = route.request(),
       path = new URL(request.url()).pathname;
     // The existing UI emits bounded performance telemetry; fulfill it locally too.
@@ -42,14 +52,43 @@ test("[target-language] preserves target narratives, complete counts, filters, r
     }
     if (path === "/api/v1/pipelines") {
       pipelineReads++;
+      const held = nextPipelineReply;
+      nextPipelineReply = undefined;
+      const status = request.url() === failedPipelineUrl ? 503 : held ? await held : 200;
+      if (status !== 200) {
+        failedPipelineUrl = request.url();
+        failedPipelineReplies++;
+        return route.fulfill({ status, json: { detail: "Controlled pipeline refinement failed" } });
+      }
       return route.fulfill({ json: targetPipelineLanguageFixture() });
     }
     return route.fulfill({ json: [] });
   });
   async function audit(name: string) {
+    const rail = page.getByRole("tablist").filter({ has: page.locator('[data-tab-key="pipeline"]') });
+    const horizontalBounds = await rail.evaluate((node) => {
+      const selected = node.querySelector('[aria-selected="true"]');
+      if (!selected) throw new Error("An active dossier tab is required");
+      const visible = node.getBoundingClientRect(),
+        active = selected.getBoundingClientRect();
+      return {
+        left: visible.left,
+        right: visible.right,
+        selectedLeft: active.left,
+        selectedRight: active.right,
+        scrollLeft: node.scrollLeft,
+      };
+    });
+    expect(horizontalBounds.selectedLeft).toBeGreaterThanOrEqual(horizontalBounds.left - 1);
+    expect(horizontalBounds.selectedRight).toBeLessThanOrEqual(horizontalBounds.right + 1);
     expect(
       (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze()).violations,
     ).toEqual([]);
+    const afterAuditScroll = await rail.evaluate((node) => node.scrollLeft);
+    await testInfo.attach(`${name}-tab-geometry`, {
+      body: JSON.stringify({ beforeAccessibility: horizontalBounds, afterAccessibilityScrollLeft: afterAuditScroll }),
+      contentType: "application/json",
+    });
     const bounds = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
       document: document.documentElement.scrollWidth,
@@ -138,9 +177,20 @@ test("[target-language] preserves target narratives, complete counts, filters, r
   await group.locator(":scope > summary").focus();
   await page.keyboard.press("Enter");
   await expect(group).toHaveAttribute("open", "");
-  await panel.getByLabel("Global phase start dates From", { exact: true }).fill("2026-01-01");
+  const releaseDateReply = holdNextPipelineReply();
+  const dateInput = panel.getByLabel("Global phase start dates From", { exact: true });
+  await dateInput.fill("2026-01-01");
   await expect.poll(() => pipelineReads).toBe(2);
+  await expect(panel.locator(".spinner")).toHaveCount(1);
+  await expect(dateInput).toBeFocused();
+  await expect(dateInput).toHaveValue("2026-01-01");
+  await expect(panel.getByRole("table", { name: "Target drug development overview", exact: true })).toHaveCount(0);
+  await expect(
+    panel.getByText("Filter options are from the last completed query; current results are updating.", { exact: true }),
+  ).toBeVisible();
+  releaseDateReply(200);
   await expect(panel.locator(".spinner")).toHaveCount(0);
+  await expect(dateInput).toBeFocused();
   await panel
     .getByRole("combobox", { name: "Organization location", exact: true })
     .selectOption("原始地区 / Source country");
@@ -173,4 +223,22 @@ test("[target-language] preserves target narratives, complete counts, filters, r
   expect(dossierReads).toBe(1);
   expect(writes).toEqual([]);
   await audit("controlled-target-pipeline-cleared-en");
+  const searchInput = panel.getByRole("searchbox", { name: "Drug or organization", exact: true });
+  const releaseFailureReply = holdNextPipelineReply();
+  await searchInput.fill("Controlled delayed refinement");
+  await expect(panel.locator(".spinner")).toHaveCount(1);
+  await expect(searchInput).toBeFocused();
+  releaseFailureReply(503);
+  await expect(panel.getByRole("alert")).toContainText("Controlled pipeline refinement failed");
+  expect(failedPipelineReplies).toBe(3);
+  await expect(searchInput).toBeFocused();
+  await expect(searchInput).toHaveValue("Controlled delayed refinement");
+  await expect(panel.getByRole("button", { name: "Select this page", exact: true })).toBeDisabled();
+  await audit("controlled-target-pipeline-failed-en");
+  await panel.getByRole("button", { name: "Reset filters", exact: true }).click();
+  await expect(panel.getByRole("table", { name: "Target drug development overview", exact: true })).toBeVisible();
+  await expect(searchInput).toHaveValue("");
+  await expect(panel.getByRole("alert")).toHaveCount(0);
+  expect(dossierReads).toBe(1);
+  expect(writes).toEqual([]);
 });

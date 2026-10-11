@@ -5,7 +5,13 @@ import { useMessages } from "../../../lib/i18n";
 import { targetPipelineMessages } from "../../../lib/i18n/targetPipeline";
 import { programModalityLabel } from "../../../lib/programDisplay";
 import { TargetPipelineSelect } from "./PipelineFilterControls";
-import { developmentPhaseLabel, geographyLabel, isUnavailableFacetOption } from "./presentation";
+import {
+  developmentPhaseLabel,
+  geographyLabel,
+  isUnavailableFacetOption,
+  pipelineFacetCount,
+  pipelineFacetCountSuffix,
+} from "./presentation";
 import type { TargetPipelineProps } from "./types";
 import type { TargetPipelineState } from "./useTargetPipeline";
 
@@ -25,7 +31,7 @@ export function PipelinePrimaryFilters({
     | "updateSorting"
     | "resetFilters"
   >;
-  data: PipelineSearchResult;
+  data: Pick<PipelineSearchResult, "facets">;
   hasUserFilters: boolean;
   onFiltersChange: TargetPipelineProps["onFiltersChange"];
 }) {
@@ -80,32 +86,35 @@ export function PipelinePrimaryFilters({
           <option
             value="active"
             disabled={isUnavailableFacetOption(
-              data.facets?.program_status?.active ?? 0,
+              pipelineFacetCount(data.facets?.program_status, "active"),
               "active",
               filters.programStatus,
             )}
           >
-            {text("在研")} ({data.facets?.program_status?.active ?? 0})
+            {text("在研")}
+            {pipelineFacetCountSuffix(pipelineFacetCount(data.facets?.program_status, "active"))}
           </option>
           <option
             value="inactive"
             disabled={isUnavailableFacetOption(
-              data.facets?.program_status?.inactive ?? 0,
+              pipelineFacetCount(data.facets?.program_status, "inactive"),
               "inactive",
               filters.programStatus,
             )}
           >
-            {text("已停止")} ({data.facets?.program_status?.inactive ?? 0})
+            {text("已停止")}
+            {pipelineFacetCountSuffix(pipelineFacetCount(data.facets?.program_status, "inactive"))}
           </option>
           <option
             value="unknown"
             disabled={isUnavailableFacetOption(
-              data.facets?.program_status?.unknown ?? 0,
+              pipelineFacetCount(data.facets?.program_status, "unknown"),
               "unknown",
               filters.programStatus,
             )}
           >
-            {text("状态未披露")} ({data.facets?.program_status?.unknown ?? 0})
+            {text("状态未披露")}
+            {pipelineFacetCountSuffix(pipelineFacetCount(data.facets?.program_status, "unknown"))}
           </option>
         </select>
       </label>
@@ -130,22 +139,24 @@ export function PipelinePrimaryFilters({
           <option
             value="true"
             disabled={isUnavailableFacetOption(
-              data.facets?.has_clinical_results?.true ?? 0,
+              pipelineFacetCount(data.facets?.has_clinical_results, "true"),
               "true",
               filters.hasClinicalResults,
             )}
           >
-            {text("已有结果")} ({data.facets?.has_clinical_results?.true ?? 0})
+            {text("已有结果")}
+            {pipelineFacetCountSuffix(pipelineFacetCount(data.facets?.has_clinical_results, "true"))}
           </option>
           <option
             value="false"
             disabled={isUnavailableFacetOption(
-              data.facets?.has_clinical_results?.false ?? 0,
+              pipelineFacetCount(data.facets?.has_clinical_results, "false"),
               "false",
               filters.hasClinicalResults,
             )}
           >
-            {text("暂无结果")} ({data.facets?.has_clinical_results?.false ?? 0})
+            {text("暂无结果")}
+            {pipelineFacetCountSuffix(pipelineFacetCount(data.facets?.has_clinical_results, "false"))}
           </option>
         </select>
       </label>
@@ -171,15 +182,25 @@ export function PipelinePrimaryFilters({
           <option value="">{text("全部")}</option>
           <option
             value="true"
-            disabled={isUnavailableFacetOption(data.facets?.has_deal?.true ?? 0, "true", filters.hasDeal)}
+            disabled={isUnavailableFacetOption(
+              pipelineFacetCount(data.facets?.has_deal, "true"),
+              "true",
+              filters.hasDeal,
+            )}
           >
-            {text("已有交易")} ({data.facets?.has_deal?.true ?? 0})
+            {text("已有交易")}
+            {pipelineFacetCountSuffix(pipelineFacetCount(data.facets?.has_deal, "true"))}
           </option>
           <option
             value="false"
-            disabled={isUnavailableFacetOption(data.facets?.has_deal?.false ?? 0, "false", filters.hasDeal)}
+            disabled={isUnavailableFacetOption(
+              pipelineFacetCount(data.facets?.has_deal, "false"),
+              "false",
+              filters.hasDeal,
+            )}
           >
-            {text("暂无交易")} ({data.facets?.has_deal?.false ?? 0})
+            {text("暂无交易")}
+            {pipelineFacetCountSuffix(pipelineFacetCount(data.facets?.has_deal, "false"))}
           </option>
         </select>
       </label>
