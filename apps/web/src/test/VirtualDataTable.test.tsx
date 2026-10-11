@@ -14,6 +14,28 @@ const columns: ColumnDef<Row, unknown>[] = [
   { accessorKey: "score", header: "评分", size: 120 },
 ];
 
+it("reserves readable sortable column tracks without widening action controls or changing virtual row height", () => {
+  renderWithQueryClient(
+    <VirtualDataTable
+      ariaLabel="Readable research results"
+      columns={[
+        { accessorKey: "name", header: "Name", size: 180 },
+        { accessorKey: "score", header: "Estimated expiration", size: 100 },
+        { id: "actions", header: "Actions", size: 80, enableSorting: false, cell: () => "Details" },
+      ]}
+      data={[{ id: "1", name: "Original EGFR", score: 1 }]}
+      getRowId={(row) => row.id}
+      preferenceKey="entity-search"
+    />,
+  );
+  const table = screen.getByRole("table", { name: "Readable research results" });
+  expect(table).toHaveStyle({ minWidth: "380px" });
+  expect(table.style.getPropertyValue("--virtual-table-columns")).toBe(
+    "minmax(180px, 180fr) minmax(120px, 120fr) minmax(80px, 80fr)",
+  );
+  expect(table.querySelector(".virtual-table-data-row")).toHaveStyle({ height: "68px" });
+});
+
 it("preserves an unapplied sort draft across equivalent applied props and locale-driven headers", () => {
   const onSortingChange = vi.fn();
   const data = [{ id: "1", name: "Original name", score: 1 }];

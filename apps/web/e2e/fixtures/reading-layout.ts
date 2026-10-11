@@ -34,8 +34,34 @@ export async function expectResearchReadingLayout(page: Page, table: Locator) {
         : [];
     }),
   );
+  const brokenWords = await table.locator("thead .virtual-table-heading button > span").evaluateAll((nodes) =>
+    nodes.flatMap((node) => {
+      const words: string[] = [];
+      const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+      for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+        for (const match of (text.textContent ?? "").matchAll(/[A-Za-z]{2,}/g)) {
+          const range = document.createRange();
+          range.setStart(text, match.index);
+          range.setEnd(text, match.index + match[0].length);
+          const lines = new Set(
+            Array.from(range.getClientRects())
+              .filter((line) => line.width > 0)
+              .map((line) => line.top.toFixed(1)),
+          );
+          if (lines.size > 1) words.push(match[0]);
+        }
+      }
+      return words;
+    }),
+  );
   console.log(
-    JSON.stringify({ scope: "controlled research reading layout", titleLines: title, controls, clippedHeadings }),
+    JSON.stringify({
+      scope: "controlled research reading layout",
+      titleLines: title,
+      controls,
+      clippedHeadings,
+      brokenWords,
+    }),
   );
   expect(title, "The public-source title has its own readable line").toBe(1);
   expect(controls.length, "Expanded advanced fields stay present").toBeGreaterThan(0);
@@ -44,4 +70,5 @@ export async function expectResearchReadingLayout(page: Page, table: Locator) {
     expect(height, "Controls retain their original touchable height").toBeGreaterThanOrEqual(38);
   }
   expect(clippedHeadings, "Sortable column labels must remain fully readable inside their own columns").toEqual([]);
+  expect(brokenWords, "Complete English words must not be broken into orphaned header letters").toEqual([]);
 }
