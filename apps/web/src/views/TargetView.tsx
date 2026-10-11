@@ -130,15 +130,26 @@ export function TargetView({
   const dossier = useQuery({
     queryKey: targetKeys.dossier(target?.id ?? ""),
     queryFn: ({ signal }) => loadTargetDossier(target?.id ?? "", signal),
-    enabled: Boolean(target),
+    enabled: Boolean(target && target.entity_type === "target"),
   });
   if (!target) return <EmptyState title={text("尚未选择靶点")} detail={text("请从情报检索结果中打开一个靶点")} />;
+  if (target.entity_type !== "target") {
+    return <ErrorState message={text("该深链接不是靶点实体，无法打开靶点档案")} />;
+  }
   if (dossier.error) {
     const message = dossier.error instanceof Error ? dossier.error.message : text("靶点档案加载失败");
     return <ErrorState message={message} retry={() => void dossier.refetch()} />;
   }
   if (!dossier.data) return <Spinner label={text("正在加载 {name} 全景档案", { name: target.name })} />;
   const data = dossier.data;
+  if (
+    data.entity.id !== target.id ||
+    data.entity.entity_type !== "target" ||
+    data.profile.entity.id !== target.id ||
+    data.profile.entity.entity_type !== "target"
+  ) {
+    return <ErrorState message={text("靶点档案与请求实体不一致")} retry={() => void dossier.refetch()} />;
+  }
 
   return (
     <>
