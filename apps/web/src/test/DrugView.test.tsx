@@ -1,8 +1,9 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import { type DrugProgramPage, loadDrugDossier, loadDrugPrograms } from "../lib/contracts/drugDossier";
+import { setLocale } from "../lib/i18n";
 import type { Entity } from "../lib/types";
 import type { DrugDossierSection } from "../lib/workspaceRouting";
 import { DrugView } from "../views/DrugView";
@@ -86,9 +87,70 @@ function renderDrugView(
 }
 
 beforeEach(() => {
+  setLocale("zh-CN");
   vi.clearAllMocks();
   vi.mocked(loadDrugDossier).mockResolvedValue(dossier);
   vi.mocked(loadDrugPrograms).mockResolvedValue(makeProgramPage());
+});
+
+it("keeps three primary drug metrics and complete secondary facts in a language-stable disclosure", async () => {
+  const aliases = [
+    "SOURCE-CODE-1",
+    "SOURCE-CODE-2",
+    "SOURCE-CODE-3",
+    "SOURCE-CODE-4",
+    "SOURCE-CODE-5",
+    "SOURCE-CODE-6",
+    "原始代号 / Source alias",
+  ];
+  vi.mocked(loadDrugDossier).mockResolvedValueOnce({ ...dossier, entity: { ...dossier.entity, aliases } });
+  renderDrugView();
+  const header = await screen.findByRole("region", { name: "药物档案摘要" });
+  expect(header.querySelectorAll(".drug-header-primary-metrics > div")).toHaveLength(3);
+  expect(within(header).getByText("II 期临床 / I 期临床")).toBeInTheDocument();
+  const details = header.querySelector<HTMLDetailsElement>(".drug-header-details");
+  if (!details) throw new Error("Secondary drug identity disclosure is required");
+  expect(details).not.toHaveAttribute("open");
+  expect(within(header).getByText("1 / 1")).toBeInTheDocument();
+  expect(within(details).getByText("2", { exact: true })).toBeInTheDocument();
+  expect(within(details).getByText("2026/07/24")).toBeInTheDocument();
+  for (const alias of aliases) expect(within(details).getByText(alias, { exact: true })).toBeInTheDocument();
+  details.open = true;
+  const moreAliases = details.querySelector<HTMLDetailsElement>(".entity-names details");
+  if (!moreAliases) throw new Error("The complete alias disclosure is required");
+  moreAliases.open = true;
+  act(() => setLocale("en"));
+  expect(screen.getByRole("region", { name: "Drug profile summary" })).toBe(header);
+  expect(details).toHaveAttribute("open");
+  expect(moreAliases).toHaveAttribute("open");
+  expect(within(header).getByText("原始代号 / Source alias", { exact: true })).toBeVisible();
+  expect(within(header).getByText("Phase II / Phase I")).toBeInTheDocument();
+  expect(loadDrugDossier).toHaveBeenCalledTimes(1);
+  expect(loadDrugPrograms).not.toHaveBeenCalled();
+});
+
+it("preserves unknown source phases and never turns a missing status date into the query time", async () => {
+  // Deliberately unvalidated future transport data; do not widen the generated API enum.
+  const sourceSummary: typeof dossier.summary = JSON.parse(
+    JSON.stringify({
+      ...dossier.summary,
+      highest_phase: "SOURCE_PHASE_X",
+      highest_global_phase: null,
+      highest_china_phase: null,
+      latest_status_date: null,
+    }),
+  );
+  vi.mocked(loadDrugDossier).mockResolvedValueOnce({
+    ...dossier,
+    summary: sourceSummary,
+  });
+  renderDrugView();
+  const header = await screen.findByRole("region", { name: "药物档案摘要" });
+  expect(within(header).getByText("SOURCE_PHASE_X", { exact: true })).toBeInTheDocument();
+  const details = header.querySelector(".drug-header-details");
+  if (!details) throw new Error("Secondary drug identity disclosure is required");
+  expect(within(details as HTMLElement).getByText("--", { exact: true })).toBeInTheDocument();
+  expect(details).not.toHaveTextContent(dossier.as_of);
 });
 
 it("loads the governed drug dossier and exposes cross-domain overview actions", async () => {
