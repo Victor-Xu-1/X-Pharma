@@ -33,6 +33,8 @@
   border-block: 1px solid var(--ds-border-subtle);
 }
 .target-header-stats > div {
+  display: flex;
+  flex-direction: column;
   flex: 1 1 72px;
   min-width: 0;
 }
@@ -40,7 +42,8 @@
   font-size: var(--ds-text-xs);
 }
 .target-header-stats dd {
-  margin: 4px 0 0;
+  margin: auto 0 0;
+  padding-top: 4px;
   font-size: var(--ds-text-md);
   font-weight: 650;
   overflow-wrap: anywhere;
