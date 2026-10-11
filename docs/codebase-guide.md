@@ -44,6 +44,8 @@ ORM 的公共入口是 `models/__init__.py`，只聚合显式导出；领域表�
 
 ## 本次整理
 
+CI 仍保留原六项作业及 15/45 分钟、单 worker、四种浏览器项目和全部性能/视觉/权限/协议门槛。`scripts/browser_cases` 与 `browser_phases` 唯一拥有实时发现的用例身份与明确分配；八个已验证不依赖真实后端的界面文件由现有前端作业在原构建与真实账号检查之后执行，不再占用完整栈的串行预算。`run_controlled_browser_acceptance` 只启动已构建的前端，保留一个不监听的后端端口并沿用既有字体/Chrome 验证。`browser_phase_cli` 必须证明两份同源码、同清单、同浏览器结果无漏测、重复、跳过、重试或失败，才汇总完整证据；数据库、真实权限、Web/MCP 同事实、双客户端和原有计费负载仍属于完整栈。普通本地命令与基线复查默认保留完整集合，不通过修改默认 Playwright 排除规则来分配测试。
+
 `schemas/__init__.py` 是唯一公共契约入口；输入校验和响应模型按账号、企业、实体、管线、临床、专利、交易、治理、来源和商业领域定义。领域契约只从具体依赖模块导入，不反向依赖聚合入口。公共查询元数据和排序类型独立，跨领域档案聚合只向具体领域契约依赖；OpenAPI 漂移门禁验证重构不意外改动客户端协议。
 
 `http/` 拥有分域 transport；账号、组织、注册、企业人员/组、API 密钥与模型配置各自拥有路由，公共查询校验在 `query_contracts.py`，HTTP 配置绑定在 `runtime.py`。模块不得反向导入 `api.py`；应用入口只负责组合它们。持久化、领域契约和 HTTP 模块的依赖环及反向引用由 `test_architecture_boundaries.py` 约束。账号与组织的保留式迁移、会话及回退边界见 [accounts-and-organizations.md](accounts-and-organizations.md)。
