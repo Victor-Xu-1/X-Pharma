@@ -75,9 +75,9 @@ export function PublicResearchPanel({
         setExpanded(event.currentTarget.open);
       }}
     >
-      <summary>
-        <strong>{t("公开来源调研")}</strong>
-        <span>{t("补充本地覆盖 · 按需联网查询")}</span>
+      <summary className="public-research-summary">
+        <strong className="public-research-title">{t("公开来源调研")}</strong>
+        <span className="public-research-hint">{t("补充本地覆盖 · 按需联网查询")}</span>
         <ChevronDown className="disclosure-chevron" size={16} aria-hidden="true" />
       </summary>
       <section aria-label={t("公开来源调研")}>

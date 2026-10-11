@@ -74,6 +74,7 @@ test("[patent-language] English-first filters keep drafts, selection and source 
     page.getByRole("checkbox", { name: `取消选择对比 ${patent.family_identifier}`, exact: true }),
   ).toBeChecked();
   await expect(page.locator(".secondary-filter-panel")).toHaveAttribute("open", "");
+  await expectResearchReadingLayout(page, page.locator(".virtual-data-table"));
   await page.getByRole("button", { name: `打开专利族详情：${patent.family_identifier}`, exact: true }).click();
   await expect(page.getByRole("table", { name: "公开文本", exact: true })).toContainText("WO2022123456A1");
   await page.reload();
@@ -101,6 +102,16 @@ test("[patent-language] English-first filters keep drafts, selection and source 
   await expect(page.locator(".table-density-control button").first()).toBeEnabled();
   await expectResearchReadingLayout(page, results);
   await page.screenshot({ path: testInfo.outputPath("patent-source-preserving-en.png"), animations: "disabled" });
+  const viewport = page.locator(".virtual-table-viewport");
+  await page
+    .locator(".virtual-table-shell")
+    .screenshot({ path: testInfo.outputPath("patent-readable-table-en.png"), animations: "disabled" });
+  await viewport.evaluate((node) => {
+    node.scrollLeft = node.scrollWidth - node.clientWidth;
+  });
+  await page
+    .locator(".virtual-table-shell")
+    .screenshot({ path: testInfo.outputPath("patent-readable-table-end-en.png"), animations: "disabled" });
   expect(writes).toEqual([]);
   expect(errors).toEqual([]);
 });
