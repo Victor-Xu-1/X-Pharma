@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from "react";
 import { AppliedFiltersBar } from "../../../components/AppliedFiltersBar";
 import { hasPipelineSearchFilter } from "../../../lib/contracts/pipeline";
 import { useMessages } from "../../../lib/i18n";
@@ -8,6 +9,7 @@ import {
   programTagLabel,
   publicProgramTags,
 } from "../../../lib/programDisplay";
+import { revealFocusedPipelineControl } from "./focusVisibility";
 import { PipelineAdvancedFilters } from "./PipelineAdvancedFilters";
 import { PipelinePrimaryFilters } from "./PipelinePrimaryFilters";
 import {
@@ -26,6 +28,8 @@ import type { TargetPipelineProps } from "./types";
 import { useTargetPipeline } from "./useTargetPipeline";
 
 export function TargetPipeline(props: TargetPipelineProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => revealFocusedPipelineControl(panelRef.current));
   const text = useMessages(targetPipelineMessages);
   const state = useTargetPipeline(props);
   const { filters, result, displayMode, selectedDrugIds, cachedFacetOptions, resetFilters, filterFacets } = state;
@@ -54,7 +58,11 @@ export function TargetPipeline(props: TargetPipelineProps) {
   const regionLabels = Object.fromEntries(Object.keys(geographyLabels).map((key) => [key, geographyLabel(key)]));
 
   return (
-    <div className="target-pipeline-panel">
+    <div
+      ref={panelRef}
+      className="target-pipeline-panel"
+      onFocusCapture={() => revealFocusedPipelineControl(panelRef.current)}
+    >
       <TargetPipelineToolbar
         state={state}
         pageDrugIds={pageDrugIds}
