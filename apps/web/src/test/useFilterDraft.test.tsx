@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { expect, it } from "vitest";
 
-import { useFilterDraft } from "../lib/useFilterDraft";
+import { useFilterDraft, useSearchFilterDraft } from "../lib/useFilterDraft";
 
 it("keeps a draft across equivalent objects and resets it synchronously for restored conditions", () => {
   const first = { query: "applied", types: ["drug"], offset: 0 };
@@ -18,4 +18,25 @@ it("keeps a draft across equivalent objects and resets it synchronously for rest
   expect(result.current[0].query).toBe("restored");
   rerender({ applied: first });
   expect(result.current[0].query).toBe("applied");
+});
+
+it("preserves unapplied search fields while synchronizing the externally applied sorting", () => {
+  const applied = {
+    query: "applied",
+    sortBy: "name",
+    sortDirection: "asc",
+    sort: [{ field: "name", direction: "asc" }],
+  };
+  const { result, rerender } = renderHook(({ value }) => useSearchFilterDraft(value), {
+    initialProps: { value: applied },
+  });
+  act(() => result.current[1]((current) => ({ ...current, query: "unsubmitted 科研" })));
+  const obsoleteUpdate = result.current[1];
+  const sorted = { ...applied, sortBy: "phase", sortDirection: "desc", sort: [{ field: "phase", direction: "desc" }] };
+  rerender({ value: sorted });
+  expect(result.current[0]).toEqual({ ...sorted, query: "unsubmitted 科研" });
+  act(() => obsoleteUpdate({ ...applied, query: "late obsolete response" }));
+  expect(result.current[0].query).toBe("unsubmitted 科研");
+  rerender({ value: { ...sorted, query: "restored URL" } });
+  expect(result.current[0]).toEqual({ ...sorted, query: "restored URL" });
 });

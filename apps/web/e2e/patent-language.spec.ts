@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { patentResult } from "../src/test/fixtures/patentsResearch";
+import { installReadOnlyTablePreference } from "./fixtures/table-preferences";
 import { selectInterfaceLanguage } from "./interface-language";
 
 test("[patent-language] English-first filters keep drafts, selection and source publications across language changes", async ({
@@ -45,6 +46,7 @@ test("[patent-language] English-first filters keep drafts, selection and source 
     }
     return route.fulfill({ json: [] });
   });
+  await installReadOnlyTablePreference(page, "patent-families");
   await page.goto("/workspace/research?view=patents&q=EGFR");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   const results = page.getByRole("table", { name: "Patent family results", exact: true });
@@ -94,6 +96,8 @@ test("[patent-language] English-first filters keep drafts, selection and source 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
     await page.evaluate(() => document.documentElement.clientWidth),
   );
+  await expect(page.locator(".table-preference-error")).toHaveCount(0);
+  await expect(page.locator(".table-density-control button").first()).toBeEnabled();
   await page.screenshot({ path: testInfo.outputPath("patent-source-preserving-en.png"), animations: "disabled" });
   expect(writes).toEqual([]);
   expect(errors).toEqual([]);

@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { observation, searchResult } from "../src/test/fixtures/epidemiologyResearch";
+import { installReadOnlyTablePreference } from "./fixtures/table-preferences";
 import { selectInterfaceLanguage } from "./interface-language";
 
 test("[epidemiology-language] English-first controls retain drafts, comparable data and saved choice", async ({
@@ -58,6 +59,7 @@ test("[epidemiology-language] English-first controls retain drafts, comparable d
     }
     return route.fulfill({ json: [] });
   });
+  await installReadOnlyTablePreference(page, "epidemiology");
   await page.goto("/workspace/research?view=epidemiology&q=NSCLC");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   const table = page.getByRole("table", { name: "Epidemiology observations", exact: true });
@@ -85,6 +87,8 @@ test("[epidemiology-language] English-first controls retain drafts, comparable d
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
     await page.evaluate(() => document.documentElement.clientWidth),
   );
+  await expect(page.locator(".table-preference-error")).toHaveCount(0);
+  await expect(page.locator(".table-density-control button").first()).toBeEnabled();
   await page.screenshot({ path: testInfo.outputPath("epidemiology-original-values-zh.png"), animations: "disabled" });
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");

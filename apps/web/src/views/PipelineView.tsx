@@ -34,7 +34,7 @@ import {
   validatePipelineSignalFilters,
 } from "../lib/pipelineSignals";
 import { publicCoverageNotice } from "../lib/publicWarnings";
-import { useFilterDraft } from "../lib/useFilterDraft";
+import { useSearchFilterDraft } from "../lib/useFilterDraft";
 import { usePagedEntitySelection } from "../lib/usePagedEntitySelection";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import { appliedFilterLabels, programStatusLabels } from "./pipeline/filterLabels";
@@ -76,7 +76,7 @@ export function PipelineView({
   const openTarget = onOpenTarget ?? onOpenEntity;
   const openDisease = onOpenDisease ?? onOpenEntity;
   const openOrganization = onOpenOrganization ?? onOpenEntity;
-  const [filters, setFilters] = useFilterDraft(initialFilters);
+  const [filters, setFilters] = useSearchFilterDraft(initialFilters);
   const [entityValueLabels, setEntityValueLabels] = useState<Record<string, Record<string, string>>>({});
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");

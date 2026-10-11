@@ -32,7 +32,7 @@ import { sortCriteriaFromTable, tableSortingFromCriteria } from "../lib/contract
 import { facetOptions } from "../lib/facets";
 import { newsEventTypeLabels } from "../lib/newsDisplay";
 import { publicCoverageNotice } from "../lib/publicWarnings";
-import { useFilterDraft } from "../lib/useFilterDraft";
+import { useSearchFilterDraft } from "../lib/useFilterDraft";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import type { DossierEntityOpener } from "./EntityDossierView";
 import { NewsDetailDrawer } from "./news/NewsDetailDrawer";
@@ -82,7 +82,7 @@ export function NewsView({
 }) {
   useLocale();
 
-  const [filters, setFilters] = useFilterDraft(initialFilters);
+  const [filters, setFilters] = useSearchFilterDraft(initialFilters);
   const [validationRequested, setValidationRequested] = useState(false);
   const validationError = validationRequested
     ? professionalValidationText(validateNewsSearchFilters(filters) ?? "")

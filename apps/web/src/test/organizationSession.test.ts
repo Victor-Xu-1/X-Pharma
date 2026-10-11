@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  captureOrganizationSession,
   hasPendingSessionWrites,
   organizationHeaders,
   setOrganizationSession,
@@ -12,6 +13,23 @@ import {
 afterEach(() => setOrganizationSession(null));
 
 describe("organization request boundary", () => {
+  it("invalidates captured operations across suspension and account round trips", () => {
+    const identity = { id: "account-a", tenant_id: "organization-a" };
+    setOrganizationSession(identity);
+    const current = captureOrganizationSession();
+    setOrganizationSession({ ...identity });
+    expect(current()).toBe(true);
+    suspendOrganizationSession();
+    const suspended = captureOrganizationSession();
+    setOrganizationSession(identity);
+    expect(current()).toBe(false);
+    expect(suspended()).toBe(false);
+    const beforeRoundTrip = captureOrganizationSession();
+    setOrganizationSession({ ...identity, tenant_id: "organization-b" });
+    setOrganizationSession(identity);
+    expect(beforeRoundTrip()).toBe(false);
+  });
+
   it("binds protected requests to the expected account and organization", () => {
     setOrganizationSession({ id: "account-a", tenant_id: "organization-a" });
     const original = organizationHeaders("/api/v1/entities", "POST");

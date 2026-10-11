@@ -1,6 +1,7 @@
 type IdentityContext = { id: string; tenant_id: string };
 let identity: IdentityContext | null = null;
 let suspended = false;
+let generation = 0;
 let pendingWrites = 0;
 const pendingWriteListeners = new Set<() => void>();
 
@@ -31,12 +32,21 @@ export function trackSessionWrite(method: string): () => void {
 }
 
 export function setOrganizationSession(next: IdentityContext | null): void {
-  identity = next;
+  if (identity?.id !== next?.id || identity?.tenant_id !== next?.tenant_id) generation += 1;
+  identity = next ? { id: next.id, tenant_id: next.tenant_id } : null;
   suspended = false;
 }
 
 export function suspendOrganizationSession(): void {
+  if (!suspended) generation += 1;
   suspended = true;
+}
+
+/** Capture a logical operation before its first asynchronous boundary. */
+export function captureOrganizationSession(): () => boolean {
+  const captured = generation;
+  const available = !suspended;
+  return () => available && !suspended && generation === captured;
 }
 
 export function organizationHeaders(path: string, method = "GET"): Record<string, string> {
