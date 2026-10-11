@@ -766,6 +766,15 @@ tbody tr:last-child td {
 /* Wide tables keep their identity column; narrow containers reserve the scroll
    lane for data/actions instead of covering it with a nearly full-width name. */
 @container workbench-table (max-width: 640px) {
+  .table-selection-status[data-empty="true"] {
+    display: none;
+  }
+  :root .workspace-shell .virtual-table-toolbar .table-column-menu:not([open]) summary {
+    min-width: 31px;
+    justify-content: center;
+    gap: 0;
+    font-size: 0;
+  }
   .virtual-table-heading:first-child:not(.virtual-table-selection-heading),
   .virtual-table-cell:first-child:not(.virtual-table-selection-cell),
   .has-row-selection .virtual-table-heading:nth-child(2),

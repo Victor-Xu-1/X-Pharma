@@ -24,7 +24,7 @@ export function TableColumnMenu<T>({
     : undefined;
   return (
     <details className="table-column-menu" {...columnPopover}>
-      <summary>
+      <summary title={t("列设置")}>
         <Columns3 size={15} />
         {t("列")}
       </summary>

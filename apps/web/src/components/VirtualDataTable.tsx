@@ -410,7 +410,7 @@ export function VirtualDataTable<T>({
           })}
         </span>
         {rowSelection ? (
-          <div className="table-selection-status" aria-live="polite">
+          <div className="table-selection-status" aria-live="polite" data-empty={selectedRowIds.length === 0}>
             <span>
               {selectedRowIds.length
                 ? t("已选 {count}{limit} 项", {
