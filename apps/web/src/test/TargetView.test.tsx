@@ -109,6 +109,34 @@ it("keeps the target's advanced group open through clearing its last condition a
   expect(document.querySelector(".target-pipeline-panel .pipeline-advanced-filters")).toHaveAttribute("open");
 });
 
+it("localizes only the known application coverage warning while retaining original source warnings", async () => {
+  const base = await vi.mocked(searchPipelines)(
+    emptyPipelineSearchFilters(),
+    { limit: 20, stageScope: "overall", targetAggregation: "all" },
+    undefined,
+    "drug",
+  );
+  vi.mocked(searchPipelines).mockResolvedValue({
+    ...base,
+    warnings: [
+      "暂无记录不代表全球不存在；结果受来源授权、更新时间和可见范围影响。",
+      "原始来源警告 / Unchanged source warning",
+    ],
+  });
+  setLocale("en");
+  renderTargetView({ initialSection: "pipeline" });
+  expect(
+    await screen.findByText(
+      "Missing records do not imply that none exist globally. Results depend on source access, update time and visibility.",
+    ),
+  ).toBeVisible();
+  expect(screen.getByText("原始来源警告 / Unchanged source warning")).toBeVisible();
+  const reads = vi.mocked(searchPipelines).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("暂无记录不代表全球不存在；结果受来源授权、更新时间和可见范围影响。")).toBeVisible();
+  expect(searchPipelines).toHaveBeenCalledTimes(reads);
+});
+
 function renderTargetView({
   onOpenEntity = vi.fn(),
   onOpenDrug,

@@ -116,6 +116,16 @@ test("[target-language] preserves target narratives, complete counts, filters, r
     "true",
   );
   await expect.poll(() => pipelineReads).toBe(1);
+  await expect(panel.locator(".target-pipeline-metric")).toHaveCount(2);
+  for (const metric of await panel.locator(".target-pipeline-metric").all()) {
+    const spacing = await metric.evaluate((node) => {
+      const count = node.querySelector("strong"),
+        unit = node.querySelector("span");
+      if (!count || !unit) throw new Error("Count and unit must be separate readable elements");
+      return unit.getBoundingClientRect().left - count.getBoundingClientRect().right;
+    });
+    expect(spacing).toBeGreaterThanOrEqual(4);
+  }
   const group = panel.locator(".pipeline-advanced-filters");
   await expect(group).toHaveClass(/secondary-filter-panel/);
   await group.locator(":scope > summary").focus();

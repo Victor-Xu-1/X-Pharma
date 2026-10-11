@@ -50,7 +50,6 @@ export const targetPipelineMessages = {
   潜在交易总额: "Total potential deal amount",
   "{legend}起": "{legend} From",
   "{legend}止": "{legend} To",
-  "创新、机构、区域阶段与时间": "Innovation, organizations, regional phases and dates",
   靶点研发药物概览: "Target drug development overview",
   靶点竞品研发管线: "Target competitive development pipeline",
   对比: "Compare",

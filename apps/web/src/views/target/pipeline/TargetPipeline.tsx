@@ -3,6 +3,7 @@ import { EmptyState, ErrorState, formatDate, Spinner } from "../../../components
 import { PipelineLandscape } from "../../../components/PipelineLandscape";
 import { hasPipelineSearchFilter } from "../../../lib/contracts/pipeline";
 import { formattingLocale, useMessages } from "../../../lib/i18n";
+import { intelligenceWarningText } from "../../../lib/i18n/intelligenceWarnings";
 import { targetPipelineMessages } from "../../../lib/i18n/targetPipeline";
 import {
   isPublicProgramTag,
@@ -100,12 +101,13 @@ export function TargetPipeline(props: TargetPipelineProps) {
   return (
     <div className="target-pipeline-panel">
       <section className="result-summary" aria-label={text("{name} 研发药物概览", { name: targetName })}>
-        <span>
+        <span className="target-pipeline-metric">
           <strong>{(data.project_total ?? data.landscape.total_programs).toLocaleString(formattingLocale())}</strong>{" "}
-          {text("个研发项目")}
+          <span>{text("个研发项目")}</span>
         </span>
-        <span>
-          <strong>{data.landscape.distinct_drugs.toLocaleString(formattingLocale())}</strong> {text("个药物")}
+        <span className="target-pipeline-metric">
+          <strong>{data.landscape.distinct_drugs.toLocaleString(formattingLocale())}</strong>{" "}
+          <span>{text("个药物")}</span>
         </span>
       </section>
       <p className="muted-text">
@@ -175,7 +177,7 @@ export function TargetPipeline(props: TargetPipelineProps) {
       />
       {(data.warnings ?? []).map((warning) => (
         <p className="inline-alert" key={warning}>
-          {warning}
+          {intelligenceWarningText(warning)}
         </p>
       ))}
       {displayMode === "landscape" ? (
