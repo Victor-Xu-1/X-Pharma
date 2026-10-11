@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { eventId, regulatoryEvent, regulatoryResult } from "../src/test/fixtures/regulatoryResearch";
+import { installReadOnlyTablePreference } from "./fixtures/table-preferences";
 import { selectInterfaceLanguage } from "./interface-language";
 
 test("[regulatory-language] English-first controls retain drafts, comparison and original fields", async ({
@@ -45,6 +46,7 @@ test("[regulatory-language] English-first controls retain drafts, comparison and
     }
     return route.fulfill({ json: [] });
   });
+  await installReadOnlyTablePreference(page, "regulatory-events");
   await page.goto("/workspace/research?view=regulatory&q=EGFR");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.getByRole("table", { name: "Regulatory events", exact: true })).toContainText(detail.title);
@@ -82,6 +84,8 @@ test("[regulatory-language] English-first controls retain drafts, comparison and
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
     await page.evaluate(() => document.documentElement.clientWidth),
   );
+  await expect(page.locator(".table-preference-error")).toHaveCount(0);
+  await expect(page.locator(".table-density-control button").first()).toBeEnabled();
   await page.screenshot({ path: testInfo.outputPath("regulatory-source-preserving-zh.png"), animations: "disabled" });
   expect(writes).toEqual([]);
   expect(errors).toEqual([]);

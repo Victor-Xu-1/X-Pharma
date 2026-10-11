@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { newsResult } from "../src/test/fixtures/newsResearch";
+import { installReadOnlyTablePreference } from "./fixtures/table-preferences";
 import { selectInterfaceLanguage } from "./interface-language";
 
 const eventId = "550e8400-e29b-41d4-a716-446655440090";
@@ -46,6 +47,7 @@ test("[news-language] fresh English, retained drafts and complete detail fields"
     return route.fulfill({ json: [] });
   });
 
+  await installReadOnlyTablePreference(page, "news-events");
   await page.goto("/workspace/research?view=news&q=EGFR");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.getByRole("heading", { name: "Research updates", exact: true })).toBeVisible();
@@ -78,6 +80,8 @@ test("[news-language] fresh English, retained drafts and complete detail fields"
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
     await page.evaluate(() => document.documentElement.clientWidth),
   );
+  await expect(page.locator(".table-preference-error")).toHaveCount(0);
+  await expect(page.locator(".table-density-control button").first()).toBeEnabled();
   await page.screenshot({ path: testInfo.outputPath("news-source-preserving-zh.png"), animations: "disabled" });
   expect(writes).toEqual([]);
   expect(errors).toEqual([]);
