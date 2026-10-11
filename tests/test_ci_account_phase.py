@@ -39,6 +39,7 @@ def test_accounts_run_once_after_the_frontend_build_with_the_original_driver() -
 
 
 def test_both_browser_jobs_use_the_same_pinned_setup_without_adding_a_gate() -> None:
+    """Retain both original owners and apply the same constraints to the extra isolated UI owner."""
     workflow = cast(dict[str, Any], yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text()))
     jobs = workflow["jobs"]
     assert set(jobs) == {
@@ -48,10 +49,13 @@ def test_both_browser_jobs_use_the_same_pinned_setup_without_adding_a_gate() -> 
         "deployment-contract",
         "two-entry-smoke",
         "security-supply-chain",
+        "company-controlled",
     }
-    for name in ("frontend", "two-entry-smoke"):
+    for name in ("frontend", "two-entry-smoke", "company-controlled"):
         steps = jobs[name]["steps"]
-        setup = next(step for step in steps if "bash scripts/prepare-ci-browser.sh" in step.get("run", ""))
+        preparations = [step for step in steps if "bash scripts/prepare-ci-browser.sh" in step.get("run", "")]
+        assert len(preparations) == 1
+        setup = preparations[0]
         assert setup.get("working-directory", ".") == "."
         assert setup["env"]["VISUAL_PROFILE_REVIEW"] == (
             "${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}"
@@ -61,3 +65,9 @@ def test_both_browser_jobs_use_the_same_pinned_setup_without_adding_a_gate() -> 
         assert uv["uses"] == "astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b"
         assert uv["with"]["version"] == "0.11.28"
         assert any("uv sync --locked --dev" in step.get("run", "") for step in steps)
+        node = next(step for step in steps if step.get("uses", "").startswith("actions/setup-node@"))
+        assert node["uses"] == "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020"
+        assert node["with"]["node-version"] == "24.14.0"
+        pnpm = next(step for step in steps if step.get("uses", "").startswith("pnpm/action-setup@"))
+        assert pnpm["uses"] == "pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271"
+        assert pnpm["with"]["version"] == "11.7.0"
