@@ -118,8 +118,7 @@ export async function verifyDenseServerSorting(
   const diseaseDossierResponse = page.waitForResponse((response) => {
     const url = new URL(response.url());
     return (
-      response.request().method() === "GET" &&
-      url.pathname === `/api/v1/diseases/${epidemiologyDiseaseId}/dossier`
+      response.request().method() === "GET" && url.pathname === `/api/v1/diseases/${epidemiologyDiseaseId}/dossier`
     );
   });
   await page.goto(`/workspace/research?view=disease&entity=${epidemiologyDiseaseId}`);
