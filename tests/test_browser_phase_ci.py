@@ -14,6 +14,7 @@ def test_browser_partition_preserves_original_jobs_workers_and_time_limits() -> 
         "deployment-contract",
         "two-entry-smoke",
         "security-supply-chain",
+        "company-controlled",
     }
     assert jobs["frontend"]["timeout-minutes"] == 15
     assert jobs["two-entry-smoke"]["timeout-minutes"] == "${{ inputs.refresh_visual_baselines && 60 || 45 }}"
@@ -28,6 +29,25 @@ def test_controlled_browser_checks_are_required_in_the_existing_frontend_job() -
     archives = [step for step in steps if step.get("with", {}).get("name") == "controlled-browser-evidence"]
     assert len(archives) == 1
     assert archives[0]["with"]["if-no-files-found"] == "error"
+
+
+def test_company_cases_have_a_separate_bounded_no_backend_job_and_mandatory_receipt() -> None:
+    jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
+    assert "company-controlled" in jobs
+    job = jobs["company-controlled"]
+    assert job["timeout-minutes"] == 15
+    steps = job["steps"]
+    runners = [step for step in steps if "scripts.run_controlled_browser_acceptance" in step.get("run", "")]
+    assert len(runners) == 1 and "--phase company-controlled" in runners[0]["run"]
+    assert all("docker" not in step.get("run", "") for step in steps)
+    archives = [step for step in steps if step.get("with", {}).get("name") == "company-controlled-browser-evidence"]
+    assert len(archives) == 1 and archives[0]["with"]["if-no-files-found"] == "error"
+    closure = next(
+        step["run"]
+        for step in jobs["two-entry-smoke"]["steps"]
+        if "scripts.browser_phase_cli close" in step.get("run", "")
+    )
+    assert "--company" in closure
 
 
 def test_full_stack_requires_partition_closure_before_the_unchanged_mcp_checks() -> None:

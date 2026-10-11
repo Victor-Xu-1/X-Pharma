@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import cast
 
 from scripts.browser_cases import mapping
 from scripts.browser_phase_runtime import discover, load, phase_arguments, save, source_revision, validate_destination
-from scripts.browser_phases import Phase, close_coverage, verify_results
+from scripts.browser_phases import PHASES, Phase, close_coverage, verify_results
 
 
 def attach(manifest_path: Path, results_path: Path, report_path: Path, phase: Phase) -> None:
@@ -25,23 +26,32 @@ def attach(manifest_path: Path, results_path: Path, report_path: Path, phase: Ph
     save(report_path.with_name(f"{report_path.stem}-verified.json"), report)
 
 
-def close(stack_path: Path, controlled_path: Path, output: Path) -> None:
-    stack, controlled = load(stack_path), load(controlled_path)
+def close(stack_path: Path, controlled_path: Path, output: Path, *, company_path: Path) -> None:
+    stack, controlled, company = load(stack_path), load(controlled_path), load(company_path)
     manifest = mapping(stack.get("phase_manifest"))
-    if manifest != controlled.get("phase_manifest") or manifest.get("revision") != source_revision():
-        raise ValueError("Browser phase artifacts do not bind the same current source and original discovery")
-    if stack.get("status") != "passed" or controlled.get("status") != "passed":
-        raise ValueError("Both required browser phases must have passed")
-    browser = mapping(stack.get("browser"))
     if (
-        controlled.get("schema") != "x-pharma.controlled-browser-acceptance.v1"
-        or controlled.get("real_backend") is not False
-        or controlled.get("browser") != f"{browser.get('product')} {browser.get('version')}"
+        any(manifest != receipt.get("phase_manifest") for receipt in (controlled, company))
+        or manifest.get("revision") != source_revision()
     ):
-        raise ValueError(
-            "Controlled evidence must retain the same verified browser profile and isolated backend boundary"
-        )
-    coverage = close_coverage(manifest, mapping(controlled.get("case_coverage")), mapping(stack.get("case_coverage")))
+        raise ValueError("Browser phase artifacts do not bind the same current source and original discovery")
+    if any(receipt.get("status") != "passed" for receipt in (stack, controlled, company)):
+        raise ValueError("All three required browser phases must have passed")
+    browser = mapping(stack.get("browser"))
+    for receipt in (controlled, company):
+        if (
+            receipt.get("schema") != "x-pharma.controlled-browser-acceptance.v1"
+            or receipt.get("real_backend") is not False
+            or receipt.get("browser") != f"{browser.get('product')} {browser.get('version')}"
+        ):
+            raise ValueError(
+                "Controlled evidence must retain the same verified browser profile and isolated backend boundary"
+            )
+    coverage = close_coverage(
+        manifest,
+        mapping(controlled.get("case_coverage")),
+        mapping(stack.get("case_coverage")),
+        company=mapping(company.get("case_coverage")),
+    )
     tests = mapping(stack.get("tests")).copy()
     projects = mapping(coverage["projects"])
     tests.update(
@@ -70,30 +80,30 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     prepare = commands.add_parser("prepare")
-    prepare.add_argument("--phase", choices=("controlled", "full-stack"), required=True)
+    prepare.add_argument("--phase", choices=PHASES, required=True)
     prepare.add_argument("--manifest", type=Path, required=True)
     prepare.add_argument("--arguments", type=Path, required=True)
     attaching = commands.add_parser("attach")
-    attaching.add_argument("--phase", choices=("controlled", "full-stack"), required=True)
+    attaching.add_argument("--phase", choices=PHASES, required=True)
     attaching.add_argument("--manifest", type=Path, required=True)
     attaching.add_argument("--results", type=Path, required=True)
     attaching.add_argument("--report", type=Path, required=True)
     closing = commands.add_parser("close")
     closing.add_argument("--stack", type=Path, required=True)
     closing.add_argument("--controlled", type=Path, required=True)
+    closing.add_argument("--company", type=Path, required=True)
     closing.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    phase: Phase = "controlled" if getattr(args, "phase", None) == "controlled" else "full-stack"
     if args.command == "prepare":
         validate_destination(args.manifest)
         manifest = discover()
         save(args.manifest, manifest)
         with args.arguments.open("x", encoding="utf-8") as handle:
-            handle.write("\n".join(phase_arguments(manifest, phase)) + "\n")
+            handle.write("\n".join(phase_arguments(manifest, cast(Phase, args.phase))) + "\n")
     elif args.command == "attach":
-        attach(args.manifest, args.results, args.report, phase)
+        attach(args.manifest, args.results, args.report, cast(Phase, args.phase))
     else:
-        close(args.stack, args.controlled, args.output)
+        close(args.stack, args.controlled, args.output, company_path=args.company)
 
 
 if __name__ == "__main__":
