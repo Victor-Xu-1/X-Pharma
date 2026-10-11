@@ -1,12 +1,17 @@
 import { Landmark } from "lucide-react";
 import { EmptyState, formatDate } from "../../components/common";
 import { ProvenanceButton } from "../../components/RecordProvenanceDrawer";
-import { dealTypeLabels, directionLabels, partyRoleLabels, phaseLabels } from "../../lib/dealDisplay";
+import {
+  dealTypeLabels,
+  directionLabels,
+  formatAmount,
+  partyRoleLabels,
+  phaseLabels,
+} from "../../lib/dealDisplay";
 import { useLocale } from "../../lib/i18n";
 import { dossierRecordText as t } from "../../lib/i18n/dossierRecords";
 import { controlledDossierLabel } from "../../lib/i18n/dossierVocabulary";
 import { openDossierEntity } from "./navigation";
-import { formatMoney } from "./presentation";
 import type { DossierEntityOpener, DossierSectionProps } from "./types";
 
 export function Deals({
@@ -43,7 +48,7 @@ export function Deals({
             </h3>
             <p>
               {controlledDossierLabel(item.direction, directionLabels)} · {item.territory ?? t("地域条款未记录")} ·{" "}
-              {t("潜在总额")} {formatMoney(item.total_potential_amount, item.currency)}
+              {t("潜在总额")} {formatAmount(item.total_potential_amount, item.currency)}
             </p>
             <div className="dossier-deal-links">
               <div>
