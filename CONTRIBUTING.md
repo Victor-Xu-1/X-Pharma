@@ -46,6 +46,17 @@ viewports, resource budgets, protocol/load gates and job timeout remain active.
 This is a CI build optimization, not a prebuilt-image substitute or local-runtime
 restart instruction.
 
+Independent account registration, invitation, organization and logout acceptance
+runs in the existing `frontend` job after its production build. The unchanged
+driver still runs both scenarios in each of four viewports, with isolated
+temporary gateways/databases, the same browser configuration and cleanup. This
+removes duplicate Web compilation and independent account work from the serial
+full-stack job. Both jobs use `scripts/prepare-ci-browser.sh` for the same signed
+Chrome, pinned fonts and visual-profile checks. The account report is archived
+as `account-browser-evidence` in that same workflow run; missing evidence fails.
+All six required jobs, their original deadlines, browser cases, viewports,
+interaction/performance budgets and MCP protocol/load checks remain mandatory.
+
 Browser acceptance uses temporary, explicitly non-authoritative search indices.
 The selected development API and projector must both enter the existing
 acceptance mode before those aliases are activated. The driver rejects a

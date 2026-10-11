@@ -152,9 +152,11 @@ def test_cli_rejects_drift_with_an_actionable_error() -> None:
 def test_ci_and_local_runner_share_the_same_preflight_owner() -> None:
     runner = (ROOT / "scripts/run-browser-acceptance.sh").read_text(encoding="utf-8")
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    ci_setup = (ROOT / "scripts/prepare-ci-browser.sh").read_text(encoding="utf-8")
     helper = (ROOT / "scripts/lib/browser_runtime.sh").read_text(encoding="utf-8")
     assert "scripts.browser_visual_profile" in helper
-    assert "scripts.browser_visual_profile" in workflow
+    assert workflow.count("bash scripts/prepare-ci-browser.sh") == 2
+    assert "scripts.browser_visual_profile" in ci_setup
     assert runner.count("resolve_browser_runtime\n") == 1
     assert runner.index("verify_browser_visual_profile\n") < runner.index("api_container_id=$(")
     assert 'browser_product="Google Chrome"' not in runner
