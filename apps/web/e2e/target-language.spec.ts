@@ -215,6 +215,22 @@ test("[target-language] preserves target narratives, complete counts, filters, r
     ),
   ).toHaveCount(5);
   await expect(group).not.toHaveAttribute("open", "");
+  if ((page.viewportSize()?.width ?? 1440) <= 480) {
+    const phoneControls = await panel.locator(".target-pipeline-primary-filters").evaluate((node) => {
+      const style = getComputedStyle(node);
+      return {
+        available: node.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight),
+        widths: [...node.querySelectorAll(":scope > label, :scope > .facet-multi-select")].map(
+          (control) => control.getBoundingClientRect().width,
+        ),
+      };
+    });
+    await testInfo.attach("phone-primary-controls", {
+      body: JSON.stringify(phoneControls),
+      contentType: "application/json",
+    });
+    for (const width of phoneControls.widths) expect(Math.abs(width - phoneControls.available)).toBeLessThanOrEqual(1);
+  }
   await group.locator(":scope > summary").focus();
   await page.keyboard.press("Enter");
   await expect(group).toHaveAttribute("open", "");
