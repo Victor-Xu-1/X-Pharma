@@ -574,9 +574,18 @@ Only these four mobile references are adopted from that exact original run:
 The other sixteen PNG hashes are unchanged. Previous references, manifest and
 binding are retained in the E-drive review evidence. The sole original manifest
 generator binds these hashes to manifest SHA-256
-`39d6a5fd73dcec2d3995989dbd1ab85b2a8e38bf58ccc023ba36a3e4cc72954f2`;
+`39d6a5fd73dcec2d3995989dbd1ab85b2a8e38bf58ccc023ba36a3e4c72954f2`;
 its generation date does not mean twenty new captures. Chrome
 `155.0.8059.39`, package/executable digests, font installation, original masks,
 pixel tolerance `0.001`, all four projects, workers/retries and all performance
 budgets are unchanged. Fresh complete exact-head CI and main deployment remain
 required; this scoped reference maintenance is not release acceptance.
+
+The initial binding entry at `cf118f3` accidentally repeated one character.
+CI `38123320006` correctly rejected it before installing the browser. The
+existing actual-repository metadata test reproduced one failure with nine
+negative cases passing. The binding is corrected to the retained generator's
+64-character file digest above; no validator or browser selection is changed.
+The earlier 22 profile/pair checks did not include this metadata test and were
+insufficient evidence for the actual artifact binding. Subsequent focused
+verification reuses all three existing test modules and the original CLI.
