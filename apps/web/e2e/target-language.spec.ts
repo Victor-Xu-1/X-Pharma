@@ -230,6 +230,7 @@ test("[target-language] preserves target narratives, complete counts, filters, r
   await expect(searchInput).toBeFocused();
   releaseFailureReply(503);
   await expect(panel.getByRole("alert")).toContainText("Controlled pipeline refinement failed");
+  await expect(panel.getByRole("alert")).toBeInViewport();
   expect(failedPipelineReplies).toBe(3);
   await expect(searchInput).toBeFocused();
   await expect(searchInput).toHaveValue("Controlled delayed refinement");
