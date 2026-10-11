@@ -76,11 +76,12 @@ test("[knowledge-language] retains drafts, original values, version selection an
   });
   expect(preview.height).toBeLessThanOrEqual(preview.lineHeight * 3 + 1);
   await expect(originalEntry).toHaveAttribute("title", fixture.detail.title);
+  await audit("controlled-knowledge-catalogue-preview");
   await originalEntry.focus();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(new RegExp(`page=${fixture.detail.id}`));
   await expect(page.getByRole("heading", { name: fixture.detail.title, exact: true })).toBeFocused();
-  await audit("controlled-knowledge-title-preview");
+  await audit("controlled-knowledge-selected-title");
   await page.goto(`/workspace/research?view=knowledge&page=${fixture.detail.id}`);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.getByRole("heading", { name: fixture.detail.title, exact: true })).toBeVisible();
