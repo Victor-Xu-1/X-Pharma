@@ -33,10 +33,10 @@ jobs:
         run: uv sync --locked --dev
       - name: Lint and format gate
         run: |
-          uv run ruff format --check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py
-          uv run ruff check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py
+          uv run ruff format --check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/run_controlled_browser_acceptance.py
+          uv run ruff check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/run_controlled_browser_acceptance.py
       - name: Strict typing gate
-        run: uv run mypy src tests scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py
+        run: uv run mypy src tests scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/run_controlled_browser_acceptance.py
       - name: OpenAPI 3.1.2 drift gate
         run: uv run pharma-openapi --check
       - name: Unit and service tests
@@ -204,6 +204,17 @@ jobs:
           path: /tmp/account-browser-acceptance-report.json
           if-no-files-found: error
 
+      - name: Controlled UI browser cases with no backend
+        working-directory: .
+        run: uv run python -m scripts.run_controlled_browser_acceptance --output /tmp/controlled-browser-acceptance-report.json
+      - name: Archive required controlled browser evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: controlled-browser-evidence
+          path: /tmp/controlled-browser-acceptance-report.json
+          if-no-files-found: error
+
   deployment-contract:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -335,8 +346,23 @@ jobs:
         run: |
           if [[ "$REFRESH_VISUAL_BASELINES" == "true" ]]; then
             ./scripts/run-browser-acceptance.sh --update-snapshots
+            ./scripts/run-browser-acceptance.sh --output /tmp/browser-acceptance-report.json
+          else
+            ./scripts/run-browser-acceptance.sh --phase full-stack --output /tmp/full-stack-browser-acceptance-report.json
           fi
-          ./scripts/run-browser-acceptance.sh --output /tmp/browser-acceptance-report.json
+      - name: Read controlled UI evidence from this workflow
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines) }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: controlled-browser-evidence
+          path: /tmp/controlled-browser-evidence
+      - name: Require exact disjoint complete original browser coverage
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines) }}
+        run: >-
+          uv run python -m scripts.browser_phase_cli close
+          --stack /tmp/full-stack-browser-acceptance-report-verified.json
+          --controlled /tmp/controlled-browser-evidence/controlled-browser-acceptance-report.json
+          --output /tmp/browser-acceptance-report.json
       - name: Archive failed visual comparisons
         if: ${{ failure() && steps.workbench_smoke.outcome == 'failure' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

@@ -6,24 +6,33 @@ cd "$ROOT_DIR"
 output_path=""
 update_snapshots=false
 browser_target=chrome
+browser_phase=all
 keep_browser_output=${PHARMA_BROWSER_KEEP_OUTPUT:-false}
 browser_workers=${PHARMA_BROWSER_WORKERS:-4}
 recover_interrupted_run=false
 
 usage() {
   cat <<'EOF'
-Usage: run-browser-acceptance.sh [--browser chrome|edge-current|edge-previous] [--output FILE] [--update-snapshots] [--recover-interrupted-run]
+Usage: run-browser-acceptance.sh [--browser chrome|edge-current|edge-previous] [--phase all|full-stack] [--output FILE] [--update-snapshots] [--recover-interrupted-run]
 
 Run the real wide desktop, desktop, tablet and mobile browser acceptance suite
 against the local authenticated runtime. The optional report never contains test credentials.
 Snapshot updates are an explicit review operation and cannot produce release evidence.
 Chrome owns the visual baseline. Edge targets compare against it but cannot update it.
+The default phase remains the original full suite. The explicit CI full-stack
+phase requires closure with same-source controlled UI evidence; its partial report
+is not complete browser release evidence. Review updates and recovery stay unpartitioned.
 --recover-interrupted-run removes only browser acceptance fixtures and temporary e2e accounts left by an interrupted run.
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --phase)
+      [[ $# -ge 2 ]] || { echo "--phase requires a value" >&2; exit 2; }
+      browser_phase=$2
+      shift 2
+      ;;
     --output)
       [[ $# -ge 2 ]] || { echo "--output requires a value" >&2; exit 2; }
       output_path=$2
@@ -53,6 +62,15 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+[[ "$browser_phase" == all || "$browser_phase" == full-stack ]] || {
+  echo '--phase must be all or full-stack' >&2
+  exit 2
+}
+if [[ "$browser_phase" != all && ( "$update_snapshots" == true || "$recover_interrupted_run" == true || -z "$output_path" ) ]]; then
+  echo 'Partitioned CI execution requires an output report and cannot update baselines or perform recovery' >&2
+  exit 2
+fi
 
 [[ $browser_target == chrome || $browser_target == edge-current || $browser_target == edge-previous ]] || {
   echo "--browser must be chrome, edge-current or edge-previous" >&2
@@ -173,6 +191,12 @@ else
   mkdir -m 0700 "$output_dir"
 fi
 fixture_source_root="$ROOT_DIR/data/sources/empty/.browser-$fixture_key"
+assigned_browser_files=()
+if [[ "$browser_phase" == full-stack ]]; then
+  python3 -m scripts.browser_phase_cli prepare --phase full-stack \
+    --manifest "$output_dir/phase-manifest.json" --arguments "$output_dir/phase-arguments"
+  mapfile -t assigned_browser_files < "$output_dir/phase-arguments"
+fi
 fixture_ids_path="$output_dir/fixture-ids"
 touch "$fixture_ids_path"
 if [[ -z "${MSYSTEM:-}" ]]; then chmod 600 "$fixture_ids_path"; fi
@@ -2124,6 +2148,7 @@ if [[ -n "${MSYSTEM:-}" && -x "$(command -v cygpath || true)" ]]; then
 fi
 started_ns=$(date +%s%N)
 playwright_args=(
+  "${assigned_browser_files[@]}"
   --reporter=line,json
   --fail-on-flaky-tests
   "--workers=$browser_workers"
@@ -2757,6 +2782,10 @@ finally:
     temporary.unlink(missing_ok=True)
 PY
   printf 'browser_report=%s\n' "$output_path"
+  if [[ "$browser_phase" == full-stack ]]; then
+    python3 -m scripts.browser_phase_cli attach --phase full-stack \
+      --manifest "$output_dir/phase-manifest.json" --results "$output_dir/results.json" --report "$output_path"
+  fi
 fi
 
 printf \
