@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import type { PublicResearchCoverage } from "../src/lib/generated";
 import { patentResult } from "../src/test/fixtures/patentsResearch";
+import { expectPublicResearchFormLayout } from "./fixtures/public-research-reading";
 import { expectResearchReadingLayout } from "./fixtures/reading-layout";
 import { installReadOnlyTablePreference } from "./fixtures/table-preferences";
 import { selectInterfaceLanguage } from "./interface-language";
@@ -27,6 +29,15 @@ test("[patent-language] English-first filters keep drafts, selection and source 
       return route.abort("blockedbyclient");
     }
     if (path === "/api/v1/auth/config") return route.fulfill({ json: { mode: "local" } });
+    if (path === "/api/v1/public-research/coverage")
+      return route.fulfill({
+        json: {
+          entity_counts: {},
+          observed_at: "2026-10-11T00:00:00Z",
+          public_source_names: [],
+          scope_note: "CONTROLLED FIXTURE · Empty local coverage, not a scientific coverage claim",
+        } satisfies PublicResearchCoverage,
+      });
     if (path === "/api/v1/auth/me")
       return route.fulfill({
         json: {
@@ -75,6 +86,7 @@ test("[patent-language] English-first filters keep drafts, selection and source 
   ).toBeChecked();
   await expect(page.locator(".secondary-filter-panel")).toHaveAttribute("open", "");
   await expectResearchReadingLayout(page, page.locator(".virtual-data-table"));
+  await expectPublicResearchFormLayout(page);
   await page.getByRole("button", { name: `打开专利族详情：${patent.family_identifier}`, exact: true }).click();
   await expect(page.getByRole("table", { name: "公开文本", exact: true })).toContainText("WO2022123456A1");
   await page.reload();
@@ -101,6 +113,7 @@ test("[patent-language] English-first filters keep drafts, selection and source 
   await expect(page.locator(".table-preference-error")).toHaveCount(0);
   await expect(page.locator(".table-density-control button").first()).toBeEnabled();
   await expectResearchReadingLayout(page, results);
+  await expectPublicResearchFormLayout(page);
   await page.screenshot({ path: testInfo.outputPath("patent-source-preserving-en.png"), animations: "disabled" });
   const viewport = page.locator(".virtual-table-viewport");
   await page
