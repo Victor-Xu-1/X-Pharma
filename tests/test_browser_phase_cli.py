@@ -9,12 +9,12 @@ from scripts import browser_phase_cli, browser_phase_runtime
 from scripts import run_controlled_browser_acceptance as controlled_runner
 from scripts.browser_cases import mapping
 from scripts.browser_phase_runtime import load, save, validate_destination
-from scripts.browser_phases import CONTROLLED_FILES, create_manifest, verify_results
+from scripts.browser_phases import COMPANY_FILES, CONTROLLED_FILES, create_manifest, verify_results
 from tests.test_browser_phases import report
 
 
-def evidence() -> tuple[dict[str, object], dict[str, object]]:
-    manifest = create_manifest(report(set(CONTROLLED_FILES) | {"workspace.spec.ts"}), "a" * 40)
+def evidence() -> tuple[dict[str, object], dict[str, object], dict[str, object]]:
+    manifest = create_manifest(report(set(CONTROLLED_FILES | COMPANY_FILES) | {"workspace.spec.ts"}), "a" * 40)
     stack: dict[str, object] = {
         "schema": "pharma.browser-acceptance.v9",
         "status": "passed",
@@ -33,36 +33,47 @@ def evidence() -> tuple[dict[str, object], dict[str, object]]:
         "phase_manifest": manifest,
         "case_coverage": verify_results(manifest, report(set(CONTROLLED_FILES), executed=True), "controlled"),
     }
-    return stack, controlled
+    company = {
+        **controlled,
+        "case_coverage": verify_results(manifest, report(set(COMPANY_FILES), executed=True), "company-controlled"),
+    }
+    return stack, controlled, company
 
 
 def test_closure_keeps_original_performance_and_visual_evidence_and_complete_case_counts(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    stack, controlled = evidence()
+    stack, controlled, company = evidence()
     save(tmp_path / "stack.json", stack)
     save(tmp_path / "controlled.json", controlled)
+    save(tmp_path / "company.json", company)
     monkeypatch.setattr(browser_phase_cli, "source_revision", lambda: "a" * 40)
-    browser_phase_cli.close(tmp_path / "stack.json", tmp_path / "controlled.json", tmp_path / "complete.json")
+    browser_phase_cli.close(
+        tmp_path / "stack.json",
+        tmp_path / "controlled.json",
+        tmp_path / "complete.json",
+        company_path=tmp_path / "company.json",
+    )
     result = load(tmp_path / "complete.json")
     assert result["performance"] == stack["performance"]
     assert result["visual_regression"] == stack["visual_regression"]
     assert result["tests"] == {
-        "total": 36,
+        "total": 40,
         "failed": 0,
-        "desktop_1440": 9,
-        "desktop_1920": 9,
-        "tablet_1024": 9,
-        "mobile_390": 9,
+        "desktop_1440": 10,
+        "desktop_1920": 10,
+        "tablet_1024": 10,
+        "mobile_390": 10,
     }
 
 
 @pytest.mark.parametrize("change", ["browser", "source", "missing-case", "failed", "backend"])
+@pytest.mark.parametrize("owner", ["controlled", "company"])
 def test_closure_fails_before_emitting_incomplete_or_mismatched_evidence(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, change: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, change: str, owner: str
 ) -> None:
-    stack, controlled = evidence()
-    invalid = deepcopy(controlled)
+    stack, controlled, company = evidence()
+    invalid = deepcopy(controlled if owner == "controlled" else company)
     if change == "browser":
         invalid["browser"] = "Google Chrome 154.0.8037.97"
     elif change == "source":
@@ -74,10 +85,16 @@ def test_closure_fails_before_emitting_incomplete_or_mismatched_evidence(
     else:
         invalid["real_backend"] = True
     save(tmp_path / "stack.json", stack)
-    save(tmp_path / "controlled.json", invalid)
+    save(tmp_path / "controlled.json", invalid if owner == "controlled" else controlled)
+    save(tmp_path / "company.json", invalid if owner == "company" else company)
     monkeypatch.setattr(browser_phase_cli, "source_revision", lambda: "a" * 40)
     with pytest.raises(ValueError):
-        browser_phase_cli.close(tmp_path / "stack.json", tmp_path / "controlled.json", tmp_path / "complete.json")
+        browser_phase_cli.close(
+            tmp_path / "stack.json",
+            tmp_path / "controlled.json",
+            tmp_path / "complete.json",
+            company_path=tmp_path / "company.json",
+        )
     assert not (tmp_path / "complete.json").exists()
 
 
@@ -97,7 +114,7 @@ def test_browser_evidence_refuses_overwriting_or_following_existing_symlinks(tmp
 def test_attachment_verifies_actual_execution_before_preserving_the_original_report(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, change: str
 ) -> None:
-    stack, _ = evidence()
+    stack, _, _ = evidence()
     actual = report({"workspace.spec.ts"}, executed=True)
     if change == "count":
         stack["tests"] = {"total": 3}
@@ -136,6 +153,29 @@ def test_controlled_destination_readiness_precedes_browser_collection(
     assert output.read_text(encoding="utf-8") == "original"
 
 
+def test_isolated_ui_runner_refuses_the_real_stack_owner_before_discovery(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="cannot execute real stack"):
+        controlled_runner.run(tmp_path / "unpublished.json", "full-stack")
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_closure_requires_the_company_receipt_before_any_publication(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    stack, controlled, _ = evidence()
+    save(tmp_path / "stack.json", stack)
+    save(tmp_path / "controlled.json", controlled)
+    monkeypatch.setattr(browser_phase_cli, "source_revision", lambda: "a" * 40)
+    with pytest.raises(ValueError, match="missing"):
+        browser_phase_cli.close(
+            tmp_path / "stack.json",
+            tmp_path / "controlled.json",
+            tmp_path / "complete.json",
+            company_path=tmp_path / "missing-company.json",
+        )
+    assert not (tmp_path / "complete.json").exists()
+
+
 def test_preflight_checks_capability_without_publishing_the_target(tmp_path: Path) -> None:
     validate_destination(tmp_path / "unpublished.json")
     assert list(tmp_path.iterdir()) == []
@@ -169,7 +209,7 @@ def test_discovery_uses_one_explicit_report_file_without_stdout_or_retry_fallbac
         target = Path(environment["PLAYWRIGHT_JSON_OUTPUT_FILE"])
         assert target != inherited
         if write_result:
-            save(target, report(set(CONTROLLED_FILES) | {"workspace.spec.ts"}))
+            save(target, report(set(CONTROLLED_FILES | COMPANY_FILES) | {"workspace.spec.ts"}))
 
     monkeypatch.setattr(browser_phase_runtime, "execute", collect)
     if write_result:
