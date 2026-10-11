@@ -822,9 +822,6 @@ tbody tr:last-child td {
   }
 }
 @media (max-width: 560px) {
-  .virtual-table-toolbar {
-    flex-wrap: wrap;
-  }
   .virtual-table-toolbar > span {
     width: 100%;
     flex: 1 0 100%;
