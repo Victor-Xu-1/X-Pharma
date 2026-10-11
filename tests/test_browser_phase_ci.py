@@ -56,3 +56,11 @@ def test_browser_phase_is_explicit_and_visual_review_remains_unpartitioned() -> 
     review, normal = step["run"].split("else", 1)
     assert "--update-snapshots" in review and "--phase" not in review
     assert "--phase full-stack" in normal and "--update-snapshots" not in normal
+
+
+def test_phase_identity_is_kept_outside_playwright_managed_output() -> None:
+    script = (ROOT / "scripts/run-browser-acceptance.sh").read_text()
+    assert 'browser_phase_state_dir=$(mktemp -d "$(dirname "$output_dir")/pharma-browser-phase.XXXXXXXX")' in script
+    assert script.count('--manifest "$browser_phase_state_dir/phase-manifest.json"') == 2
+    assert 'mapfile -t assigned_browser_files < "$browser_phase_state_dir/phase-arguments"' in script
+    assert "$output_dir/phase-manifest.json" not in script
