@@ -24,7 +24,7 @@ import { sortCriteriaFromTable, tableSortingFromCriteria } from "../lib/contract
 import { useLocale } from "../lib/i18n";
 import { epidemiologyText as t } from "../lib/i18n/epidemiology";
 import { publicCoverageNotice } from "../lib/publicWarnings";
-import { useFilterDraft } from "../lib/useFilterDraft";
+import { useSearchFilterDraft } from "../lib/useFilterDraft";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import type { DossierEntityOpener } from "./EntityDossierView";
 import { EpidemiologyFilterForm } from "./epidemiology/EpidemiologyFilterForm";
@@ -70,7 +70,7 @@ export function EpidemiologyView({
   onOpenOrganization?: (organizationId: string) => void;
 }) {
   useLocale();
-  const [filters, setFilters] = useFilterDraft(initialFilters);
+  const [filters, setFilters] = useSearchFilterDraft(initialFilters);
   const [trendSelection, setTrendSelection] = useState<TrendSelection | null>(null);
   const [provenanceSelection, setProvenanceSelection] = useState<ProvenanceSelection | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);

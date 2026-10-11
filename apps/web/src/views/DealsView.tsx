@@ -44,7 +44,7 @@ import { useLocale } from "../lib/i18n";
 import { dealText as t } from "../lib/i18n/deals";
 import { professionalValidationText } from "../lib/i18n/professionalValidation";
 import { publicCoverageNotice } from "../lib/publicWarnings";
-import { useFilterDraft } from "../lib/useFilterDraft";
+import { useSearchFilterDraft } from "../lib/useFilterDraft";
 import { usePagedEntitySelection } from "../lib/usePagedEntitySelection";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import type { DealDossierSection } from "../lib/workspaceRouting";
@@ -114,7 +114,7 @@ export function DealsView({
   onOpenOrganization?: (organizationId: string) => void;
 }) {
   useLocale();
-  const [filters, setFilters] = useFilterDraft(initialFilters);
+  const [filters, setFilters] = useSearchFilterDraft(initialFilters);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [provenanceSelection, setProvenanceSelection] = useState<ProvenanceSelection | null>(null);
   const [saveOpen, setSaveOpen] = useState(false),

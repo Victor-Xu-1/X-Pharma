@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   type ColumnDef,
   type ColumnOrderState,
@@ -13,26 +13,19 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   ArrowDown,
   ArrowUp,
-  Check,
-  ChevronDown,
   ChevronsUpDown,
-  ChevronUp,
   CloudOff,
-  Columns3,
   List,
   LoaderCircle,
-  Plus,
   RefreshCw,
   RotateCcw,
   Rows3,
-  Trash2,
   X,
 } from "lucide-react";
-import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   defaultWorkspaceTablePreference,
   loadWorkspaceTablePreference,
-  saveWorkspaceTablePreference,
   type WorkspaceTableDensity,
   type WorkspaceTablePreferenceKey,
   type WorkspaceTablePreferences,
@@ -40,10 +33,12 @@ import {
 } from "../lib/contracts/workspacePreferences";
 import { useLocale } from "../lib/i18n";
 import { tableText as t } from "../lib/i18n/table";
-import { columnLabel, describeTableSorting } from "../lib/tablePresentation";
-import { useDismissibleDetails } from "../lib/useDismissibleDetails";
-import { useFilterDraft } from "../lib/useFilterDraft";
+import { describeTableSorting } from "../lib/tablePresentation";
 import { useSessionIdentity } from "./SessionIdentityContext";
+import { normalizeSortingState } from "./table/sorting";
+import { TableColumnMenu } from "./table/TableColumnMenu";
+import { TableSortMenu } from "./table/TableSortMenu";
+import { useTablePreferenceMutation } from "./table/useTablePreferenceMutation";
 
 type TablePreferences = WorkspaceTablePreferences;
 
@@ -92,15 +87,6 @@ function tablePreferenceFingerprint(preferences: TablePreferences): string {
   });
 }
 
-function normalizeSortingState(sorting: SortingState): SortingState {
-  const seen = new Set<string>();
-  return sorting.filter((criterion) => {
-    if (!criterion.id || seen.has(criterion.id) || seen.size >= 5) return false;
-    seen.add(criterion.id);
-    return true;
-  });
-}
-
 export function VirtualDataTable<T>({
   ariaLabel,
   columns,
@@ -133,7 +119,6 @@ export function VirtualDataTable<T>({
   rowSelection?: TableRowSelection<T>;
 }) {
   useLocale();
-  const queryClient = useQueryClient();
   const user = useSessionIdentity();
   const userId = user?.id ?? null;
   const ownerScope = user ? `${user.tenant_id}:${user.id}` : "anonymous";
@@ -144,16 +129,20 @@ export function VirtualDataTable<T>({
     queryFn: ({ signal }) => loadWorkspaceTablePreference(preferenceKey, signal),
     enabled: userId !== null,
   });
-  const savePreference = useMutation({
-    mutationFn: ({ expectedVersion, preferences }: { expectedVersion: number; preferences: TablePreferences }) =>
-      saveWorkspaceTablePreference(preferenceKey, preferences, expectedVersion),
-    onSuccess: (snapshot) => queryClient.setQueryData(preferenceQueryKey, snapshot),
-  });
+  const savePreference = useTablePreferenceMutation(ownerScope, preferenceKey);
   const [hydratedPreferenceIdentity, setHydratedPreferenceIdentity] = useState<string | null>(null);
   const [localSorting, setLocalSorting] = useState<SortingState>(defaultSorting);
   const serverSorting = controlledSorting !== undefined && onSortingChange !== undefined;
   const sorting = serverSorting ? controlledSorting : localSorting;
-  const [sortDraft, setSortDraft] = useFilterDraft(normalizeSortingState(sorting));
+  const sortingRevision = useRef(0);
+  const sortingFingerprint = JSON.stringify(sorting);
+  const previousSorting = useRef(sortingFingerprint);
+  useLayoutEffect(() => {
+    if (previousSorting.current !== sortingFingerprint) {
+      previousSorting.current = sortingFingerprint;
+      sortingRevision.current += 1;
+    }
+  }, [sortingFingerprint]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [density, setDensity] = useState<WorkspaceTableDensity>("comfortable");
   const [columnOrder, setColumnOrder] = useState<ColumnOrderState>([]);
@@ -162,14 +151,13 @@ export function VirtualDataTable<T>({
   );
   const lastServerPreferenceFingerprint = useRef<string | null>(null);
   const scrollElement = useRef<HTMLDivElement>(null);
-  const sortPopover = useDismissibleDetails();
-  const columnPopover = useDismissibleDetails();
   const table = useReactTable({
     data,
     columns,
     getRowId,
     state: { sorting, columnVisibility, columnOrder },
     onSortingChange: (updater) => {
+      sortingRevision.current += 1;
       const next = normalizeSortingState(typeof updater === "function" ? updater(sorting) : updater);
       if (serverSorting) onSortingChange?.(next.length ? next : defaultSorting);
       else setLocalSorting(next);
@@ -234,8 +222,6 @@ export function VirtualDataTable<T>({
     [columnVisibility, defaultColumnOrder],
   );
   const leafColumns = table.getAllLeafColumns();
-  const sortableColumns = leafColumns.filter((column) => column.getCanSort());
-  const visibleColumnCount = leafColumns.filter((column) => column.getIsVisible()).length;
   const sortingIsDefault =
     sorting.length === defaultSorting.length &&
     sorting.every((sort, index) => sort.id === defaultSorting[index]?.id && sort.desc === defaultSorting[index]?.desc);
@@ -269,14 +255,6 @@ export function VirtualDataTable<T>({
   const preferenceControlsDisabled =
     !preferenceReady || (preferenceIdentity !== null && !preferenceQuery.data) || savePreference.isPending;
   const sortingDescription = describeTableSorting(sorting, leafColumns, sortingScope, defaultSortingDescription);
-  const movedColumn = columnOrderAnnouncement
-    ? leafColumns.find((column) => column.id === columnOrderAnnouncement.columnId)
-    : undefined;
-  const draftSorting = sortDraft.length ? sortDraft : defaultSorting;
-  const sortDraftIsCurrent =
-    sorting.length === draftSorting.length &&
-    sorting.every((sort, index) => sort.id === draftSorting[index]?.id && sort.desc === draftSorting[index]?.desc);
-
   useEffect(() => {
     setHydratedPreferenceIdentity(null);
     lastServerPreferenceFingerprint.current = null;
@@ -353,6 +331,8 @@ export function VirtualDataTable<T>({
   }
 
   async function resetView() {
+    const isCurrent = savePreference.captureCurrent();
+    const submittedSortingRevision = sortingRevision.current;
     const persistReset =
       presentationIsCustomized && preferenceIdentity !== null && preferenceQuery.data && preferenceReady;
     setColumnVisibility({});
@@ -369,6 +349,7 @@ export function VirtualDataTable<T>({
         return;
       }
     }
+    if (!isCurrent() || sortingRevision.current !== submittedSortingRevision) return;
     if (serverSorting) onSortingChange?.(defaultSorting);
     else setLocalSorting(defaultSorting);
   }
@@ -418,45 +399,6 @@ export function VirtualDataTable<T>({
       next.push(rowId);
     }
     rowSelection.onChange(next);
-  }
-
-  function applyServerSort() {
-    if (!serverSorting || sortDraftIsCurrent) return;
-    onSortingChange?.(draftSorting);
-  }
-
-  function updateSortDraft(index: number, update: Partial<SortingState[number]>) {
-    setSortDraft((current) =>
-      normalizeSortingState(
-        current.map((criterion, criterionIndex) =>
-          criterionIndex === index ? { ...criterion, ...update } : criterion,
-        ),
-      ),
-    );
-  }
-
-  function addSortCriterion() {
-    const selected = new Set(sortDraft.map((criterion) => criterion.id));
-    const nextColumn = sortableColumns.find((column) => !selected.has(column.id));
-    if (!nextColumn || sortDraft.length >= 5) return;
-    setSortDraft((current) => [...current, { id: nextColumn.id, desc: false }]);
-  }
-
-  function removeSortCriterion(index: number) {
-    setSortDraft((current) => {
-      const next = current.filter((_criterion, criterionIndex) => criterionIndex !== index);
-      return next.length ? next : defaultSorting;
-    });
-  }
-
-  function moveSortCriterion(index: number, direction: -1 | 1) {
-    const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= sortDraft.length) return;
-    setSortDraft((current) => {
-      const next = [...current];
-      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
-      return next;
-    });
   }
 
   return (
@@ -517,116 +459,16 @@ export function VirtualDataTable<T>({
             <span className="sr-only">{t("正在同步视图设置")}</span>
           </span>
         ) : null}
-        {serverSorting && sortableColumns.length ? (
-          <details className="table-sort-menu" {...sortPopover}>
-            <summary title={t("自定义排序")}>
-              <ChevronsUpDown size={15} />
-              {t("排序")}
-            </summary>
-            <fieldset className="table-sort-editor">
-              <legend>{t("自定义排序")}</legend>
-              <div className="table-sort-editor-heading">
-                <strong>{t("排序优先级")}</strong>
-                <span aria-live="polite">{sortDraft.length}/5</span>
-              </div>
-              <div className="table-sort-criteria">
-                {sortDraft.map((criterion, index) => (
-                  <div className="table-sort-criterion" key={criterion.id}>
-                    <span className="table-sort-priority" aria-hidden="true">
-                      {index + 1}
-                    </span>
-                    <label>
-                      <span className="sr-only">{t("第 {index} 排序字段", { index: index + 1 })}</span>
-                      <select
-                        aria-label={t("第 {index} 排序字段", { index: index + 1 })}
-                        value={criterion.id}
-                        onChange={(event) => updateSortDraft(index, { id: event.target.value })}
-                      >
-                        {sortableColumns.map((column) => (
-                          <option
-                            value={column.id}
-                            key={column.id}
-                            disabled={sortDraft.some(
-                              (selected, selectedIndex) => selectedIndex !== index && selected.id === column.id,
-                            )}
-                          >
-                            {columnLabel(column)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <fieldset className="table-sort-direction">
-                      <legend className="sr-only">{t("第 {index} 排序方向", { index: index + 1 })}</legend>
-                      <button
-                        type="button"
-                        aria-label={t("第 {index} 排序方向：升序", { index: index + 1 })}
-                        title={t("升序")}
-                        aria-pressed={!criterion.desc}
-                        onClick={() => updateSortDraft(index, { desc: false })}
-                      >
-                        <ArrowUp size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={t("第 {index} 排序方向：降序", { index: index + 1 })}
-                        title={t("降序")}
-                        aria-pressed={criterion.desc}
-                        onClick={() => updateSortDraft(index, { desc: true })}
-                      >
-                        <ArrowDown size={14} />
-                      </button>
-                    </fieldset>
-                    <div className="table-sort-order-controls">
-                      <button
-                        type="button"
-                        aria-label={t("上移第 {index} 排序字段", { index: index + 1 })}
-                        title={t("提高优先级")}
-                        disabled={index === 0}
-                        onClick={() => moveSortCriterion(index, -1)}
-                      >
-                        <ChevronUp size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={t("下移第 {index} 排序字段", { index: index + 1 })}
-                        title={t("降低优先级")}
-                        disabled={index === sortDraft.length - 1}
-                        onClick={() => moveSortCriterion(index, 1)}
-                      >
-                        <ChevronDown size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={t("删除第 {index} 排序字段", { index: index + 1 })}
-                        title={t("删除排序字段")}
-                        disabled={sortDraft.length === 1}
-                        onClick={() => removeSortCriterion(index)}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                className="secondary-button table-sort-add"
-                disabled={sortDraft.length >= 5 || sortDraft.length >= sortableColumns.length}
-                onClick={addSortCriterion}
-              >
-                <Plus size={14} />
-                {t("添加排序字段")}
-              </button>
-              <button
-                type="button"
-                className="primary-button table-sort-apply"
-                disabled={sortDraftIsCurrent}
-                onClick={applyServerSort}
-              >
-                {t("应用排序")}
-              </button>
-            </fieldset>
-          </details>
+        {serverSorting ? (
+          <TableSortMenu
+            columns={leafColumns}
+            sorting={sorting}
+            defaultSorting={defaultSorting}
+            onApply={(next) => onSortingChange?.(next)}
+            onIntent={() => {
+              sortingRevision.current += 1;
+            }}
+          />
         ) : null}
         <fieldset className="table-density-control">
           <legend className="sr-only">{t("表格密度")}</legend>
@@ -653,61 +495,12 @@ export function VirtualDataTable<T>({
             <span>{t("紧凑")}</span>
           </button>
         </fieldset>
-        <details className="table-column-menu" {...columnPopover}>
-          <summary>
-            <Columns3 size={15} />
-            {t("列")}
-          </summary>
-          <fieldset>
-            <legend>{t("列设置")}</legend>
-            {leafColumns.map((column, index) => {
-              const label = columnLabel(column);
-              const visible = column.getIsVisible();
-              return (
-                <div className="table-column-option" key={column.id}>
-                  <input
-                    type="checkbox"
-                    checked={visible}
-                    disabled={preferenceControlsDisabled || (visible && visibleColumnCount === 1)}
-                    aria-label={t("显示列：{column}", { column: label })}
-                    onChange={column.getToggleVisibilityHandler()}
-                  />
-                  <span>{label}</span>
-                  <fieldset className="table-column-order-controls">
-                    <legend className="sr-only">{t("调整列顺序：{column}", { column: label })}</legend>
-                    <button
-                      type="button"
-                      aria-label={t("上移列：{column}", { column: label })}
-                      title={t("上移{column}", { column: label })}
-                      disabled={preferenceControlsDisabled || index === 0}
-                      onClick={() => moveColumn(column.id, -1)}
-                    >
-                      <ChevronUp size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={t("下移列：{column}", { column: label })}
-                      title={t("下移{column}", { column: label })}
-                      disabled={preferenceControlsDisabled || index === leafColumns.length - 1}
-                      onClick={() => moveColumn(column.id, 1)}
-                    >
-                      <ChevronDown size={13} />
-                    </button>
-                  </fieldset>
-                  {visible ? <Check size={13} aria-hidden="true" /> : null}
-                </div>
-              );
-            })}
-          </fieldset>
-          <span className="sr-only" aria-live="polite">
-            {columnOrderAnnouncement && movedColumn
-              ? t("{column}已移至第{index}列", {
-                  column: columnLabel(movedColumn),
-                  index: columnOrderAnnouncement.index,
-                })
-              : ""}
-          </span>
-        </details>
+        <TableColumnMenu
+          leafColumns={leafColumns}
+          preferenceControlsDisabled={preferenceControlsDisabled}
+          columnOrderAnnouncement={columnOrderAnnouncement}
+          moveColumn={moveColumn}
+        />
         <button
           className="icon-button table-view-reset"
           type="button"

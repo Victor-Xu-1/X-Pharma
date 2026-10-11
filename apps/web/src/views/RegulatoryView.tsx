@@ -38,7 +38,7 @@ import {
   safetyStatusLabels,
   severityLabels,
 } from "../lib/regulatoryDisplay";
-import { useFilterDraft } from "../lib/useFilterDraft";
+import { useSearchFilterDraft } from "../lib/useFilterDraft";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import type { DossierEntityOpener } from "./EntityDossierView";
 import { regulatoryLabels } from "./regulatory/presentation";
@@ -104,7 +104,7 @@ export function RegulatoryView({
   onOpenOrganization?: (organizationId: string) => void;
 }) {
   useLocale();
-  const [filters, setFilters] = useFilterDraft(initialFilters);
+  const [filters, setFilters] = useSearchFilterDraft(initialFilters);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
