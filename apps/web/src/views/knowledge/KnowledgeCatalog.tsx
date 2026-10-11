@@ -115,6 +115,7 @@ export function KnowledgeCatalog({
                 <button
                   key={page.id}
                   type="button"
+                  title={page.title}
                   className={location.pageId === page.id ? "active" : ""}
                   aria-current={location.pageId === page.id ? "true" : undefined}
                   onClick={() => {
