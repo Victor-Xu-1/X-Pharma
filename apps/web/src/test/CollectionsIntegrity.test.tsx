@@ -346,7 +346,13 @@ it("returns an out-of-range directory page to the last valid page without replac
   await screen.findByRole("button", { name: "列表目录下一页" });
   total = 25;
   fireEvent.click(screen.getByRole("button", { name: "列表目录下一页" }));
+  await waitFor(() => expect(loadCollectionCatalog).toHaveBeenCalledWith("", 25, expect.any(AbortSignal)));
+  // Disabled controls also occur while loading; wait for the actual recovery request.
+  await waitFor(() => expect(loadCollectionCatalog).toHaveBeenLastCalledWith("", 0, expect.any(AbortSignal)));
   await waitFor(() => expect(screen.getByRole("button", { name: "列表目录上一页" })).toBeDisabled());
   expect(loadCollectionCatalog).toHaveBeenLastCalledWith("", 0, expect.any(AbortSignal));
+  await waitFor(() => expect(screen.getByText("第 1 / 1 页 · 共 25 条")).toBeVisible());
+  expect(screen.getByRole("heading", { name: first.name })).toBeVisible();
+  expect(getComparisonSet).toHaveBeenCalledOnce();
   expect(result.navigate).not.toHaveBeenCalled();
 });
