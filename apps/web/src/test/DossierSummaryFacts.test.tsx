@@ -23,6 +23,8 @@ it("retains all six facts, unknown phase codes, zero counts, missing dates and r
   expect(primary?.children).toHaveLength(3);
   expect(secondary?.children).toHaveLength(3);
   expect(primary).toHaveTextContent("SOURCE_FUTURE_PHASE");
+  expect(primary?.querySelector("dd")?.textContent).toBe("SOURCE_FUTURE_PHASE");
+  expect(primary?.querySelectorAll("dd wbr")).toHaveLength(3);
   expect(primary).toHaveTextContent("0 / 0");
   expect(secondary).toHaveTextContent("--");
   expect(secondary).toHaveTextContent("原始数据 / 0.00000012345");

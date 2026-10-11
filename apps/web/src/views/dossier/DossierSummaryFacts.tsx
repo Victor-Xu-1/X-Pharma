@@ -1,5 +1,5 @@
 import { ChevronDown } from "lucide-react";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import "./DossierSummaryFacts.css";
 
 interface SummaryFact {
@@ -23,7 +23,16 @@ export function DossierSummaryFacts({
     return items.map(({ key, label, value }) => (
       <div key={key}>
         <dt>{label}</dt>
-        <dd>{value}</dd>
+        <dd>
+          {typeof value === "string"
+            ? Array.from(value.matchAll(/[^_/-]+|[_/-]/gu), ({ 0: part, index: sourceOffset }) => (
+                <Fragment key={sourceOffset}>
+                  {part}
+                  {/^[_/-]$/u.test(part) ? <wbr /> : null}
+                </Fragment>
+              ))
+            : value}
+        </dd>
       </div>
     ));
   }
