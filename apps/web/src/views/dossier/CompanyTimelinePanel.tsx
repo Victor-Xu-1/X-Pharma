@@ -2,11 +2,11 @@ import { ShieldCheck } from "lucide-react";
 import { EmptyState, ErrorState, formatDate, Spinner } from "../../components/common";
 import { ProvenanceButton } from "../../components/RecordProvenanceDrawer";
 import type { ProvenanceSelection } from "../../lib/contracts/provenance";
+import { formatAmount } from "../../lib/dealDisplay";
 import type { CompanyTimelineResult } from "../../lib/generated";
 import { useLocale } from "../../lib/i18n";
 import { dossierRecordText as t } from "../../lib/i18n/dossierRecords";
 import { openDossierEntity } from "./navigation";
-import { formatMoney } from "./presentation";
 import type { DossierEntityOpener } from "./types";
 
 export function CompanyTimelinePanel({
@@ -116,7 +116,7 @@ export function CompanyTimelinePanel({
                     ))}
                     {event.deal.territory ? ` · ${event.deal.territory}` : ""}
                     {event.deal.total_potential_amount !== null
-                      ? ` · ${t("潜在总额")} ${formatMoney(event.deal.total_potential_amount, event.deal.currency)}`
+                      ? ` · ${t("潜在总额")} ${formatAmount(event.deal.total_potential_amount, event.deal.currency)}`
                       : ""}
                   </p>
                 ) : null}
