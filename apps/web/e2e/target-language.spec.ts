@@ -234,11 +234,28 @@ test("[target-language] preserves target narratives, complete counts, filters, r
   const feedbackHeight = await panel
     .locator(".target-pipeline-feedback")
     .evaluate((node) => node.getBoundingClientRect().height);
-  const inputNotObscured = await searchInput.evaluate((node) => {
+  const inputGeometry = await searchInput.evaluate((node) => {
     const bounds = node.getBoundingClientRect();
-    return document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2) === node;
+    const hit = document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+    const feedback = document.querySelector(".target-pipeline-feedback")?.getBoundingClientRect();
+    return {
+      inputNotObscured: hit === node,
+      top: bounds.top,
+      bottom: bounds.bottom,
+      left: bounds.left,
+      viewport: innerHeight,
+      scrollY,
+      hitTag: hit?.tagName,
+      hitClass: hit?.className,
+      feedbackTop: feedback?.top,
+      feedbackBottom: feedback?.bottom,
+    };
   });
-  expect({ compactFeedback: feedbackHeight <= 160, inputNotObscured }).toEqual({
+  await testInfo.attach("pipeline-focus-geometry", {
+    body: JSON.stringify(inputGeometry),
+    contentType: "application/json",
+  });
+  expect({ compactFeedback: feedbackHeight <= 160, inputNotObscured: inputGeometry.inputNotObscured }).toEqual({
     compactFeedback: true,
     inputNotObscured: true,
   });
