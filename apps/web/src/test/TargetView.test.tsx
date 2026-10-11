@@ -210,6 +210,100 @@ it("localizes only the known application coverage warning while retaining origin
   expect(searchPipelines).toHaveBeenCalledTimes(reads);
 });
 
+it("keeps a compact target header without removing identifiers, query qualification or raw aliases", async () => {
+  const base = await vi.mocked(loadTargetDossier)("template", new AbortController().signal);
+  vi.mocked(loadTargetDossier).mockResolvedValue({
+    ...base,
+    profile: { ...base.profile, entity: { ...base.profile.entity, aliases: ["ERBB1", "原始靶点代号"] } },
+  });
+  setLocale("en");
+  renderTargetView();
+  await screen.findByRole("heading", { name: "EGFR" });
+  const header = screen.getByRole("region", { name: "Target profile summary" });
+  expect(header.querySelectorAll(".target-header-stats > div")).toHaveLength(3);
+  expect(within(header).getByText("P00533", { exact: true })).toBeVisible();
+  expect(within(header).getByText("Query time", { exact: true })).toBeVisible();
+  const disclosure = header.querySelector("details.target-header-details");
+  expect(disclosure).not.toHaveAttribute("open");
+  expect(within(header).getByText("原始靶点代号", { exact: true })).not.toBeVisible();
+  fireEvent.click(within(header).getByText("Identifiers and aliases", { exact: true }));
+  expect(disclosure).toHaveAttribute("open");
+  expect(within(header).getByText("原始靶点代号", { exact: true })).toBeVisible();
+  expect(within(header).getByText("Gene symbol", { exact: true })).toBeVisible();
+  expect(within(header).getByText("Dossier query time, not the last update of every source")).toBeVisible();
+  const reads = vi.mocked(loadTargetDossier).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("标识与别名", { exact: true })).toBeVisible();
+  expect(disclosure).toHaveAttribute("open");
+  expect(screen.getByText("原始靶点代号", { exact: true })).toBeVisible();
+  expect(loadTargetDossier).toHaveBeenCalledTimes(reads);
+});
+
+it("retains absent identifiers and an unknown target class in the compact header", async () => {
+  const base = await vi.mocked(loadTargetDossier)("template", new AbortController().signal);
+  vi.mocked(loadTargetDossier).mockResolvedValue({
+    ...base,
+    profile: { ...base.profile, gene_symbol: null, uniprot_accession: null, target_class: "future_raw_class" },
+  });
+  setLocale("en");
+  renderTargetView();
+  await screen.findByRole("heading", { name: "EGFR" });
+  const header = screen.getByRole("region", { name: "Target profile summary" });
+  expect(header).toHaveTextContent("future_raw_class");
+  expect(within(header).getByText("UniProt", { exact: true }).parentElement).toHaveTextContent("--");
+  fireEvent.click(within(header).getByText("Identifiers and aliases", { exact: true }));
+  expect(within(header).getByText("Gene symbol", { exact: true }).parentElement).toHaveTextContent("--");
+});
+
+it("limits unfiltered target pipeline primary controls while keeping secondary filters available", async () => {
+  setLocale("en");
+  renderTargetView({ initialSection: "pipeline" });
+  await screen.findByRole("table", { name: "Target drug development overview" });
+  const primary = document.querySelector(".target-pipeline-panel > .target-evidence-filters");
+  expect(primary?.querySelectorAll(":scope > label, :scope > .facet-multi-select")).toHaveLength(5);
+  expect(primary).not.toHaveTextContent("Therapeutic area");
+  expect(primary).not.toHaveTextContent("Geography");
+  expect(primary).not.toHaveTextContent("Clinical results");
+  expect(primary).not.toHaveTextContent("Deal signals");
+  const secondary = document.querySelector(".target-pipeline-panel .pipeline-advanced-filters");
+  expect(secondary).toHaveAttribute("data-active-count", "0");
+  expect(secondary).not.toHaveAttribute("open");
+  fireEvent.click(screen.getByText("More filters", { exact: true }));
+  expect(screen.getByRole("combobox", { name: "Geography" })).toBeVisible();
+  expect(screen.getByRole("combobox", { name: "Clinical results" })).toBeVisible();
+  expect(screen.getByRole("combobox", { name: "Deal signals" })).toBeVisible();
+});
+
+it("automatically discloses four selected secondary target filters and preserves false choices through reset", async () => {
+  setLocale("en");
+  renderTargetView({
+    initialSection: "pipeline",
+    initialPipelineFilters: {
+      ...emptyPipelineSearchFilters(),
+      targetEntityId: target.id,
+      therapeuticAreas: ["肿瘤领域"],
+      geography: "global",
+      hasClinicalResults: "false",
+      hasDeal: "false",
+    },
+  });
+  await screen.findByRole("table", { name: "Target drug development overview" });
+  const secondary = document.querySelector(".target-pipeline-panel .pipeline-advanced-filters");
+  expect(secondary).toHaveAttribute("data-active-count", "4");
+  expect(secondary).toHaveAttribute("open");
+  expect(screen.getByRole("combobox", { name: "Clinical results" })).toHaveValue("false");
+  expect(screen.getByRole("combobox", { name: "Deal signals" })).toHaveValue("false");
+  const reads = vi.mocked(searchPipelines).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("combobox", { name: "临床结果" })).toHaveValue("false");
+  expect(searchPipelines).toHaveBeenCalledTimes(reads);
+  fireEvent.click(screen.getByRole("button", { name: "重置筛选" }));
+  await waitFor(() => expect(secondary).toHaveAttribute("data-active-count", "0"));
+  expect(secondary).toHaveAttribute("open");
+  expect(screen.getByRole("combobox", { name: "临床结果" })).toHaveValue("");
+  expect(screen.getByRole("combobox", { name: "交易信号" })).toHaveValue("");
+});
+
 function renderTargetView({
   onOpenEntity = vi.fn(),
   onOpenDrug,

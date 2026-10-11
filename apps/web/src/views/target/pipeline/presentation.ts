@@ -27,6 +27,10 @@ export function defaultTargetDrugColumns(): Set<TargetDrugColumnKey> {
 
 export function countAdvancedPipelineFilters(filters: PipelineSearchFilters): number {
   return [
+    filters.therapeuticAreas.length,
+    filters.geography,
+    filters.hasClinicalResults,
+    filters.hasDeal,
     filters.innovationTypes.length,
     filters.drugCategories.length,
     filters.organizationRole,
