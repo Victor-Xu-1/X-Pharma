@@ -13,12 +13,27 @@ export async function expectPublicResearchFormLayout(page: Page) {
       const row = node.parentElement;
       if (!row) throw new Error("Research controls must retain their own form row");
       const style = getComputedStyle(row);
+      let selectedTextWidth: number | null = null;
+      const controlStyle = getComputedStyle(node);
+      if (node instanceof HTMLSelectElement) {
+        const canvas = document.createElement("canvas").getContext("2d");
+        const selected = node.selectedOptions[0];
+        if (!canvas || !selected) throw new Error("The complete selected research scope must be measurable");
+        canvas.font = `${controlStyle.fontWeight} ${controlStyle.fontSize} ${controlStyle.fontFamily}`;
+        selectedTextWidth = canvas.measureText(selected.label).width;
+      }
       const range = document.createRange();
       range.selectNodeContents(node);
       return {
         tag: node.tagName,
         height: bounds.height,
         width: bounds.width,
+        selectedTextWidth,
+        textAvailable:
+          bounds.width -
+          Number.parseFloat(controlStyle.paddingLeft) -
+          Number.parseFloat(controlStyle.paddingRight) -
+          24,
         available:
           row.getBoundingClientRect().width -
           Number.parseFloat(style.paddingLeft) -
@@ -42,5 +57,10 @@ export async function expectPublicResearchFormLayout(page: Page) {
       );
     }
     if (control.tag === "BUTTON") expect(control.lines, "The research action retains one readable line").toBe(1);
+    if (control.selectedTextWidth !== null)
+      expect(
+        control.selectedTextWidth,
+        "The complete selected scope retains its uncertainty qualifier",
+      ).toBeLessThanOrEqual(control.textAvailable);
   }
 }

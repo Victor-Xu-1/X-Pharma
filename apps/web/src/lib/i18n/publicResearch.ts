@@ -10,7 +10,7 @@ export const publicResearchMessages = {
   "关键词专利（历史著录）": "Historical patent metadata",
   "化合物专利引用（药物名/CID）": "Compound patent references (drug name / CID)",
   文献: "Literature",
-  "公司公告／交易线索": "Company disclosures / deal leads",
+  "公司公告／交易线索": "Disclosures & deal leads",
   公开检索尚未执行: "Public search has not been executed.",
   公开来源调研: "Public-source research",
   "补充本地覆盖 · 按需联网查询": "Supplement local coverage · Search online on demand",
