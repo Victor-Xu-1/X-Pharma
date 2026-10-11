@@ -395,9 +395,6 @@
 .company-profile-page {
   min-width: 0;
 }
-.company-profile-metrics {
-  grid-template-columns: repeat(6, minmax(110px, 1fr));
-}
 .company-profile-overview {
   display: grid;
   gap: 24px;
@@ -775,9 +772,6 @@
   .drug-profile-overview-grid {
     grid-template-columns: 1fr;
   }
-  .company-profile-metrics {
-    grid-template-columns: repeat(3, minmax(110px, 1fr));
-  }
   .company-profile-overview-grid {
     grid-template-columns: 1fr;
   }
@@ -834,7 +828,6 @@
     width: 40px;
     height: 40px;
   }
-  .company-profile-metrics,
   .company-profile-recent-events {
     grid-template-columns: 1fr;
   }

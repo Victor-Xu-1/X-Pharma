@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import type { CompanyDossier } from "../src/lib/contracts/company";
 import { dossier, program } from "../src/test/fixtures/companyDossier";
 import { installCompanyBrowserFixture } from "./company-browser-fixture";
+import { verifyDossierSummaryHierarchy } from "./dossier-summary-hierarchy";
 import { selectInterfaceLanguage } from "./interface-language";
 
 const organizationId = "a8ed0601-cfa5-4d1f-bb82-898a570596da";
@@ -57,6 +58,16 @@ function fixture(providerLabel = false): CompanyDossier {
     coverage: [{ domain: "programs", total: 11, returned: 11, status: "available", note: "原始覆盖说明" }],
   };
 }
+
+test("[dossier-summary] retains both dossier fact groups, raw codes and keyboard disclosures", async ({
+  page,
+}, testInfo) => {
+  const data = fixture();
+  const { audit, errors, writes } = await installCompanyBrowserFixture(page, testInfo, data);
+  await verifyDossierSummaryHierarchy(page, data, audit);
+  expect(errors).toEqual([]);
+  expect(writes).toEqual([]);
+});
 
 for (const providerLabel of [false, true]) {
   test(`[company-language] ${providerLabel ? "registry sponsor" : "canonical organization"} retains identity, sections and loaded assets across language changes`, async ({

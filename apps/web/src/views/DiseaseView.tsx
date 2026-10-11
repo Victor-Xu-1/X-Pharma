@@ -17,6 +17,7 @@ import { DiseaseOverview } from "./disease/DiseaseOverview";
 import { EpidemiologyPanel } from "./disease/EpidemiologyPanel";
 import { RegistryConditionDossier } from "./disease/RegistryConditionDossier";
 import { tabs } from "./disease/vocabulary";
+import { DossierSummaryFacts } from "./dossier/DossierSummaryFacts";
 import {
   Deals,
   type DossierEntityOpener,
@@ -133,38 +134,32 @@ export function DiseaseView({
             </div>
           </header>
 
-          <dl className="dossier-metrics company-profile-metrics">
-            <div>
-              <dt>{t("最高研发阶段")}</dt>
-              <dd>{phaseLabel(data.summary.highest_phase)}</dd>
-            </div>
-            <div>
-              <dt>{t("研发项目 / 药物")}</dt>
-              <dd>
-                {data.summary.program_count} / {data.summary.drug_count}
-              </dd>
-            </div>
-            <div>
-              <dt>{t("靶点 / 公司")}</dt>
-              <dd>
-                {data.summary.target_count} / {data.summary.organization_count}
-              </dd>
-            </div>
-            <div>
-              <dt>{t("疾病负担观测")}</dt>
-              <dd>{data.summary.epidemiology_observation_count}</dd>
-            </div>
-            <div>
-              <dt>{t("临床试验 / 专利")}</dt>
-              <dd>
-                {data.summary.clinical_trial_count} / {data.summary.patent_count}
-              </dd>
-            </div>
-            <div>
-              <dt>{t("最近活动")}</dt>
-              <dd>{formatDate(data.summary.latest_activity_at)}</dd>
-            </div>
-          </dl>
+          <DossierSummaryFacts
+            key={data.entity.id}
+            moreLabel={t("更多档案指标")}
+            primary={[
+              { key: "phase", label: t("最高研发阶段"), value: phaseLabel(data.summary.highest_phase) },
+              {
+                key: "programs",
+                label: t("研发项目 / 药物"),
+                value: `${data.summary.program_count} / ${data.summary.drug_count}`,
+              },
+              {
+                key: "targets",
+                label: t("靶点 / 公司"),
+                value: `${data.summary.target_count} / ${data.summary.organization_count}`,
+              },
+            ]}
+            secondary={[
+              { key: "burden", label: t("疾病负担观测"), value: data.summary.epidemiology_observation_count },
+              {
+                key: "trials",
+                label: t("临床试验 / 专利"),
+                value: `${data.summary.clinical_trial_count} / ${data.summary.patent_count}`,
+              },
+              { key: "activity", label: t("最近活动"), value: formatDate(data.summary.latest_activity_at) },
+            ]}
+          />
 
           <ResearchTabList
             tabs={tabs.map((tab) => ({ ...tab, label: t(tab.label as keyof typeof diseaseDossierMessages) }))}

@@ -1,6 +1,7 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs, TestInfo } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
+import type { DiseaseDossier } from "../../src/lib/contracts/disease";
 import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyDenseServerSorting(
@@ -114,10 +115,36 @@ export async function verifyDenseServerSorting(
   );
 
   const diseaseName = `Browser epidemiology disease ${fixtureKey}`;
+  const diseaseDossierResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      response.request().method() === "GET" && url.pathname === `/api/v1/diseases/${epidemiologyDiseaseId}/dossier`
+    );
+  });
   await page.goto(`/workspace/research?view=disease&entity=${epidemiologyDiseaseId}`);
+  const diseaseResponse = await diseaseDossierResponse;
+  expect(diseaseResponse.ok()).toBe(true);
+  const diseaseDossier = (await diseaseResponse.json()) as DiseaseDossier;
+  expect(diseaseDossier.entity).toMatchObject({ id: epidemiologyDiseaseId, entity_type: "disease" });
+  expect(diseaseDossier.summary.epidemiology_observation_count).toBe(3);
+  expect(diseaseDossier.epidemiology.total).toBe(3);
+  expect(diseaseDossier.epidemiology.items).toHaveLength(3);
   await expect(page).toHaveURL(new RegExp(`view=disease&entity=${epidemiologyDiseaseId}`));
   await expect(page.getByRole("heading", { name: diseaseName })).toBeVisible();
+  const summaryFacts = page.locator("details.dossier-summary-details");
+  const moreFacts = summaryFacts.locator("summary");
+  await expect(moreFacts).toHaveText("更多档案指标");
+  await expect(summaryFacts).not.toHaveAttribute("open", "");
+  await expect(page.getByText("疾病负担观测", { exact: true })).toBeHidden();
+  const diseaseOverviewUrl = page.url();
+  await moreFacts.focus();
+  await moreFacts.press("Enter");
+  await expect(summaryFacts).toHaveAttribute("open", "");
   await expect(page.getByText("疾病负担观测", { exact: true })).toBeVisible();
+  await expect(summaryFacts.locator("dd").first()).toHaveText(
+    String(diseaseDossier.summary.epidemiology_observation_count),
+  );
+  await expect(page).toHaveURL(diseaseOverviewUrl);
   await expect(page.getByRole("table", { name: "最新疾病负担观测" })).toContainText("158,000");
 
   await page.getByRole("tab", { name: "流行病学" }).click();
