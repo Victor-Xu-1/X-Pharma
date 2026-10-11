@@ -119,7 +119,11 @@ export function PublicResearchPanel({
             "仅点击“查询公开来源”后才发送下方关键词。不要输入患者、未公开项目或其他保密信息；联网结果与本地已核验数据分开。",
           )}
         </p>
-        <form className="intelligence-query-panel" onSubmit={submit} aria-label={t("公开来源检索")}>
+        <form
+          className="intelligence-query-panel public-research-query"
+          onSubmit={submit}
+          aria-label={t("公开来源检索")}
+        >
           <div className="query-row">
             <label htmlFor={inputId}>{t("公开关键词")}</label>
             <input

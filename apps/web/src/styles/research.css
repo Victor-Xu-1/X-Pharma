@@ -1565,6 +1565,19 @@
 .query-row:last-child {
   border-bottom: 0;
 }
+@media (max-width: 560px) {
+  .public-research-query > .query-row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+  .public-research-query > .query-row > :is(input, select, button) {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    align-self: start;
+  }
+}
 .query-row > label,
 .query-label {
   color: var(--ds-ink);

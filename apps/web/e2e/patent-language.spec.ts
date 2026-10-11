@@ -115,6 +115,14 @@ test("[patent-language] English-first filters keep drafts, selection and source 
   await expectResearchReadingLayout(page, results);
   await expectPublicResearchFormLayout(page);
   await page.screenshot({ path: testInfo.outputPath("patent-source-preserving-en.png"), animations: "disabled" });
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .include('[data-testid="public-research-panel"]')
+        .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+        .analyze()
+    ).violations,
+  ).toEqual([]);
   const viewport = page.locator(".virtual-table-viewport");
   await page
     .locator(".virtual-table-shell")
