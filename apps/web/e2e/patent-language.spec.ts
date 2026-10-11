@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { patentResult } from "../src/test/fixtures/patentsResearch";
+import { expectResearchReadingLayout } from "./fixtures/reading-layout";
 import { installReadOnlyTablePreference } from "./fixtures/table-preferences";
 import { selectInterfaceLanguage } from "./interface-language";
 
@@ -98,6 +99,7 @@ test("[patent-language] English-first filters keep drafts, selection and source 
   );
   await expect(page.locator(".table-preference-error")).toHaveCount(0);
   await expect(page.locator(".table-density-control button").first()).toBeEnabled();
+  await expectResearchReadingLayout(page, results);
   await page.screenshot({ path: testInfo.outputPath("patent-source-preserving-en.png"), animations: "disabled" });
   expect(writes).toEqual([]);
   expect(errors).toEqual([]);
