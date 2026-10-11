@@ -65,6 +65,78 @@ type TargetPipelineAnalysisState = {
   targetAggregation: PipelineTargetAggregation;
 };
 
+it("localizes the target pipeline while retaining scientific names, selection and cached query reads", async () => {
+  setLocale("en");
+  renderTargetView({ initialSection: "pipeline" });
+  const table = await screen.findByRole("table", { name: "Target drug development overview" });
+  expect(table).toHaveTextContent("Compound A");
+  expect(table).toHaveTextContent("非小细胞肺癌");
+  expect(table).toHaveTextContent("EGFR inhibitor");
+  const select = screen.getByRole("checkbox", { name: "Compare Compound A" });
+  fireEvent.click(select);
+  const reads = vi.mocked(searchPipelines).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("table", { name: "靶点研发药物概览" })).toHaveTextContent("非小细胞肺癌");
+  expect(screen.getByRole("checkbox", { name: "选择对比 Compound A" })).toBeChecked();
+  expect(searchPipelines).toHaveBeenCalledTimes(reads);
+  act(() => setLocale("en"));
+  expect(screen.getByRole("button", { name: "Drug overview" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("checkbox", { name: "Compare Compound A" })).toBeChecked();
+  expect(searchPipelines).toHaveBeenCalledTimes(reads);
+});
+
+it("keeps the target's advanced group open through clearing its last condition and the resulting query", async () => {
+  renderTargetView({
+    initialSection: "pipeline",
+    initialPipelineFilters: {
+      ...emptyPipelineSearchFilters(),
+      targetEntityId: target.id,
+      innovationTypes: ["First-in-Class"],
+    },
+  });
+  await screen.findByRole("table", { name: "靶点研发药物概览" });
+  expect(document.querySelector(".target-pipeline-panel .pipeline-advanced-filters")).toHaveAttribute("open");
+  fireEvent.click(screen.getByRole("button", { name: "重置筛选" }));
+  await waitFor(() =>
+    expect(searchPipelines).toHaveBeenCalledWith(
+      expect.objectContaining({ innovationTypes: [] }),
+      expect.anything(),
+      expect.any(AbortSignal),
+      "drug",
+    ),
+  );
+  await screen.findByRole("table", { name: "靶点研发药物概览" });
+  expect(document.querySelector(".target-pipeline-panel .pipeline-advanced-filters")).toHaveAttribute("open");
+});
+
+it("localizes only the known application coverage warning while retaining original source warnings", async () => {
+  const base = await vi.mocked(searchPipelines)(
+    emptyPipelineSearchFilters(),
+    { limit: 20, stageScope: "overall", targetAggregation: "all" },
+    undefined,
+    "drug",
+  );
+  vi.mocked(searchPipelines).mockResolvedValue({
+    ...base,
+    warnings: [
+      "暂无记录不代表全球不存在；结果受来源授权、更新时间和可见范围影响。",
+      "原始来源警告 / Unchanged source warning",
+    ],
+  });
+  setLocale("en");
+  renderTargetView({ initialSection: "pipeline" });
+  expect(
+    await screen.findByText(
+      "Missing records do not imply that none exist globally. Results depend on source access, update time and visibility.",
+    ),
+  ).toBeVisible();
+  expect(screen.getByText("原始来源警告 / Unchanged source warning")).toBeVisible();
+  const reads = vi.mocked(searchPipelines).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("暂无记录不代表全球不存在；结果受来源授权、更新时间和可见范围影响。")).toBeVisible();
+  expect(searchPipelines).toHaveBeenCalledTimes(reads);
+});
+
 function renderTargetView({
   onOpenEntity = vi.fn(),
   onOpenDrug,
@@ -1262,9 +1334,16 @@ it("explains when a target has no publicly displayable pipeline records", async 
   renderTargetView();
   fireEvent.click(await screen.findByRole("tab", { name: "竞品管线" }));
 
+  expect(await screen.findByText("当前暂无可公开展示的研发项目记录；现有来源可能尚未覆盖该靶点。")).toBeInTheDocument();
+  expect(screen.queryByText(/来源资料正在完成质量核查/)).not.toBeInTheDocument();
+  const reads = vi.mocked(searchPipelines).mock.calls.length;
+  act(() => setLocale("en"));
   expect(
-    await screen.findByText("当前暂无可公开展示的研发项目记录；来源资料正在完成质量核查或尚未覆盖该靶点。"),
+    screen.getByText(
+      "No public development program records are available; existing sources may not cover this target.",
+    ),
   ).toBeInTheDocument();
+  expect(searchPipelines).toHaveBeenCalledTimes(reads);
 });
 
 it("disables empty pipeline facet choices without disabling a selected zero-count deep link", async () => {

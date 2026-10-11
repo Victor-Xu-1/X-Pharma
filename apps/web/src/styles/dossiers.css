@@ -1,4 +1,10 @@
 /* Cross-domain entity dossier */
+.target-pipeline-metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
 :where(.disease-burden-summary) {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));

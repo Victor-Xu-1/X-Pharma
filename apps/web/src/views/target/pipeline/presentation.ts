@@ -2,6 +2,7 @@ import { hasPipelineSearchFilter, type PipelineSearchFilters } from "../../../li
 import type { CompetitiveProgram } from "../../../lib/contracts/target";
 import type { AppliedFilterRead, PipelineLandscapeRead } from "../../../lib/generated";
 import { professionalEnumLabel } from "../../../lib/i18n/professionalEnums";
+import { type targetPipelineMessages, targetPipelineText } from "../../../lib/i18n/targetPipeline";
 import { targetPhaseLabels } from "../../../lib/phasePresentation";
 import { publicProgramTags } from "../../../lib/programDisplay";
 
@@ -55,7 +56,7 @@ export function countAdvancedPipelineFilters(filters: PipelineSearchFilters): nu
   ].filter(Boolean).length;
 }
 
-export const targetPipelineAppliedFilterLabels: Record<string, string> = {
+export const targetPipelineAppliedFilterLabels = {
   query: "药物或机构",
   modality: "药物类型",
   therapeutic_area: "适应症领域",
@@ -85,7 +86,7 @@ export const targetPipelineAppliedFilterLabels: Record<string, string> = {
   china_phase_started_at: "中国阶段开始日期",
   status_date: "状态更新日期",
   milestone_date: "里程碑日期",
-};
+} as const satisfies Record<string, keyof typeof targetPipelineMessages>;
 
 function landscapeFilterLabel(
   landscape: PipelineLandscapeRead | undefined,
@@ -119,18 +120,27 @@ export function targetPipelineAppliedFilters(
   addMany("drug_category", filters.drugCategories);
   if (filters.programStatus && filters.programStatus !== "active") add("program_status", "eq", filters.programStatus);
   if (filters.organizationRole) add("organization_role", "eq", filters.organizationRole);
-  if (filters.organizationEntityId) add("organization_entity", "eq", "已选机构");
+  if (filters.organizationEntityId) add("organization_entity", "eq", targetPipelineText("已选机构"));
   if (filters.organizationType) add("organization_type", "eq", filters.organizationType);
   if (filters.organizationCountryRegion) add("organization_country_region", "eq", filters.organizationCountryRegion);
   if (filters.targetCombinationKey) {
     add(
       "target_combination_key",
       "eq",
-      landscapeFilterLabel(landscape, "target_combinations", filters.targetCombinationKey, "已选靶点组合"),
+      landscapeFilterLabel(
+        landscape,
+        "target_combinations",
+        filters.targetCombinationKey,
+        targetPipelineText("已选靶点组合"),
+      ),
     );
   }
   if (filters.diseaseEntityId) {
-    add("disease_entity", "eq", landscapeFilterLabel(landscape, "diseases", filters.diseaseEntityId, "已选适应症"));
+    add(
+      "disease_entity",
+      "eq",
+      landscapeFilterLabel(landscape, "diseases", filters.diseaseEntityId, targetPipelineText("已选适应症")),
+    );
   }
   if (filters.phase) add("phase", "eq", filters.phase);
   if (filters.geography) add("geography", "eq", filters.geography);
@@ -162,14 +172,16 @@ export function targetPipelineAppliedFilters(
 
 export function pipelineLoadingLabel(targetName: string, filters: PipelineSearchFilters): string {
   const query = filters.query.trim();
-  if (query) return `正在加载 ${targetName} 中与“${query}”匹配的研发项目`;
-  if (filters.programStatus === "active") return `正在加载 ${targetName} 的在研项目`;
-  if (filters.programStatus === "inactive") return `正在加载 ${targetName} 的已停止项目`;
-  if (filters.programStatus === "unknown") return `正在加载 ${targetName} 的状态未披露项目`;
+  if (query) return targetPipelineText("正在加载 {name} 中与“{query}”匹配的研发项目", { name: targetName, query });
+  if (filters.programStatus === "active") return targetPipelineText("正在加载 {name} 的在研项目", { name: targetName });
+  if (filters.programStatus === "inactive")
+    return targetPipelineText("正在加载 {name} 的已停止项目", { name: targetName });
+  if (filters.programStatus === "unknown")
+    return targetPipelineText("正在加载 {name} 的状态未披露项目", { name: targetName });
   if (hasPipelineSearchFilter({ ...filters, targetEntityId: "" })) {
-    return `正在加载 ${targetName} 的筛选结果`;
+    return targetPipelineText("正在加载 {name} 的筛选结果", { name: targetName });
   }
-  return `正在加载 ${targetName} 的全部研发项目`;
+  return targetPipelineText("正在加载 {name} 的全部研发项目", { name: targetName });
 }
 const organizationRoleLabels: Record<string, string> = {
   originator: "原研方",
@@ -181,21 +193,22 @@ const organizationRoleLabels: Record<string, string> = {
 };
 
 export function organizationRoleLabel(value: string): string {
-  return organizationRoleLabels[value] ?? "其他";
+  const known = organizationRoleLabels[value];
+  return known ? professionalEnumLabel(known, value) : value;
 }
 
 export function programStatusLabel(value: CompetitiveProgram["program_status"] | string | null | undefined): string {
   const normalized = value?.toLowerCase();
-  if (normalized === "active") return "在研";
-  if (normalized === "inactive") return "已停止";
-  return "状态未披露";
+  if (normalized === "active") return targetPipelineText("在研");
+  if (normalized === "inactive") return targetPipelineText("已停止");
+  return !value || normalized === "unknown" ? targetPipelineText("状态未披露") : value;
 }
 
 export function pipelineProgramStatusLabel(
   program: Pick<CompetitiveProgram, "program_status" | "program_status_counts">,
 ): string {
   const states = Object.entries(program.program_status_counts ?? {}).filter(([, count]) => count > 0);
-  return states.length > 1 ? "混合状态" : programStatusLabel(program.program_status);
+  return states.length > 1 ? targetPipelineText("混合状态") : programStatusLabel(program.program_status);
 }
 
 export const developmentPhaseLabels = targetPhaseLabels;
@@ -221,7 +234,8 @@ export const geographyLabels: Record<string, string> = {
 };
 
 export function geographyLabel(value: string): string {
-  return geographyLabels[value.toLowerCase()] ?? value;
+  const known = geographyLabels[value.toLowerCase()];
+  return known ? professionalEnumLabel(known, value.toLowerCase()) : value;
 }
 export function pipelineSelectOptions(value: string, values: Record<string, number> | undefined): [string, number][] {
   const options = { ...(values ?? {}) };
