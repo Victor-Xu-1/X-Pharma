@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { CompanyDossier } from "../src/lib/contracts/company";
 import { dossier, program } from "../src/test/fixtures/companyDossier";
+import { genericCompanyIdentityFixture } from "./company-generic-identity";
 import { selectInterfaceLanguage } from "./interface-language";
 
 const organizationId = "a8ed0601-cfa5-4d1f-bb82-898a570596da";
@@ -63,6 +64,7 @@ for (const providerLabel of [false, true]) {
     page,
   }, testInfo) => {
     const data = fixture(providerLabel);
+    const genericIdentity = genericCompanyIdentityFixture(data);
     let dossierReads = 0;
     const errors: string[] = [];
     const writes: string[] = [];
@@ -87,6 +89,8 @@ for (const providerLabel of [false, true]) {
           },
         });
       if (path === `/api/v1/entities/${organizationId}`) return route.fulfill({ json: data.entity });
+      const genericReply = genericIdentity.response(path);
+      if (genericReply) return route.fulfill(genericReply);
       if (path === `/api/v1/companies/${organizationId}/dossier`) {
         dossierReads++;
         return route.fulfill({ json: data });
@@ -157,6 +161,7 @@ for (const providerLabel of [false, true]) {
     await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
     await expect(page.getByRole("heading", { name: data.entity.name, exact: true })).toBeVisible();
     await expect(page.getByRole("tab", { name: "公司动态", exact: true })).toHaveAttribute("aria-selected", "true");
+    if (!providerLabel) await genericIdentity.verify(page, audit);
     expect(writes).toEqual([]);
     expect(errors).toEqual([]);
   });

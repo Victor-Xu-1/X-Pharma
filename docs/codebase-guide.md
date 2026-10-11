@@ -21,6 +21,8 @@
 
 入口、领域、持久化和适配器各自负责一层。新增规则进入对应领域模块，不能在 UI、路由和 MCP 重复实现。数据流见 [architecture.md](architecture.md)。
 
+通用 `EntityDossierView` 在呈现或修正分节前，必须核对返回档案与请求实体的 ID 和类型；身份不一致只开放显式重试，不展示另一实体的记录，也不据此修改当前深链。公司时间线独立核对请求公司身份：错误归属或明确 401/403 时，不将缓存计数、日期和事件交给展示模块；暂时性 503 保留原授权快照并显示错误。`CompanyIntelligence` 的时间线日期只取自该时间线，缺失时明确显示缺失，不借用档案查询时间。服务器 RLS、查询键和来源事实权威不变。
+
 `RegistrationForm`、`AccountInvitationPanel`、`OrganizationPanel` 和 `SessionBoundary` 分别拥有注册交互、管理员邀请管理、邀请确认/组织切换和共享会话生命周期；两套工作台消费同一身份上下文和退出动作。每个账号/组织/角色使用独立的工作台 query client，旧上下文的延迟回调不能污染新缓存。表格偏好从 `SessionIdentityContext` 读取身份，不能依赖领域缓存猜测账号。注册与邀请通过生成的 OpenAPI client 调用 `accounts/` 服务。
 
 `components/table/` 分离排序草稿与菜单、列菜单及偏好提交生命周期；

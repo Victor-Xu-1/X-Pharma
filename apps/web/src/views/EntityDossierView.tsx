@@ -6,6 +6,7 @@ import { DossierActivityTable as Activities } from "../components/DossierActivit
 import { EntityNames } from "../components/EntityNames";
 import { RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList } from "../components/ResearchTabList";
+import { ApiError } from "../lib/api";
 import { companyKeys, loadCompanyTimeline } from "../lib/contracts/company";
 import { entityDossierKeys, loadEntityDossier } from "../lib/contracts/entityDossier";
 import type { ProvenanceSelection } from "../lib/contracts/provenance";
@@ -71,8 +72,16 @@ export function EntityDossierView({
     queryFn: ({ signal }) => loadCompanyTimeline(entity?.id ?? "", 0, signal),
     enabled: entity?.entity_type === "organization",
   });
+  const dossierMismatch = Boolean(
+    entity &&
+      dossier.data &&
+      (dossier.data.entity.id !== entity.id || dossier.data.entity.entity_type !== entity.entity_type),
+  );
   const invalidCompanySection = Boolean(
-    dossier.data && activeSection === "company_intelligence" && dossier.data.entity.entity_type !== "organization",
+    !dossierMismatch &&
+      dossier.data &&
+      activeSection === "company_intelligence" &&
+      dossier.data.entity.entity_type !== "organization",
   );
 
   useEffect(() => {
@@ -89,8 +98,18 @@ export function EntityDossierView({
     );
   }
   if (!dossier.data) return <Spinner label={t("正在加载 {name} 领域档案", { name: entity.name })} />;
+  if (dossierMismatch) {
+    return <ErrorState message={t("领域档案与请求实体不一致")} retry={() => void dossier.refetch()} />;
+  }
 
   const data = dossier.data;
+  const timelineMismatch = Boolean(
+    companyTimeline.data &&
+      (companyTimeline.data.company.id !== entity.id || companyTimeline.data.company.entity_type !== "organization"),
+  );
+  const timelineDenied = companyTimeline.error instanceof ApiError && [401, 403].includes(companyTimeline.error.status);
+  const visibleTimeline = timelineMismatch || timelineDenied ? undefined : companyTimeline.data;
+  const timelineError = timelineMismatch ? new Error(t("公司时间线与请求实体不一致")) : companyTimeline.error;
   const translatedTabs = tabs.map((tab) => ({ ...tab, label: t(tab.label as keyof typeof dossierRecordMessages) }));
   const visibleTabs =
     data.entity.entity_type === "organization"
@@ -172,9 +191,9 @@ export function EntityDossierView({
           {effectiveSection === "company_intelligence" ? (
             <CompanyIntelligence
               data={data}
-              timeline={companyTimeline.data}
+              timeline={visibleTimeline}
               loading={companyTimeline.isFetching}
-              error={companyTimeline.error}
+              error={timelineError}
               retry={() => void companyTimeline.refetch()}
               onOpen={setProvenanceSelection}
               onOpenEntity={onOpenEntity}

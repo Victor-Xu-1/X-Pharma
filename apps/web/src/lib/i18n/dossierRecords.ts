@@ -4,6 +4,8 @@ export const dossierRecordMessages = {
   尚未选择领域实体: "No domain entity selected",
   请从基础查询结果中打开一个实体: "Open an entity from search results.",
   领域档案加载失败: "Entity dossier could not be loaded",
+  领域档案与请求实体不一致: "Entity dossier does not match the requested identity",
+  公司时间线与请求实体不一致: "Organization timeline does not match the requested identity",
   "正在加载 {name} 领域档案": "Loading entity dossier for {name}",
   暂无实体摘要: "No entity summary available",
   关联记录: "Linked records",

@@ -48,7 +48,7 @@ export function CompanyIntelligence({
         </div>
         <div>
           <dt>{t("时间线截至")}</dt>
-          <dd>{formatDate(timeline?.as_of ?? data.as_of)}</dd>
+          <dd>{formatDate(timeline?.as_of)}</dd>
         </div>
       </dl>
 
