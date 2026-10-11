@@ -4,16 +4,14 @@ import { DossierActivityTable } from "../components/DossierActivityTable";
 import { DossierCoverageDisclosure } from "../components/DossierCoverageDisclosure";
 import { PatentTimeline } from "../components/PatentTimeline";
 import { setLocale } from "../lib/i18n";
-import {
-  Deals,
-  News,
-  Patents,
-  Programs,
-  Regulatory,
-  Relationships,
-  Structures,
-  Trials,
-} from "../views/EntityDossierView";
+import { Deals } from "../views/dossier/Deals";
+import { News } from "../views/dossier/News";
+import { Patents } from "../views/dossier/Patents";
+import { Programs } from "../views/dossier/Programs";
+import { Regulatory } from "../views/dossier/Regulatory";
+import { Relationships } from "../views/dossier/Relationships";
+import { Structures } from "../views/dossier/Structures";
+import { Trials } from "../views/dossier/Trials";
 import { drugDossierFixture as dossier } from "./fixtures/drugDossier";
 
 it("keeps duplicate source phase events as separate rows without colliding React identities", () => {

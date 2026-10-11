@@ -7,7 +7,7 @@ import type { EpidemiologyObservation } from "../../lib/contracts/epidemiology";
 import type { ProvenanceSelection } from "../../lib/contracts/provenance";
 import { useMessages } from "../../lib/i18n";
 import { epidemiologyMessages } from "../../lib/i18n/epidemiology";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 import {
   comparableTrend,
   estimateLabel,

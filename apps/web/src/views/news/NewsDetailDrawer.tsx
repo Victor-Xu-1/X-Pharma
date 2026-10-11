@@ -8,7 +8,7 @@ import type { NewsEventSearchItemRead } from "../../lib/generated";
 import { useLocale } from "../../lib/i18n";
 import { newsText as t } from "../../lib/i18n/news";
 import { useModalFocus } from "../../lib/useModalFocus";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 import { newsTypeLabel } from "./presentation";
 export function NewsDetailDrawer({
   data,

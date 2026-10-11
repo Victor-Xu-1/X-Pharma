@@ -3,7 +3,7 @@ import type { DiseaseDossier } from "../../lib/contracts/disease";
 import type { ProvenanceSelection } from "../../lib/contracts/provenance";
 import { useLocale } from "../../lib/i18n";
 import { diseaseDossierText as t } from "../../lib/i18n/diseaseDossier";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 import { EpidemiologyTable } from "./EpidemiologyTable";
 
 export function EpidemiologyPanel({

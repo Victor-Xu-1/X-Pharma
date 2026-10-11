@@ -1,7 +1,7 @@
 import { partyRoleLabels } from "../../lib/dealDisplay";
 import { controlledDossierLabel as controlledDrugLabel } from "../../lib/i18n/dossierVocabulary";
 import { drugDossierText as t } from "../../lib/i18n/drugDossier";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 import { geographyLabel } from "./programPresentation";
 import type { DrugDeal } from "./types";
 

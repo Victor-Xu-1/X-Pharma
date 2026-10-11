@@ -17,17 +17,15 @@ import { DiseaseOverview } from "./disease/DiseaseOverview";
 import { EpidemiologyPanel } from "./disease/EpidemiologyPanel";
 import { RegistryConditionDossier } from "./disease/RegistryConditionDossier";
 import { tabs } from "./disease/vocabulary";
+import { Deals } from "./dossier/Deals";
 import { DossierSummaryFacts } from "./dossier/DossierSummaryFacts";
-import {
-  Deals,
-  type DossierEntityOpener,
-  News,
-  Patents,
-  Programs,
-  Regulatory,
-  Relationships,
-  Trials,
-} from "./EntityDossierView";
+import { News } from "./dossier/News";
+import { Patents } from "./dossier/Patents";
+import { Programs } from "./dossier/Programs";
+import { Regulatory } from "./dossier/Regulatory";
+import { Relationships } from "./dossier/Relationships";
+import { Trials } from "./dossier/Trials";
+import type { DossierEntityOpener } from "./dossier/types";
 
 export function DiseaseView({
   disease,

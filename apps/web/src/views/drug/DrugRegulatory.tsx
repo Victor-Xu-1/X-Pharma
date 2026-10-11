@@ -6,7 +6,7 @@ import type { DrugDossier } from "../../lib/contracts/drugDossier";
 import type { ProvenanceSelection } from "../../lib/contracts/provenance";
 import { controlledDossierLabel as controlledDrugLabel } from "../../lib/i18n/dossierVocabulary";
 import { drugDossierText as t } from "../../lib/i18n/drugDossier";
-import { Regulatory } from "../EntityDossierView";
+import { Regulatory } from "../dossier/Regulatory";
 import { governedDisplay } from "./programPresentation";
 import type { DrugEntityOpener } from "./types";
 import {

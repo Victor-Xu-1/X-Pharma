@@ -20,6 +20,7 @@
 | 知识阅读层 | `apps/web/src/views/knowledge/` | 安全的正文与引用、结构化字段渐进披露、不可变版本差异；保留完整公开原文，不取得事实发布或科学推断权威 |
 | 商业与协作 | `commercial/`、`comparison/`、`monitoring/` | 账本、权益、导出和团队工作流 |
 | 前端 | `apps/web/src/workspaces/research/`、`lib/contracts`、`components`、`views` | 导航状态、分域路由、传输和独立功能面板 |
+| 档案共有呈现 | `views/dossier/`、`components/DossierActivityTable` | 专业档案直接消费共有组件与 `dossier/types`；通用档案查询页不再作为组件／类型转导出入口，不拥有其他专业页的读取生命周期 |
 | 界面语言 | `apps/web/src/lib/i18n/`、`LanguageSwitcher`、`LocaleEffects` | 中文/英文目录、只含语言的浏览器偏好、同源同步和当前 locale 格式化；不拥有业务数据、API 枚举或查询状态 |
 | 高级专业查询 | `components/professionalQuery/` | 薄组装入口、单一草稿/目录读取/验证模型、七类领域表单、共享日期/受控字段与纯选项推导；不拥有事实写入或第二套 URL 合同 |
 | 部署与工具 | `deploy/`、`services/`、`scripts/release/`、`scripts/`、`runbooks/` | 安装、隔离组件、发布证据、门禁、恢复与运维 |

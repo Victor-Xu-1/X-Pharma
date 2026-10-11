@@ -54,7 +54,7 @@ import { DealProfessionalDossier } from "./deals/DealProfessionalDossier";
 import { DealResultActions } from "./deals/DealResultActions";
 import { type DealSaveFeedback, dealSaveFeedback } from "./deals/saveFeedback";
 import { useDealColumns } from "./deals/useDealColumns";
-import type { DossierEntityOpener } from "./EntityDossierView";
+import type { DossierEntityOpener } from "./dossier/types";
 import "./deals/deals.css";
 
 const PAGE_SIZE = 100;

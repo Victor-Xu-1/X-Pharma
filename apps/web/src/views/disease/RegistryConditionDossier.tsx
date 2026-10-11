@@ -7,7 +7,9 @@ import type { ProvenanceSelection } from "../../lib/contracts/provenance";
 import { useLocale } from "../../lib/i18n";
 import { type diseaseDossierMessages, diseaseDossierText as t } from "../../lib/i18n/diseaseDossier";
 import type { DiseaseDossierSection } from "../../lib/workspaceRouting";
-import { type DossierEntityOpener, Relationships, Trials } from "../EntityDossierView";
+import { Relationships } from "../dossier/Relationships";
+import { Trials } from "../dossier/Trials";
+import type { DossierEntityOpener } from "../dossier/types";
 
 const tabs: Array<ResearchTabOption<DiseaseDossierSection>> = [
   { key: "overview", label: "登记条件概览" },

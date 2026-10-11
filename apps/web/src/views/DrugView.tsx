@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { EmptyState, ErrorState, Spinner } from "../components/common";
+import { DossierActivityTable as Activities } from "../components/DossierActivityTable";
 import { RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList } from "../components/ResearchTabList";
 import { ApiError } from "../lib/api";
@@ -10,6 +11,9 @@ import { useLocale } from "../lib/i18n";
 import { drugDossierText as t } from "../lib/i18n/drugDossier";
 import type { Entity } from "../lib/types";
 import type { DrugDossierSection } from "../lib/workspaceRouting";
+import { News } from "./dossier/News";
+import { Patents } from "./dossier/Patents";
+import { Structures } from "./dossier/Structures";
 import { buildDrugTabs } from "./drug/coverage";
 import { DrugAssociations } from "./drug/DrugAssociations";
 import { DrugClinicalEvidence } from "./drug/DrugClinicalEvidence";
@@ -19,7 +23,6 @@ import { DrugDossierHeader } from "./drug/DrugDossierHeader";
 import { DrugOverview } from "./drug/DrugOverview";
 import { DrugRegulatory } from "./drug/DrugRegulatory";
 import type { DrugEntityOpener } from "./drug/types";
-import { Activities, News, Patents, Structures } from "./EntityDossierView";
 
 export function DrugView({
   drug,

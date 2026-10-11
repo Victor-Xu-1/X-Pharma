@@ -34,7 +34,7 @@ import { newsEventTypeLabels } from "../lib/newsDisplay";
 import { publicCoverageNotice } from "../lib/publicWarnings";
 import { useSearchFilterDraft } from "../lib/useFilterDraft";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
-import type { DossierEntityOpener } from "./EntityDossierView";
+import type { DossierEntityOpener } from "./dossier/types";
 import { NewsDetailDrawer } from "./news/NewsDetailDrawer";
 import { NewsFilterForm } from "./news/NewsFilterForm";
 import { NewsResearchTimeline } from "./news/NewsTimeline";

@@ -26,7 +26,7 @@ import { epidemiologyText as t } from "../lib/i18n/epidemiology";
 import { publicCoverageNotice } from "../lib/publicWarnings";
 import { useSearchFilterDraft } from "../lib/useFilterDraft";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
-import type { DossierEntityOpener } from "./EntityDossierView";
+import type { DossierEntityOpener } from "./dossier/types";
 import { EpidemiologyFilterForm } from "./epidemiology/EpidemiologyFilterForm";
 import { EpidemiologyLandscape } from "./epidemiology/EpidemiologyLandscape";
 import { EpidemiologyResultActions } from "./epidemiology/EpidemiologyResultActions";

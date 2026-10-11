@@ -16,7 +16,7 @@ import {
 import type { DealSearchItemRead } from "../../lib/generated";
 import { useMessages } from "../../lib/i18n";
 import { dealMessages } from "../../lib/i18n/deals";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 
 export function useDealColumns(
   currency: string,

@@ -36,7 +36,7 @@ import { useFilterDraft } from "../lib/useFilterDraft";
 import { usePagedEntitySelection } from "../lib/usePagedEntitySelection";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
 import type { PatentDossierSection } from "../lib/workspaceRouting";
-import type { DossierEntityOpener } from "./EntityDossierView";
+import type { DossierEntityOpener } from "./dossier/types";
 import { usePatentColumns } from "./patents/columns";
 import { type PatentEntityType, PatentFilterForm, patentEntityTypes } from "./patents/PatentFilterForm";
 import { PatentProfessionalDossier } from "./patents/PatentProfessionalDossier";

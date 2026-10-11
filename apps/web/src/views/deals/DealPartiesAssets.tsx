@@ -4,7 +4,7 @@ import type { DealSearchItemRead } from "../../lib/generated";
 import { useLocale } from "../../lib/i18n";
 import { dealText as t } from "../../lib/i18n/deals";
 import { sourceRecordRows } from "../../lib/sourceRecordRows";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 
 export function DealParties({ data, onOpenEntity }: { data: DealSearchItemRead; onOpenEntity: DossierEntityOpener }) {
   useLocale();

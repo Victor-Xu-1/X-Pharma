@@ -40,7 +40,7 @@ import {
 } from "../lib/regulatoryDisplay";
 import { useSearchFilterDraft } from "../lib/useFilterDraft";
 import { useQueryCancellation } from "../lib/useQueryCancellation";
-import type { DossierEntityOpener } from "./EntityDossierView";
+import type { DossierEntityOpener } from "./dossier/types";
 import { regulatoryLabels } from "./regulatory/presentation";
 import { RegulatoryComparison } from "./regulatory/RegulatoryComparison";
 import { RegulatoryDetailDrawer } from "./regulatory/RegulatoryDetailDrawer";

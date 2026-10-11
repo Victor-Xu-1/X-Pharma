@@ -12,7 +12,7 @@ import {
   safetyStatusLabels,
   severityLabels,
 } from "../../lib/regulatoryDisplay";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 import { regulatoryValue as displayValue } from "./presentation";
 export function useRegulatoryColumns(onEventChange: (id: string) => void, openRegulatoryEntity: DossierEntityOpener) {
   const t = useMessages(regulatoryMessages);

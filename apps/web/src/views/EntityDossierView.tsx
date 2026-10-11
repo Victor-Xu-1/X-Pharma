@@ -26,9 +26,6 @@ import { Trials } from "./dossier/Trials";
 import type { DossierEntityOpener } from "./dossier/types";
 import { tabs } from "./dossier/vocabulary";
 
-export type { DossierEntityOpener } from "./dossier/types";
-export { Activities, News, Patents, Regulatory, Relationships, Structures };
-
 export function EntityDossierView({
   entity,
   activeSection,
@@ -207,8 +204,3 @@ export function EntityDossierView({
     </>
   );
 }
-
-export { CompanyTimelinePanel } from "./dossier/CompanyTimelinePanel";
-export { Deals } from "./dossier/Deals";
-export { Programs } from "./dossier/Programs";
-export { Trials } from "./dossier/Trials";
