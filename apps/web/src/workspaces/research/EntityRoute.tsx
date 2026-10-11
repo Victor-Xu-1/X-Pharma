@@ -1,6 +1,7 @@
 import { lazy } from "react";
 import { ErrorState, Spinner } from "../../components/common";
 import { workspaceUrl } from "../../lib/workspaceRouting";
+import { specializedResearchView } from "./locationModel";
 import type { ResearchRouteContext } from "./routeContext";
 
 const EntityDossierView = lazy(() =>
@@ -24,7 +25,14 @@ export function EntityRoute({ context }: { context: ResearchRouteContext }) {
     openRegulatoryEventById,
     openNewsEventById,
   } = context;
-  return routeEntity.isFetching && selectedEntity?.id !== location.entityId ? (
+  const specializing = Boolean(
+    !location.invalidEntityId &&
+      !routeEntity.error &&
+      routeEntity.data &&
+      routeEntity.data.id === location.entityId &&
+      specializedResearchView(routeEntity.data.entity_type),
+  );
+  return specializing || (routeEntity.isFetching && selectedEntity?.id !== location.entityId) ? (
     <Spinner label="正在恢复领域档案深链接" />
   ) : location.invalidEntityId || routeEntity.error ? (
     <ErrorState

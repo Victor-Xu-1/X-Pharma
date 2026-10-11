@@ -9,6 +9,24 @@ import type {
   WorkspaceLocation,
 } from "../../lib/workspaceRouting";
 
+/** One route authority; unknown source types retain the generic dossier. */
+export function specializedResearchView(
+  entityType: string | undefined,
+): "target" | "drug" | "company" | "disease" | null {
+  switch (entityType) {
+    case "target":
+      return "target";
+    case "drug":
+      return "drug";
+    case "organization":
+      return "company";
+    case "disease":
+      return "disease";
+    default:
+      return null;
+  }
+}
+
 export const specializedSectionByEntitySection: Record<
   EntityDossierSection,
   {

@@ -12,7 +12,7 @@ import {
   workbenchForView,
   workspaceUrl,
 } from "../../lib/workspaceRouting";
-import { specializedSectionByEntitySection } from "./locationModel";
+import { specializedResearchView, specializedSectionByEntitySection } from "./locationModel";
 import { savedSearchLocation } from "./savedSearchLocation";
 import { useRouteEntity } from "./useRouteEntity";
 
@@ -101,16 +101,7 @@ export function useResearchNavigation() {
 
   useEffect(() => {
     if (location.view !== "entity" || !routeEntity.data || routeEntity.data.id !== location.entityId) return;
-    const specializedView =
-      routeEntity.data.entity_type === "target"
-        ? "target"
-        : routeEntity.data.entity_type === "drug"
-          ? "drug"
-          : routeEntity.data.entity_type === "organization"
-            ? "company"
-            : routeEntity.data.entity_type === "disease"
-              ? "disease"
-              : null;
+    const specializedView = specializedResearchView(routeEntity.data.entity_type);
     if (!specializedView) return;
     setSelectedEntity(routeEntity.data);
     const mappedSection = specializedSectionByEntitySection[location.entitySection ?? "overview"];
@@ -157,16 +148,7 @@ export function useResearchNavigation() {
   }
 
   function openEntity(entity: Entity) {
-    const view =
-      entity.entity_type === "target"
-        ? "target"
-        : entity.entity_type === "drug"
-          ? "drug"
-          : entity.entity_type === "organization"
-            ? "company"
-            : entity.entity_type === "disease"
-              ? "disease"
-              : "entity";
+    const view = specializedResearchView(entity.entity_type) ?? "entity";
     setSelectedEntity(entity);
     navigate({
       workbench: "research",
