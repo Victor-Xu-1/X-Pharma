@@ -117,7 +117,18 @@ export async function verifyDenseServerSorting(
   await page.goto(`/workspace/research?view=disease&entity=${epidemiologyDiseaseId}`);
   await expect(page).toHaveURL(new RegExp(`view=disease&entity=${epidemiologyDiseaseId}`));
   await expect(page.getByRole("heading", { name: diseaseName })).toBeVisible();
+  const summaryFacts = page.locator("details.dossier-summary-details");
+  const moreFacts = summaryFacts.locator("summary");
+  await expect(moreFacts).toHaveText("更多档案指标");
+  await expect(summaryFacts).not.toHaveAttribute("open", "");
+  await expect(page.getByText("疾病负担观测", { exact: true })).toBeHidden();
+  const diseaseOverviewUrl = page.url();
+  await moreFacts.focus();
+  await moreFacts.press("Enter");
+  await expect(summaryFacts).toHaveAttribute("open", "");
   await expect(page.getByText("疾病负担观测", { exact: true })).toBeVisible();
+  await expect(summaryFacts.locator("dd").first()).toHaveText("1");
+  await expect(page).toHaveURL(diseaseOverviewUrl);
   await expect(page.getByRole("table", { name: "最新疾病负担观测" })).toContainText("158,000");
 
   await page.getByRole("tab", { name: "流行病学" }).click();
