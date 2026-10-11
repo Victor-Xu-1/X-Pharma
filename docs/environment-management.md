@@ -28,6 +28,8 @@
 
 当前维护者执行路径固定在 `/srv/wsl`，其物理存储必须按 `E:\WSL\AGENTS.md` 核对。路径不能穿过符号链接，不能指向 `/mnt/c`、用户主目录或工作区根。模块不安装 Windows 原生组件、WSL 本身或系统级 Docker 引擎。
 
+解释器检测由 `platform/environment_interpreter.py` 唯一负责。只读检测允许项目 `.venv` 明确链接到 `/srv/wsl/envs` 中由同一源码所有者管理的独立环境；环境、存储根、`bin` 和常规 `pyvenv.cfg` 必须保持相同所有者且不可被组或其他用户写入。存储根本身、越界或多级软链接、挂载盘解释器和缺少配置均不执行。实际解释器的 `sys.prefix` 必须解析到该项目声明的环境，不能用系统 Python 的版本冒充项目依赖。固定探针使用 `-I -B`、最小无秘密环境、5 秒期限与原有 64KiB 输出限制；不下载、安装或重试系统解释器。这个例外仅用于已声明环境的只读诊断，不改变源码、报告、计划、安装器或前端依赖路径的拒绝规则，也不授权修改共享环境。
+
 ```bash
 pharma-environment inspect \
   --repository /srv/wsl/projects/x-pharma \
@@ -88,4 +90,4 @@ pharma-environment install \
 
 传输属于 `http/environment.py`；契约属于 `schemas/environment.py`；报告读取、配方、主机探针和执行器分别属于 `platform/environment*.py`；CLI属于 `environment_cli.py`。前端消费生成的OpenAPI client，不存在第二套HTTP实现或网页端执行器。
 
-定向测试为 `tests/test_environment_{plans,http,executor}.py` 和 `apps/web/src/test/EnvironmentView.test.tsx`。它们分别验证权限、报告状态、路径/命令拒绝、计划身份、缓存、坏缓存保护、错误呈现和网页不执行。真实本地检测、离线安装、发布后页面与日志需要针对实际版本另行验证；通过这些检查不表示生产HA、系统引擎自动安装或客户环境已验收。
+定向测试为 `tests/test_project_interpreter_probe.py`、`tests/test_environment_{compatibility,plans,http,executor}.py` 和 `apps/web/src/test/EnvironmentView.test.tsx`。它们分别验证解释器来源、托管目录与权限、秘密隔离、失败/超时不回退、版本要求、报告状态、路径/命令拒绝、计划身份、缓存、坏缓存保护、错误呈现和网页不执行。真实本地检测、离线安装、发布后页面与日志需要针对实际版本另行验证；通过这些检查不表示生产HA、系统引擎自动安装或客户环境已验收。
