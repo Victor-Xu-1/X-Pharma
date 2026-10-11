@@ -113,7 +113,7 @@
     },
     "research-workbench-mobile-390.png": {
       "capture": "full-page",
-      "sha256": "0b4b1aec8088232f8bb4dc6911624762cbb63bdf0083d19e09094eec43cd40a7",
+      "sha256": "c09ed4eabd9cb9ccef1f617ce411e456ecbaf430f42c5cf989e94ac49ff1ba7c",
       "state": "controlled-no-result",
       "viewport": "390x844"
     },
@@ -124,7 +124,7 @@
       "viewport": "1024x768"
     }
   },
-  "generated_at": "2026-10-09",
+  "generated_at": "2026-10-11",
   "generator": "scripts/run-browser-acceptance.sh --update-snapshots",
   "license": "repository-owned-test-artifact",
   "schema": "pharma.workbench-visual-baselines.v3",
