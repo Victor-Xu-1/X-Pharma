@@ -1,22 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
-import { Network } from "lucide-react";
 import { useEffect, useState } from "react";
-import { EmptyState, ErrorState, formatDate, Spinner } from "../components/common";
+import { EmptyState, ErrorState, Spinner } from "../components/common";
 import { DossierActivityTable as Activities } from "../components/DossierActivityTable";
-import { EntityNames } from "../components/EntityNames";
 import { RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList } from "../components/ResearchTabList";
 import { ApiError } from "../lib/api";
 import { companyKeys, loadCompanyTimeline } from "../lib/contracts/company";
 import { entityDossierKeys, loadEntityDossier } from "../lib/contracts/entityDossier";
 import type { ProvenanceSelection } from "../lib/contracts/provenance";
-import { entityTypeLabel } from "../lib/entityPresentation";
 import { useLocale } from "../lib/i18n";
 import { type dossierRecordMessages, dossierRecordText as t } from "../lib/i18n/dossierRecords";
 import type { Entity } from "../lib/types";
 import type { EntityDossierSection } from "../lib/workspaceRouting";
 import { CompanyIntelligence } from "./dossier/CompanyIntelligence";
 import { Deals } from "./dossier/Deals";
+import { EntityDossierHeader } from "./dossier/EntityDossierHeader";
 import { News } from "./dossier/News";
 import { DossierOverview } from "./dossier/Overview";
 import { Patents } from "./dossier/Patents";
@@ -134,44 +132,11 @@ export function EntityDossierView({
         onOpenEntity(entityId);
     }
   };
-  const totalRecords = data.coverage.reduce((sum, item) => sum + item.total, 0);
-  const availableDomains = data.coverage.filter((item) => item.total > 0).length;
 
   return (
     <>
       <section className="entity-dossier-page">
-        <header className="entity-dossier-title">
-          <div className="entity-dossier-symbol">
-            <Network size={23} />
-          </div>
-          <div>
-            <span>{entityTypeLabel(data.entity)}</span>
-            <h2>{data.entity.name}</h2>
-            <p>{data.entity.description ?? t("暂无实体摘要")}</p>
-          </div>
-        </header>
-        <EntityNames entity={data.entity} />
-
-        <dl className="dossier-metrics entity-dossier-metrics">
-          <div>
-            <dt>{t("关联记录")}</dt>
-            <dd>{totalRecords}</dd>
-          </div>
-          <div>
-            <dt>{t("有数据领域")}</dt>
-            <dd>
-              {availableDomains} / {data.coverage.length}
-            </dd>
-          </div>
-          <div>
-            <dt>{t("直接关系")}</dt>
-            <dd>{data.relationships.length}</dd>
-          </div>
-          <div>
-            <dt>{t("查询时间")}</dt>
-            <dd title={t("本次档案查询时间不代表所有来源的最后更新时间")}>{formatDate(data.as_of, true)}</dd>
-          </div>
-        </dl>
+        <EntityDossierHeader data={data} />
 
         <ResearchTabList
           tabs={visibleTabs}
