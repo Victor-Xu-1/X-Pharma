@@ -25,6 +25,7 @@ export const companyDossierMessages = {
   关联交易: "Linked deals",
   带日期事件: "Dated events",
   最近活动: "Latest activity",
+  更多档案指标: "More dossier facts",
   公司专业档案视图: "Organization dossier sections",
   研发阶段分布: "Development phase distribution",
   查看全部管线: "View all development programs",

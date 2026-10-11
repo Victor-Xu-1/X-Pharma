@@ -26,6 +26,7 @@ export const diseaseDossierMessages = {
   疾病负担观测: "Disease burden observations",
   "临床试验 / 专利": "Clinical trials / patents",
   最近活动: "Latest activity",
+  更多档案指标: "More dossier facts",
   疾病专业档案视图: "Disease dossier sections",
   研发阶段分布: "Development phase distribution",
   查看研发格局: "View development landscape",
