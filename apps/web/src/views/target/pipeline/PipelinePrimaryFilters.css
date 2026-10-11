@@ -7,5 +7,30 @@
 @media (max-width: 480px) {
   .target-evidence-filters.target-pipeline-primary-filters {
     grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px 0;
+  }
+
+  .target-pipeline-primary-filters > label {
+    grid-template-columns: 88px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+  }
+
+  .target-pipeline-primary-filters > .facet-multi-select > legend {
+    float: left;
+    display: flex;
+    width: 88px;
+    min-height: var(--ds-control-height);
+    align-items: center;
+    margin: 0 8px 0 0;
+  }
+
+  .target-pipeline-primary-filters > .facet-multi-select > details {
+    margin-inline-start: 96px;
+  }
+
+  .target-pipeline-primary-filters > .facet-multi-select > details > summary {
+    min-height: var(--ds-control-height);
   }
 }
