@@ -1,8 +1,7 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { CompanyDossier } from "../src/lib/contracts/company";
 import { dossier, program } from "../src/test/fixtures/companyDossier";
-import { genericDossierIdentityFixture } from "./generic-dossier-identity";
+import { installCompanyBrowserFixture } from "./company-browser-fixture";
 import { selectInterfaceLanguage } from "./interface-language";
 
 const organizationId = "a8ed0601-cfa5-4d1f-bb82-898a570596da";
@@ -64,53 +63,7 @@ for (const providerLabel of [false, true]) {
     page,
   }, testInfo) => {
     const data = fixture(providerLabel);
-    const genericIdentity = genericDossierIdentityFixture(data);
-    let dossierReads = 0;
-    const errors: string[] = [];
-    const writes: string[] = [];
-    page.on("pageerror", (error) => errors.push(error.message));
-    await page.route("**/api/v1/**", (route) => {
-      const request = route.request(),
-        path = new URL(request.url()).pathname;
-      if (path === "/api/v1/workspace/web-vitals") return route.fulfill({ status: 202, json: {} });
-      if (!["GET", "HEAD", "OPTIONS"].includes(request.method())) {
-        writes.push(`${request.method()} ${path}`);
-        return route.abort("blockedbyclient");
-      }
-      if (path === "/api/v1/auth/config") return route.fulfill({ json: { mode: "local" } });
-      if (path === "/api/v1/auth/me")
-        return route.fulfill({
-          json: {
-            id: "controlled-company-user",
-            tenant_id: "controlled-company-tenant",
-            email: "company-language@example.test",
-            display_name: "Controlled browser fixture",
-            role: "analyst",
-          },
-        });
-      if (path === `/api/v1/entities/${organizationId}`) return route.fulfill({ json: data.entity });
-      const genericReply = genericIdentity.response(path);
-      if (genericReply) return route.fulfill(genericReply);
-      if (path === `/api/v1/companies/${organizationId}/dossier`) {
-        dossierReads++;
-        return route.fulfill({ json: data });
-      }
-      return route.fulfill({ json: [] });
-    });
-
-    async function audit(name: string) {
-      await page.evaluate(() => window.scrollTo(0, 0));
-      expect(
-        (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze()).violations,
-      ).toEqual([]);
-      const bounds = await page.evaluate(() => ({
-        viewport: document.documentElement.clientWidth,
-        document: document.documentElement.scrollWidth,
-      }));
-      expect(bounds.document).toBeLessThanOrEqual(bounds.viewport);
-      expect(errors).toEqual([]);
-      await page.screenshot({ path: testInfo.outputPath(`${name}.png`), fullPage: false, animations: "disabled" });
-    }
+    const { dossierReads, errors, writes, audit } = await installCompanyBrowserFixture(page, testInfo, data);
 
     await page.goto(`/workspace/research?view=company&entity=${organizationId}&section=overview`);
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
@@ -155,14 +108,23 @@ for (const providerLabel of [false, true]) {
       await audit(`company-${section}-zh`);
       await selectInterfaceLanguage(page, "en");
     }
-    expect(dossierReads).toBe(1);
+    expect(dossierReads()).toBe(1);
     await selectInterfaceLanguage(page, "zh-CN");
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
     await expect(page.getByRole("heading", { name: data.entity.name, exact: true })).toBeVisible();
     await expect(page.getByRole("tab", { name: "公司动态", exact: true })).toHaveAttribute("aria-selected", "true");
-    if (!providerLabel) await genericIdentity.verify(page, audit);
     expect(writes).toEqual([]);
     expect(errors).toEqual([]);
   });
 }
+
+// Independent original 30-second budget; retain the original company journeys in full.
+test("[generic-dossier] validates response identity and specializes cached legacy navigation", async ({
+  page,
+}, testInfo) => {
+  const { genericIdentity, audit, errors, writes } = await installCompanyBrowserFixture(page, testInfo, fixture());
+  await genericIdentity.verify(page, audit);
+  expect(writes).toEqual([]);
+  expect(errors).toEqual([]);
+});
