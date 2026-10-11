@@ -5,6 +5,7 @@ export function renderedPaintEvidence(page: Page) {
   return page.evaluate(() => ({
     fonts: document.fonts.status,
     scroll: { x: scrollX, y: scrollY },
+    focus: { tag: document.activeElement?.tagName, label: document.activeElement?.closest("label")?.textContent },
     elements: [
       ...document.querySelectorAll<HTMLElement>(
         ".workspace-main h2, .target-pipeline-panel input, .target-pipeline-panel select",

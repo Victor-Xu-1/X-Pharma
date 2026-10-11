@@ -1,0 +1,3 @@
+.target-evidence-filters.target-pipeline-primary-filters {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+}

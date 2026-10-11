@@ -255,6 +255,55 @@ it("retains absent identifiers and an unknown target class in the compact header
   expect(within(header).getByText("Gene symbol", { exact: true }).parentElement).toHaveTextContent("--");
 });
 
+it("limits unfiltered target pipeline primary controls while keeping secondary filters available", async () => {
+  setLocale("en");
+  renderTargetView({ initialSection: "pipeline" });
+  await screen.findByRole("table", { name: "Target drug development overview" });
+  const primary = document.querySelector(".target-pipeline-panel > .target-evidence-filters");
+  expect(primary?.querySelectorAll(":scope > label, :scope > .facet-multi-select")).toHaveLength(5);
+  expect(primary).not.toHaveTextContent("Therapeutic area");
+  expect(primary).not.toHaveTextContent("Geography");
+  expect(primary).not.toHaveTextContent("Clinical results");
+  expect(primary).not.toHaveTextContent("Deal signals");
+  const secondary = document.querySelector(".target-pipeline-panel .pipeline-advanced-filters");
+  expect(secondary).toHaveAttribute("data-active-count", "0");
+  expect(secondary).not.toHaveAttribute("open");
+  fireEvent.click(screen.getByText("More filters", { exact: true }));
+  expect(screen.getByRole("combobox", { name: "Geography" })).toBeVisible();
+  expect(screen.getByRole("combobox", { name: "Clinical results" })).toBeVisible();
+  expect(screen.getByRole("combobox", { name: "Deal signals" })).toBeVisible();
+});
+
+it("automatically discloses four selected secondary target filters and preserves false choices through reset", async () => {
+  setLocale("en");
+  renderTargetView({
+    initialSection: "pipeline",
+    initialPipelineFilters: {
+      ...emptyPipelineSearchFilters(),
+      targetEntityId: target.id,
+      therapeuticAreas: ["肿瘤领域"],
+      geography: "global",
+      hasClinicalResults: "false",
+      hasDeal: "false",
+    },
+  });
+  await screen.findByRole("table", { name: "Target drug development overview" });
+  const secondary = document.querySelector(".target-pipeline-panel .pipeline-advanced-filters");
+  expect(secondary).toHaveAttribute("data-active-count", "4");
+  expect(secondary).toHaveAttribute("open");
+  expect(screen.getByRole("combobox", { name: "Clinical results" })).toHaveValue("false");
+  expect(screen.getByRole("combobox", { name: "Deal signals" })).toHaveValue("false");
+  const reads = vi.mocked(searchPipelines).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("combobox", { name: "临床结果" })).toHaveValue("false");
+  expect(searchPipelines).toHaveBeenCalledTimes(reads);
+  fireEvent.click(screen.getByRole("button", { name: "重置筛选" }));
+  await waitFor(() => expect(secondary).toHaveAttribute("data-active-count", "0"));
+  expect(secondary).toHaveAttribute("open");
+  expect(screen.getByRole("combobox", { name: "临床结果" })).toHaveValue("");
+  expect(screen.getByRole("combobox", { name: "交易信号" })).toHaveValue("");
+});
+
 function renderTargetView({
   onOpenEntity = vi.fn(),
   onOpenDrug,

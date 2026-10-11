@@ -209,6 +209,12 @@ test("[target-language] preserves target narratives, complete counts, filters, r
   }
   const group = panel.locator(".pipeline-advanced-filters");
   await expect(group).toHaveClass(/secondary-filter-panel/);
+  await expect(
+    panel.locator(
+      ":scope > .target-pipeline-primary-filters > label, :scope > .target-pipeline-primary-filters > .facet-multi-select",
+    ),
+  ).toHaveCount(5);
+  await expect(group).not.toHaveAttribute("open", "");
   await group.locator(":scope > summary").focus();
   await page.keyboard.press("Enter");
   await expect(group).toHaveAttribute("open", "");
@@ -258,6 +264,27 @@ test("[target-language] preserves target narratives, complete counts, filters, r
   expect(dossierReads).toBe(1);
   expect(writes).toEqual([]);
   await audit("controlled-target-pipeline-cleared-en");
+  const readsBeforeSignals = pipelineReads;
+  await group.getByRole("combobox", { name: "Clinical results", exact: true }).selectOption("false");
+  await expect.poll(() => pipelineReads).toBe(readsBeforeSignals + 1);
+  await expect(panel.locator(".spinner")).toHaveCount(0);
+  await group.getByRole("combobox", { name: "Deal signals", exact: true }).selectOption("false");
+  await expect.poll(() => pipelineReads).toBe(readsBeforeSignals + 2);
+  await expect(panel.locator(".spinner")).toHaveCount(0);
+  await expect(group).toHaveAttribute("data-active-count", "2");
+  const signalUrl = page.url();
+  await selectInterfaceLanguage(page, "zh-CN");
+  await expect(group.getByRole("combobox", { name: "临床结果", exact: true })).toHaveValue("false");
+  await expect(group.getByRole("combobox", { name: "交易信号", exact: true })).toHaveValue("false");
+  expect(page.url()).toBe(signalUrl);
+  expect(pipelineReads).toBe(readsBeforeSignals + 2);
+  await selectInterfaceLanguage(page, "en");
+  await panel.getByRole("button", { name: "Reset filters", exact: true }).click();
+  await expect(group).toHaveAttribute("data-active-count", "0");
+  await expect(group).toHaveAttribute("open", "");
+  await expect(group.getByRole("combobox", { name: "Clinical results", exact: true })).toHaveValue("");
+  await expect(group.getByRole("combobox", { name: "Deal signals", exact: true })).toHaveValue("");
+  await expect(panel.locator(".spinner")).toHaveCount(0);
   const searchInput = panel.getByRole("searchbox", { name: "Drug or organization", exact: true });
   const releaseFailureReply = holdNextPipelineReply();
   await searchInput.fill("Controlled delayed refinement");
