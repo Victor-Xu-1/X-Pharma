@@ -201,6 +201,11 @@ SMB 协议验收将容器账户 UID 映射到创建私有夹具的非 root 主�
 
 容器安全以固定基础镜像摘要和 `deploy/security/debian13-runtime-packages.lock` 为权威。共享安装脚本只升级镜像中已有的指定包，版本更高时要求审阅，禁止降级与通用漏洞忽略。CPython 供应商源码、来源 commit、SHA-256、真实解析器探针及 OpenVEX 声明成组更新。
 
+来源身份提示只在 `provider_label` 范围、明确的 `ClinicalTrials.gov` 提供者、
+对应组织／疾病类型和 `governance/trial_labels.py` 生成的固定说明四者均匹配时
+本地化该应用文案。未知、跨类型或其他来源说明逐字保留；不改写记录属性、
+名称、科研描述或来源范围，也不依据说明文字推断已核验的标准身份。
+
 `views/dossier/DossierSummaryFacts` 为公司与疾病规范档案共用的纯呈现层，
 保留三项主指标与三项可展开辅助指标。领域页面继续拥有标签、阶段、日期和
 原始事实；组件不读取接口、不计算新的科学指标，也不取得语言或 URL 状态。

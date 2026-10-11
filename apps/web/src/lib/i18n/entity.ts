@@ -26,6 +26,10 @@ export const entityMessages = {
     "A registry study condition that has not been standardized to an ontology; not an approved indication.",
   "注册平台的申办方名称，不代表已核实的法律主体或企业集团归并。":
     "A registry sponsor name, not a verified legal entity or consolidated corporate group.",
+  "ClinicalTrials.gov申办方名称，不代表已核实的法律主体或企业集团归并。":
+    "ClinicalTrials.gov sponsor label; it does not establish a verified legal entity or corporate-group identity.",
+  "ClinicalTrials.gov研究条件名称，不代表获批适应症或本体标准化。":
+    "ClinicalTrials.gov study condition label; it does not establish an approved indication or a standardized ontology term.",
   "关联命中：{value} · {relationship}": "Relationship match: {value} · {relationship}",
   已发布对象: "Published entity",
   已验证关系: "Verified relationship",
