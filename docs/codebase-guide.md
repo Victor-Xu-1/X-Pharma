@@ -195,3 +195,8 @@ SMB 协议验收将容器账户 UID 映射到创建私有夹具的非 root 主�
 靶点查询的加载／错误／分面时点说明由 `TargetPipelineFeedback` 唯一呈现，位于稳定的筛选区域前并随当前面板可见；结果模块不再重复拥有提示。反馈保留完整服务端原因与原重试回调，不替换输入或夺取焦点。`focusVisibility` 只在本面板的当前控件实际被导航／反馈遮挡或超出可见区域时按测量值做最小滚动校正；已可见的控件、其他页面和非筛选焦点不受影响，不依赖无效固定滚动余量。长诊断区使用和表格相同的 `KeyboardScrollRegion` 具名键盘滚动合同；`ScrollableTableRegion` 只保留表格布局包装，原 HTML 和键盘入口不变，不增加第二条焦点实现。
 
 容器安全以固定基础镜像摘要和 `deploy/security/debian13-runtime-packages.lock` 为权威。共享安装脚本只升级镜像中已有的指定包，版本更高时要求审阅，禁止降级与通用漏洞忽略。CPython 供应商源码、来源 commit、SHA-256、真实解析器探针及 OpenVEX 声明成组更新。
+
+来源身份提示只在 `provider_label` 范围、明确的 `ClinicalTrials.gov` 提供者、
+对应组织／疾病类型和 `governance/trial_labels.py` 生成的固定说明四者均匹配时
+本地化该应用文案。未知、跨类型或其他来源说明逐字保留；不改写记录属性、
+名称、科研描述或来源范围，也不依据说明文字推断已核验的标准身份。

@@ -55,7 +55,16 @@ export function entityTypeLabel(entity: EntityIdentity): string {
 export function entityIdentityNote(entity: EntityIdentity): string | null {
   if (!isProviderLabel(entity)) return null;
   const note = entity.attributes.identity_note;
-  if (typeof note === "string" && note.trim()) return note;
+  if (typeof note === "string" && note.trim()) {
+    // trial_labels.py owns these exact caveats; other provider copy stays raw.
+    const applicationNote =
+      entity.entity_type === "disease"
+        ? "ClinicalTrials.gov研究条件名称，不代表获批适应症或本体标准化。"
+        : "ClinicalTrials.gov申办方名称，不代表已核实的法律主体或企业集团归并。";
+    if (entity.attributes.label_provider === "ClinicalTrials.gov" && note === applicationNote)
+      return t(applicationNote);
+    return note;
+  }
   return entity.entity_type === "disease"
     ? t("注册平台的研究条件名称，尚未完成本体标准化，不代表获批适应症。")
     : t("注册平台的申办方名称，不代表已核实的法律主体或企业集团归并。");
