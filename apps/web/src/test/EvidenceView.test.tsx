@@ -1,7 +1,8 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import { listEvidenceDatasets, searchEvidence } from "../lib/contracts/evidence";
+import { setLocale } from "../lib/i18n";
 import { EvidenceView } from "../views/EvidenceView";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
@@ -190,4 +191,39 @@ it("keeps search disabled while evidence domains cannot be loaded", async () => 
   });
   expect(screen.getByRole("button", { name: "查证原文" })).toBeDisabled();
   expect(searchEvidence).not.toHaveBeenCalled();
+});
+
+it("switches evidence controls without changing an unfinished query or source-owned dataset name", async () => {
+  setLocale("en");
+  renderWithQueryClient(<EvidenceView />);
+  const query = screen.getByRole("textbox", { name: "Research question or evidence query" });
+  fireEvent.change(query, { target: { value: "未提交 EGFR 查询" } });
+  fireEvent.click(await screen.findByRole("button", { name: "文献" }));
+  expect(screen.getByRole("button", { name: "Search source evidence" })).toBeEnabled();
+  expect(screen.getByText("Awaiting evidence search")).toBeInTheDocument();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("textbox", { name: "研究问题或查证内容" })).toHaveValue("未提交 EGFR 查询");
+  expect(screen.getByRole("button", { name: "文献" })).toHaveAttribute("aria-pressed", "true");
+  act(() => setLocale("en"));
+  expect(screen.getByRole("textbox", { name: "Research question or evidence query" })).toHaveValue("未提交 EGFR 查询");
+  expect(searchEvidence).not.toHaveBeenCalled();
+});
+
+it("localizes citation controls while retaining raw source content, positions and the current selection", async () => {
+  setLocale("en");
+  renderWithQueryClient(
+    <EvidenceView initialQuery="EGFR L858R" initialDocumentId="document-1" initialChunkIndex={0} />,
+  );
+  const selection = await screen.findByLabelText("Current citation location");
+  expect(selection).toHaveTextContent("Citation 01 · Page 7 · Characters 120-280");
+  expect(screen.getByRole("article", { current: true })).toHaveTextContent("EGFR L858R showed a measured response.");
+  expect(screen.getByRole("link", { name: "Open original source" })).toHaveAttribute(
+    "href",
+    "https://example.test/egfr",
+  );
+  const reads = vi.mocked(searchEvidence).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByLabelText("当前引用定位")).toHaveTextContent("引用 01 · 页 7 · 字符 120-280");
+  expect(screen.getByRole("article", { current: true })).toHaveTextContent("EGFR L858R showed a measured response.");
+  expect(vi.mocked(searchEvidence).mock.calls.length).toBe(reads);
 });

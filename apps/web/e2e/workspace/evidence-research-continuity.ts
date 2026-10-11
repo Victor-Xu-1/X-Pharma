@@ -70,6 +70,20 @@ export async function verifyEvidenceResearchContinuity(
     filteredResult.chunks[0]?.document_name ?? "",
   );
 
+  const stableLocation = page.url();
+  const originalQuote = await page.locator("article.evidence-record[aria-current='true'] blockquote").innerText();
+  await selectInterfaceLanguage(page, "en");
+  await expect(page.getByLabel("Current citation location")).toContainText(
+    filteredResult.chunks[0]?.document_name ?? "",
+  );
+  await expect(page.getByRole("textbox", { name: "Research question or evidence query" })).toHaveValue("EGFR");
+  await expect(datasetButton).toHaveAttribute("aria-pressed", "true");
+  expect(page.url()).toBe(stableLocation);
+  expect(await page.locator("article.evidence-record[aria-current='true'] blockquote").innerText()).toBe(originalQuote);
+  await selectInterfaceLanguage(page, "zh-CN");
+  await expect(page.getByLabel("当前引用定位")).toContainText(filteredResult.chunks[0]?.document_name ?? "");
+  expect(page.url()).toBe(stableLocation);
+
   await page.getByRole("button", { name: "定位引用 02" }).click();
   await expect.poll(() => new URL(page.url()).searchParams.get("chunk")).toBe("2");
   await page.goBack();
