@@ -7,7 +7,7 @@ import type { ProvenanceSelection } from "../../lib/contracts/provenance";
 import type { NewsEventSearchItemRead } from "../../lib/generated";
 import { useMessages } from "../../lib/i18n";
 import { newsMessages } from "../../lib/i18n/news";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 import { newsTypeLabel } from "./presentation";
 export function useNewsColumns(
   onNewsEventChange: (id: string) => void,

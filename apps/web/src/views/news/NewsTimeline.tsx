@@ -5,7 +5,7 @@ import type { ProvenanceSelection } from "../../lib/contracts/provenance";
 import type { NewsEventSearchItemRead } from "../../lib/generated";
 import { useLocale } from "../../lib/i18n";
 import { newsText as t } from "../../lib/i18n/news";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 import { newsTypeLabel } from "./presentation";
 export function NewsResearchTimeline({
   items,

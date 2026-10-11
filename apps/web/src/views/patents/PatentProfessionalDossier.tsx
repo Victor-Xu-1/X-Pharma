@@ -12,7 +12,7 @@ import { patentText as t } from "../../lib/i18n/patents";
 import { patentStatus } from "../../lib/patentDisplay";
 import { sourceRecordRows } from "../../lib/sourceRecordRows";
 import type { PatentDossierSection } from "../../lib/workspaceRouting";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 import { displayPatentList, patentCalendarDate } from "./presentation";
 
 function DetailValue({ term, value }: { term: string; value: string | null | undefined }) {

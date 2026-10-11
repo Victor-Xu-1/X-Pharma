@@ -2,7 +2,7 @@ import { Dna } from "lucide-react";
 import { EmptyState } from "../../components/common";
 import type { DrugDossier } from "../../lib/contracts/drugDossier";
 import { drugDossierText as t } from "../../lib/i18n/drugDossier";
-import { Relationships } from "../EntityDossierView";
+import { Relationships } from "../dossier/Relationships";
 import { renderEntityLinks, uniqueProgramEntities } from "./associations";
 import type { DrugEntityOpener } from "./types";
 

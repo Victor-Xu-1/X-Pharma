@@ -6,7 +6,7 @@ import type { ProvenanceSelection } from "../../lib/contracts/provenance";
 import { useLocale } from "../../lib/i18n";
 import { diseaseDossierText as t } from "../../lib/i18n/diseaseDossier";
 import { targetEvidenceDirectionLabel, targetEvidenceTypeLabel } from "../../lib/i18n/targetEvidence";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 
 export function DiseaseEvidence({
   data,

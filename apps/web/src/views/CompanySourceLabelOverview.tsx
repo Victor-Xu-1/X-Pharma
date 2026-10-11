@@ -2,7 +2,7 @@ import type { CompanyDossier } from "../lib/contracts/company";
 import type { ProvenanceSelection } from "../lib/contracts/provenance";
 import { useLocale } from "../lib/i18n";
 import { companyDossierText as t } from "../lib/i18n/companyDossier";
-import { Trials } from "./EntityDossierView";
+import { Trials } from "./dossier/Trials";
 
 /** A registry name is useful evidence, but is not a verified corporate portfolio. */
 export function CompanySourceLabelOverview({

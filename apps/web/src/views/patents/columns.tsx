@@ -8,7 +8,7 @@ import type { PatentFamilySearchItemRead } from "../../lib/generated";
 import { useMessages } from "../../lib/i18n";
 import { patentMessages } from "../../lib/i18n/patents";
 import { patentStatus } from "../../lib/patentDisplay";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 import { displayPatentList, patentCalendarDate, publicationNumbers } from "./presentation";
 
 export function usePatentColumns(onPatentChange: (id: string | null) => void, openEntity: DossierEntityOpener) {

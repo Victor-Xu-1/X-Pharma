@@ -1,7 +1,7 @@
 import { formatDate } from "../../components/common";
 import { drugDossierText as t } from "../../lib/i18n/drugDossier";
 import { localizedFullDevelopmentPhase as phaseLabel } from "../../lib/i18n/programVocabulary";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 import type { DrugDeal } from "./types";
 
 export function DrugDealAssets({ deal, onOpenEntity }: { deal: DrugDeal; onOpenEntity: DossierEntityOpener }) {

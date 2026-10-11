@@ -7,7 +7,7 @@ import type { EpidemiologyObservationSearchItemRead } from "../../lib/generated"
 import { useLocale } from "../../lib/i18n";
 import { diseaseDossierText as t } from "../../lib/i18n/diseaseDossier";
 import { controlledDossierLabel } from "../../lib/i18n/dossierVocabulary";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 import { formatNumber, periodLabel } from "./presentation";
 
 export function EpidemiologyTable({

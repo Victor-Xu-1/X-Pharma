@@ -9,7 +9,7 @@ import type { DealSearchItemRead } from "../../lib/generated";
 import { useLocale } from "../../lib/i18n";
 import { dealText as t } from "../../lib/i18n/deals";
 import type { DealDossierSection } from "../../lib/workspaceRouting";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 import { DealAssets, DealParties } from "./DealPartiesAssets";
 import { DealRights } from "./DealRights";
 

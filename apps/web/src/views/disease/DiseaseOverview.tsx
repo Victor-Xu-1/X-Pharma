@@ -7,8 +7,8 @@ import { useLocale } from "../../lib/i18n";
 import { diseaseDossierText as t } from "../../lib/i18n/diseaseDossier";
 import { localizedFullDevelopmentPhase as phaseLabel } from "../../lib/i18n/programVocabulary";
 import type { DiseaseDossierSection } from "../../lib/workspaceRouting";
+import type { DossierEntityOpener } from "../dossier/types";
 import { dossierDomainLabel as coverageLabel } from "../dossier/vocabulary";
-import type { DossierEntityOpener } from "../EntityDossierView";
 import { EpidemiologyTable } from "./EpidemiologyTable";
 
 export function DiseaseOverview({

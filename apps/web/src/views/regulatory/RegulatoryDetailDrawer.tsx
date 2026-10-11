@@ -16,7 +16,7 @@ import {
   severityLabels,
 } from "../../lib/regulatoryDisplay";
 import { useModalFocus } from "../../lib/useModalFocus";
-import type { DossierEntityOpener } from "../EntityDossierView";
+import type { DossierEntityOpener } from "../dossier/types";
 import { regulatoryValue as displayValue, regulatoryBoolean } from "./presentation";
 export function RegulatoryDetailDrawer({
   data,
