@@ -235,6 +235,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - name: Install locked browser dependencies
+        env:
+          VISUAL_PROFILE_REVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
         run: |
           uv sync --locked --dev
           pnpm --dir apps/web install --frozen-lockfile
