@@ -1,8 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Pill } from "lucide-react";
 import { useState } from "react";
-import { EmptyState, ErrorState, formatDate, Spinner } from "../components/common";
-import { EntityNames } from "../components/EntityNames";
+import { EmptyState, ErrorState, Spinner } from "../components/common";
 import { RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { ResearchTabList } from "../components/ResearchTabList";
 import { ApiError } from "../lib/api";
@@ -10,7 +8,6 @@ import { drugDossierKeys, drugProgramKeys, loadDrugDossier, loadDrugPrograms } f
 import type { ProvenanceSelection } from "../lib/contracts/provenance";
 import { useLocale } from "../lib/i18n";
 import { drugDossierText as t } from "../lib/i18n/drugDossier";
-import { localizedFullDevelopmentPhase as phaseLabel } from "../lib/i18n/programVocabulary";
 import type { Entity } from "../lib/types";
 import type { DrugDossierSection } from "../lib/workspaceRouting";
 import { buildDrugTabs } from "./drug/coverage";
@@ -18,6 +15,7 @@ import { DrugAssociations } from "./drug/DrugAssociations";
 import { DrugClinicalEvidence } from "./drug/DrugClinicalEvidence";
 import { DrugDealIntelligence } from "./drug/DrugDealIntelligence";
 import { DrugDevelopmentPortfolio } from "./drug/DrugDevelopmentPortfolio";
+import { DrugDossierHeader } from "./drug/DrugDossierHeader";
 import { DrugOverview } from "./drug/DrugOverview";
 import { DrugRegulatory } from "./drug/DrugRegulatory";
 import type { DrugEntityOpener } from "./drug/types";
@@ -139,47 +137,7 @@ export function DrugView({
   return (
     <>
       <section className="drug-profile-page">
-        <header className="drug-profile-header">
-          <div className="drug-profile-symbol">
-            <Pill size={23} />
-          </div>
-          <div className="drug-profile-identity">
-            <h2>{data.entity.name}</h2>
-            <p>{data.entity.description ?? t("暂无药物摘要")}</p>
-          </div>
-        </header>
-
-        <EntityNames entity={data.entity} />
-        <dl className="dossier-metrics drug-profile-metrics">
-          <div>
-            <dt>{t("最高阶段")}</dt>
-            <dd>{phaseLabel(data.summary.highest_phase)}</dd>
-          </div>
-          <div>
-            <dt>{t("全球 / 中国")}</dt>
-            <dd>
-              {phaseLabel(data.summary.highest_global_phase)} / {phaseLabel(data.summary.highest_china_phase)}
-            </dd>
-          </div>
-          <div>
-            <dt>{t("研发项目")}</dt>
-            <dd>{data.summary.program_count}</dd>
-          </div>
-          <div>
-            <dt>{t("靶点 / 适应症")}</dt>
-            <dd>
-              {data.summary.target_count} / {data.summary.indication_count}
-            </dd>
-          </div>
-          <div>
-            <dt>{t("研发机构")}</dt>
-            <dd>{data.summary.organization_count}</dd>
-          </div>
-          <div>
-            <dt>{t("最新状态")}</dt>
-            <dd>{formatDate(data.summary.latest_status_date)}</dd>
-          </div>
-        </dl>
+        <DrugDossierHeader key={data.entity.id} data={data} />
 
         <ResearchTabList
           tabs={tabs}

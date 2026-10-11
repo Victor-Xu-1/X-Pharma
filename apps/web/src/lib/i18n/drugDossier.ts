@@ -10,6 +10,8 @@ export const drugDossierMessages = {
   研发分页与请求药物或页位置不一致: "Development page does not match the requested drug or offset",
   "正在加载 {name} 药物档案": "Loading the drug dossier for {name}",
   暂无药物摘要: "No drug summary available",
+  药物档案摘要: "Drug profile summary",
+  地区阶段与药物标识: "Regional phases and drug identity",
   最高阶段: "Highest phase",
   "全球 / 中国": "Global / China",
   研发项目: "Development programs",

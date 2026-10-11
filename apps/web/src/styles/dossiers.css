@@ -94,9 +94,6 @@
 .drug-profile-symbol {
   background: var(--ds-accent-soft);
 }
-.drug-profile-metrics {
-  grid-template-columns: repeat(6, minmax(110px, 1fr));
-}
 .drug-profile-overview {
   display: grid;
   gap: 24px;
@@ -780,9 +777,6 @@
 }
 
 @media (max-width: 980px) {
-  .drug-profile-metrics {
-    grid-template-columns: repeat(3, minmax(110px, 1fr));
-  }
   .drug-profile-overview-grid {
     grid-template-columns: 1fr;
   }
@@ -821,7 +815,6 @@
     width: 40px;
     height: 40px;
   }
-  .drug-profile-metrics,
   .drug-profile-attribute-strip,
   .drug-profile-structure-content {
     grid-template-columns: 1fr;

@@ -222,6 +222,15 @@ export async function verifyPipelineDossiers(context: Awaited<ReturnType<typeof 
   await pipelineTable.getByRole("button", { name: new RegExp(`^${regulatoryDrugName}`) }).click();
   await expect(page).toHaveURL(new RegExp(`view=drug&entity=${regulatorySubjectId}`));
   await expect(page.getByRole("heading", { name: regulatoryDrugName, exact: true })).toBeVisible();
+  const drugHeader = page.getByRole("region", { name: "药物档案摘要", exact: true });
+  await expect(drugHeader.locator(".drug-header-primary-metrics > div")).toHaveCount(3);
+  const drugIdentityDetails = drugHeader.locator(".drug-header-details");
+  await expect(drugIdentityDetails).not.toHaveAttribute("open", "");
+  const identitySummary = drugIdentityDetails.locator(":scope > summary");
+  await identitySummary.focus();
+  await page.keyboard.press("Enter");
+  await expect(drugIdentityDetails).toHaveAttribute("open", "");
+  await expect(drugIdentityDetails.getByText("全球 / 中国", { exact: true })).toBeVisible();
   await expect(
     page
       .locator("dt")
