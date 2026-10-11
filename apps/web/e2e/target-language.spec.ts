@@ -232,10 +232,19 @@ test("[target-language] preserves target narratives, complete counts, filters, r
     const phoneControls = await panel.locator(".target-pipeline-primary-filters").evaluate((node) => {
       const style = getComputedStyle(node);
       return {
+        height: node.getBoundingClientRect().height,
         available: node.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight),
         widths: [...node.querySelectorAll(":scope > label, :scope > .facet-multi-select")].map(
           (control) => control.getBoundingClientRect().width,
         ),
+        controls: [
+          ...node.querySelectorAll(
+            'input[type="search"], select, .facet-multi-select > details > summary, :scope > button',
+          ),
+        ].map((control) => {
+          const bounds = control.getBoundingClientRect();
+          return { width: bounds.width, height: bounds.height };
+        }),
       };
     });
     await testInfo.attach("phone-primary-controls", {
@@ -243,6 +252,12 @@ test("[target-language] preserves target narratives, complete counts, filters, r
       contentType: "application/json",
     });
     for (const width of phoneControls.widths) expect(Math.abs(width - phoneControls.available)).toBeLessThanOrEqual(1);
+    expect(phoneControls.height).toBeLessThanOrEqual(340);
+    expect(phoneControls.controls).toHaveLength(6);
+    for (const control of phoneControls.controls) {
+      expect(control.height).toBeGreaterThanOrEqual(44);
+      expect(control.width).toBeGreaterThanOrEqual(44);
+    }
   }
   await group.locator(":scope > summary").focus();
   await page.keyboard.press("Enter");
