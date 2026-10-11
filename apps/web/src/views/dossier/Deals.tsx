@@ -1,13 +1,7 @@
 import { Landmark } from "lucide-react";
 import { EmptyState, formatDate } from "../../components/common";
 import { ProvenanceButton } from "../../components/RecordProvenanceDrawer";
-import {
-  dealTypeLabels,
-  directionLabels,
-  formatAmount,
-  partyRoleLabels,
-  phaseLabels,
-} from "../../lib/dealDisplay";
+import { dealTypeLabels, directionLabels, formatAmount, partyRoleLabels, phaseLabels } from "../../lib/dealDisplay";
 import { useLocale } from "../../lib/i18n";
 import { dossierRecordText as t } from "../../lib/i18n/dossierRecords";
 import { controlledDossierLabel } from "../../lib/i18n/dossierVocabulary";
