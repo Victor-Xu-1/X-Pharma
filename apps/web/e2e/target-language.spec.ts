@@ -118,6 +118,11 @@ test("[target-language] preserves target narratives, complete counts, filters, r
   const header = page.getByRole("region", { name: /^(Target profile summary|靶点档案摘要)$/ });
   const identity = header.locator(".target-header-details");
   await expect(header.locator(".target-header-stats > div")).toHaveCount(3);
+  const valueTops = await header
+    .locator(".target-header-stats dd")
+    .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().top));
+  await testInfo.attach("header-value-alignment", { body: JSON.stringify(valueTops), contentType: "application/json" });
+  expect(Math.max(...valueTops) - Math.min(...valueTops)).toBeLessThanOrEqual(1);
   await expect(identity).not.toHaveAttribute("open", "");
   await expect(header.getByText("原始靶点代号", { exact: true })).not.toBeVisible();
   await identity.locator(":scope > summary").focus();
