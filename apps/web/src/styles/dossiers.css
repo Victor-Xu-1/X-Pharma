@@ -913,6 +913,10 @@
 }
 
 /* Query feedback stays visible without replacing the edited filter controls. */
+.target-pipeline-panel {
+  /* A new status row must not be anchored over the control the user is editing. */
+  overflow-anchor: none;
+}
 .target-pipeline-feedback {
   position: sticky;
   top: 8px;
@@ -925,9 +929,13 @@
   background: var(--ds-surface);
 }
 .target-pipeline-feedback .state-message {
+  min-height: 0;
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) auto;
   align-items: center;
+  align-content: start;
+  justify-content: stretch;
+  justify-items: start;
   gap: 4px 12px;
   margin: 0;
   padding: 10px 12px;
@@ -950,6 +958,7 @@
   grid-column: 3;
   grid-row: 1 / span 2;
   min-height: 44px;
+  margin: 0;
 }
 .target-pipeline-feedback > p {
   margin: 0;
