@@ -1,4 +1,5 @@
 import { emptyPipelineSearchFilters, type PipelineSearchFilters } from "../../lib/contracts/pipeline";
+import type { Entity } from "../../lib/types";
 import type {
   CompanyDossierSection,
   DiseaseDossierSection,
@@ -25,6 +26,17 @@ export function specializedResearchView(
     default:
       return null;
   }
+}
+
+/** Shared current-identity selection; a foreign response never becomes the route's entity. */
+export function researchRouteEntity(
+  requestedId: string | null | undefined,
+  selected: Entity | null,
+  loaded: Entity | undefined,
+): Entity | null {
+  if (!requestedId) return null;
+  if (selected?.id === requestedId) return selected;
+  return loaded?.id === requestedId ? loaded : null;
 }
 
 export const specializedSectionByEntitySection: Record<

@@ -3,7 +3,10 @@ import { act, fireEvent, renderHook, screen, waitFor } from "@testing-library/re
 import type { ReactNode } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import { getSessionEntity } from "../lib/contracts/session";
+import { setLocale } from "../lib/i18n";
+import type { Entity } from "../lib/types";
 import { parseWorkbenchLocation, workspaceUrl } from "../lib/workspaceRouting";
+import { EntityRoute } from "../workspaces/research/EntityRoute";
 import { ResearchReturnControl } from "../workspaces/research/ResearchReturnControl";
 import { useResearchNavigation } from "../workspaces/research/useResearchNavigation";
 import { renderWithQueryClient } from "./renderWithQueryClient";
@@ -19,6 +22,99 @@ afterEach(() => window.history.replaceState(null, "", "/"));
 const entityId = "550e8400-e29b-41d4-a716-446655440000";
 const query =
   "/workspace/research?view=explorer&q=EGFR&type=target&sort=name%3Aasc&display=landscape&analysis_view=table&offset=100";
+
+it("rejects foreign route metadata with bilingual feedback before a second dossier query", async () => {
+  setLocale("en");
+  vi.mocked(getSessionEntity).mockClear();
+  vi.mocked(getSessionEntity).mockResolvedValueOnce({
+    id: "foreign-id",
+    canonical_entity_id: "foreign-id",
+    entity_type: "patent",
+    name: "FOREIGN METADATA",
+    description: null,
+    external_ids: {},
+    attributes: {},
+    identity_identifiers: [],
+    review_status: "verified",
+    created_at: "2026-07-01T00:00:00Z",
+    updated_at: "2026-07-01T00:00:00Z",
+  });
+  window.history.replaceState(null, "", `/workspace/research?view=entity&entity=${entityId}`);
+  function Harness() {
+    const navigation = useResearchNavigation();
+    return (
+      <EntityRoute
+        context={{
+          ...navigation,
+          user: { id: "user", tenant_id: "tenant", email: "user@example.test", display_name: "User", role: "viewer" },
+          onLogout: vi.fn(),
+          onUserUpdated: vi.fn(),
+          logoutPending: false,
+          logoutError: null,
+        }}
+      />
+    );
+  }
+  renderWithQueryClient(<Harness />);
+  await screen.findByText("Entity route metadata does not match the requested identity");
+  expect(screen.queryByText("FOREIGN METADATA")).not.toBeInTheDocument();
+  expect(document.querySelector(".entity-dossier-page")).not.toBeInTheDocument();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("领域档案链接与请求实体不一致")).toBeInTheDocument();
+  expect(getSessionEntity).toHaveBeenCalledTimes(1);
+});
+
+it.each([
+  ["target", "target"],
+  ["drug", "drug"],
+  ["organization", "company"],
+  ["disease", "disease"],
+] as const)(
+  "specializes the current selected %s without requiring a second metadata read",
+  async (entityType, view) => {
+    const selected: Entity = {
+      id: entityId,
+      canonical_entity_id: entityId,
+      entity_type: entityType,
+      name: "Original selected identity",
+      description: null,
+      external_ids: {},
+      attributes: {},
+      review_status: "verified",
+      created_at: "2026-07-01T00:00:00Z",
+      updated_at: "2026-07-01T00:00:00Z",
+    };
+    vi.mocked(getSessionEntity).mockClear();
+    window.history.replaceState(null, "", "/workspace/research?view=overview");
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { result } = renderHook(() => useResearchNavigation(), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      ),
+    });
+    const route = parseWorkbenchLocation(
+      "research",
+      `?view=entity&entity=${entityId}&section=relationships&from=${encodeURIComponent(query)}`,
+    );
+    act(() => {
+      result.current.setSelectedEntity(selected);
+      result.current.navigate(route);
+    });
+    await waitFor(() => expect(result.current.location.view).toBe(view));
+    const section =
+      view === "target"
+        ? "targetSection"
+        : view === "drug"
+          ? "drugSection"
+          : view === "company"
+            ? "companySection"
+            : "diseaseSection";
+    expect(result.current.location[section]).toBe("relationships");
+    expect(result.current.location.returnTo).toBe(route.returnTo);
+    expect(result.current.routeEntity.data).toBeUndefined();
+    expect(getSessionEntity).not.toHaveBeenCalled();
+  },
+);
 
 function ReturnHarness() {
   const navigation = useResearchNavigation();

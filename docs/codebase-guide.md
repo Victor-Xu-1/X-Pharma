@@ -23,6 +23,8 @@
 
 通用 `EntityDossierView` 在呈现或修正分节前，必须核对返回档案与请求实体的 ID 和类型；身份不一致只开放显式重试，不展示另一实体的记录，也不据此修改当前深链。`locationModel.specializedResearchView` 为四类专业实体的唯一视图分派，未知类型保留通用档案；`EntityRoute` 在已确认身份、等待现有导航提交时不挂载竞争的通用档案，避免缓存返回导航额外启动通用公司档案和时间线读取。既有 URL、分节映射和专业来源身份警告不变。公司时间线独立核对请求公司身份：错误归属或明确 401/403 时，不将缓存计数、日期和事件交给展示模块；暂时性 503 保留原授权快照并显示错误。`CompanyIntelligence` 的时间线日期只取自该时间线，缺失时明确显示缺失，不借用档案查询时间。服务器 RLS、查询键和来源事实权威不变。
 
+`researchRouteEntity` 统一选择当前请求 ID 对应的已选实体或已载入元数据，四类专业实体在只有已选记录时仍按原分节映射跳转，不要求第二份元数据缓存。错误 ID 的元数据在读取第二份档案前明确报错；路由反馈归属小型 `entityRoute` 双语目录，不翻译实体名称或上游错误原文。
+
 `RegistrationForm`、`AccountInvitationPanel`、`OrganizationPanel` 和 `SessionBoundary` 分别拥有注册交互、管理员邀请管理、邀请确认/组织切换和共享会话生命周期；两套工作台消费同一身份上下文和退出动作。每个账号/组织/角色使用独立的工作台 query client，旧上下文的延迟回调不能污染新缓存。表格偏好从 `SessionIdentityContext` 读取身份，不能依赖领域缓存猜测账号。注册与邀请通过生成的 OpenAPI client 调用 `accounts/` 服务。
 
 `components/table/` 分离排序草稿与菜单、列菜单及偏好提交生命周期；

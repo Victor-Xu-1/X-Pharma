@@ -1,7 +1,9 @@
 import { lazy } from "react";
 import { ErrorState, Spinner } from "../../components/common";
+import { useMessages } from "../../lib/i18n";
+import { entityRouteMessages } from "../../lib/i18n/entityRoute";
 import { workspaceUrl } from "../../lib/workspaceRouting";
-import { specializedResearchView } from "./locationModel";
+import { researchRouteEntity, specializedResearchView } from "./locationModel";
 import type { ResearchRouteContext } from "./routeContext";
 
 const EntityDossierView = lazy(() =>
@@ -9,6 +11,7 @@ const EntityDossierView = lazy(() =>
 );
 
 export function EntityRoute({ context }: { context: ResearchRouteContext }) {
+  const text = useMessages(entityRouteMessages);
   const {
     location,
     selectedEntity,
@@ -25,29 +28,33 @@ export function EntityRoute({ context }: { context: ResearchRouteContext }) {
     openRegulatoryEventById,
     openNewsEventById,
   } = context;
+  const entity = researchRouteEntity(location.entityId, selectedEntity, routeEntity.data);
+  const invalidMetadata = Boolean(routeEntity.data && routeEntity.data.id !== location.entityId);
   const specializing = Boolean(
     !location.invalidEntityId &&
       !routeEntity.error &&
-      routeEntity.data &&
-      routeEntity.data.id === location.entityId &&
-      specializedResearchView(routeEntity.data.entity_type),
+      !invalidMetadata &&
+      entity &&
+      specializedResearchView(entity.entity_type),
   );
   return specializing || (routeEntity.isFetching && selectedEntity?.id !== location.entityId) ? (
-    <Spinner label="正在恢复领域档案深链接" />
-  ) : location.invalidEntityId || routeEntity.error ? (
+    <Spinner label={text("正在恢复领域档案深链接")} />
+  ) : location.invalidEntityId || routeEntity.error || invalidMetadata ? (
     <ErrorState
       message={
         location.invalidEntityId
-          ? "链接中的实体 ID 无效"
+          ? text("链接中的实体 ID 无效")
           : routeEntity.error instanceof Error
             ? routeEntity.error.message
-            : "领域档案链接加载失败"
+            : invalidMetadata
+              ? text("领域档案链接与请求实体不一致")
+              : text("领域档案链接加载失败")
       }
       retry={location.entityId && !location.invalidEntityId ? () => void routeEntity.refetch() : undefined}
     />
   ) : (
     <EntityDossierView
-      entity={selectedEntity?.id === location.entityId ? selectedEntity : (routeEntity.data ?? null)}
+      entity={entity}
       activeSection={location.entitySection ?? "overview"}
       onSectionChange={(entitySection, replace = false) => navigate({ ...location, entitySection }, replace)}
       onOpenEntity={openEntityById}
