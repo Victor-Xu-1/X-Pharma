@@ -65,6 +65,79 @@ type TargetPipelineAnalysisState = {
   targetAggregation: PipelineTargetAggregation;
 };
 
+it("retains the same focused query input during pending refinements and ignores an older response", async () => {
+  renderTargetView({ initialSection: "pipeline" });
+  await screen.findByRole("table", { name: "靶点研发药物概览" });
+  const base = await vi.mocked(searchPipelines).mock.results.at(-1)?.value;
+  if (!base) throw new Error("Missing completed pipeline fixture");
+  let finishOlder!: (value: typeof base) => void;
+  let finishLatest!: (value: typeof base) => void;
+  vi.mocked(searchPipelines)
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishOlder = resolve;
+        }),
+    )
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishLatest = resolve;
+        }),
+    );
+  const input = screen.getByRole("searchbox", { name: "药物或机构" });
+  input.focus();
+  fireEvent.change(input, { target: { value: "Compound" } });
+  await waitFor(() => expect(finishOlder).toBeTypeOf("function"));
+  expect(input).toBeInTheDocument();
+  expect(input).toHaveFocus();
+  expect(screen.queryByRole("table", { name: "靶点研发药物概览" })).not.toBeInTheDocument();
+  fireEvent.change(input, { target: { value: "Compound B" } });
+  await waitFor(() => expect(finishLatest).toBeTypeOf("function"));
+  expect(input).toHaveFocus();
+  await act(async () => finishLatest({ ...base, items: [{ ...base.items[0], drug_name: "Compound B" }] }));
+  expect(await screen.findByRole("table", { name: "靶点研发药物概览" })).toHaveTextContent("Compound B");
+  await act(async () => finishOlder(base));
+  expect(screen.getByRole("searchbox", { name: "药物或机构" })).toBe(input);
+  expect(input).toHaveFocus();
+  expect(input).toHaveValue("Compound B");
+  expect(screen.getByRole("table", { name: "靶点研发药物概览" })).toHaveTextContent("Compound B");
+});
+
+it("keeps filters editable after a failed refinement and lets reset recover the completed query", async () => {
+  renderTargetView({ initialSection: "pipeline" });
+  await screen.findByRole("table", { name: "靶点研发药物概览" });
+  const input = screen.getByRole("searchbox", { name: "药物或机构" });
+  vi.mocked(searchPipelines).mockRejectedValueOnce(new Error("Controlled refinement failed"));
+  input.focus();
+  fireEvent.change(input, { target: { value: "Unfinished research query" } });
+  expect(await screen.findByText("Controlled refinement failed")).toBeVisible();
+  expect(screen.getByRole("searchbox", { name: "药物或机构" })).toBe(input);
+  expect(input).toHaveValue("Unfinished research query");
+  expect(input).toHaveFocus();
+  fireEvent.click(screen.getByRole("button", { name: "重置筛选" }));
+  await screen.findByRole("table", { name: "靶点研发药物概览" });
+  expect(input).toHaveValue("");
+  expect(screen.queryByText("Controlled refinement failed")).not.toBeInTheDocument();
+});
+
+it("does not present missing facet counts as observed zero while the first query is pending", async () => {
+  vi.mocked(searchPipelines).mockImplementationOnce(() => new Promise(() => {}));
+  renderTargetView({
+    initialSection: "pipeline",
+    initialPipelineFilters: { ...emptyPipelineSearchFilters(), targetEntityId: target.id, programStatus: "active" },
+  });
+  await screen.findByText("正在加载 EGFR 的在研项目");
+  expect(screen.getByRole("option", { name: "已停止" })).toBeEnabled();
+  expect(screen.getByRole("option", { name: "已有结果" })).toBeEnabled();
+  expect(screen.queryByRole("option", { name: "已停止 (0)" })).not.toBeInTheDocument();
+});
+
+it("retains an unknown selected facet count when the facet payload is missing", () => {
+  expect(pipelineSelectOptions("phase_3", undefined)).toEqual([["phase_3", undefined]]);
+  expect(pipelineSelectOptions("phase_3", {})).toEqual([["phase_3", 0]]);
+});
+
 it("localizes the target pipeline while retaining scientific names, selection and cached query reads", async () => {
   setLocale("en");
   renderTargetView({ initialSection: "pipeline" });
@@ -212,6 +285,7 @@ function renderTargetView({
 }
 
 beforeEach(() => {
+  vi.mocked(searchPipelines).mockReset();
   vi.mocked(searchPipelines).mockResolvedValue({
     items: [
       {

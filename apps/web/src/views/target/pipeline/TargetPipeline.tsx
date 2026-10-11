@@ -1,9 +1,7 @@
+import { useLayoutEffect, useRef } from "react";
 import { AppliedFiltersBar } from "../../../components/AppliedFiltersBar";
-import { EmptyState, ErrorState, formatDate, Spinner } from "../../../components/common";
-import { PipelineLandscape } from "../../../components/PipelineLandscape";
 import { hasPipelineSearchFilter } from "../../../lib/contracts/pipeline";
-import { formattingLocale, useMessages } from "../../../lib/i18n";
-import { intelligenceWarningText } from "../../../lib/i18n/intelligenceWarnings";
+import { useMessages } from "../../../lib/i18n";
 import { targetPipelineMessages } from "../../../lib/i18n/targetPipeline";
 import {
   isPublicProgramTag,
@@ -11,86 +9,47 @@ import {
   programTagLabel,
   publicProgramTags,
 } from "../../../lib/programDisplay";
-import { DrugPipeline } from "./DrugPipelineTable";
+import { revealFocusedPipelineControl } from "./focusVisibility";
 import { PipelineAdvancedFilters } from "./PipelineAdvancedFilters";
 import { PipelinePrimaryFilters } from "./PipelinePrimaryFilters";
-import { Pipeline } from "./ProgramPipelineTable";
 import {
   countAdvancedPipelineFilters,
   developmentPhaseLabel,
   developmentPhaseLabels,
   geographyLabel,
   geographyLabels,
-  pipelineLoadingLabel,
   targetPipelineAppliedFilterLabels,
   targetPipelineAppliedFilters,
 } from "./presentation";
+import { TargetPipelineFeedback } from "./TargetPipelineFeedback";
+import { TargetPipelineResults } from "./TargetPipelineResults";
 import { TargetPipelineToolbar } from "./TargetPipelineToolbar";
 import type { TargetPipelineProps } from "./types";
 import { useTargetPipeline } from "./useTargetPipeline";
 
 export function TargetPipeline(props: TargetPipelineProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => revealFocusedPipelineControl(panelRef.current));
   const text = useMessages(targetPipelineMessages);
-  const { targetName, fallbackItems, onOpen, onOpenEntity, onOpenComparison } = props;
   const state = useTargetPipeline(props);
-  const {
-    filters,
-    result,
-    displayMode,
-    analysis,
-    selectedDrugIds,
-    visibleDrugColumns,
-    cachedFacetOptions,
-    resetFilters,
-    applyLandscapeFilter,
-    updateAnalysis,
-    toggleDrug,
-    updateFilter,
-  } = state;
-  if (result.isPending) {
-    return <Spinner label={pipelineLoadingLabel(targetName, filters)} />;
-  }
-  if (result.error || !result.data) {
-    return (
-      <div>
-        <ErrorState
-          message={result.error instanceof Error ? result.error.message : text("研发项目查询失败")}
-          retry={() => void result.refetch()}
-        />
-        {fallbackItems.length ? (
-          <>
-            <p className="inline-alert">{text("当前仅显示档案缓存中的部分记录，完整结果暂不可用。")}</p>
-            <Pipeline items={fallbackItems} onOpen={onOpen} onOpenEntity={onOpenEntity} />
-          </>
-        ) : null}
-      </div>
-    );
-  }
-
-  const data = result.data;
+  const { filters, result, displayMode, selectedDrugIds, cachedFacetOptions, resetFilters, filterFacets } = state;
   const hasUserFilters = hasPipelineSearchFilter({
     ...filters,
     targetEntityId: "",
     programStatus: filters.programStatus === "active" ? "" : filters.programStatus,
   });
-  const rangeStart = data.total ? data.offset + 1 : 0;
-  const rangeEnd = Math.min(data.offset + data.items.length, data.total);
+  const hasCurrentResult = !result.isPending && !result.error && Boolean(result.data);
   const pageDrugIds =
-    displayMode === "drug"
-      ? [...new Set(data.items.map((item) => item.drug_entity_id).filter((value): value is string => Boolean(value)))]
+    hasCurrentResult && displayMode === "drug"
+      ? [
+          ...new Set(
+            result.data?.items.map((item) => item.drug_entity_id).filter((value): value is string => Boolean(value)),
+          ),
+        ]
       : [];
-  const selectedPageDrugCount = pageDrugIds.filter((drugId) => selectedDrugIds.has(drugId)).length;
-  const allPageDrugsSelected = pageDrugIds.length > 0 && selectedPageDrugCount === pageDrugIds.length;
-  const advancedFilterCount = countAdvancedPipelineFilters(filters);
-  const clinicalResultCount = data.facets?.has_clinical_results?.true ?? 0;
-  const dealDisclosureCount = data.facets?.has_deal?.true ?? 0;
-  const hasNoRelatedCoverage =
-    data.total > 0 &&
-    data.landscape.distinct_diseases === 0 &&
-    data.landscape.distinct_organizations === 0 &&
-    clinicalResultCount === 0 &&
-    dealDisclosureCount === 0;
-  const programTagOptions = cachedFacetOptions("program_tag", data.facets?.program_tag, filters.programTags)
+  const allPageDrugsSelected = pageDrugIds.length > 0 && pageDrugIds.every((drugId) => selectedDrugIds.has(drugId));
+  const optionData = { facets: filterFacets };
+  const programTagOptions = cachedFacetOptions("program_tag", filterFacets?.program_tag, filters.programTags)
     .filter((option) => isPublicProgramTag(option.value))
     .map((option) => ({ ...option, label: programTagLabel(option.value) }));
   const phaseLabels = Object.fromEntries(
@@ -99,58 +58,26 @@ export function TargetPipeline(props: TargetPipelineProps) {
   const regionLabels = Object.fromEntries(Object.keys(geographyLabels).map((key) => [key, geographyLabel(key)]));
 
   return (
-    <div className="target-pipeline-panel">
-      <section className="result-summary" aria-label={text("{name} 研发药物概览", { name: targetName })}>
-        <span className="target-pipeline-metric">
-          <strong>{(data.project_total ?? data.landscape.total_programs).toLocaleString(formattingLocale())}</strong>{" "}
-          <span>{text("个研发项目")}</span>
-        </span>
-        <span className="target-pipeline-metric">
-          <strong>{data.landscape.distinct_drugs.toLocaleString(formattingLocale())}</strong>{" "}
-          <span>{text("个药物")}</span>
-        </span>
-      </section>
-      <p className="muted-text">
-        {data.total > 0 ? text("当前显示 {from}-{to} · ", { from: rangeStart, to: rangeEnd }) : ""}
-        {text("查询时间")} {formatDate(data.as_of, true)}
-        {data.result_grain === "drug"
-          ? text("。默认按药物汇总全部匹配适应症；可切换项目明细查看每条研发记录。")
-          : text("。项目明细按药物-适应症展示，加入比较时按药物去重。")}
-      </p>
-      <section className="pipeline-coverage-summary" aria-label={text("结果覆盖范围")}>
-        <p className="muted-text">
-          {text(
-            "关联适应症 {diseases} 个 · 研发机构 {organizations} 家 · 临床结果 {clinical} 条 · 交易披露 {deals} 条",
-            {
-              diseases: data.landscape.distinct_diseases.toLocaleString(formattingLocale()),
-              organizations: data.landscape.distinct_organizations.toLocaleString(formattingLocale()),
-              clinical: clinicalResultCount.toLocaleString(formattingLocale()),
-              deals: dealDisclosureCount.toLocaleString(formattingLocale()),
-            },
-          )}
-        </p>
-      </section>
-      {hasNoRelatedCoverage ? (
-        <p className="inline-alert">
-          {text(
-            "当前结果暂未关联适应症、研发机构、临床结果或交易披露。结果数量反映当前可检索来源中的匹配记录，不代表相关信息不存在。",
-          )}
-        </p>
-      ) : null}
+    <div
+      ref={panelRef}
+      className="target-pipeline-panel"
+      onFocusCapture={() => revealFocusedPipelineControl(panelRef.current)}
+    >
       <TargetPipelineToolbar
         state={state}
         pageDrugIds={pageDrugIds}
         allPageDrugsSelected={allPageDrugsSelected}
-        onOpenComparison={onOpenComparison}
+        onOpenComparison={props.onOpenComparison}
       />
+      <TargetPipelineFeedback state={state} targetName={props.targetName} />
       <PipelinePrimaryFilters
         state={state}
-        data={data}
+        data={optionData}
         hasUserFilters={hasUserFilters}
         onFiltersChange={props.onFiltersChange}
       />
       <AppliedFiltersBar
-        filters={targetPipelineAppliedFilters(filters, data.landscape)}
+        filters={targetPipelineAppliedFilters(filters, hasCurrentResult ? result.data?.landscape : undefined)}
         labels={Object.fromEntries(
           Object.entries(targetPipelineAppliedFilterLabels).map(([key, caption]) => [key, text(caption)]),
         )}
@@ -171,83 +98,11 @@ export function TargetPipeline(props: TargetPipelineProps) {
       />
       <PipelineAdvancedFilters
         state={state}
-        data={data}
-        advancedFilterCount={advancedFilterCount}
+        data={optionData}
+        advancedFilterCount={countAdvancedPipelineFilters(filters)}
         programTagOptions={programTagOptions}
       />
-      {(data.warnings ?? []).map((warning) => (
-        <p className="inline-alert" key={warning}>
-          {intelligenceWarningText(warning)}
-        </p>
-      ))}
-      {displayMode === "landscape" ? (
-        <PipelineLandscape
-          landscape={data.landscape}
-          dimension={analysis.dimension}
-          view={analysis.view}
-          limit={analysis.limit}
-          stageScope={analysis.stageScope}
-          targetAggregation={analysis.targetAggregation}
-          onFilter={applyLandscapeFilter}
-          onOpenEntity={(entityId) => onOpenEntity("drug", entityId)}
-          onOpenTarget={(entityId) => onOpenEntity("target", entityId)}
-          onOpenDisease={(entityId) => onOpenEntity("disease", entityId)}
-          onOpenOrganization={(entityId) => onOpenEntity("organization", entityId)}
-          onAnalysisChange={updateAnalysis}
-        />
-      ) : data.items.length ? (
-        <>
-          {data.result_grain === "drug" ? (
-            <DrugPipeline
-              items={data.items}
-              onOpenEntity={onOpenEntity}
-              selectedDrugIds={selectedDrugIds}
-              onToggleDrug={toggleDrug}
-              visibleColumns={visibleDrugColumns}
-            />
-          ) : (
-            <Pipeline
-              items={data.items}
-              onOpen={onOpen}
-              onOpenEntity={onOpenEntity}
-              selectedDrugIds={selectedDrugIds}
-              onToggleDrug={toggleDrug}
-            />
-          )}
-          <nav className="sar-pagination" aria-label={text("研发药物分页")}>
-            <button
-              type="button"
-              disabled={data.offset === 0}
-              onClick={() => updateFilter("offset", Math.max(0, data.offset - data.limit))}
-            >
-              {text("上一页")}
-            </button>
-            <span>
-              {rangeStart}-{rangeEnd} / {data.total.toLocaleString(formattingLocale())}
-            </span>
-            <button
-              type="button"
-              disabled={data.offset + data.items.length >= data.total}
-              onClick={() => updateFilter("offset", data.offset + data.limit)}
-            >
-              {text("下一页")}
-            </button>
-          </nav>
-        </>
-      ) : (
-        <EmptyState
-          title={
-            hasUserFilters
-              ? text("当前筛选条件下暂无匹配研发项目")
-              : text("暂无 {name} 研发项目记录", { name: targetName })
-          }
-          detail={
-            hasUserFilters
-              ? text("调整或重置筛选条件后重试")
-              : text("当前暂无可公开展示的研发项目记录；现有来源可能尚未覆盖该靶点。")
-          }
-        />
-      )}
+      <TargetPipelineResults state={state} props={props} hasUserFilters={hasUserFilters} />
     </div>
   );
 }

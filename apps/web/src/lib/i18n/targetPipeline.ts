@@ -6,6 +6,11 @@ import { createTranslator } from "./translator";
 export const targetPipelineMessages = {
   ...pipelineMessages,
   ...queryMessages,
+  查询反馈: "Query feedback",
+  "筛选选项来自上一次完成的查询；当前结果仍在更新。":
+    "Filter options are from the last completed query; current results are updating.",
+  "筛选选项来自上一次完成的查询；当前查询失败，请调整筛选或重试。":
+    "Filter options are from the last completed query; this query failed. Adjust filters or retry.",
   止: "To",
   药物概览: "Drug overview",
   项目明细: "Program details",

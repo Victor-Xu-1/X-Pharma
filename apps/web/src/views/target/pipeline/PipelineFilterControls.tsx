@@ -1,6 +1,6 @@
 import { useMessages } from "../../../lib/i18n";
 import { targetPipelineMessages } from "../../../lib/i18n/targetPipeline";
-import { isUnavailableFacetOption, pipelineSelectOptions } from "./presentation";
+import { isUnavailableFacetOption, pipelineFacetCountSuffix, pipelineSelectOptions } from "./presentation";
 
 export function TargetPipelineSelect({
   label,
@@ -26,7 +26,8 @@ export function TargetPipelineSelect({
         <option value="">{text("全部")}</option>
         {options.map(([item, count]) => (
           <option value={item} key={item} disabled={isUnavailableFacetOption(count, item, value)}>
-            {formatItem(item)} ({count})
+            {formatItem(item)}
+            {pipelineFacetCountSuffix(count)}
           </option>
         ))}
       </select>

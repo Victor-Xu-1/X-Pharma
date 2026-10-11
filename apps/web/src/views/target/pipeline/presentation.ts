@@ -237,12 +237,27 @@ export function geographyLabel(value: string): string {
   const known = geographyLabels[value.toLowerCase()];
   return known ? professionalEnumLabel(known, value.toLowerCase()) : value;
 }
-export function pipelineSelectOptions(value: string, values: Record<string, number> | undefined): [string, number][] {
-  const options = { ...(values ?? {}) };
-  if (value && !(value in options)) options[value] = 0;
+export function pipelineSelectOptions(
+  value: string,
+  values: Record<string, number> | undefined,
+): [string, number | undefined][] {
+  const options: Record<string, number | undefined> = { ...(values ?? {}) };
+  if (value && !(value in options)) options[value] = values ? 0 : undefined;
   return Object.entries(options);
 }
 
-export function isUnavailableFacetOption(count: number, optionValue: string, selectedValue: string): boolean {
-  return count <= 0 && optionValue !== selectedValue;
+export function pipelineFacetCount(values: Record<string, number> | undefined, value: string): number | undefined {
+  return values ? (values[value] ?? 0) : undefined;
+}
+
+export function pipelineFacetCountSuffix(count: number | undefined): string {
+  return count === undefined ? "" : ` (${count})`;
+}
+
+export function isUnavailableFacetOption(
+  count: number | undefined,
+  optionValue: string,
+  selectedValue: string,
+): boolean {
+  return count !== undefined && count <= 0 && optionValue !== selectedValue;
 }
