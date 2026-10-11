@@ -34,6 +34,16 @@ function source(relativePath: string) {
   return url.pathname.endsWith(".css") ? stylesheetSource(url) : readFileSync(fileURLToPath(url), "utf8");
 }
 
+it("stacks only primary intelligence commands at narrow widths without shrinking or hiding their labels", () => {
+  const layout = source("../styles/entity-results.css");
+  const narrow = layout.split("@media (max-width: 360px)")[1];
+  expect(narrow).toBeDefined();
+  const commands = ruleBody(narrow ?? "", ".intelligence-query-panel > .query-row:first-child");
+  expect(commands).toContain("grid-template-columns: minmax(0, 1fr);");
+  expect(commands).not.toMatch(/font-size:|overflow:\s*hidden|text-overflow:|white-space:/);
+  expect(source("../views/ExplorerView.tsx")).toContain('import "../styles/entity-results.css"');
+});
+
 it("owns environment-specific controls and statuses in the environment sheet only", () => {
   expect(source("../styles/enterprise.css")).not.toMatch(/\.environment-/);
   const environment = source("../views/environment/environment.css");
