@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { PipelineSearchResult } from "../src/lib/generated";
 import { expectCompactSecondaryFilters } from "./fixtures/compact-secondary-filters";
+import { readViewportOverflow } from "./fixtures/viewport-overflow";
 import { selectInterfaceLanguage } from "./interface-language";
 
 test("[pipeline-disclosure] retains unsent dates and false-valued signal filters through clear and language changes", async ({
@@ -102,8 +103,14 @@ test("[pipeline-disclosure] retains unsent dates and false-valued signal filters
   expect(
     (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze()).violations,
   ).toEqual([]);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
-    await page.evaluate(() => document.documentElement.clientWidth),
-  );
+  const overflow = await readViewportOverflow(page);
+  if (overflow.document > overflow.viewport) {
+    await testInfo.attach("viewport-overflow", {
+      body: JSON.stringify(overflow, null, 2),
+      contentType: "application/json",
+    });
+    console.log(JSON.stringify(overflow));
+  }
+  expect(overflow.document).toBeLessThanOrEqual(overflow.viewport);
   await page.screenshot({ path: testInfo.outputPath("controlled-pipeline-disclosure-en.png"), animations: "disabled" });
 });
