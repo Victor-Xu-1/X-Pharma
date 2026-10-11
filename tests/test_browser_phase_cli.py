@@ -151,3 +151,30 @@ def test_unsupported_filesystem_is_explicit_and_has_no_publication_fallback(
     with pytest.raises(ValueError, match="atomic exclusive"):
         validate_destination(tmp_path / "unsupported.json")
     assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("write_result", [True, False])
+def test_discovery_uses_one_explicit_report_file_without_stdout_or_retry_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, write_result: bool
+) -> None:
+    inherited = tmp_path / "unrelated-reporter.json"
+    monkeypatch.setenv("PLAYWRIGHT_JSON_OUTPUT_FILE", str(inherited))
+    monkeypatch.setattr(browser_phase_runtime, "source_revision", lambda: "a" * 40)
+    monkeypatch.setattr(browser_phase_runtime, "playwright_command", lambda: ["controlled-collection"])
+    calls = []
+
+    def collect(command: list[str], environment: dict[str, str], timeout: int) -> None:
+        calls.append(command)
+        assert command[-2:] == ["--list", "--reporter=json"] and timeout == 60
+        target = Path(environment["PLAYWRIGHT_JSON_OUTPUT_FILE"])
+        assert target != inherited
+        if write_result:
+            save(target, report(set(CONTROLLED_FILES) | {"workspace.spec.ts"}))
+
+    monkeypatch.setattr(browser_phase_runtime, "execute", collect)
+    if write_result:
+        assert browser_phase_runtime.discover()["revision"] == "a" * 40
+    else:
+        with pytest.raises(ValueError, match="missing"):
+            browser_phase_runtime.discover()
+    assert len(calls) == 1 and not inherited.exists()

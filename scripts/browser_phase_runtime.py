@@ -87,15 +87,15 @@ def playwright_command() -> list[str]:
 
 def discover() -> dict[str, object]:
     revision = source_revision()
-    result = subprocess.run(  # noqa: S603  # Fixed test collection only; no browser or business execution.
-        [*playwright_command(), "--list", "--reporter=json"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=True,
-        timeout=60,
-    )
-    return create_manifest(mapping(json.loads(result.stdout)), revision)
+    with tempfile.TemporaryDirectory(prefix="x-pharma-browser-discovery-") as temporary:
+        output = Path(temporary) / "discovery.json"
+        environment = dict(os.environ)
+        # An owned file is the sole reporter channel, not an implicit stdout fallback.
+        environment["PLAYWRIGHT_JSON_OUTPUT_FILE"] = str(output)
+        execute([*playwright_command(), "--list", "--reporter=json"], environment, 60)
+        if source_revision() != revision:
+            raise ValueError("Browser source changed during original case discovery")
+        return create_manifest(load(output), revision)
 
 
 def phase_arguments(manifest: dict[str, object], phase: Phase) -> list[str]:
