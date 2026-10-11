@@ -193,9 +193,13 @@ fi
 fixture_source_root="$ROOT_DIR/data/sources/empty/.browser-$fixture_key"
 assigned_browser_files=()
 if [[ "$browser_phase" == full-stack ]]; then
+  # Playwright recreates its output directory before executing any case.
+  # Source identity is owned by this runner in a separate, retained sibling.
+  browser_phase_state_dir=$(mktemp -d "$(dirname "$output_dir")/pharma-browser-phase.XXXXXXXX")
   python3 -m scripts.browser_phase_cli prepare --phase full-stack \
-    --manifest "$output_dir/phase-manifest.json" --arguments "$output_dir/phase-arguments"
-  mapfile -t assigned_browser_files < "$output_dir/phase-arguments"
+    --manifest "$browser_phase_state_dir/phase-manifest.json" --arguments "$browser_phase_state_dir/phase-arguments"
+  mapfile -t assigned_browser_files < "$browser_phase_state_dir/phase-arguments"
+  printf 'browser_phase_state=%s\n' "$browser_phase_state_dir"
 fi
 fixture_ids_path="$output_dir/fixture-ids"
 touch "$fixture_ids_path"
@@ -2784,7 +2788,7 @@ PY
   printf 'browser_report=%s\n' "$output_path"
   if [[ "$browser_phase" == full-stack ]]; then
     python3 -m scripts.browser_phase_cli attach --phase full-stack \
-      --manifest "$output_dir/phase-manifest.json" --results "$output_dir/results.json" --report "$output_path"
+      --manifest "$browser_phase_state_dir/phase-manifest.json" --results "$output_dir/results.json" --report "$output_path"
   fi
 fi
 
