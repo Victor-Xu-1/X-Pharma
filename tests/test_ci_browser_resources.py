@@ -62,6 +62,7 @@ def test_browser_ci_reuses_source_verified_rdkit_layers_without_rebuilding_loade
         "deployment-contract",
         "two-entry-smoke",
         "security-supply-chain",
+        "company-controlled",
     }
     steps = jobs["two-entry-smoke"]["steps"]
     name = "Build source-verified PostgreSQL 18 / RDKit image"

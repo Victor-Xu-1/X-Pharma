@@ -155,7 +155,7 @@ def test_ci_and_local_runner_share_the_same_preflight_owner() -> None:
     ci_setup = (ROOT / "scripts/prepare-ci-browser.sh").read_text(encoding="utf-8")
     helper = (ROOT / "scripts/lib/browser_runtime.sh").read_text(encoding="utf-8")
     assert "scripts.browser_visual_profile" in helper
-    assert workflow.count("bash scripts/prepare-ci-browser.sh") == 2
+    assert workflow.count("bash scripts/prepare-ci-browser.sh") == 3
     assert "scripts.browser_visual_profile" in ci_setup
     assert runner.count("resolve_browser_runtime\n") == 1
     assert runner.index("verify_browser_visual_profile\n") < runner.index("api_container_id=$(")

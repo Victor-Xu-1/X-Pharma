@@ -315,7 +315,7 @@ def test_ci_installs_branded_chrome_instead_of_playwright_chromium() -> None:
     workflow = (root / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     ci_setup = (root / "scripts/prepare-ci-browser.sh").read_text(encoding="utf-8")
 
-    assert workflow.count("bash scripts/prepare-ci-browser.sh") == 2
+    assert workflow.count("bash scripts/prepare-ci-browser.sh") == 3
     assert "playwright install-deps chrome" in ci_setup
     assert "scripts/bootstrap-wsl-chrome.sh" in ci_setup and "--reviewed" in ci_setup
     assert "E2E_BROWSER_EXECUTABLE" in ci_setup
