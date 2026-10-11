@@ -1,6 +1,14 @@
-.dossier-summary-primary,
-.dossier-summary-secondary {
+dl.dossier-summary-primary,
+dl.dossier-summary-secondary {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dossier-summary-primary > div,
+.dossier-summary-secondary > div {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: subgrid;
+  grid-row: span 2;
 }
 
 .dossier-summary-primary dt,
@@ -39,4 +47,15 @@
 
 .dossier-summary-secondary {
   margin: 0;
+}
+
+@media (max-width: 480px) {
+  .dossier-summary-primary > div,
+  .dossier-summary-secondary > div {
+    padding-inline: 8px;
+  }
+
+  .dossier-summary-primary > div:first-child dd {
+    font-size: var(--ds-text-sm);
+  }
 }
