@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { CompanyDossier } from "../src/lib/contracts/company";
 import { dossier, program } from "../src/test/fixtures/companyDossier";
-import { genericCompanyIdentityFixture } from "./company-generic-identity";
+import { genericDossierIdentityFixture } from "./generic-dossier-identity";
 import { selectInterfaceLanguage } from "./interface-language";
 
 const organizationId = "a8ed0601-cfa5-4d1f-bb82-898a570596da";
@@ -64,7 +64,7 @@ for (const providerLabel of [false, true]) {
     page,
   }, testInfo) => {
     const data = fixture(providerLabel);
-    const genericIdentity = genericCompanyIdentityFixture(data);
+    const genericIdentity = genericDossierIdentityFixture(data);
     let dossierReads = 0;
     const errors: string[] = [];
     const writes: string[] = [];
