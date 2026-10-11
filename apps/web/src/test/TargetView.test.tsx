@@ -65,6 +65,26 @@ type TargetPipelineAnalysisState = {
   targetAggregation: PipelineTargetAggregation;
 };
 
+it("localizes the target pipeline while retaining scientific names, selection and cached query reads", async () => {
+  setLocale("en");
+  renderTargetView({ initialSection: "pipeline" });
+  const table = await screen.findByRole("table", { name: "Target drug development overview" });
+  expect(table).toHaveTextContent("Compound A");
+  expect(table).toHaveTextContent("非小细胞肺癌");
+  expect(table).toHaveTextContent("EGFR inhibitor");
+  const select = screen.getByRole("checkbox", { name: "Compare Compound A" });
+  fireEvent.click(select);
+  const reads = vi.mocked(searchPipelines).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("table", { name: "靶点研发药物概览" })).toHaveTextContent("非小细胞肺癌");
+  expect(screen.getByRole("checkbox", { name: "选择对比 Compound A" })).toBeChecked();
+  expect(searchPipelines).toHaveBeenCalledTimes(reads);
+  act(() => setLocale("en"));
+  expect(screen.getByRole("button", { name: "Drug overview" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("checkbox", { name: "Compare Compound A" })).toBeChecked();
+  expect(searchPipelines).toHaveBeenCalledTimes(reads);
+});
+
 function renderTargetView({
   onOpenEntity = vi.fn(),
   onOpenDrug,
@@ -1262,9 +1282,16 @@ it("explains when a target has no publicly displayable pipeline records", async 
   renderTargetView();
   fireEvent.click(await screen.findByRole("tab", { name: "竞品管线" }));
 
+  expect(await screen.findByText("当前暂无可公开展示的研发项目记录；现有来源可能尚未覆盖该靶点。")).toBeInTheDocument();
+  expect(screen.queryByText(/来源资料正在完成质量核查/)).not.toBeInTheDocument();
+  const reads = vi.mocked(searchPipelines).mock.calls.length;
+  act(() => setLocale("en"));
   expect(
-    await screen.findByText("当前暂无可公开展示的研发项目记录；来源资料正在完成质量核查或尚未覆盖该靶点。"),
+    screen.getByText(
+      "No public development program records are available; existing sources may not cover this target.",
+    ),
   ).toBeInTheDocument();
+  expect(searchPipelines).toHaveBeenCalledTimes(reads);
 });
 
 it("disables empty pipeline facet choices without disabling a selected zero-count deep link", async () => {
