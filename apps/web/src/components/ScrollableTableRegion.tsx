@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { KeyboardScrollRegion } from "./KeyboardScrollRegion";
 
 export function ScrollableTableRegion({
   ariaLabel,
@@ -11,9 +12,8 @@ export function ScrollableTableRegion({
 }) {
   const classes = ["table-frame", className].filter(Boolean).join(" ");
   return (
-    // biome-ignore lint/a11y/noNoninteractiveTabindex: keyboard users need a focus target for horizontal table scrolling.
-    <section className={classes} aria-label={ariaLabel} tabIndex={0}>
+    <KeyboardScrollRegion className={classes} ariaLabel={ariaLabel}>
       {children}
-    </section>
+    </KeyboardScrollRegion>
   );
 }

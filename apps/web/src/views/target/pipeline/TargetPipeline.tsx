@@ -19,6 +19,7 @@ import {
   targetPipelineAppliedFilterLabels,
   targetPipelineAppliedFilters,
 } from "./presentation";
+import { TargetPipelineFeedback } from "./TargetPipelineFeedback";
 import { TargetPipelineResults } from "./TargetPipelineResults";
 import { TargetPipelineToolbar } from "./TargetPipelineToolbar";
 import type { TargetPipelineProps } from "./types";
@@ -60,6 +61,7 @@ export function TargetPipeline(props: TargetPipelineProps) {
         allPageDrugsSelected={allPageDrugsSelected}
         onOpenComparison={props.onOpenComparison}
       />
+      <TargetPipelineFeedback state={state} targetName={props.targetName} />
       <PipelinePrimaryFilters
         state={state}
         data={optionData}
@@ -92,13 +94,6 @@ export function TargetPipeline(props: TargetPipelineProps) {
         advancedFilterCount={countAdvancedPipelineFilters(filters)}
         programTagOptions={programTagOptions}
       />
-      {!hasCurrentResult && filterFacets ? (
-        <p className="muted-text">
-          {result.error
-            ? text("筛选选项来自上一次完成的查询；当前查询失败，请调整筛选或重试。")
-            : text("筛选选项来自上一次完成的查询；当前结果仍在更新。")}
-        </p>
-      ) : null}
       <TargetPipelineResults state={state} props={props} hasUserFilters={hasUserFilters} />
     </div>
   );

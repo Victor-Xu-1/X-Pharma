@@ -911,3 +911,52 @@
     justify-self: start;
   }
 }
+
+/* Query feedback stays visible without replacing the edited filter controls. */
+.target-pipeline-feedback {
+  position: sticky;
+  top: 8px;
+  z-index: 4;
+  max-height: 40vh;
+  overflow-y: auto;
+  margin: 8px 0;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface);
+}
+.target-pipeline-feedback .state-message {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 10px 12px;
+  text-align: left;
+}
+.target-pipeline-feedback .state-icon {
+  grid-row: 1 / span 2;
+  width: 28px;
+  height: 28px;
+}
+.target-pipeline-feedback .error-state > strong,
+.target-pipeline-feedback .error-state > span:not(.state-icon) {
+  grid-column: 2;
+  overflow-wrap: anywhere;
+}
+.target-pipeline-feedback .error-state > strong {
+  font-size: var(--ds-text-sm);
+}
+.target-pipeline-feedback .error-state > button {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  min-height: 44px;
+}
+.target-pipeline-feedback > p {
+  margin: 0;
+  padding: 0 12px 10px;
+}
+@media (max-width: 760px) {
+  .target-pipeline-feedback {
+    top: 72px;
+  }
+}

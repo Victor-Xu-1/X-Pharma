@@ -1,11 +1,10 @@
-import { EmptyState, ErrorState, formatDate, Spinner } from "../../../components/common";
+import { EmptyState, formatDate } from "../../../components/common";
 import { PipelineLandscape } from "../../../components/PipelineLandscape";
 import { formattingLocale, useMessages } from "../../../lib/i18n";
 import { intelligenceWarningText } from "../../../lib/i18n/intelligenceWarnings";
 import { targetPipelineMessages } from "../../../lib/i18n/targetPipeline";
 import { DrugPipeline } from "./DrugPipelineTable";
 import { Pipeline } from "./ProgramPipelineTable";
-import { pipelineLoadingLabel } from "./presentation";
 import type { TargetPipelineProps } from "./types";
 import type { TargetPipelineState } from "./useTargetPipeline";
 
@@ -22,7 +21,6 @@ export function TargetPipelineResults({
   const text = useMessages(targetPipelineMessages);
   const {
     result,
-    filters,
     displayMode,
     analysis,
     selectedDrugIds,
@@ -33,14 +31,10 @@ export function TargetPipelineResults({
     updateFilter,
   } = state;
   const { targetName, fallbackItems, onOpen, onOpenEntity } = props;
-  if (result.isPending) return <Spinner label={pipelineLoadingLabel(targetName, filters)} />;
+  if (result.isPending) return null;
   if (result.error || !result.data)
     return (
       <div>
-        <ErrorState
-          message={result.error instanceof Error ? result.error.message : text("研发项目查询失败")}
-          retry={() => void result.refetch()}
-        />
         {fallbackItems.length ? (
           <>
             <p className="inline-alert">{text("当前仅显示档案缓存中的部分记录，完整结果暂不可用。")}</p>
