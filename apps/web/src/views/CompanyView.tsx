@@ -17,6 +17,7 @@ import type { CompanyDossierSection } from "../lib/workspaceRouting";
 import { CompanySourceLabelOverview } from "./CompanySourceLabelOverview";
 import { CompanyOverview } from "./company/Overview";
 import { tabs } from "./company/vocabulary";
+import { DossierSummaryFacts } from "./dossier/DossierSummaryFacts";
 import {
   CompanyTimelinePanel,
   Deals,
@@ -123,36 +124,28 @@ export function CompanyView({
         <EntityIdentityNotice entity={data.entity} />
 
         {!providerLabel ? (
-          <dl className="dossier-metrics company-profile-metrics">
-            <div>
-              <dt>{t("最高阶段")}</dt>
-              <dd>{phaseLabel(data.summary.highest_phase)}</dd>
-            </div>
-            <div>
-              <dt>{t("研发项目 / 药物")}</dt>
-              <dd>
-                {data.summary.program_count} / {data.summary.drug_count}
-              </dd>
-            </div>
-            <div>
-              <dt>{t("靶点 / 适应症")}</dt>
-              <dd>
-                {data.summary.target_count} / {data.summary.indication_count}
-              </dd>
-            </div>
-            <div>
-              <dt>{t("关联交易")}</dt>
-              <dd>{data.summary.deal_count}</dd>
-            </div>
-            <div>
-              <dt>{t("带日期事件")}</dt>
-              <dd>{data.summary.timeline_event_count}</dd>
-            </div>
-            <div>
-              <dt>{t("最近活动")}</dt>
-              <dd>{formatDate(data.summary.latest_activity_at)}</dd>
-            </div>
-          </dl>
+          <DossierSummaryFacts
+            key={data.entity.id}
+            moreLabel={t("更多档案指标")}
+            primary={[
+              { key: "phase", label: t("最高阶段"), value: phaseLabel(data.summary.highest_phase) },
+              {
+                key: "programs",
+                label: t("研发项目 / 药物"),
+                value: `${data.summary.program_count} / ${data.summary.drug_count}`,
+              },
+              {
+                key: "targets",
+                label: t("靶点 / 适应症"),
+                value: `${data.summary.target_count} / ${data.summary.indication_count}`,
+              },
+            ]}
+            secondary={[
+              { key: "deals", label: t("关联交易"), value: data.summary.deal_count },
+              { key: "events", label: t("带日期事件"), value: data.summary.timeline_event_count },
+              { key: "activity", label: t("最近活动"), value: formatDate(data.summary.latest_activity_at) },
+            ]}
+          />
         ) : null}
 
         <ResearchTabList
