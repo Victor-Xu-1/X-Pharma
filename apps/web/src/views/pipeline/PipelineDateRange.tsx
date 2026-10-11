@@ -1,3 +1,4 @@
+import { useLocale } from "../../lib/i18n";
 import { pipelineText as t } from "../../lib/i18n/pipeline";
 
 /** Stateless date controls; the root retains the one applied-query/draft authority. */
@@ -14,6 +15,7 @@ export function PipelineDateRange({
   onFromChange: (value: string) => void;
   onToChange: (value: string) => void;
 }) {
+  useLocale();
   return (
     <fieldset className="date-range-fieldset">
       <legend>{label}</legend>

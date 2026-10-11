@@ -1,5 +1,6 @@
 import { SecondaryFilters } from "../../components/SecondaryFilters";
 import type { PipelineSearchFilters } from "../../lib/contracts/pipeline";
+import { useLocale } from "../../lib/i18n";
 import { pipelineText as t } from "../../lib/i18n/pipeline";
 import { professionalEnumLabel } from "../../lib/i18n/professionalEnums";
 import type { PipelineSignalFilterValues } from "../../lib/pipelineSignals";
@@ -12,6 +13,7 @@ export function PipelineSignalFilters({
   data,
   onSignalsChange,
 }: PipelineFilterProps & { onSignalsChange: (changes: Partial<PipelineSignalFilterValues>) => void }) {
+  useLocale();
   const { resultEvaluations, dealCurrencies } = pipelineFilterOptions(data, filters);
   const signalCount = [
     filters.hasClinicalResults,

@@ -67,6 +67,14 @@ test("[pipeline-disclosure] retains unsent dates and false-valued signal filters
   await expect(signals).toHaveClass(/secondary-filter-panel/);
   await expect(advanced).not.toHaveAttribute("open", "");
   await expect.poll(() => reads).toBe(1);
+  await selectInterfaceLanguage(page, "zh-CN");
+  await expect(advanced.locator(":scope > summary > span")).toHaveText("机构、区域阶段、权益与里程碑");
+  await expect(signals.locator(":scope > summary > span")).toHaveText("临床结果与交易信号");
+  await selectInterfaceLanguage(page, "en");
+  await expect(advanced.locator(":scope > summary > span")).toHaveText(
+    "Organizations, regional phases, rights and milestones",
+  );
+  await expect(signals.locator(":scope > summary > span")).toHaveText("Clinical results and deal signals");
   const originalReads = reads,
     originalUrl = page.url();
   await advanced.locator(":scope > summary").click();

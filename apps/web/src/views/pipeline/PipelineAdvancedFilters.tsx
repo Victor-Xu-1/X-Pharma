@@ -1,5 +1,6 @@
 import { FacetMultiSelect } from "../../components/FacetMultiSelect";
 import { SecondaryFilters } from "../../components/SecondaryFilters";
+import { useLocale } from "../../lib/i18n";
 import { pipelineText as t } from "../../lib/i18n/pipeline";
 import { professionalEnumLabel } from "../../lib/i18n/professionalEnums";
 import { localizedDevelopmentPhase, localizedProgramTag } from "../../lib/i18n/programVocabulary";
@@ -8,6 +9,7 @@ import type { PipelineFilterProps } from "./filterTypes";
 import { PipelineDateRange } from "./PipelineDateRange";
 import { organizationRoleLabels } from "./ProgramCells";
 export function PipelineAdvancedFilters({ filters, updateFilter, data }: PipelineFilterProps) {
+  useLocale();
   const {
     globalPhases,
     chinaPhases,
