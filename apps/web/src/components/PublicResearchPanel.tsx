@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 import { type FormEvent, useId, useState } from "react";
 import { loadPublicCoverage, type PublicResearchTopic, searchPublicResearch } from "../lib/contracts/publicResearch";
 import { entityLabels } from "../lib/entityPresentation";
@@ -68,15 +69,16 @@ export function PublicResearchPanel({
 
   return (
     <details
-      className="advanced-filters"
+      className="advanced-filters public-research-panel"
       data-testid="public-research-panel"
       onToggle={(event) => {
         setExpanded(event.currentTarget.open);
       }}
     >
-      <summary>
-        {t("公开来源调研")}
-        <span>{t("补充本地覆盖 · 按需联网查询")}</span>
+      <summary className="public-research-summary">
+        <strong className="public-research-title">{t("公开来源调研")}</strong>
+        <span className="public-research-hint">{t("补充本地覆盖 · 按需联网查询")}</span>
+        <ChevronDown className="disclosure-chevron" size={16} aria-hidden="true" />
       </summary>
       <section aria-label={t("公开来源调研")}>
         <details>
@@ -117,7 +119,11 @@ export function PublicResearchPanel({
             "仅点击“查询公开来源”后才发送下方关键词。不要输入患者、未公开项目或其他保密信息；联网结果与本地已核验数据分开。",
           )}
         </p>
-        <form className="intelligence-query-panel" onSubmit={submit} aria-label={t("公开来源检索")}>
+        <form
+          className="intelligence-query-panel public-research-query"
+          onSubmit={submit}
+          aria-label={t("公开来源检索")}
+        >
           <div className="query-row">
             <label htmlFor={inputId}>{t("公开关键词")}</label>
             <input

@@ -35,6 +35,7 @@ import { useLocale } from "../lib/i18n";
 import { tableText as t } from "../lib/i18n/table";
 import { describeTableSorting } from "../lib/tablePresentation";
 import { useSessionIdentity } from "./SessionIdentityContext";
+import { tableColumnLayout } from "./table/columnLayout";
 import { normalizeSortingState } from "./table/sorting";
 import { TableColumnMenu } from "./table/TableColumnMenu";
 import { TableSortMenu } from "./table/TableSortMenu";
@@ -194,14 +195,11 @@ export function VirtualDataTable<T>({
         .slice(0, Math.ceil(maxHeight / rowHeight) + 8)
         .map((_row, index) => ({ index, size: rowHeight, start: index * rowHeight }));
   const totalHeight = measuredItems.length ? virtualizer.getTotalSize() : rows.length * rowHeight;
-  const width = table.getTotalSize() + selectionColumnWidth;
-  const dataGridColumns = table
-    .getVisibleLeafColumns()
-    .map((column) => {
-      const size = column.getSize();
-      return `minmax(${size}px, ${size}fr)`;
-    })
-    .join(" ");
+  const columnLayout = tableColumnLayout(
+    table.getVisibleLeafColumns().map((column) => ({ size: column.getSize(), sortable: column.getCanSort() })),
+  );
+  const width = columnLayout.minWidth + selectionColumnWidth;
+  const dataGridColumns = columnLayout.gridColumns;
   const gridColumns = rowSelection ? `${selectionColumnWidth}px ${dataGridColumns}` : dataGridColumns;
   const tableStyle = {
     "--virtual-table-columns": gridColumns,

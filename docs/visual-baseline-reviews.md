@@ -4,6 +4,23 @@ Current product version is owned by [pyproject.toml](../pyproject.toml), not by
 these dated captures. Each review retains its original version, revision and
 image hashes; a later numeric increment does not recapture or recertify it.
 
+## Reading layout: scoped mobile public-research summary
+
+PR96 head `0eb502ae91f1dfccb989bc071e0e6d58dc98c4de`, original CI
+`38109029074`, completed331passing browser cases and one mobile390 visual
+difference. Its actual/diff pair from artifact11691686469 and the old reference
+were individually inspected. The intended mobile disclosure now has a readable
+title/chevron row and a separate hint row; full-page height changes2608to2626px.
+Only `research-workbench-mobile-390.png` is adopted, from original SHA256
+`0b4b1aec8088232f8bb4dc6911624762cbb63bdf0083d19e09094eec43cd40a7`
+to `c09ed4eabd9cb9ccef1f617ce411e456ecbaf430f42c5cf989e94ac49ff1ba7c`.
+The old image, manifest and browser binding remain retained on E. The original
+sole generator recomputes the manifest; its other19image hashes remain unchanged.
+The same frozen Chrome155.0.8059.39 artifact is rebound to the new manifest,
+without changing its package/executable hashes, fonts, data, masks, row geometry,
+performance budgets or0.001tolerance. The failed run remains failed: a new exact-
+head six-gate run and subsequent exact-main deployment are still required.
+
 ## Bilingual research controls: bounded source-summary rows
 
 PR58 head155259006f4b003e2410547c87123760d142ebb2/run37797681521
