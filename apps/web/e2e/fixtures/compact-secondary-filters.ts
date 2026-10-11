@@ -5,7 +5,7 @@ export async function expectCompactSecondaryFilters(page: Page) {
   if ((page.viewportSize()?.width ?? 0) > 560) return;
   const panels = page.locator(".secondary-filter-panel");
   for (const panel of await panels.all()) {
-    const summary = panel.locator("summary");
+    const summary = panel.locator(":scope > summary");
     if (!(await summary.isVisible())) continue;
     const hint = summary.locator("small");
     const activeCount = await panel.getAttribute("data-active-count");
