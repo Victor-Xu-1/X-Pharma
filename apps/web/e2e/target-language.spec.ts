@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { targetLanguageFixture } from "./fixtures/target-language";
+import { targetLanguageFixture, targetPipelineLanguageFixture } from "./fixtures/target-language";
 import { selectInterfaceLanguage } from "./interface-language";
 
 test("[target-language] preserves target narratives, complete counts, filters, registry identity and cached reads", async ({
@@ -8,6 +8,7 @@ test("[target-language] preserves target narratives, complete counts, filters, r
 }, testInfo) => {
   const fixture = targetLanguageFixture();
   let dossierReads = 0;
+  let pipelineReads = 0;
   const writes: string[] = [];
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -38,6 +39,10 @@ test("[target-language] preserves target narratives, complete counts, filters, r
     if (path === `/api/v1/targets/${fixture.entity.id}/dossier`) {
       dossierReads++;
       return route.fulfill({ json: fixture });
+    }
+    if (path === "/api/v1/pipelines") {
+      pipelineReads++;
+      return route.fulfill({ json: targetPipelineLanguageFixture() });
     }
     return route.fulfill({ json: [] });
   });
@@ -103,4 +108,48 @@ test("[target-language] preserves target narratives, complete counts, filters, r
   expect(dossierReads).toBe(1);
   expect(writes).toEqual([]);
   await audit("target-relationships-zh");
+  await selectInterfaceLanguage(page, "en");
+  await page.getByRole("tab", { name: "Competitive pipeline", exact: true }).click();
+  const panel = page.locator(".target-pipeline-panel");
+  await expect(panel.getByRole("button", { name: "Drug overview", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect.poll(() => pipelineReads).toBe(1);
+  const group = panel.locator(".pipeline-advanced-filters");
+  await expect(group).toHaveClass(/secondary-filter-panel/);
+  await group.locator(":scope > summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(group).toHaveAttribute("open", "");
+  await panel.getByLabel("Global phase start dates From", { exact: true }).fill("2026-01-01");
+  await expect.poll(() => pipelineReads).toBe(2);
+  await expect(panel.locator(".spinner")).toHaveCount(0);
+  await panel
+    .getByRole("combobox", { name: "Organization location", exact: true })
+    .selectOption("原始地区 / Source country");
+  await expect.poll(() => pipelineReads).toBe(3);
+  await expect(panel.locator(".spinner")).toHaveCount(0);
+  const pipelineUrl = page.url(),
+    readsBeforeLanguage = pipelineReads;
+  await selectInterfaceLanguage(page, "zh-CN");
+  await expect(panel.getByLabel("全球阶段开始日期起", { exact: true })).toHaveValue("2026-01-01");
+  await expect(panel.getByRole("combobox", { name: "机构所在地区", exact: true })).toHaveValue(
+    "原始地区 / Source country",
+  );
+  await expect(group).toHaveAttribute("open", "");
+  expect(pipelineReads).toBe(readsBeforeLanguage);
+  expect(page.url()).toBe(pipelineUrl);
+  await audit("controlled-target-pipeline-zh");
+  await selectInterfaceLanguage(page, "en");
+  await expect(panel.getByLabel("Global phase start dates From", { exact: true })).toHaveValue("2026-01-01");
+  expect(pipelineReads).toBe(readsBeforeLanguage);
+  await panel.getByRole("button", { name: "Reset filters", exact: true }).click();
+  await expect(panel.locator(".spinner")).toHaveCount(0);
+  await expect(panel.getByRole("button", { name: "Reset filters", exact: true })).toBeDisabled();
+  await expect(group).toHaveAttribute("data-active-count", "0");
+  await expect(group).toHaveAttribute("open", "");
+  await expect(panel.getByLabel("Global phase start dates From", { exact: true })).toHaveValue("");
+  expect(dossierReads).toBe(1);
+  expect(writes).toEqual([]);
+  await audit("controlled-target-pipeline-cleared-en");
 });

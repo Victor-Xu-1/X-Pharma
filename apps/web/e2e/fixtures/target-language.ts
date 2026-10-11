@@ -1,4 +1,32 @@
 import type { TargetDossier } from "../../src/lib/contracts/target";
+import type { PipelineSearchResult } from "../../src/lib/generated";
+
+/** Empty read result and synthetic facets test editing only, never scientific coverage. */
+export function targetPipelineLanguageFixture(): PipelineSearchResult {
+  return {
+    items: [],
+    total: 0,
+    project_total: 0,
+    result_grain: "drug",
+    offset: 0,
+    limit: 20,
+    sort_by: "status_date",
+    sort_direction: "desc",
+    query_schema_version: "pharma.pipeline.search.v13",
+    as_of: "2026-10-11T00:00:00Z",
+    facets: { organization_country_region: { "原始地区 / Source country": 1 } },
+    landscape: {
+      total_programs: 0,
+      distinct_drugs: 0,
+      distinct_targets: 1,
+      distinct_diseases: 0,
+      distinct_organizations: 0,
+      limit: 20,
+      stage_scope: "overall",
+      target_aggregation: "all",
+    },
+  };
+}
 
 /** Browser-only synthetic response, never inserted into a scientific database. */
 export function targetLanguageFixture(): TargetDossier {
