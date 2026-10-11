@@ -10,12 +10,14 @@ UBUNTU = 'ID=ubuntu\nVERSION_ID="24.04"\n'
 
 def test_browser_clients_prepare_explicit_official_https_transport() -> None:
     workflow = Path(".github/workflows/ci.yml").read_text()
-    preparation = workflow.index("python3 scripts/ci_browser_apt.py")
-    installation = workflow.index("playwright install-deps chrome")
+    browser_setup = Path("scripts/prepare-ci-browser.sh").read_text()
+    preparation = browser_setup.index("python3 scripts/ci_browser_apt.py")
+    installation = browser_setup.index("playwright install-deps chrome")
     assert preparation < installation
     font_install = 'sudo apt-get install --yes --no-install-recommends "$BROWSER_FONT_PACKAGE=$BROWSER_FONT_VERSION"'
-    assert font_install in workflow
-    assert "verify_browser_fonts" in workflow
+    assert font_install in browser_setup
+    assert "verify_browser_fonts" in browser_setup
+    assert workflow.count("bash scripts/prepare-ci-browser.sh") == 2
     assert "inputs.refresh_visual_baselines && 60 || 45" in workflow
 
 
