@@ -116,6 +116,13 @@ test("[target-language] preserves target narratives, complete counts, filters, r
     "true",
   );
   await expect.poll(() => pipelineReads).toBe(1);
+  await expect(
+    panel.getByText(
+      "Missing records do not imply that none exist globally. Results depend on source access, update time and visibility.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(panel.getByText("原始管线警告 / Unchanged pipeline source warning", { exact: true })).toBeVisible();
   await expect(panel.locator(".target-pipeline-metric")).toHaveCount(2);
   for (const metric of await panel.locator(".target-pipeline-metric").all()) {
     const spacing = await metric.evaluate((node) => {
@@ -148,6 +155,10 @@ test("[target-language] preserves target narratives, complete counts, filters, r
   );
   await expect(group).toHaveAttribute("open", "");
   expect(pipelineReads).toBe(readsBeforeLanguage);
+  await expect(
+    panel.getByText("暂无记录不代表全球不存在；结果受来源授权、更新时间和可见范围影响。", { exact: true }),
+  ).toBeVisible();
+  await expect(panel.getByText("原始管线警告 / Unchanged pipeline source warning", { exact: true })).toBeVisible();
   expect(page.url()).toBe(pipelineUrl);
   await audit("controlled-target-pipeline-zh");
   await selectInterfaceLanguage(page, "en");
