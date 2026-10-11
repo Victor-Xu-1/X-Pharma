@@ -215,6 +215,14 @@ test("[target-language] preserves target narratives, complete counts, filters, r
     ),
   ).toHaveCount(5);
   await expect(group).not.toHaveAttribute("open", "");
+  const primaryControlHeight = await panel
+    .locator(".target-pipeline-primary-filters")
+    .evaluate((node) => Number.parseFloat(getComputedStyle(node).getPropertyValue("--ds-control-height")));
+  const resetHeight = await panel
+    .getByRole("button", { name: "Reset filters", exact: true })
+    .evaluate((node) => node.getBoundingClientRect().height);
+  expect(primaryControlHeight).toBeGreaterThan(0);
+  expect(resetHeight).toBeGreaterThanOrEqual(primaryControlHeight);
   if ((page.viewportSize()?.width ?? 1440) <= 480) {
     const phoneControls = await panel.locator(".target-pipeline-primary-filters").evaluate((node) => {
       const style = getComputedStyle(node);
