@@ -913,9 +913,12 @@
 }
 
 /* Query feedback stays visible without replacing the edited filter controls. */
-.target-pipeline-panel {
-  /* A new status row must not be anchored over the control the user is editing. */
-  overflow-anchor: none;
+.target-pipeline-panel
+  :where(.target-evidence-filters, .pipeline-advanced-filters)
+  :is(input, select, summary, button) {
+  /* Leave room for the bounded feedback region when a focused control is revealed. */
+  scroll-margin-block-start: calc(40vh + 16px);
+  scroll-margin-block-end: 44px;
 }
 .target-pipeline-feedback {
   position: sticky;
@@ -967,5 +970,10 @@
 @media (max-width: 760px) {
   .target-pipeline-feedback {
     top: 72px;
+  }
+  .target-pipeline-panel
+    :where(.target-evidence-filters, .pipeline-advanced-filters)
+    :is(input, select, summary, button) {
+    scroll-margin-block-start: calc(40vh + 80px);
   }
 }
