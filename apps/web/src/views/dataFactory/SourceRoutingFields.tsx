@@ -1,4 +1,6 @@
 import type { DataSource } from "../../lib/contracts/dataFactory";
+import { useLocale } from "../../lib/i18n";
+import { factoryText as t } from "../../lib/i18n/dataFactory";
 import type { ClinicalTrialsSort, PublicSourceDraft } from "./sourceRules";
 
 export function SourceRoutingFields({
@@ -12,15 +14,16 @@ export function SourceRoutingFields({
   onChange: (change: Partial<PublicSourceDraft>) => void;
   onAbstractChange: (include: boolean) => void;
 }) {
+  useLocale();
   return (
     <>
       <label className="source-path-field">
         <span>
           {sourceType === "chembl"
-            ? "ChEMBL 靶点编号"
+            ? t("ChEMBL 靶点编号")
             : sourceType === "pubmed"
-              ? "PubMed 检索主题"
-              : "ClinicalTrials.gov 检索主题"}
+              ? t("PubMed 检索主题")
+              : t("ClinicalTrials.gov 检索主题")}
         </span>
         <input
           value={sourceType === "chembl" ? draft.targetChemblId : draft.queryTerm}
@@ -31,11 +34,11 @@ export function SourceRoutingFields({
           }
           required
           maxLength={sourceType === "pubmed" ? 2000 : sourceType === "chembl" ? 32 : 1000}
-          placeholder={sourceType === "chembl" ? "CHEMBL…" : "填写需要持续关注的检索条件"}
+          placeholder={sourceType === "chembl" ? "CHEMBL…" : t("填写需要持续关注的检索条件")}
         />
       </label>
       <label>
-        <span>单次最多抓取记录</span>
+        <span>{t("单次最多抓取记录")}</span>
         <input
           type="number"
           min={1}
@@ -46,7 +49,7 @@ export function SourceRoutingFields({
         />
       </label>
       <label>
-        <span>每页请求数量</span>
+        <span>{t("每页请求数量")}</span>
         <input
           type="number"
           min={1}
@@ -59,19 +62,19 @@ export function SourceRoutingFields({
       {sourceType !== "pubmed" ? (
         <>
           <label>
-            <span>采集方式</span>
+            <span>{t("采集方式")}</span>
             <select
               value={draft.syncMode}
               onChange={(event) => onChange({ syncMode: event.target.value as PublicSourceDraft["syncMode"] })}
             >
-              <option value="continuous">持续同步（分批续跑与复核）</option>
-              <option value="snapshot">受限快照（只获取当前窗口）</option>
+              <option value="continuous">{t("持续同步（分批续跑与复核）")}</option>
+              <option value="snapshot">{t("受限快照（只获取当前窗口）")}</option>
             </select>
           </label>
           {sourceType === "clinicaltrials_gov" && draft.syncMode === "continuous" ? (
             <>
               <label>
-                <span>历史起始日期</span>
+                <span>{t("历史起始日期")}</span>
                 <input
                   type="date"
                   value={draft.startDate}
@@ -81,7 +84,7 @@ export function SourceRoutingFields({
                 />
               </label>
               <label>
-                <span>日期分区（天）</span>
+                <span>{t("日期分区（天）")}</span>
                 <input
                   type="number"
                   min={1}
@@ -92,7 +95,7 @@ export function SourceRoutingFields({
                 />
               </label>
               <label>
-                <span>更新回看（天）</span>
+                <span>{t("更新回看（天）")}</span>
                 <input
                   type="number"
                   min={1}
@@ -103,7 +106,7 @@ export function SourceRoutingFields({
                 />
               </label>
               <label>
-                <span>完整复核周期（天）</span>
+                <span>{t("完整复核周期（天）")}</span>
                 <input
                   type="number"
                   min={1}
@@ -117,8 +120,8 @@ export function SourceRoutingFields({
           ) : null}
           <p className="field-help source-path-field">
             {draft.syncMode === "continuous"
-              ? "记录上限只限制单批工作量，未完成的范围会自动续跑；不会把查询窗口外的历史数据删除。"
-              : "只获取当前有限窗口，不表示全量历史已经同步。"}
+              ? t("记录上限只限制单批工作量，未完成的范围会自动续跑；不会把查询窗口外的历史数据删除。")
+              : t("只获取当前有限窗口，不表示全量历史已经同步。")}
           </p>
         </>
       ) : null}
@@ -129,19 +132,19 @@ export function SourceRoutingFields({
             checked={draft.includeAbstract}
             onChange={(event) => onAbstractChange(event.target.checked)}
           />
-          <span>同时入库摘要</span>
+          <span>{t("同时入库摘要")}</span>
         </label>
       ) : sourceType === "clinicaltrials_gov" ? (
         <label>
-          <span>结果排序</span>
+          <span>{t("结果排序")}</span>
           <select
             value={draft.clinicalSort}
             onChange={(event) => onChange({ clinicalSort: event.target.value as ClinicalTrialsSort })}
           >
-            <option value="LastUpdatePostDate:desc">最近更新优先</option>
-            <option value="LastUpdatePostDate:asc">最早更新优先</option>
-            <option value="StudyFirstPostDate:desc">最近首次发布优先</option>
-            <option value="StudyFirstPostDate:asc">最早首次发布优先</option>
+            <option value="LastUpdatePostDate:desc">{t("最近更新优先")}</option>
+            <option value="LastUpdatePostDate:asc">{t("最早更新优先")}</option>
+            <option value="StudyFirstPostDate:desc">{t("最近首次发布优先")}</option>
+            <option value="StudyFirstPostDate:asc">{t("最早首次发布优先")}</option>
           </select>
         </label>
       ) : sourceType === "chembl" ? (
@@ -157,11 +160,11 @@ export function SourceRoutingFields({
                 })
               }
             />
-            <span>补充该靶点的药物实验活性</span>
+            <span>{t("补充该靶点的药物实验活性")}</span>
           </label>
           {draft.includeActivities ? (
             <label>
-              <span>每个药物的活性样本上限</span>
+              <span>{t("每个药物的活性样本上限")}</span>
               <input
                 type="number"
                 min={1}
@@ -173,7 +176,7 @@ export function SourceRoutingFields({
             </label>
           ) : null}
           <p className="field-help source-path-field">
-            结构随药物元数据采集。活性保留单条实验值、关系符和来源，不合并重复实验；有界样本不代表完整活性覆盖。
+            {t("结构随药物元数据采集。活性保留单条实验值、关系符和来源，不合并重复实验；有界样本不代表完整活性覆盖。")}
           </p>
         </>
       ) : null}

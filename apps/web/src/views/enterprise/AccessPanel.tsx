@@ -3,6 +3,8 @@ import { useState } from "react";
 import { EmptyState, formatDate, StatusBadge } from "../../components/common";
 import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { EnterpriseAccessWorkspace, EnterpriseOperation } from "../../lib/contracts/enterprise";
+import { useLocale } from "../../lib/i18n";
+import { enterpriseAccessText as t } from "../../lib/i18n/enterpriseAccess";
 import { apiKeyScopeLabel } from "./ApiKeys";
 import { ModalShell } from "./ModalShell";
 import type { AccessAction, ApiKeyAction } from "./types";
@@ -18,6 +20,7 @@ export function AccessPanel({
   onApiKeyAction: (action: ApiKeyAction) => void;
   busy: string;
 }) {
+  useLocale();
   const now = Date.now();
   const activeHolds = workspace.legalHolds.filter((hold) => hold.status === "active");
   return (
@@ -25,20 +28,20 @@ export function AccessPanel({
       <section aria-labelledby="enterprise-datasets-title">
         <header>
           <div>
-            <h2 id="enterprise-datasets-title">数据集与交付授权</h2>
-            <p>停用后自动入库和 Web/MCP 新查询均不能继续使用该数据集。</p>
+            <h2 id="enterprise-datasets-title">{t("数据集与交付授权")}</h2>
+            <p>{t("停用后自动入库和 Web/MCP 新查询均不能继续使用该数据集。")}</p>
           </div>
           <Database size={19} />
         </header>
-        <ScrollableTableRegion className="enterprise-table" ariaLabel="数据集与交付授权滚动区域">
-          <table aria-label="数据集与交付授权">
+        <ScrollableTableRegion className="enterprise-table" ariaLabel={t("数据集与交付授权滚动区域")}>
+          <table aria-label={t("数据集与交付授权")}>
             <thead>
               <tr>
-                <th>数据集</th>
-                <th>交付通道</th>
-                <th>许可</th>
-                <th>状态</th>
-                <th aria-label="操作" />
+                <th>{t("数据集")}</th>
+                <th>{t("交付通道")}</th>
+                <th>{t("许可")}</th>
+                <th>{t("状态")}</th>
+                <th aria-label={t("操作")} />
               </tr>
             </thead>
             <tbody>
@@ -67,7 +70,7 @@ export function AccessPanel({
                       disabled={Boolean(busy)}
                       onClick={() => onAction({ kind: "dataset", dataset })}
                     >
-                      {dataset.active ? "停用" : "启用"}
+                      {dataset.active ? t("停用") : t("启用")}
                     </button>
                   </td>
                 </tr>
@@ -80,19 +83,19 @@ export function AccessPanel({
       <section aria-labelledby="enterprise-sessions-title">
         <header>
           <div>
-            <h2 id="enterprise-sessions-title">登录会话</h2>
-            <p>可单独撤销远程会话；角色或账户状态变化会使该用户全部会话失效。</p>
+            <h2 id="enterprise-sessions-title">{t("登录会话")}</h2>
+            <p>{t("可单独撤销远程会话；角色或账户状态变化会使该用户全部会话失效。")}</p>
           </div>
         </header>
-        <ScrollableTableRegion className="enterprise-table" ariaLabel="登录会话滚动区域">
-          <table aria-label="登录会话">
+        <ScrollableTableRegion className="enterprise-table" ariaLabel={t("登录会话滚动区域")}>
+          <table aria-label={t("登录会话")}>
             <thead>
               <tr>
-                <th>用户</th>
-                <th>签发</th>
-                <th>到期</th>
-                <th>状态</th>
-                <th aria-label="操作" />
+                <th>{t("用户")}</th>
+                <th>{t("签发")}</th>
+                <th>{t("到期")}</th>
+                <th>{t("状态")}</th>
+                <th aria-label={t("操作")} />
               </tr>
             </thead>
             <tbody>
@@ -118,7 +121,7 @@ export function AccessPanel({
                         disabled={!active || item.current || Boolean(busy)}
                         onClick={() => onAction({ kind: "session", session: item })}
                       >
-                        撤销
+                        {t("撤销")}
                       </button>
                     </td>
                   </tr>
@@ -132,8 +135,8 @@ export function AccessPanel({
       <section aria-labelledby="enterprise-api-keys-title">
         <header>
           <div>
-            <h2 id="enterprise-api-keys-title">Agent API 密钥</h2>
-            <p>完整密钥只在创建或轮换后显示一次；列表仅保留安全前缀和使用状态。</p>
+            <h2 id="enterprise-api-keys-title">{t("Agent API 密钥")}</h2>
+            <p>{t("完整密钥只在创建或轮换后显示一次；列表仅保留安全前缀和使用状态。")}</p>
           </div>
           <button
             className="primary-button"
@@ -142,19 +145,19 @@ export function AccessPanel({
             onClick={() => onApiKeyAction({ kind: "create" })}
           >
             <Plus size={16} />
-            新建密钥
+            {t("新建密钥")}
           </button>
         </header>
-        <ScrollableTableRegion className="enterprise-table" ariaLabel="Agent API 密钥滚动区域">
-          <table aria-label="Agent API 密钥">
+        <ScrollableTableRegion className="enterprise-table" ariaLabel={t("Agent API 密钥滚动区域")}>
+          <table aria-label={t("Agent API 密钥")}>
             <thead>
               <tr>
-                <th>密钥</th>
-                <th>授权范围</th>
-                <th>有效期</th>
-                <th>商业绑定</th>
-                <th>状态</th>
-                <th aria-label="操作" />
+                <th>{t("密钥")}</th>
+                <th>{t("授权范围")}</th>
+                <th>{t("有效期")}</th>
+                <th>{t("商业绑定")}</th>
+                <th>{t("状态")}</th>
+                <th aria-label={t("操作")} />
               </tr>
             </thead>
             <tbody>
@@ -166,17 +169,18 @@ export function AccessPanel({
                       <span className="cell-subtitle mono-value">{apiKey.prefix}</span>
                     </td>
                     <td>
-                      {apiKey.scopes.length} 项
+                      {t("{count} 项", { count: apiKey.scopes.length })}
                       <span className="cell-subtitle">{apiKey.scopes.map(apiKeyScopeLabel).join(" · ")}</span>
                     </td>
                     <td>
-                      {apiKey.expires_at ? formatDate(apiKey.expires_at, true) : "未设置"}
+                      {apiKey.expires_at ? formatDate(apiKey.expires_at, true) : t("未设置")}
                       <span className="cell-subtitle">
-                        最近使用：{apiKey.last_used_at ? formatDate(apiKey.last_used_at, true) : "尚未使用"}
+                        {t("最近使用：")}
+                        {apiKey.last_used_at ? formatDate(apiKey.last_used_at, true) : t("尚未使用")}
                       </span>
                     </td>
                     <td>
-                      {apiKey.commercial_client_name ?? "未绑定"}
+                      {apiKey.commercial_client_name ?? t("未绑定")}
                       <span className="cell-subtitle mono-value">{apiKey.commercial_client_id ?? "--"}</span>
                     </td>
                     <td>
@@ -187,8 +191,8 @@ export function AccessPanel({
                         <button
                           className="icon-button"
                           type="button"
-                          title={`轮换 ${apiKey.name}`}
-                          aria-label={`轮换 ${apiKey.name}`}
+                          title={t("轮换 {name}", { name: apiKey.name })}
+                          aria-label={t("轮换 {name}", { name: apiKey.name })}
                           disabled={apiKey.status !== "active" || Boolean(busy)}
                           onClick={() => onApiKeyAction({ kind: "rotate", apiKey })}
                         >
@@ -197,8 +201,8 @@ export function AccessPanel({
                         <button
                           className="icon-button danger-button"
                           type="button"
-                          title={`撤销 ${apiKey.name}`}
-                          aria-label={`撤销 ${apiKey.name}`}
+                          title={t("撤销 {name}", { name: apiKey.name })}
+                          aria-label={t("撤销 {name}", { name: apiKey.name })}
                           disabled={apiKey.status !== "active" || Boolean(busy)}
                           onClick={() => onApiKeyAction({ kind: "revoke", apiKey })}
                         >
@@ -211,7 +215,7 @@ export function AccessPanel({
               ) : (
                 <tr>
                   <td colSpan={6}>
-                    <EmptyState title="暂无 Agent API 密钥" />
+                    <EmptyState title={t("暂无 Agent API 密钥")} />
                   </td>
                 </tr>
               )}
@@ -224,18 +228,18 @@ export function AccessPanel({
         <header>
           <div>
             <h2 id="enterprise-clients-title">API / MCP Clients</h2>
-            <p>远程 Agent 身份与主体绑定状态。</p>
+            <p>{t("远程 Agent 身份与主体绑定状态。")}</p>
           </div>
         </header>
-        <ScrollableTableRegion className="enterprise-table" ariaLabel="API 与 MCP Clients 滚动区域">
-          <table aria-label="API 与 MCP Clients">
+        <ScrollableTableRegion className="enterprise-table" ariaLabel={t("API 与 MCP Clients 滚动区域")}>
+          <table aria-label={t("API 与 MCP Clients")}>
             <thead>
               <tr>
                 <th>Client</th>
-                <th>计费账户</th>
-                <th>绑定主体</th>
-                <th>状态</th>
-                <th aria-label="操作" />
+                <th>{t("计费账户")}</th>
+                <th>{t("绑定主体")}</th>
+                <th>{t("状态")}</th>
+                <th aria-label={t("操作")} />
               </tr>
             </thead>
             <tbody>
@@ -257,7 +261,7 @@ export function AccessPanel({
                       disabled={Boolean(busy)}
                       onClick={() => onAction({ kind: "client", client })}
                     >
-                      {client.active ? "停用" : "启用"}
+                      {client.active ? t("停用") : t("启用")}
                     </button>
                   </td>
                 </tr>
@@ -270,22 +274,22 @@ export function AccessPanel({
       <section className="enterprise-lifecycle-summary" aria-labelledby="enterprise-lifecycle-title">
         <header>
           <div>
-            <h2 id="enterprise-lifecycle-title">保留、Legal Hold 与合法删除</h2>
-            <p>危险操作继续在经过专门影响分析的数据生命周期控制面执行。</p>
+            <h2 id="enterprise-lifecycle-title">{t("保留、Legal Hold 与合法删除")}</h2>
+            <p>{t("危险操作继续在经过专门影响分析的数据生命周期控制面执行。")}</p>
           </div>
         </header>
         <dl>
           <div>
-            <dt>有效保留策略</dt>
+            <dt>{t("有效保留策略")}</dt>
             <dd>{workspace.retentionPolicies.filter((policy) => policy.active).length}</dd>
           </div>
           <div>
-            <dt>生效 Legal Hold</dt>
+            <dt>{t("生效 Legal Hold")}</dt>
             <dd>{activeHolds.length}</dd>
           </div>
         </dl>
         <a className="secondary-button" href="/workspace/internal?view=commercial">
-          打开数据生命周期治理
+          {t("打开数据生命周期治理")}
         </a>
       </section>
     </div>
@@ -303,6 +307,7 @@ export function AccessActionModal({
   close: () => void;
   submit: (operation: EnterpriseOperation) => Promise<void>;
 }) {
+  useLocale();
   const [reason, setReason] = useState("");
   const subject =
     action.kind === "dataset"
@@ -317,7 +322,7 @@ export function AccessActionModal({
         ? "变更数据集状态"
         : "变更 Agent Client 状态";
   return (
-    <ModalShell title={title} close={close}>
+    <ModalShell title={t(title)} close={close}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -344,7 +349,7 @@ export function AccessActionModal({
       >
         <p className="enterprise-modal-subject">{subject}</p>
         <label>
-          变更原因
+          {t("变更原因")}
           <textarea
             required
             minLength={3}
@@ -355,10 +360,10 @@ export function AccessActionModal({
         </label>
         <div className="form-actions">
           <button className="secondary-button" type="button" onClick={close}>
-            取消
+            {t("取消")}
           </button>
           <button className="primary-button" type="submit" disabled={busy || reason.trim().length < 3}>
-            确认变更
+            {t("确认变更")}
           </button>
         </div>
       </form>

@@ -1,6 +1,8 @@
 import { formatDate, StatusBadge } from "../../../components/common";
 import { ScrollableTableRegion } from "../../../components/ScrollableTableRegion";
 import type { CompetitiveProgram } from "../../../lib/contracts/target";
+import { useMessages } from "../../../lib/i18n";
+import { targetPipelineMessages } from "../../../lib/i18n/targetPipeline";
 import { programModalityLabel } from "../../../lib/programDisplay";
 import type { TargetEntityOpener } from "../types";
 import {
@@ -23,23 +25,24 @@ export function DrugPipeline({
   onToggleDrug: (drugId: string, selected: boolean) => void;
   visibleColumns: Set<TargetDrugColumnKey>;
 }) {
+  const text = useMessages(targetPipelineMessages);
   return (
-    <ScrollableTableRegion ariaLabel="靶点研发药物概览">
-      <table aria-label="靶点研发药物概览">
+    <ScrollableTableRegion ariaLabel={text("靶点研发药物概览")}>
+      <table aria-label={text("靶点研发药物概览")}>
         <thead>
           <tr>
-            <th scope="col">对比</th>
-            <th scope="col">药物</th>
-            {visibleColumns.has("organizations") ? <th scope="col">研发机构</th> : null}
-            {visibleColumns.has("targets") ? <th scope="col">靶点组合</th> : null}
-            {visibleColumns.has("mechanism") ? <th scope="col">类型 / 机制</th> : null}
-            {visibleColumns.has("indications") ? <th scope="col">适应症与阶段</th> : null}
-            {visibleColumns.has("global_phase") ? <th scope="col">全球最高阶段</th> : null}
-            {visibleColumns.has("china_phase") ? <th scope="col">中国最高阶段</th> : null}
-            {visibleColumns.has("status") ? <th scope="col">项目状态</th> : null}
-            {visibleColumns.has("clinical") ? <th scope="col">临床结果</th> : null}
-            {visibleColumns.has("innovation") ? <th scope="col">创新类型</th> : null}
-            {visibleColumns.has("updated") ? <th scope="col">最近更新</th> : null}
+            <th scope="col">{text("对比")}</th>
+            <th scope="col">{text("药物")}</th>
+            {visibleColumns.has("organizations") ? <th scope="col">{text("研发机构")}</th> : null}
+            {visibleColumns.has("targets") ? <th scope="col">{text("靶点组合")}</th> : null}
+            {visibleColumns.has("mechanism") ? <th scope="col">{text("类型 / 机制")}</th> : null}
+            {visibleColumns.has("indications") ? <th scope="col">{text("适应症与阶段")}</th> : null}
+            {visibleColumns.has("global_phase") ? <th scope="col">{text("全球最高阶段")}</th> : null}
+            {visibleColumns.has("china_phase") ? <th scope="col">{text("中国最高阶段")}</th> : null}
+            {visibleColumns.has("status") ? <th scope="col">{text("项目状态")}</th> : null}
+            {visibleColumns.has("clinical") ? <th scope="col">{text("临床结果")}</th> : null}
+            {visibleColumns.has("innovation") ? <th scope="col">{text("创新类型")}</th> : null}
+            {visibleColumns.has("updated") ? <th scope="col">{text("最近更新")}</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -53,7 +56,7 @@ export function DrugPipeline({
                 <td>
                   <input
                     type="checkbox"
-                    aria-label={`选择对比 ${item.drug_name}`}
+                    aria-label={text("选择对比 {name}", { name: item.drug_name })}
                     checked={selectedDrugIds.has(item.drug_entity_id)}
                     onChange={(event) => onToggleDrug(item.drug_entity_id, event.target.checked)}
                   />
@@ -66,7 +69,7 @@ export function DrugPipeline({
                   >
                     {item.drug_name}
                   </button>
-                  <small> · {item.project_count ?? indications.length} 个研发项目</small>
+                  <small> · {text("{count} 个研发项目", { count: item.project_count ?? indications.length })}</small>
                 </td>
                 {visibleColumns.has("organizations") ? (
                   <td>
@@ -109,14 +112,20 @@ export function DrugPipeline({
                   <td>
                     {(item.modalities ?? []).map(programModalityLabel).join("、") || "--"}
                     {(item.mechanisms_of_action ?? []).length ? (
-                      <small> · 机制：{(item.mechanisms_of_action ?? []).join("；")}</small>
+                      <small>
+                        {text(" · 机制：")}
+                        {(item.mechanisms_of_action ?? []).join("；")}
+                      </small>
                     ) : null}
                   </td>
                 ) : null}
                 {visibleColumns.has("indications") ? (
                   <td>
                     {indications.length ? (
-                      <ul className="program-history indication-preview" aria-label={`${item.drug_name} 适应症与阶段`}>
+                      <ul
+                        className="program-history indication-preview"
+                        aria-label={text("{name} 适应症与阶段", { name: item.drug_name })}
+                      >
                         {indications.slice(0, 2).map((indication) => (
                           <li key={indication.program_id}>
                             {indication.disease_entity_id && indication.disease_name ? (
@@ -128,14 +137,16 @@ export function DrugPipeline({
                                 {indication.disease_name}
                               </button>
                             ) : (
-                              "适应症未披露"
+                              text("适应症未披露")
                             )}{" "}
                             <StatusBadge value={developmentPhaseLabel(indication.phase)} />
                           </li>
                         ))}
                         {indications.length > 2 ? (
                           <details className="program-history">
-                            <summary>查看其余 {indications.length - 2} 个适应症项目</summary>
+                            <summary>
+                              {text("查看其余 {count} 个适应症项目", { count: indications.length - 2 })}
+                            </summary>
                             <ol>
                               {indications.slice(2).map((indication) => (
                                 <li key={indication.program_id}>
@@ -148,7 +159,7 @@ export function DrugPipeline({
                                       {indication.disease_name}
                                     </button>
                                   ) : (
-                                    "适应症未披露"
+                                    text("适应症未披露")
                                   )}{" "}
                                   <StatusBadge value={developmentPhaseLabel(indication.phase)} />
                                 </li>
@@ -158,7 +169,7 @@ export function DrugPipeline({
                         ) : null}
                       </ul>
                     ) : (
-                      <span>适应症未披露</span>
+                      <span>{text("适应症未披露")}</span>
                     )}
                   </td>
                 ) : null}
@@ -179,14 +190,18 @@ export function DrugPipeline({
                     <span className="status-badge">{pipelineProgramStatusLabel(item)}</span>
                     <small>
                       {" "}
-                      · 在研 {statuses.active ?? 0} · 已停止 {statuses.inactive ?? 0} · 未披露 {statuses.unknown ?? 0}
+                      {text("· 在研 {active} · 已停止 {inactive} · 未披露 {unknown}", {
+                        active: statuses.active ?? 0,
+                        inactive: statuses.inactive ?? 0,
+                        unknown: statuses.unknown ?? 0,
+                      })}
                     </small>
                   </td>
                 ) : null}
                 {visibleColumns.has("clinical") ? (
                   <td>
-                    {item.has_clinical_results ? "已有结果" : "暂无结果"}
-                    <small> · {item.clinical_trial_count ?? 0} 项临床试验</small>
+                    {item.has_clinical_results ? text("已有结果") : text("暂无结果")}
+                    <small>{text(" · {count} 项临床试验", { count: item.clinical_trial_count ?? 0 })}</small>
                   </td>
                 ) : null}
                 {visibleColumns.has("innovation") ? <td>{(item.innovation_types ?? []).join("、") || "--"}</td> : null}

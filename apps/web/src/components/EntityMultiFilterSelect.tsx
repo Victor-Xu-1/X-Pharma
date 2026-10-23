@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef } from "react";
 
 import { getEntity, intelligenceKeys } from "../lib/contracts/intelligence";
 import type { EntityType } from "../lib/generated";
+import { useMessages } from "../lib/i18n";
+import { entityFilterMessages } from "../lib/i18n/entityFilter";
 import { EntityCandidateInput } from "./EntityCandidateInput";
 
 export function EntityMultiFilterSelect({
@@ -23,6 +25,7 @@ export function EntityMultiFilterSelect({
   placeholder: string;
   maxSelections?: number;
 }) {
+  const t = useMessages(entityFilterMessages);
   const selectedQueries = useQueries({
     queries: values.map((entityId) => ({
       queryKey: intelligenceKeys.entity(entityId),
@@ -50,7 +53,7 @@ export function EntityMultiFilterSelect({
   }, [onResolved, resolvedKey, resolvedSelections]);
 
   return (
-    <fieldset className="entity-filter-select entity-multi-filter-select" aria-label={`${label}多选`}>
+    <fieldset className="entity-filter-select entity-multi-filter-select" aria-label={t("{label}多选", { label })}>
       <span className="entity-filter-label">
         {label}
         {values.length ? (
@@ -60,7 +63,7 @@ export function EntityMultiFilterSelect({
         ) : null}
       </span>
       {values.length ? (
-        <fieldset className="entity-multi-filter-selections" aria-label={`已选${label}`}>
+        <fieldset className="entity-multi-filter-selections" aria-label={t("已选{label}", { label })}>
           {values.map((entityId, index) => {
             const selected = selectedQueries[index];
             const invalid = Boolean(
@@ -71,25 +74,25 @@ export function EntityMultiFilterSelect({
               <span className={`entity-filter-selection${invalid ? " invalid" : ""}`} key={entityId}>
                 <span>
                   {selected?.isFetching
-                    ? "正在读取实体"
+                    ? t("正在读取实体")
                     : invalid
-                      ? "所选实体不可用"
+                      ? t("所选实体不可用")
                       : selected?.data?.name || entityId}
                 </span>
                 {selected?.isError && !selected.isFetching ? (
                   <button
                     type="button"
                     onClick={() => void selected.refetch()}
-                    aria-label={`重试已选${label} ${entityId}`}
+                    aria-label={t("重试已选{label} {id}", { label, id: entityId })}
                   >
-                    重试
+                    {t("重试")}
                   </button>
                 ) : null}
                 <button
                   type="button"
                   onClick={() => onChange(values.filter((value) => value !== entityId))}
-                  title={`移除${selected?.data?.name ?? entityId}`}
-                  aria-label={`移除${selected?.data?.name ?? entityId}`}
+                  title={t("移除{name}", { name: selected?.data?.name ?? entityId })}
+                  aria-label={t("移除{name}", { name: selected?.data?.name ?? entityId })}
                 >
                   <X size={14} />
                 </button>
@@ -109,7 +112,7 @@ export function EntityMultiFilterSelect({
         />
       ) : (
         <span className="entity-filter-limit" role="status">
-          已达到最多 {maxSelections} 项
+          {t("已达到最多 {count} 项", { count: maxSelections })}
         </span>
       )}
     </fieldset>

@@ -26,7 +26,6 @@
 .enterprise-lifecycle-summary dt,
 .factory-status-strip span,
 .factory-status-strip small,
-.pipeline-panel > header p,
 .factory-run-pagination,
 .ingestion-run-progress > span,
 .ingestion-stage-graph p,
@@ -192,8 +191,7 @@
 .governance-run-toolbar code,
 .governance-fingerprints dt,
 .governance-fingerprints code,
-.review-detail section h3,
-.payload-comparison h4 {
+.review-detail section h3 {
   color: var(--ds-ink-muted);
 }
 
@@ -356,10 +354,7 @@
 .source-list article,
 .source-version-list article,
 .source-text-preview,
-.publication-control,
-:root .publication-fact-list label,
-.publication-batch-list button,
-.publication-preview-items article {
+.publication-control {
   border-color: var(--ds-border);
   border-radius: var(--ds-radius-panel);
   background: var(--ds-surface);
@@ -415,8 +410,7 @@
   color: var(--ds-ink);
 }
 
-.source-text-preview,
-.publication-preview > code {
+.source-text-preview {
   background: var(--ds-surface-muted);
   color: var(--ds-ink);
   font-family: var(--ds-font-mono);
@@ -427,7 +421,35 @@
 .publication-preview-items {
   background: var(--ds-border);
 }
-.drug-profile-overview .state-message,
 .company-profile-overview .state-message {
   min-height: 110px;
+}
+.drug-profile-overview .empty-state {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-content: start;
+  align-items: start;
+  justify-items: start;
+  gap: 4px 12px;
+  padding: 18px 0;
+  text-align: left;
+}
+.drug-profile-overview .empty-state > .state-icon {
+  grid-row: 1 / span 2;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+}
+.drug-profile-overview .empty-state > strong {
+  font-size: var(--ds-text-sm);
+  line-height: var(--ds-leading-body);
+}
+.drug-profile-overview .empty-state > span:not(.state-icon) {
+  grid-column: 2;
+  max-width: none;
+}
+.dossier-coverage-disclosure > summary {
+  flex-wrap: wrap;
+  gap: 6px 16px;
 }

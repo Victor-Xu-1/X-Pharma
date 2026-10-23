@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { trialInitiationTypeLabels } from "../../../src/lib/trialFilters";
 import { verifyProfessionalRefreshLifecycle } from "../helpers";
 import type { verifyDealRegulatoryAndSavedSearch } from "./deal-regulatory-and-saved-search";
 
@@ -221,6 +222,15 @@ export async function verifyPipelineDossiers(context: Awaited<ReturnType<typeof 
   await pipelineTable.getByRole("button", { name: new RegExp(`^${regulatoryDrugName}`) }).click();
   await expect(page).toHaveURL(new RegExp(`view=drug&entity=${regulatorySubjectId}`));
   await expect(page.getByRole("heading", { name: regulatoryDrugName, exact: true })).toBeVisible();
+  const drugHeader = page.getByRole("region", { name: "药物档案摘要", exact: true });
+  await expect(drugHeader.locator(".drug-header-primary-metrics > div")).toHaveCount(3);
+  const drugIdentityDetails = drugHeader.locator(".drug-header-details");
+  await expect(drugIdentityDetails).not.toHaveAttribute("open", "");
+  const identitySummary = drugIdentityDetails.locator(":scope > summary");
+  await identitySummary.focus();
+  await page.keyboard.press("Enter");
+  await expect(drugIdentityDetails).toHaveAttribute("open", "");
+  await expect(drugIdentityDetails.getByText("全球 / 中国", { exact: true })).toBeVisible();
   await expect(
     page
       .locator("dt")
@@ -271,7 +281,7 @@ export async function verifyPipelineDossiers(context: Awaited<ReturnType<typeof 
   await expect(drugClinicalResults).toContainText(`Browser combination target ${fixtureKeyBase}`);
   const drugClinicalTrials = page.getByRole("table", { name: "药物关联临床试验" });
   await expect(drugClinicalTrials).toContainText("招募中");
-  await expect(drugClinicalTrials).toContainText("申办方发起（IST）");
+  await expect(drugClinicalTrials).toContainText(trialInitiationTypeLabels.ist);
   await expect(drugClinicalTrials).toContainText(`Browser intervention ${fixtureKeyBase}`);
   await expect(drugClinicalTrials).toContainText(`Browser sponsor ${fixtureKeyBase}`);
   await expect(drugClinicalTrials).toContainText("128");
@@ -297,8 +307,8 @@ export async function verifyPipelineDossiers(context: Awaited<ReturnType<typeof 
   await expect(drugDeals).toContainText(`Browser pipeline company B ${fixtureKeyBase}`);
   await expect(drugDeals).toContainText("被许可方 · 中国 · biotech");
   await expect(drugDeals).toContainText("交易时 I 期临床 · 当前 II 期临床");
-  await expect(drugDeals).toContainText("首付款 USD 25.0M");
-  await expect(drugDeals).toContainText("潜在总额 USD 500.0M");
+  await expect(drugDeals).toContainText("首付款 USD 25,000,000");
+  await expect(drugDeals).toContainText("潜在总额 USD 500,000,000");
   const drugDealRights = page.getByRole("table", { name: "药物交易权益归属" });
   await expect(drugDealRights).toContainText(`Browser pipeline company B ${fixtureKeyBase}`);
   await expect(drugDealRights).toContainText("商业化");

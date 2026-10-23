@@ -4,6 +4,9 @@
   environments, data, caches and outputs remain on the E-drive distribution.
 - Keep one implementation per behavior. Add small, explicit modules instead of
   extending large API, query and UI composition files.
+- UI language has one authority in `apps/web/src/lib/i18n`. English is the
+  fresh-visit default; support at least English and Chinese and retain an explicit
+  saved choice. Switching must preserve drafts, queries and source-owned science.
 - Preserve existing behavior and unrelated edits. Use isolated branches for
   concurrent changes and review the exact diff before committing.
 - `pyproject.toml` owns the version and Apache-2.0 metadata. `uv.lock` and

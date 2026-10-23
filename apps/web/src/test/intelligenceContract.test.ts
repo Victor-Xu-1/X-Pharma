@@ -95,7 +95,7 @@ it("reports partial success without repeating a persisted saved search", async (
     monitor: true,
   });
 
-  expect(result.message).toBe("检索已保存，但监控未启用：Monitoring unavailable");
+  expect(result).toEqual({ kind: "monitor_failed", reason: "Monitoring unavailable" });
   expect(fetchMock).toHaveBeenCalledTimes(2);
   expect(fetchMock.mock.calls.filter(([input]) => String(input) === "/api/v1/monitoring/saved-searches")).toHaveLength(
     1,

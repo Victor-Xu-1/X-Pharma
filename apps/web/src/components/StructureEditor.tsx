@@ -4,7 +4,8 @@ import "ketcher-react/dist/index.css";
 import { StandaloneStructServiceProvider } from "ketcher-standalone/dist/binaryWasm";
 import { Check, Eraser } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
+import { getLocale, useLocale } from "../lib/i18n";
+import { type ChemistryMessageKey, chemistryText as t } from "../lib/i18n/chemistry";
 import { observeStructureAvailability } from "../lib/structureAvailability";
 import { applyStructureEditorAccessibility } from "../lib/structureEditorAccessibility";
 import { isStructureApplyDisabled } from "../lib/structureEditorState";
@@ -94,6 +95,7 @@ export function StructureEditor({
   onApply: (value: string) => void;
   onError: (message: string) => void;
 }) {
+  const { locale } = useLocale();
   const provider = useMemo(() => new StandaloneStructServiceProvider(), []);
   const editorRootRef = useRef<HTMLDivElement | null>(null);
   const [ketcher, setKetcher] = useState<Ketcher | null>(null);
@@ -103,18 +105,24 @@ export function StructureEditor({
   const ready = ketcher !== null;
   const [busy, setBusy] = useState(false);
   const [hasStructure, setHasStructure] = useState(Boolean(value.trim()));
-  const [status, setStatus] = useState("正在准备结构画板");
+  const [status, setStatus] = useState<ChemistryMessageKey>("正在准备结构画板");
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
 
   useEffect(() => {
     const root = editorRootRef.current;
-    if (!root) return;
+    if (!root || locale !== getLocale()) return;
     applyStructureEditorAccessibility(root);
     const observer = new MutationObserver(() => applyStructureEditorAccessibility(root));
-    observer.observe(root, { characterData: true, childList: true, subtree: true });
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ["title", "aria-label", "aria-labelledby"],
+      characterData: true,
+      childList: true,
+      subtree: true,
+    });
     return () => observer.disconnect();
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     if (!ketcher) return;
@@ -212,7 +220,7 @@ export function StructureEditor({
   }
 
   return (
-    <section className="structure-editor" aria-label="结构式编辑器">
+    <section className="structure-editor" aria-label={t("结构式编辑器")}>
       <div className="structure-editor-canvas" ref={editorRootRef} inert={busy} aria-busy={busy}>
         <Editor
           staticResourcesUrl={import.meta.env.BASE_URL}
@@ -224,7 +232,7 @@ export function StructureEditor({
         />
       </div>
       <footer className="structure-editor-actions">
-        <span role="status">{status}</span>
+        <span role="status">{t(status)}</span>
         <div>
           <button
             className="secondary-button"
@@ -233,17 +241,17 @@ export function StructureEditor({
             disabled={!ready || busy}
           >
             <Eraser size={16} />
-            清空画板
+            {t("清空画板")}
           </button>
           <button
             className="primary-button"
             type="button"
             onClick={() => void applyStructure()}
             disabled={isStructureApplyDisabled({ ready, busy, hasStructure })}
-            title={!hasStructure && ready ? "请先在画板中绘制结构" : undefined}
+            title={!hasStructure && ready ? t("请先在画板中绘制结构") : undefined}
           >
             <Check size={16} />
-            应用到检索
+            {t("应用到检索")}
           </button>
         </div>
       </footer>

@@ -1,0 +1,85 @@
+.drug-header-section {
+  min-width: 0;
+}
+.drug-header-section .drug-profile-header {
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 14px;
+}
+.drug-header-section .drug-profile-symbol {
+  width: 46px;
+  height: 46px;
+}
+.drug-header-primary-metrics {
+  display: flex;
+  gap: 12px 24px;
+  margin: 18px 0 0;
+  padding-block: 12px;
+  border-block: 1px solid var(--ds-border-subtle);
+}
+.drug-header-primary-metrics > div {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 72px;
+  min-width: 0;
+}
+.drug-header-primary-metrics dt,
+.drug-header-secondary-metrics dt {
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-xs);
+}
+.drug-header-primary-metrics dd {
+  margin: auto 0 0;
+  padding-top: 4px;
+  font-size: var(--ds-text-md);
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.drug-header-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 44px;
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-xs);
+  cursor: pointer;
+  list-style: none;
+}
+.drug-header-details > summary::-webkit-details-marker {
+  display: none;
+}
+.drug-header-details > summary:focus-visible {
+  outline: 2px solid var(--ds-accent-strong);
+  outline-offset: 3px;
+  border-radius: var(--ds-radius-control);
+}
+.drug-header-details[open] > summary svg {
+  transform: rotate(180deg);
+}
+.drug-header-detail-content {
+  padding: 4px 0 12px;
+}
+.drug-header-secondary-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin: 0;
+}
+.drug-header-secondary-metrics > div {
+  flex: 1 1 150px;
+  min-width: 0;
+}
+.drug-header-secondary-metrics dd {
+  margin: 4px 0 0;
+  font-size: var(--ds-text-sm);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 620px) {
+  .drug-header-section .drug-profile-header {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+  .drug-header-section .drug-profile-symbol {
+    width: 40px;
+    height: 40px;
+  }
+}

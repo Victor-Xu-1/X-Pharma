@@ -1,6 +1,7 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs, Route, TestInfo } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
+import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyPipelineDrugEntityFilter(
   { page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">,
@@ -16,6 +17,7 @@ export async function verifyPipelineDrugEntityFilter(
   if (!credentials || !fixtureKeyBase || !pipelineDrugId) return;
 
   await page.goto("/");
+  await selectInterfaceLanguage(page, "zh-CN");
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();

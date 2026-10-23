@@ -1,5 +1,112 @@
 # Visual baseline reviews
 
+Current product version is owned by [pyproject.toml](../pyproject.toml), not by
+these dated captures. Each review retains its original version, revision and
+image hashes; a later numeric increment does not recapture or recertify it.
+
+## Reading layout: scoped mobile public-research summary
+
+PR96 head `0eb502ae91f1dfccb989bc071e0e6d58dc98c4de`, original CI
+`38109029074`, completed331passing browser cases and one mobile390 visual
+difference. Its actual/diff pair from artifact11691686469 and the old reference
+were individually inspected. The intended mobile disclosure now has a readable
+title/chevron row and a separate hint row; full-page height changes2608to2626px.
+Only `research-workbench-mobile-390.png` is adopted, from original SHA256
+`0b4b1aec8088232f8bb4dc6911624762cbb63bdf0083d19e09094eec43cd40a7`
+to `c09ed4eabd9cb9ccef1f617ce411e456ecbaf430f42c5cf989e94ac49ff1ba7c`.
+The old image, manifest and browser binding remain retained on E. The original
+sole generator recomputes the manifest; its other19image hashes remain unchanged.
+The same frozen Chrome155.0.8059.39 artifact is rebound to the new manifest,
+without changing its package/executable hashes, fonts, data, masks, row geometry,
+performance budgets or0.001tolerance. The failed run remains failed: a new exact-
+head six-gate run and subsequent exact-main deployment are still required.
+
+## Bilingual research controls: bounded source-summary rows
+
+PR58 head155259006f4b003e2410547c87123760d142ebb2/run37797681521
+completed160 passing cases and four intentional dense-results reference
+differences. Each actual/diff pair (1440,1920,1024,390) from11560468404 was
+individually inspected. Names, source summaries, types, identifiers, dates,
+selection/action controls and fixed68/46px natural rows remain present; name
+buttons now use a bounded two-line hierarchy, with original summaries visibly
+outside the unchanged unstable-match mask and match bounds inside their column.
+The earlier7bea images were rejected because their mask crossed the column and
+starved source summaries. These four corrected155 captures alone are adopted,
+old4/manifest/browser binding retained on E. Other16 hashes are unchanged;
+Chrome/fonts, geometry/virtualization checks, performance budgets and0.001
+tolerance are unchanged. The genuine source-summary red,47 unit consumers,
+16 real-data query states and two browser-only long-alias geometry/source-paint
+states pass; none substitutes for the new exact-head six-gate run or deployment.
+
+## English-first bilingual interface: subsequent reference review
+
+Exact follow-upfa2bf3092c0413a582419ccc67914276c04f01be/run37796732331
+completed163 passing cases and one mobile390 deal-rights crop difference566pixels.
+The old/actual/diff pair from11561037370 was inspected: rights type/territory,
+controlled masks, provenance absence and layout are unchanged. Only this one
+native controlled PNG is adopted and its predecessor/manifest/browser binding
+retained on E; the other19 hashes are unchanged. No tolerance/font/data/mask change.
+
+The same navigation flow stopped at its first visual difference, so successive
+runs exposed later crops serially. Its five existing screenshot assertions now
+collect differences with Playwright soft assertions: a difference still makes
+the test/run fail and emits its original artifacts, while later visual checks
+are reached. A bounded isolated two-screenshot harness recorded both failures,
+reached the following check and exited1. Functional, authorization, natural-row/
+column geometry, Web Vitals, masks and0.001 thresholds stay hard and unchanged;
+there is no failure waiver or broader manual scenario run. Exact-head required
+CI must still pass before merge or deployment.
+
+Exact follow-up `59298c0fe833b1e1017898f1d0ed3fa29c5d61dd`, run37788816529,
+again completed163 passing cases. Its sole failure was the mobile390 controlled
+trial-outcomes crop (2133 different pixels). Actual/diff artifact11557507705 and
+the old image were individually inspected: source result values, bounds,
+denominator, report identity and rights text are unchanged, with text-rendering
+differences rather than changed panels. Only that one PNG is adopted; other19
+hashes remain unchanged, old image/manifest/binding retained on E. Browser,
+fonts, masks, geometry assertions, budgets and0.001 tolerance are unchanged.
+This review is not a passing run or deployment receipt.
+
+Follow-up exact head `d1ddf0d57668c3725df7eaafdbe3e4e081f22f7c`, run
+`37783605092`: 163 browser cases passed; the only remaining failure was the
+mobile390 dense-results table-shell comparison, with 545 different pixels.
+Its actual/diff pair from artifact11554768306 was inspected alongside the old
+reference. Differences are confined to the toolbar text rasterization, not
+the table geometry, data, masks or controls. Only this one controlled PNG is
+adopted from that capture; the other19 hashes remain unchanged. The old PNG,
+manifest and browser binding are retained on E. The canonical generator updates
+the manifest and the unchanged Chrome artifact is rebound to its digest; no
+scenario, font, browser binary, performance budget or0.001 tolerance changes.
+That failed run remains failed; a new exact-head full gate must pass before merge.
+
+PR57 head `ae3908be0d3cef2b704636c6354c27b577638034`, exact CI
+`37774256194`, produced 133 passing browser cases and 31 failures. Twenty-eight
+were the seven existing Chinese, browser-fixture scenarios across four viewports
+that had not explicitly selected Chinese; their original assertions remain intact,
+and 14 focused desktop/mobile consumers pass after ordinary UI locale selection.
+The eight new English-first/persistence cases passed in that run.
+
+The other three failures were visual comparisons: the mobile390 full workbench,
+desktop1920 trial outcomes and tablet1024 deal rights. Their real Chrome155.0.8059.39
+actual/diff images were individually reviewed from Actions artifact11551458204.
+The new language control changes the workbench heading geometry; section content,
+all controlled values, full fields and masking remain present, with crop-position
+text rasterization differences in the two dossier sections. Only those three
+repository-owned controlled reference PNGs were updated from the exact captures.
+The previous PNGs, manifest and browser binding are retained in the maintainer's
+E-drive evidence. The other17 PNG hashes are unchanged; no claim of fresh captures
+for those images. The existing manifest generator recomputes registration and the
+same reviewed Chrome artifact consumes its new digest; browser package/executable,
+fonts, scenarios, performance budgets and0.001 pixel tolerance are unchanged.
+
+This review does not establish a passing rerun, MCP completion, actual deployment,
+scientific acceptance or full frontend quality closure. Those gates remain separate.
+
+Current software versions are owned by [`pyproject.toml`](../pyproject.toml)
+under [the PR-merge policy](../CONTRIBUTING.md#product-version-counter). Dated
+reviews retain their captured version, commit and image hashes; a later numeric
+increment does not refresh or recertify those captures.
+
 The current reference inventory is the 20-image research-first frontend craft review below.
 It retains the bounded natural-flow table implementation, not either former
 transform-rendering paint phase. The manifest owns all current image hashes.
@@ -403,3 +510,82 @@ The intermediate 94b90 reference is withdrawn rather than claimed as a
 product fix. The sole shared reflow implementation is retained so focused
 reproduction can use the actual official flow. Partial helper results must
 not replace complete-flow or actual automatic-CI acceptance evidence.
+
+## 2026-10-08: reachable narrow-table actions and one reviewed capture
+
+PR49 candidate `fac79944` unpins the identity column in containers at most
+640px wide, retaining the selection gutter. Real pointer activation and modal
+focus return passed five native widths; wide column pinning, row geometry,
+virtualization, preferences and all resource budgets remain intact.
+
+Automatic run `37724414411` passed 143/144 original browser cases. Its sole
+failure was 862 changed pixels in the mobile dense-table reference at the
+unchanged `0.001` tolerance. The actual, diff and old capture were reviewed
+side by side; names, controls, counts and row flow remain readable, with the
+name text raster changing after the intentional unpinning. The same rejection
+was reproduced with the original dense owner in a disposable SQLite gateway
+using 205 explicit synthetic fixtures and Chrome `155.0.8059.39`.
+
+Only `research-dense-results-mobile-390.png` is adopted from that original CI
+capture, SHA-256 `1bf9a466caa765fb9425de8412bbb2cced4f03140da399e528ffc426259e6977`.
+The other nineteen PNGs remain unchanged. The original manifest-generation
+block recomputes hashes; its new date does not imply twenty new captures.
+Frozen Chrome metadata is rebound to the manifest, without changing the
+browser version, package or executable digest. Masks, pixel/performance
+thresholds and required complete-flow CI are not relaxed.
+
+The standalone diagnostic also exposed a fast-first-input measurement gap:
+Chrome recorded a real interaction while the 16ms ordinary event observer
+reported none. The [Event Timing editor's draft](https://w3c.github.io/event-timing/)
+describes first-input entries outside that duration threshold. The probe now
+feeds those real entries through the same ID-deduplicated handler, retaining
+actual durations and zero when no interaction exists. The ineffective
+wait-only workaround was removed; no synthetic count, delay or timing is used
+to pass a gate. This is local browser-probe verification, not field P75, full
+WCAG, scientific/UAT or whole-product acceptance.
+
+## 2026-10-11: reviewed compact workspace and table reflow
+
+PR99 source `33e3120d93cffa2f3ed773964f40a033829d86aa` moves the one compact
+language control into the existing topbar and gives the page title its full
+width. Narrow tables remove only the empty-selection instruction from layout
+and use the accessibly named column icon until its configuration is opened.
+Existing data, selections, actions, column tracks and row geometry remain.
+
+Original CI `38120462673` finished with 291 full-stack browser instances passing
+in 34.2 minutes and one mobile workbench flow rejected by four soft screenshot
+comparisons. This was not another timeout; downstream MCP/load checks did not
+run and that CI remains failed. Official artifact `11696445218` was verified
+against ZIP SHA-256
+`9e7b7e5a2b966c7f2fdf169193dffc63d4668865a5de9188913650389df69af4`.
+Each previous, actual and diff image was inspected individually. The full-page
+capture has one topbar language control and a full-width heading; the dense
+table keeps every action and readable records in its shorter toolbar. The
+clinical-outcome and deal-rights crops retain their original controlled content
+and source fields. These are original CI fixtures, not real-data coverage claims.
+
+Only these four mobile references are adopted from that exact original run:
+
+- `research-workbench-mobile-390.png`: `2b415d4f94b407eeda453272e2a1d46ba9143c2acb153b8596b6020f7eec93f7`
+- `research-dense-results-mobile-390.png`: `26e5fa27cb27da1b427a10330dad0132d952e9ad2a0349aff6c7a47f7f5428e7`
+- `research-trial-outcomes-mobile-390.png`: `703ed83fe099c9b7aa7326890aacfe9224a215438173825db791b575b278bb94`
+- `research-deal-rights-mobile-390.png`: `a67aeccc644883a7cf002d7d580a2246cda5ad7e34a11786e0b07da2457526a7`
+
+The other sixteen PNG hashes are unchanged. Previous references, manifest and
+binding are retained in the E-drive review evidence. The sole original manifest
+generator binds these hashes to manifest SHA-256
+`39d6a5fd73dcec2d3995989dbd1ab85b2a8e38bf58ccc023ba36a3e4c72954f2`;
+its generation date does not mean twenty new captures. Chrome
+`155.0.8059.39`, package/executable digests, font installation, original masks,
+pixel tolerance `0.001`, all four projects, workers/retries and all performance
+budgets are unchanged. Fresh complete exact-head CI and main deployment remain
+required; this scoped reference maintenance is not release acceptance.
+
+The initial binding entry at `cf118f3` accidentally repeated one character.
+CI `38123320006` correctly rejected it before installing the browser. The
+existing actual-repository metadata test reproduced one failure with nine
+negative cases passing. The binding is corrected to the retained generator's
+64-character file digest above; no validator or browser selection is changed.
+The earlier 22 profile/pair checks did not include this metadata test and were
+insufficient evidence for the actual artifact binding. Subsequent focused
+verification reuses all three existing test modules and the original CLI.

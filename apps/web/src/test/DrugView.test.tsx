@@ -1,16 +1,13 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 
-import {
-  type DrugDossier,
-  type DrugProgramPage,
-  loadDrugDossier,
-  loadDrugPrograms,
-} from "../lib/contracts/drugDossier";
+import { type DrugProgramPage, loadDrugDossier, loadDrugPrograms } from "../lib/contracts/drugDossier";
+import { setLocale } from "../lib/i18n";
 import type { Entity } from "../lib/types";
 import type { DrugDossierSection } from "../lib/workspaceRouting";
 import { DrugView } from "../views/DrugView";
+import { drugDossierFixture as dossier, drug } from "./fixtures/drugDossier";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/drugDossier", () => ({
@@ -25,322 +22,6 @@ vi.mock("../components/MoleculeDepiction", () => ({
     <div role="img" aria-label={`${name} 结构图`} data-smiles={smiles} />
   ),
 }));
-
-const drug: Entity = {
-  id: "drug-1",
-  canonical_entity_id: "drug-1",
-  entity_type: "drug",
-  name: "VX-101",
-  description: "经治理的小分子候选药物",
-  external_ids: { chembl: "CHEMBL101" },
-  attributes: { modality: "small molecule" },
-  review_status: "verified",
-  created_at: "2026-07-20T08:00:00Z",
-  updated_at: "2026-07-25T08:00:00Z",
-};
-
-const dossier: DrugDossier = {
-  entity: {
-    ...drug,
-    canonical_entity_id: drug.id,
-    identity_identifiers: [],
-    review_status: "verified",
-  },
-  summary: {
-    program_count: 1,
-    target_count: 1,
-    indication_count: 1,
-    organization_count: 2,
-    modalities: ["small molecule"],
-    highest_phase: "phase_2",
-    highest_global_phase: "phase_2",
-    highest_china_phase: "phase_1",
-    latest_status_date: "2026-07-24T00:00:00Z",
-  },
-  relationships: [],
-  activities: [],
-  programs: [
-    {
-      id: "program-1",
-      drug_entity_id: drug.id,
-      drug_name: drug.name,
-      target_entity_id: "target-1",
-      target_name: "EGFR",
-      disease_entity_id: "disease-1",
-      disease_name: "非小细胞肺癌",
-      organization_entity_id: "organization-1",
-      organization_name: "Vector Pharma",
-      modality: "small molecule",
-      mechanism_of_action: "EGFR inhibitor",
-      phase: "phase_2",
-      global_phase: "phase_2",
-      china_phase: "phase_1",
-      global_phase_started_at: "2026-06-01T00:00:00Z",
-      china_phase_started_at: "2025-03-01T00:00:00Z",
-      program_status: "active",
-      status_detail: "active",
-      status_date: "2026-07-24T00:00:00Z",
-      geography: "global",
-      therapeutic_area: "肿瘤",
-      innovation_type: "first_in_class",
-      drug_category: "chemical_drug",
-      development_rights_regions: ["Global"],
-      commercialization_rights_regions: ["Greater China"],
-      program_tags: ["first_in_class"],
-      organizations: [
-        {
-          entity_id: "organization-1",
-          name: "Vector Pharma",
-          role: "originator",
-          country_region: "CN",
-          organization_type: "biopharma",
-          position: 0,
-        },
-        {
-          entity_id: "organization-2",
-          name: "Strategic Bio",
-          role: "collaborator",
-          country_region: "US",
-          organization_type: "biotech",
-          position: 1,
-        },
-      ],
-      status_history: [
-        {
-          effective_at: "2025-03-01T00:00:00Z",
-          geography: "China",
-          phase: "phase_1",
-          status: "active",
-          reason: "中国 I 期进入首例受试者",
-        },
-      ],
-      source_document_id: "document-1",
-      milestones: [
-        {
-          milestone_type: "phase_started",
-          occurred_at: "2026-07-24T00:00:00Z",
-          title: "全球 II 期启动",
-          geography: "global",
-        },
-      ],
-    },
-  ],
-  clinical_trials: [
-    {
-      id: "trial-1",
-      entity_id: "trial-entity-1",
-      registry_name: "ClinicalTrials.gov",
-      registry_id: "NCT01234567",
-      official_title: "VX-101 randomized Phase II study in EGFR-positive NSCLC",
-      acronym: "VECTOR-2",
-      initiation_type: "ist",
-      therapy_lines: ["second_line"],
-      overall_status: "COMPLETED",
-      phases: ["PHASE2"],
-      study_type: "INTERVENTIONAL",
-      enrollment: 184,
-      start_date: "2024-01-12T00:00:00Z",
-      start_date_precision: "day",
-      completion_date: "2026-04-30T00:00:00Z",
-      completion_date_precision: "day",
-      interventions: [
-        { name: "VX-101", type: "DRUG", description: null, arm_labels: ["VX-101"], other_names: [] },
-        { name: "Carboplatin", type: "DRUG", description: null, arm_labels: ["Combination"], other_names: [] },
-      ],
-      conditions: ["EGFR-positive non-small cell lung cancer"],
-      sponsors: [{ name: "Vector Pharma", sponsor_class: "INDUSTRY" }],
-      outcomes: [
-        {
-          outcome_type: "PRIMARY",
-          measure: "Objective response rate",
-          description: null,
-          time_frame: "24 weeks",
-          results: [
-            {
-              group_label: "VX-101 combination",
-              value: "68.0",
-              unit: "%",
-              participants: 92,
-              dispersion: null,
-              lower_limit: null,
-              upper_limit: null,
-            },
-          ],
-          statistical_analyses: [],
-        },
-      ],
-      locations: [],
-      study_design: {},
-      eligibility: {},
-      arms: [],
-      status_history: [],
-      has_results: true,
-      result_evaluation: "positive",
-      results_first_posted: "2026-05-18T00:00:00Z",
-      last_update_posted: "2026-05-20T00:00:00Z",
-      source_document_id: "document-trial-1",
-      linked_entities: [
-        { id: drug.id, name: drug.name, entity_type: "drug" },
-        { id: "target-1", name: "EGFR", entity_type: "target" },
-      ],
-      entity_roles: [
-        { entity_id: drug.id, name: drug.name, entity_type: "drug", role: "investigational_drug" },
-        { entity_id: "drug-2", name: "Carboplatin", entity_type: "drug", role: "combination_drug" },
-        { entity_id: "target-1", name: "EGFR", entity_type: "target", role: "investigational_target" },
-      ],
-      key_result_count: 1,
-      latest_result_disclosure: {
-        id: "disclosure-1",
-        disclosure_key: "ASCO-2026-VECTOR-2",
-        version: 1,
-        disclosure_type: "conference_presentation",
-        external_id: "ASCO-2026-9001",
-        title: "VECTOR-2 primary analysis",
-        disclosed_at: "2026-05-31T00:00:00Z",
-        conference_name: "ASCO 2026",
-        is_key_result: true,
-        result_evaluation: "positive",
-        source_locator: "Abstract 9001",
-        source_quote: null,
-        source_document_id: "document-disclosure-1",
-      },
-    },
-  ],
-  patents: [],
-  deals: [
-    {
-      id: "deal-1",
-      entity_id: "deal-entity-1",
-      name: "VX-101 Global License",
-      deal_type: "license",
-      status: "active",
-      direction: "outbound",
-      direction_reference_jurisdiction: "US",
-      announced_at: "2026-06-20T00:00:00Z",
-      terminated_at: null,
-      source_updated_at: "2026-07-25T00:00:00Z",
-      parties: [],
-      asset_entity_ids: [drug.id],
-      territory: "Global",
-      upfront_amount: 25_000_000,
-      total_potential_amount: 500_000_000,
-      currency: "USD",
-      terms: { milestone_basis: "development and commercialization" },
-      source_document_id: "document-deal-1",
-      party_entities: [
-        { id: "organization-1", name: "Vector Pharma", entity_type: "organization" },
-        { id: "organization-2", name: "Strategic Bio", entity_type: "organization" },
-      ],
-      asset_entities: [{ id: drug.id, name: drug.name, entity_type: "drug" }],
-      party_roles: [
-        {
-          id: "organization-1",
-          name: "Vector Pharma",
-          entity_type: "organization",
-          role: "licensor",
-          country_region: "US",
-          organization_type: "biopharma",
-        },
-        {
-          id: "organization-2",
-          name: "Strategic Bio",
-          entity_type: "organization",
-          role: "licensee",
-          country_region: "CN",
-          organization_type: "biotech",
-        },
-      ],
-      asset_stages: [
-        {
-          id: drug.id,
-          name: drug.name,
-          entity_type: "drug",
-          development_phase_at_transaction: "phase_2",
-          current_development_phase: "phase_2",
-          current_phase_as_of: "2026-07-24T00:00:00Z",
-        },
-      ],
-      rights: [
-        {
-          id: "right-1",
-          holder_entity_id: "organization-2",
-          holder_name: "Strategic Bio",
-          right_type: "commercialization",
-          territory: "Greater China",
-          exclusive: true,
-          scope_description: "VX-101 独家商业化权益",
-          source_document_id: "document-deal-1",
-        },
-      ],
-    },
-  ],
-  regulatory_events: [
-    {
-      id: "regulatory-1",
-      subject_entity_id: drug.id,
-      subject_entity: { id: drug.id, name: drug.name, entity_type: "drug" },
-      agency: "FDA",
-      jurisdiction: "US",
-      event_identifier: "NDA-VX-101-APPROVAL",
-      application_number: "NDA 219999",
-      event_type: "approval",
-      status: "approved",
-      title: "VX-101 approved for EGFR-positive NSCLC",
-      decision_date: "2026-07-15T00:00:00Z",
-      designation_type: null,
-      label_change_type: null,
-      label_version: null,
-      label_effective_at: null,
-      approved_population: "Adults with EGFR-positive non-small cell lung cancer",
-      line_of_therapy: "second_line",
-      biomarker: "EGFR exon 20 insertion",
-      route_of_administration: "oral",
-      dosage_form: "tablet",
-      has_boxed_warning: null,
-      safety_signal_type: null,
-      safety_term: null,
-      safety_severity: null,
-      safety_status: null,
-      safety_identified_at: null,
-      safety_confirmed_at: null,
-      safety_resolved_at: null,
-      affected_population: null,
-      risk_actions: [],
-      source_updated_at: "2026-07-16T00:00:00Z",
-      indication_entity_id: "disease-1",
-      indication_entity: { id: "disease-1", name: "非小细胞肺癌", entity_type: "disease" },
-      organization_entity_id: "organization-1",
-      organization_entity: { id: "organization-1", name: "Vector Pharma", entity_type: "organization" },
-      details: {},
-      source_document_id: "document-regulatory-1",
-    },
-  ],
-  news_events: [],
-  structures: [
-    {
-      id: "structure-1",
-      entity_id: drug.id,
-      canonical_smiles: "CCO",
-      isomeric_smiles: null,
-      standard_inchi: null,
-      standard_inchi_key: "LFQSCWFLJHTTHZ-UHFFFAOYSA-N",
-      molecular_formula: "C2H6O",
-      molecular_weight: 46.07,
-      exact_mass: 46.04,
-      fingerprint_version: "morgan-v1",
-      standardization_version: "rdkit-v1",
-      structure_version: "1",
-    },
-  ],
-  target_evidence: [],
-  coverage: [
-    { domain: "programs", total: 1, returned: 1, status: "available", note: "已返回当前匹配记录" },
-    { domain: "structures", total: 1, returned: 1, status: "available", note: "已返回标准结构" },
-    { domain: "activities", total: 0, returned: 0, status: "not_observed", note: "当前未观察到" },
-  ],
-  as_of: "2026-07-25T12:00:00Z",
-  warnings: ["未观察到记录不代表全球不存在。"],
-};
 
 function makeProgramPage(offset = 0, items = dossier.programs, total = dossier.summary.program_count): DrugProgramPage {
   return {
@@ -406,9 +87,70 @@ function renderDrugView(
 }
 
 beforeEach(() => {
+  setLocale("zh-CN");
   vi.clearAllMocks();
   vi.mocked(loadDrugDossier).mockResolvedValue(dossier);
   vi.mocked(loadDrugPrograms).mockResolvedValue(makeProgramPage());
+});
+
+it("keeps three primary drug metrics and complete secondary facts in a language-stable disclosure", async () => {
+  const aliases = [
+    "SOURCE-CODE-1",
+    "SOURCE-CODE-2",
+    "SOURCE-CODE-3",
+    "SOURCE-CODE-4",
+    "SOURCE-CODE-5",
+    "SOURCE-CODE-6",
+    "原始代号 / Source alias",
+  ];
+  vi.mocked(loadDrugDossier).mockResolvedValueOnce({ ...dossier, entity: { ...dossier.entity, aliases } });
+  renderDrugView();
+  const header = await screen.findByRole("region", { name: "药物档案摘要" });
+  expect(header.querySelectorAll(".drug-header-primary-metrics > div")).toHaveLength(3);
+  expect(within(header).getByText("II 期临床 / I 期临床")).toBeInTheDocument();
+  const details = header.querySelector<HTMLDetailsElement>(".drug-header-details");
+  if (!details) throw new Error("Secondary drug identity disclosure is required");
+  expect(details).not.toHaveAttribute("open");
+  expect(within(header).getByText("1 / 1")).toBeInTheDocument();
+  expect(within(details).getByText("2", { exact: true })).toBeInTheDocument();
+  expect(within(details).getByText("2026/07/24")).toBeInTheDocument();
+  for (const alias of aliases) expect(within(details).getByText(alias, { exact: true })).toBeInTheDocument();
+  details.open = true;
+  const moreAliases = details.querySelector<HTMLDetailsElement>(".entity-names details");
+  if (!moreAliases) throw new Error("The complete alias disclosure is required");
+  moreAliases.open = true;
+  act(() => setLocale("en"));
+  expect(screen.getByRole("region", { name: "Drug profile summary" })).toBe(header);
+  expect(details).toHaveAttribute("open");
+  expect(moreAliases).toHaveAttribute("open");
+  expect(within(header).getByText("原始代号 / Source alias", { exact: true })).toBeVisible();
+  expect(within(header).getByText("Phase II / Phase I")).toBeInTheDocument();
+  expect(loadDrugDossier).toHaveBeenCalledTimes(1);
+  expect(loadDrugPrograms).not.toHaveBeenCalled();
+});
+
+it("preserves unknown source phases and never turns a missing status date into the query time", async () => {
+  // Deliberately unvalidated future transport data; do not widen the generated API enum.
+  const sourceSummary: typeof dossier.summary = JSON.parse(
+    JSON.stringify({
+      ...dossier.summary,
+      highest_phase: "SOURCE_PHASE_X",
+      highest_global_phase: null,
+      highest_china_phase: null,
+      latest_status_date: null,
+    }),
+  );
+  vi.mocked(loadDrugDossier).mockResolvedValueOnce({
+    ...dossier,
+    summary: sourceSummary,
+  });
+  renderDrugView();
+  const header = await screen.findByRole("region", { name: "药物档案摘要" });
+  expect(within(header).getByText("SOURCE_PHASE_X", { exact: true })).toBeInTheDocument();
+  const details = header.querySelector(".drug-header-details");
+  if (!details) throw new Error("Secondary drug identity disclosure is required");
+  expect(within(details as HTMLElement).getByText("--", { exact: true })).toBeInTheDocument();
+  expect(details).not.toHaveTextContent(dossier.as_of);
 });
 
 it("loads the governed drug dossier and exposes cross-domain overview actions", async () => {
@@ -457,7 +199,7 @@ it("loads the governed drug dossier and exposes cross-domain overview actions", 
   fireEvent.click(within(progress).getByRole("button", { name: "EGFR" }));
   expect(onOpenTarget).toHaveBeenCalledWith("target-1");
 
-  fireEvent.click(screen.getByRole("button", { name: "非小细胞肺癌" }));
+  fireEvent.click(within(progress).getByRole("button", { name: "非小细胞肺癌" }));
   expect(onOpenDisease).toHaveBeenCalledWith("disease-1");
   fireEvent.click(screen.getByRole("button", { name: "Strategic Bio" }));
   expect(onOpenOrganization).toHaveBeenCalledWith("organization-2");
@@ -657,7 +399,7 @@ it("presents governed clinical outcomes, role entities and trial design details"
 
   const trials = screen.getByRole("table", { name: "药物关联临床试验" });
   expect(trials).toHaveTextContent("已完成");
-  expect(trials).toHaveTextContent("申办方发起（IST）");
+  expect(trials).toHaveTextContent("IST（申办方发起）");
   expect(trials).toHaveTextContent("VX-101、Carboplatin");
   expect(trials).toHaveTextContent("Vector Pharma");
   expect(trials).toHaveTextContent("184");
@@ -692,8 +434,8 @@ it("presents governed deal parties, asset stages and rights without inferring fi
   expect(deals).toHaveTextContent("许可方 · 美国 · biopharma");
   expect(deals).toHaveTextContent("被许可方 · 中国 · biotech");
   expect(deals).toHaveTextContent("交易时 II 期临床 · 当前 II 期临床 · 2026/07/24");
-  expect(deals).toHaveTextContent("首付款 USD 25.0M");
-  expect(deals).toHaveTextContent("潜在总额 USD 500.0M");
+  expect(deals).toHaveTextContent("首付款 USD 25,000,000");
+  expect(deals).toHaveTextContent("潜在总额 USD 500,000,000");
 
   const rights = screen.getByRole("table", { name: "药物交易权益归属" });
   expect(rights).toHaveTextContent("Strategic Bio");
