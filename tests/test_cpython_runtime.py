@@ -14,9 +14,7 @@ def test_cpython_security_runtime_is_pinned_without_superseded_overlays() -> Non
         dockerfile = (root / relative).read_text()
         assert dockerfile.count(reference) == stages
         python_bases = [
-            line.split()[1]
-            for line in dockerfile.splitlines()
-            if line.startswith("FROM ") and "python:" in line
+            line.split()[1] for line in dockerfile.splitlines() if line.startswith("FROM ") and "python:" in line
         ]
         assert len(python_bases) == stages
         assert all(base == f"${{DOCKER_LIBRARY_REGISTRY}}/{reference}" for base in python_bases)
