@@ -35,6 +35,6 @@ def search_projection_status(principal: PrincipalDep) -> SearchProjectionStatusR
         cluster_name=status_snapshot.cluster_name,
         cluster_status=status_snapshot.cluster_status,
         aliases=status_snapshot.aliases,
-        deliveries=consumer.delivery_counts(),
+        deliveries=consumer.delivery_counts(principal.tenant_id),
         error=status_snapshot.error,
     )
