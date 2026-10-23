@@ -66,6 +66,8 @@ ORM 的公共入口是 `models/__init__.py`，只聚合显式导出；领域表�
 
 ## 本次整理
 
+前端所有安装入口共用 `apps/web/pnpm-workspace.yaml` 的 `optimisticRepeatInstall: false`。固定 pnpm 的温热目录快路径可能在依赖清单与已提交锁不一致时提前成功；禁用该快路径后，原 `--frozen-lockfile` 必须真实拒绝旧锁。`test_frontend_lock_policy.py` 守护这个唯一策略，不变更安全 overrides、固定工具版本或测试门槛。
+
 覆盖率配置由 `pyproject.toml` 的 `[tool.coverage.run]` 唯一拥有。pytest-cov 7 不再内置采集子进程，因此显式启用 coverage 的 `subprocess` patch；不新增第二份配置或改变原 CI 的 80% 门槛。`test_subprocess_coverage_contract.py` 使用这份真实配置运行独立父/子 Python 夹具，必须采集两侧全部四行并达到 100%，不能以空报告或只采集父进程代替。
 
 证据查证使用独立的双语目录；`evidencePresentation` 仅格式化界面定位标签和安全来源链接，`EvidenceRecord` 拥有原文预览/展开与引用卡片。旧视图内联呈现已退出。证据域名、归属说明、文档名、引文内容、URL 与坐标值始终保留来源原值；界面语言切换不提交查询、不改写草稿、当前定位或研究 URL。原真实引证连续性用例增加语言验证，独立受控用例验证英文初访、中文持久化及原文保持，均不替代真实授权检索。
