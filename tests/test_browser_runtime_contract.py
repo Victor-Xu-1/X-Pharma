@@ -344,7 +344,10 @@ def test_browser_acceptance_uses_bounded_assertions_without_retries() -> None:
 
     assert "retries: 0" in config
     assert "expect: { timeout: 10_000 }" in config
-    assert 'snapshotPathTemplate: "{testDir}/visual-baselines/{arg}-{projectName}{ext}"' in config
+    assert "snapshotPathTemplate: snapshotReviewDirectory" in config
+    assert ': "{testDir}/visual-baselines/{arg}-{projectName}{ext}"' in config
+    assert 'snapshotReviewMode !== "capture"' in config
+    assert "isAbsolute(snapshotReviewDirectory)" in config
     assert 'name: "desktop-1440"' in config
     assert 'name: "desktop-1920"' in config
     assert 'name: "tablet-1024"' in config
