@@ -57,9 +57,8 @@ def test_both_browser_jobs_use_the_same_pinned_setup_without_adding_a_gate() -> 
         assert len(preparations) == 1
         setup = preparations[0]
         assert setup.get("working-directory", ".") == "."
-        assert setup["env"]["VISUAL_PROFILE_REVIEW"] == (
-            "${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}"
-        )
+        # Updating UI snapshots must not select an unreviewed browser or font profile.
+        assert "VISUAL_PROFILE_REVIEW" not in setup.get("env", {})
         assert "if" not in setup and not setup.get("continue-on-error", False)
         uv = next(step for step in steps if step.get("name") == "Install pinned uv and Python")
         assert uv["uses"] == "astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b"

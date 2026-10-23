@@ -323,6 +323,21 @@ def test_ci_installs_branded_chrome_instead_of_playwright_chromium() -> None:
     assert "playwright install --with-deps chromium" not in workflow + ci_setup
 
 
+def test_ui_baseline_refresh_keeps_the_committed_browser_identity() -> None:
+    root = Path(__file__).parents[1]
+    workflow = (root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    setup = (root / "scripts/prepare-ci-browser.sh").read_text(encoding="utf-8")
+
+    assert workflow.count("bash scripts/prepare-ci-browser.sh") == 3
+    assert "VISUAL_PROFILE_REVIEW" not in workflow
+    assert (
+        "REFRESH_VISUAL_BASELINES: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}"
+        in workflow
+    )
+    assert "visual_profile_review=${VISUAL_PROFILE_REVIEW:-false}" in setup
+    assert "chrome_args=(--reviewed)" in setup
+
+
 def test_browser_acceptance_uses_bounded_assertions_without_retries() -> None:
     root = Path(__file__).parents[1]
     config = (root / "apps" / "web" / "playwright.config.ts").read_text(encoding="utf-8")

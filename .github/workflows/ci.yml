@@ -188,8 +188,6 @@ jobs:
       - run: pnpm audit --audit-level high
       - name: Prepare isolated account browser
         working-directory: .
-        env:
-          VISUAL_PROFILE_REVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
         run: |
           uv sync --locked --dev
           bash scripts/prepare-ci-browser.sh
@@ -235,8 +233,6 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - name: Install locked browser dependencies
-        env:
-          VISUAL_PROFILE_REVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
         run: |
           uv sync --locked --dev
           pnpm --dir apps/web install --frozen-lockfile
@@ -316,8 +312,6 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - name: Install test clients
-        env:
-          VISUAL_PROFILE_REVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
         run: |
           uv sync --locked --dev
           pnpm --dir apps/web install --frozen-lockfile
