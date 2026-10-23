@@ -1,7 +1,8 @@
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
-import { type FormEvent, useEffect, useId, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import { uiFeedback, useLocale } from "../lib/i18n";
 import { queryText as t } from "../lib/i18n/query";
+import { revealHorizontalItem, useHorizontalActiveItem } from "../lib/useHorizontalActiveItem";
 
 type PageToken = number | { key: string };
 
@@ -43,6 +44,13 @@ export function ResultPagination({
   const validationMessage = invalidPage ? t("请输入 1 到 {pages} 之间的页码", { pages: totalPages }) : "";
   const validationId = useId();
   const pageTokens = useMemo(() => visiblePages(currentPage, totalPages), [currentPage, totalPages]);
+  const pageRailRef = useRef<HTMLFieldSetElement>(null);
+  const currentPageRef = useRef<HTMLButtonElement>(null);
+  const pageItems = useMemo(
+    () => pageTokens.flatMap((token) => (typeof token === "number" ? [{ key: String(token) }] : [])),
+    [pageTokens],
+  );
+  useHorizontalActiveItem(pageRailRef, currentPageRef, pageItems, String(currentPage));
 
   useEffect(() => {
     setDraftPage(String(currentPage));
@@ -100,7 +108,7 @@ export function ResultPagination({
         >
           <ChevronLeft size={16} />
         </button>
-        <fieldset className="domain-pagination-pages">
+        <fieldset className="domain-pagination-pages" ref={pageRailRef}>
           <legend className="sr-only">{t("页码")}</legend>
           {pageTokens.map((token) =>
             typeof token !== "number" ? (
@@ -114,6 +122,10 @@ export function ResultPagination({
                 aria-current={token === currentPage ? "page" : undefined}
                 aria-label={t("第 {page} 页", { page: token })}
                 key={token}
+                ref={token === currentPage ? currentPageRef : undefined}
+                onFocus={(event) => {
+                  if (pageRailRef.current) revealHorizontalItem(pageRailRef.current, event.currentTarget);
+                }}
                 onClick={() => goToPage(token)}
               >
                 {token}
