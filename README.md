@@ -6,6 +6,8 @@
 
 X-Pharma brings pharmaceutical research, source evidence, and governed data into one workbench, with a shared MCP interface for agents.
 
+The interface starts in English and supports switching between English and Chinese while retaining an explicit language choice.
+
 从药物、靶点到临床试验、专利和交易，在同一个工作台中寻找线索、关联信息并核对证据。研究人员与 Agent 可以围绕相同的数据、来源和权限开展工作。
 
 ![X-Pharma 概念示意：将药物、靶点、临床试验、专利与来源证据连接到统一研究工作台](docs/assets/readme-hero.png)
@@ -46,7 +48,15 @@ X-Pharma 支持 Linux x86-64 和 WSL2 Linux 环境。按[快速开始](docs/gett
 
 当前为开发版本，数据覆盖取决于实际接入且获授权的来源，单次同步不代表全库覆盖。企业部署和真实 AI/OCR 需在目标环境验证；AI 默认关闭，启用第三方服务前需明确确认费用与资料外发权限。
 
+源码仓库不是开箱即用的离线发行包。离线迁移需要单独打包并验收容器镜像、依赖、获准模型及运行数据；不能用下载源码替代完整迁移。
+
 研究与模型输出需要回到来源核实，不能据此宣称药物有效、安全或具备临床适用性。
+
+## 开发、部署与升级
+
+- 从[代码责任与调用链](docs/codebase-guide.md)和[系统架构](docs/architecture.md)开始；按[贡献与版本计数规则](CONTRIBUTING.md#product-version-counter)提交改动。`pyproject.toml` 是唯一产品版本源，不在功能分支手动递增版本。
+- [部署说明](docs/deployment.md)、[备份与恢复](runbooks/recovery.md)和[发布验收证据](docs/release-evidence.md)分别说明运行配置、恢复边界和交付门禁。PR 合并、构建成功或概念插图都不是生产部署验收。
+- [账号与组织](docs/accounts-and-organizations.md)、[来源接入](runbooks/source-onboarding.md)和[第三方声明](THIRD_PARTY_NOTICES.md)说明身份、数据授权与再分发边界。
 
 ## 许可证
 

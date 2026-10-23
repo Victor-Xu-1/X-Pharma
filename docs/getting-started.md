@@ -2,17 +2,36 @@
 
 使用 Linux x86-64 或 WSL2 Linux 环境，并将源码放在 Linux 原生文件系统。准备 Linux Docker Engine/Compose、Python 3.13.16、uv 0.11.28、Node.js 24.14、Corepack/pnpm 11.7.0、Git 与 Make。
 
+先阅读 [WSL 环境说明](wsl-development.md)。本机 E 盘工作区须先确认发行版磁盘确实位于 E 盘；下例中的源码、缓存和临时目录均在该发行版的 Linux 文件系统内，不复制到 C 盘。其他 Linux 主机可选用自己的可写 Linux 原生目录。
+
 ```bash
-git clone https://github.com/Victor-Xu-1/X-Pharma.git
-cd X-Pharma
+mkdir -p /srv/wsl/projects /srv/wsl/cache/uv /srv/wsl/cache/x-pharma/corepack /srv/wsl/cache/npm /srv/wsl/tmp
+git clone https://github.com/Victor-Xu-1/X-Pharma.git /srv/wsl/projects/x-pharma
+cd /srv/wsl/projects/x-pharma
+export UV_CACHE_DIR=/srv/wsl/cache/uv
+export COREPACK_HOME=/srv/wsl/cache/x-pharma/corepack
+export npm_config_cache=/srv/wsl/cache/npm
+export TMPDIR=/srv/wsl/tmp
 uv sync --locked --dev
 corepack pnpm@11.7.0 --dir apps/web install --frozen-lockfile
 make configure
+```
+
+仅 WSL 环境继续准备固定版本的 kubectl、Google Chrome 并执行原 WSL 预检；原生 Linux 主机不运行 WSL 内核检查：
+
+```bash
+make wsl-tools
+make wsl-check
+```
+
+完成所属环境的准备后启动并检查服务：
+
+```bash
 make up-observed
 make status
 ```
 
-首次启动需要网络下载或构建镜像。`make configure` 创建独立随机密钥与私有配置，不覆盖已有配置。没有预设账号或密码；AI 默认关闭。WSL 用户还需按 [环境准备说明](wsl-development.md)完成工具安装与预检。
+首次启动需要网络下载或构建镜像。`make configure` 创建独立随机密钥与私有配置，不覆盖已有配置。没有预设账号或密码；AI 默认关闭。`make wsl-tools` 与 `make wsl-check` 先准备并检查 Linux 工具边界，失败时先排查，不跳过预检启动服务。
 
 创建自己的开发账号：
 
@@ -32,6 +51,9 @@ unset ADMIN_PASSWORD
 
 仓库不包含业务数据库、模型或商业数据。新环境需要自行接入获授权的来源。
 
+## 离线与已有环境
+
+这份源码安装流程不是离线迁移包；完全断网的目标需要事先准备并单独验收容器镜像、依赖、获准资源和备份数据。已有环境先核实服务、配置和备份身份，不重复执行初始化或覆盖 `.env`，也不为恢复服务重新注册账号。
 
 ## 数据与安全
 
