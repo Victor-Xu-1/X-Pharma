@@ -141,15 +141,12 @@ def test_missing_or_wrong_target_never_creates_resources(
 
 def test_restore_runs_only_exact_local_images_and_probes_the_actual_cartridge() -> None:
     source = (ROOT / "scripts" / "restore-smoke-linux.sh").read_text(encoding="utf-8")
-    runs = [
-        line
-        for line in source.splitlines()
-        if line.startswith("docker run ") or line.lstrip().startswith("docker run ")
-    ]
+    runs = [line for line in source.splitlines() if "docker run " in line]
     assert len(runs) == 4
     assert all("--pull=never" in line for line in runs)
     assert '"$restored_postgres_image_id" >/dev/null' in runs[0]
     assert '"$api_image_id" pharma-verify-rls' in runs[1]
+    assert '--name "$probe_container"' in runs[1] and "--rm" not in runs[1]
     assert "SELECT mol_to_smiles(mol_from_smiles('CCO'))" in source
     assert '[[ "$rdkit_probe" == CCO ]]' in source
     assert '"backup_postgres_image_id": backup_postgres' in source
@@ -164,3 +161,18 @@ def test_release_backup_verifies_target_before_quiescing_and_preserves_restore_i
     assert 'restore_arguments+=(--postgres-image-id "$postgres_image_id")' in source
     assert '"rdkit_function_probe": restore["rdkit_function_probe"]' in source
     assert '"restored_postgres_image_id": restore["restored_postgres_image_id"]' in source
+
+
+def test_restore_requires_bounded_explicit_resource_cleanup_before_reporting_success() -> None:
+    source = (ROOT / "scripts" / "restore-smoke-linux.sh").read_text(encoding="utf-8")
+    assert 'probe_container="$container-rls"' in source
+    assert 'timeout --kill-after=10s 120s docker run --pull=never --name "$probe_container"' in source
+    assert source.index("cleanup || {") < source.index('python3 - "$backup" "$tables_verified"')
+    assert 'source "$root/scripts/lib/restore_smoke_resources.sh"' in source
+
+
+def test_restore_workspace_follows_the_explicit_temp_parent_without_a_tmp_only_cleanup() -> None:
+    source = (ROOT / "scripts" / "restore-smoke-linux.sh").read_text(encoding="utf-8")
+    assert 'temp_parent=$(realpath -e -- "${TMPDIR:-/tmp}")' in source
+    assert 'work_dir=$(mktemp -d "$temp_parent/pharma-restore-smoke.XXXXXX")' in source
+    assert 'case "$work_dir" in' not in source

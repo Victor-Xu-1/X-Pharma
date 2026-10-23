@@ -27,7 +27,7 @@
 
 入口、领域、持久化和适配器各自负责一层。新增规则进入对应领域模块，不能在 UI、路由和 MCP 重复实现。数据流见 [architecture.md](architecture.md)。
 
-`scripts/restore-smoke-linux.sh` 唯一拥有隔离恢复及可选不可变 PostgreSQL 目标镜像验证；`verify-local-backup-restore.sh` 只负责权威快照、短暂写入静止与恢复、调用该实现并发布无凭据的摘要。目标必须本机存在，始终保留原备份镜像身份、逐表行数、RLS 和归档合同；两条入口不部署目标，不修改在线卷。共享数据库身份仍由 `scripts/lib/runtime_backup_manifest.py` 解析，不能另建一条猜测角色或绕过恢复检查的升级链路。
+`scripts/restore-smoke-linux.sh` 唯一拥有隔离恢复及可选不可变 PostgreSQL 目标镜像验证；`verify-local-backup-restore.sh` 只负责权威快照、短暂写入静止与恢复、调用该实现并发布无凭据的摘要。目标必须本机存在，始终保留原备份镜像身份、逐表行数、RLS 和归档合同；两条入口不部署目标，不修改在线卷。共享数据库身份仍由 `scripts/lib/runtime_backup_manifest.py` 解析，不能另建一条猜测角色或绕过恢复检查的升级链路。`scripts/lib/restore_smoke_resources.sh` 单独拥有严格校验、有界删除和删除后的容器/卷清单复核；只接受同一隔离运行的完整资源组合与真实临时父目录。原内联静默清理退出，清理不完整不得输出通过报告，也不自动重启共享服务。
 
 通用 `EntityDossierView` 在呈现或修正分节前，必须核对返回档案与请求实体的 ID 和类型；身份不一致只开放显式重试，不展示另一实体的记录，也不据此修改当前深链。`locationModel.specializedResearchView` 为四类专业实体的唯一视图分派，未知类型保留通用档案；`EntityRoute` 在已确认身份、等待现有导航提交时不挂载竞争的通用档案，避免缓存返回导航额外启动通用公司档案和时间线读取。既有 URL、分节映射和专业来源身份警告不变。公司时间线独立核对请求公司身份：错误归属或明确 401/403 时，不将缓存计数、日期和事件交给展示模块；暂时性 503 保留原授权快照并显示错误。`CompanyIntelligence` 的时间线日期只取自该时间线，缺失时明确显示缺失，不借用档案查询时间。服务器 RLS、查询键和来源事实权威不变。
 
