@@ -33,10 +33,10 @@ jobs:
         run: uv sync --locked --dev
       - name: Lint and format gate
         run: |
-          uv run ruff format --check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/run_controlled_browser_acceptance.py
-          uv run ruff check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/run_controlled_browser_acceptance.py
+          uv run ruff format --check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/browser_snapshot_review.py scripts/browser_snapshot_cli.py scripts/run_controlled_browser_acceptance.py
+          uv run ruff check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/browser_snapshot_review.py scripts/browser_snapshot_cli.py scripts/run_controlled_browser_acceptance.py
       - name: Strict typing gate
-        run: uv run mypy src tests scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/run_controlled_browser_acceptance.py
+        run: uv run mypy src tests scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/browser_snapshot_review.py scripts/browser_snapshot_cli.py scripts/run_controlled_browser_acceptance.py
       - name: OpenAPI 3.1.2 drift gate
         run: uv run pharma-openapi --check
       - name: Unit and service tests

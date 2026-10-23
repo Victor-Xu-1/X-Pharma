@@ -69,6 +69,16 @@ def test_capture_selection_is_reserved_for_explicit_updates_and_cannot_emit_rele
     assert "snapshotReviewMode" in config and "isAbsolute(snapshotReviewDirectory)" in config
 
 
+def test_capture_policy_remains_in_the_original_format_lint_and_strict_type_gates() -> None:
+    workflow = cast(dict[str, Any], yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text()))
+    steps = workflow["jobs"]["backend"]["steps"]
+    lint = next(step["run"] for step in steps if step.get("name") == "Lint and format gate")
+    strict = next(step["run"] for step in steps if step.get("name") == "Strict typing gate")
+    for filename in ("scripts/browser_snapshot_review.py", "scripts/browser_snapshot_cli.py"):
+        assert all(filename in command for command in lint.splitlines())
+        assert filename in strict
+
+
 def test_every_original_screenshot_still_belongs_to_the_same_capture_inventory() -> None:
     directory = ROOT / "apps/web/e2e/workspace/navigation"
     names = set()
