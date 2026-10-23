@@ -16,9 +16,11 @@ The gate performs these checks:
    including non-ignored untracked files, is clean.
 3. Builds the application image from that staged source tree, stamps the exact commit
    and source-tree SHA-256 into OCI labels, and verifies both before scanning. The
-   PostgreSQL/RDKit image is rebuilt whenever its self-contained pinned Dockerfile
-   SHA-256 changes (or its provenance label is absent), then reused while that build
-   definition is unchanged. Both build inputs and resulting digests enter the manifest;
+   PostgreSQL/RDKit image is rebuilt whenever the relative paths/content of its
+   Dockerfile, shared Debian package lock or installer change (or its provenance
+   label is absent), then reused only while those three inputs are unchanged.
+   The existing source-manifest implementation owns this selected-input hash;
+   missing, duplicate, escaping or symlinked inputs fail closed. Build inputs and resulting digests enter the manifest;
    an unrelated mutable local tag is not accepted as current evidence.
 4. Scans the staged source tree with Gitleaks. False positives are accepted only as
    exact, reviewed fingerprints in `.gitleaksignore`.
@@ -104,6 +106,20 @@ verification and source/identity boundaries remain unchanged. Focused dependency
 parser, OCR HTTP, logo and telemetry checks do not replace the original seven
 automatic CI jobs, image SBOM scanning, deployment or actual browser acceptance.
 
+### PostgreSQL image util-linux patch family
+
+The reviewed Debian lock includes all nine installed util-linux binary packages
+at the trixie 2.41.5-0+deb13u1 patch level for
+[CVE-2026-53612](https://security-tracker.debian.org/tracker/CVE-2026-53612),
+[CVE-2026-53613](https://security-tracker.debian.org/tracker/CVE-2026-53613),
+[CVE-2026-53614](https://security-tracker.debian.org/tracker/CVE-2026-53614) and
+[CVE-2026-53615](https://security-tracker.debian.org/tracker/CVE-2026-53615).
+bsdutils and login preserve their distinct Debian epochs/version prefixes.
+The existing installer upgrades only already installed packages and refuses
+downgrades; it does not add mount utilities to smaller images. No scanner
+finding is waived. PostgreSQL/RDKit runtime, non-root entrypoint, real SQL,
+fresh restore and image vulnerability checks remain separate release gates.
+
 ### OCR transitive media-library reachability
 
 The authentication dependency is pinned to PyJWT 2.15.0 for
@@ -113,9 +129,15 @@ for a deeply nested untrusted payload, rather than a raw `RecursionError`.
 `tests/test_security_boundary.py` captures this regression; human OIDC, MCP OIDC,
 DPoP and signed internal-token paths remain part of the affected regression set.
 
-The pinned OpenCV contribution wheel bundles FFmpeg 5.1.4. Its vulnerable library
-is retained in the complete SBOM and raw scan inventory; a VEX `not_affected`
-statement is not a binary patch or a claim of zero vulnerabilities. The OCR API
+Historical upstream OpenCV wheels bundled FFmpeg 5.1.4; those original failures
+and inventories remain release evidence, not successful scans. The current OCR
+build compiles the same hash-locked source without FFmpeg/GStreamer/video plugins
+or GUI backends, retaining the still-image and geometry operations used by the
+locked PaddleX package. Build tooling is separately hash-locked; all runtime
+source hashes, complete package versions and derived wheel hashes are verified
+before offline installation and `pip check`. No new VEX exception is introduced.
+The image itself must pass real codec/import probes and the original complete
+SBOM/actionable vulnerability scan before this remediation is accepted. The OCR API
 has no video, audio, stream URL, DASH, subtitle or muxing input. Authentication,
 bounded input, SHA-256 and generated local paths precede inference. Pillow's
 decoded format must exactly match the allowed PNG/JPEG/TIFF extension; PDFs use
