@@ -120,6 +120,9 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 markers = ["integration: requires a real external service"]
 
+[tool.coverage.run]
+patch = ["subprocess"]
+
 [tool.ruff]
 line-length = 120
 target-version = "py313"
