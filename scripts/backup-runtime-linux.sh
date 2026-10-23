@@ -14,6 +14,7 @@ EOF
 }
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+source "$root/scripts/lib/runtime_archive_container.sh"
 output_root="$root/backups"
 project_name="${COMPOSE_PROJECT_NAME:-pharma-intelligence}"
 
@@ -180,13 +181,19 @@ compose_volume() {
 
 object_volume=$(compose_volume pharma_object_store)
 markdown_volume=$(compose_volume pharma_markdown_wiki)
-busybox_image='busybox:1.36.1@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662'
-docker image inspect "$busybox_image" >/dev/null
+archive_suffix="$(date +%s)-$$"
 for archive_spec in   "$object_volume:object-store.tar.gz"   "$markdown_volume:markdown-wiki.tar.gz"; do
   volume=${archive_spec%%:*}
   archive=${archive_spec#*:}
-  docker run --rm --read-only     --mount "type=volume,src=$volume,dst=/source,readonly"     "$busybox_image" tar -czf - -C /source . > "$partial_dir/$archive"
-  docker run --rm --read-only -i "$busybox_image" tar -tzf - < "$partial_dir/$archive" >/dev/null
+  case "$archive" in
+    object-store.tar.gz) archive_kind=object ;;
+    markdown-wiki.tar.gz) archive_kind=markdown ;;
+    *) exit 2 ;;
+  esac
+  run_runtime_archive "pharma-backup-archive-$archive_suffix-$archive_kind-write" \
+    --mount "type=volume,src=$volume,dst=/source,readonly" -- tar -czf - -C /source . > "$partial_dir/$archive"
+  run_runtime_archive "pharma-backup-archive-$archive_suffix-$archive_kind-list" \
+    -- tar -tzf - < "$partial_dir/$archive" >/dev/null
 done
 
 postgres_image=$(docker inspect --format '{{.Config.Image}}' "$postgres_container")

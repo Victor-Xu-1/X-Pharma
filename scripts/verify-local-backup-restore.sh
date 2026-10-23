@@ -5,6 +5,7 @@ umask 077
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
+source "$root/scripts/lib/runtime_archive_container.sh"
 output_path=""
 backup_root="$root/backups/release-candidates"
 project_name="${COMPOSE_PROJECT_NAME:-pharma-intelligence}"
@@ -88,6 +89,10 @@ if [[ -n "$postgres_image_id" ]]; then
     exit 1
   }
 fi
+# Prove archive execution and removal before arming a watchdog or pausing writers.
+run_runtime_archive "pharma-backup-archive-$started_epoch-$$-object-probe" \
+  -- tar -cf - -T /dev/null >/dev/null
+
 mkdir -p "$backup_root"
 backup_root=$(realpath "$backup_root")
 authority_root=$(realpath "$root/backups")

@@ -4,6 +4,7 @@ set -euo pipefail
 umask 077
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 source "$root/scripts/lib/restore_smoke_resources.sh"
+source "$root/scripts/lib/runtime_archive_container.sh"
 
 usage() {
   printf 'usage: %s BACKUP_DIR [--postgres-image-id sha256:IMAGE_ID]\n' "$0"
@@ -270,13 +271,19 @@ tenant_signing_secret=$(docker exec "$container" psql -X -U "$bootstrap_user" -d
 probe_url="postgresql+psycopg://$probe_role:$probe_password@127.0.0.1:5432/$database"
 timeout --kill-after=10s 120s docker run --pull=never --name "$probe_container" --network "container:$container" --read-only --tmpfs /tmp -e "DATABASE_URL=$probe_url" -e "TENANT_CONTEXT_SIGNING_SECRET=$tenant_signing_secret" "$api_image_id" pharma-verify-rls >/dev/null
 
-busybox_image='busybox:1.36.1@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662'
-docker image inspect "$busybox_image" >/dev/null
 for archive_spec in "object-store.tar.gz:$object_volume" "markdown-wiki.tar.gz:$markdown_volume"; do
   archive=${archive_spec%%:*}
   volume=${archive_spec#*:}
-  docker run --pull=never --rm --network none --read-only --mount "type=bind,src=$backup,dst=/backup,readonly" "$busybox_image" tar -tzf "/backup/$archive" >/dev/null
-  docker run --pull=never --rm --network none --read-only --mount "type=bind,src=$backup,dst=/backup,readonly" --mount "type=volume,src=$volume,dst=/restore" "$busybox_image" tar -xzf "/backup/$archive" -C /restore
+  case "$archive" in
+    object-store.tar.gz) archive_kind=object ;;
+    markdown-wiki.tar.gz) archive_kind=markdown ;;
+    *) exit 2 ;;
+  esac
+  run_runtime_archive "pharma-restore-archive-$suffix-$archive_kind-list" \
+    --mount "type=bind,src=$backup,dst=/backup,readonly" -- tar -tzf "/backup/$archive" >/dev/null
+  run_runtime_archive "pharma-restore-archive-$suffix-$archive_kind-extract" \
+    --mount "type=bind,src=$backup,dst=/backup,readonly" \
+    --mount "type=volume,src=$volume,dst=/restore" -- tar -xzf "/backup/$archive" -C /restore
 done
 
 tables_verified=$(wc -l < "$expected_counts")

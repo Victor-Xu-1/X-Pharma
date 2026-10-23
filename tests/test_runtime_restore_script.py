@@ -77,6 +77,8 @@ def restore_preflight(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[
         f"      *) printf '%s\\n' '{CANDIDATE_ID}' ;;\n"
         "    esac ;;\n"
         "  volume:create:*) exit 86 ;;\n"
+        "  create:*) exit 89 ;;\n"
+        "  container:ls:*) exit 0 ;;\n"
         "  rm:-f:*|volume:rm:-f) exit 0 ;;\n"
         "  *) exit 87 ;;\n"
         "esac\n",
@@ -142,11 +144,17 @@ def test_missing_or_wrong_target_never_creates_resources(
 def test_restore_runs_only_exact_local_images_and_probes_the_actual_cartridge() -> None:
     source = (ROOT / "scripts" / "restore-smoke-linux.sh").read_text(encoding="utf-8")
     runs = [line for line in source.splitlines() if "docker run " in line]
-    assert len(runs) == 4
+    assert len(runs) == 2
     assert all("--pull=never" in line for line in runs)
     assert '"$restored_postgres_image_id" >/dev/null' in runs[0]
     assert '"$api_image_id" pharma-verify-rls' in runs[1]
     assert '--name "$probe_container"' in runs[1] and "--rm" not in runs[1]
+    archive_runs = [line for line in source.splitlines() if "run_runtime_archive " in line]
+    assert len(archive_runs) == 2
+    library = (ROOT / "scripts/lib/runtime_archive_container.sh").read_text()
+    assert "--pull=never --network none --read-only" in library
+    assert "busybox:1.36.1@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662" in library
+    assert "--rm" not in library
     assert "SELECT mol_to_smiles(mol_from_smiles('CCO'))" in source
     assert '[[ "$rdkit_probe" == CCO ]]' in source
     assert '"backup_postgres_image_id": backup_postgres' in source
@@ -161,6 +169,34 @@ def test_release_backup_verifies_target_before_quiescing_and_preserves_restore_i
     assert 'restore_arguments+=(--postgres-image-id "$postgres_image_id")' in source
     assert '"rdkit_function_probe": restore["rdkit_function_probe"]' in source
     assert '"restored_postgres_image_id": restore["restored_postgres_image_id"]' in source
+    probe = source.index('run_runtime_archive "pharma-backup-archive-$started_epoch-$$-object-probe"')
+    assert source.index('docker image inspect "$postgres_image_id"') < probe
+    assert probe < source.index("systemd-run --user") < source.index('docker pause "${paused_containers[@]}"')
+
+
+def test_unhealthy_archive_infrastructure_rejects_fresh_backup_before_any_writer_pause(
+    restore_preflight: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    backup, trace = restore_preflight
+    monkeypatch.setenv("TMPDIR", str(backup.parent))
+    report = backup.parent / "unpublished-report.json"
+    result = _run_restore(
+        "--project-name",
+        "x-pharma-architecture",
+        "--quiesce-runtime",
+        "--postgres-image-id",
+        CANDIDATE_ID,
+        "--output",
+        str(report),
+        script="verify-local-backup-restore.sh",
+    )
+    assert result.returncode == 89
+    calls = trace.read_text().splitlines()
+    assert calls[0].startswith(f"image inspect {CANDIDATE_ID}")
+    assert calls[1].startswith("create --pull=never --network none --read-only")
+    assert not any(call.startswith("pause ") or call.startswith("compose ") for call in calls)
+    assert not report.exists()
+    assert not list(backup.parent.glob("pharma-archive.*"))
 
 
 def test_restore_requires_bounded_explicit_resource_cleanup_before_reporting_success() -> None:
