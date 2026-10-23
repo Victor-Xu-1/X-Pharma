@@ -60,7 +60,8 @@ def test_superseded_python_overlays_have_no_files_or_vex_suppressions() -> None:
     root = Path(__file__).resolve().parents[1]
     for filename in ("html-parser.py", "tarfile.py"):
         assert not (root / "deploy/cpython" / filename).exists()
-    for filename in ("api.openvex.json", "ocr.openvex.json"):
+    assert not (root / "deploy/security/ocr.openvex.json").exists()
+    for filename in ("api.openvex.json",):
         evidence = json.loads((root / "deploy/security" / filename).read_text())
         for statement in evidence["statements"]:
             assert statement["vulnerability"]["name"] not in {"CVE-2026-19445", "CVE-2026-19553"}
