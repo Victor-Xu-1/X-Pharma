@@ -1,6 +1,7 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs, Route, TestInfo } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
+import { expectDistinctEntityComboboxes } from "../fixtures/entity-comboboxes";
 import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyPipelineDrugEntityFilter(
@@ -29,12 +30,7 @@ export async function verifyPipelineDrugEntityFilter(
   await expect(exactFilters).not.toHaveAttribute("open", "");
   await exactFilters.locator(":scope > summary").click();
   await expect(exactFilters).toHaveAttribute("open", "");
-  const entityComboboxes = filters.getByRole("combobox");
-  const controlledListboxes = await entityComboboxes.evaluateAll((inputs) =>
-    inputs.map((input) => input.getAttribute("aria-controls")),
-  );
-  expect(controlledListboxes.every(Boolean)).toBe(true);
-  expect(new Set(controlledListboxes).size).toBe(controlledListboxes.length);
+  await expectDistinctEntityComboboxes(exactFilters, 4);
 
   const drugName = `Browser pipeline antibody ${fixtureKeyBase}`;
   const drugCombobox = filters.getByRole("combobox", { name: "药品筛选" });

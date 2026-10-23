@@ -257,7 +257,7 @@ it("opens applied linked filters and clears the same mounted disclosure without 
   if (!summary) throw new Error("Missing linked filter summary");
   fireEvent.click(summary);
   await waitFor(() => expect(disclosure).not.toHaveAttribute("open"));
-  fireEvent.click(screen.getByRole("button", { name: "清除", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: /^清除$/ }));
   await waitFor(() => expect(disclosure).toHaveAttribute("data-active-count", "0"));
   expect(disclosure).not.toHaveAttribute("open");
   expect(screen.getByLabelText("研发机构国家/地区")).toHaveValue("");

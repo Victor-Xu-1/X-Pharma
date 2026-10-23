@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { PipelineSearchResult } from "../src/lib/generated";
 import { expectCompactSecondaryFilters } from "./fixtures/compact-secondary-filters";
+import { expectDistinctEntityComboboxes } from "./fixtures/entity-comboboxes";
 import { readViewportOverflow } from "./fixtures/viewport-overflow";
 import { selectInterfaceLanguage } from "./interface-language";
 
@@ -67,6 +68,7 @@ test("[pipeline-disclosure] retains unsent dates and false-valued signal filters
   await expect(exact).not.toHaveAttribute("open", "");
   await expect(exact.getByRole("combobox")).toHaveCount(0);
   await exact.locator(":scope > summary").click();
+  await expectDistinctEntityComboboxes(exact, 4);
   const targetDraft = exact.getByRole("combobox", { name: "Target filter", exact: true });
   await targetDraft.fill("x");
   await exact.locator(":scope > summary").click();
