@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
+from pypdf import PdfWriter
 
 from services.ocr.service import OcrSettings, _directory_digest, create_app
 
@@ -152,6 +153,40 @@ def test_ocr_service_returns_governed_text_locators_and_model_provenance(
     assert result["metadata"]["locator_scheme"] == "page-region-v1"
     assert result["metadata"]["discarded_line_count"] == 1
     assert result["metadata"]["detection_model_sha256"] == settings.detection_model_sha256
+
+
+@pytest.mark.parametrize("kind", ["valid", "malformed", "encrypted", "too-many-pages"])
+def test_ocr_pdf_preflight_uses_the_locked_parser_before_the_engine(
+    kind: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    settings = _settings(tmp_path, monkeypatch).model_copy(update={"max_pages": 1})
+    writer = PdfWriter()
+    for _ in range(2 if kind == "too-many-pages" else 1):
+        writer.add_blank_page(width=320, height=120)
+    if kind == "encrypted":
+        writer.encrypt("fixture-only")
+    output = BytesIO()
+    writer.write(output)
+    payload = b"not a PDF" if kind == "malformed" else output.getvalue()
+    engine = Engine([_valid_result()])
+    with TestClient(create_app(settings, engine)) as client:
+        response = client.post(
+            "/internal/v1/parse",
+            params={"filename": "scan.pdf", "max_chars": 100_000},
+            headers=_headers(payload),
+            content=payload,
+        )
+    if kind == "valid":
+        assert response.status_code == 200
+        assert engine.calls == 1
+        result = response.json()
+        assert result["source_sha256"] == hashlib.sha256(payload).hexdigest()
+        assert "[[page:1]]" in result["text"]
+        assert "EGFR 靶点 活性 IC50 12 nM" in result["text"]
+    else:
+        assert response.status_code == 422
+        assert response.json()["detail"]["code"] == "document_ocr_rejected"
+        assert engine.calls == 0
 
 
 def test_ocr_service_rejects_authentication_digest_and_invalid_image(

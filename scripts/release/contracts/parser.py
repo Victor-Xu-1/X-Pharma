@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+from scripts.release.contracts.parser_dependencies import parser_document_contracts
+
 PARSER_SANDBOX_SCHEMA = "pharma.local-parser-sandbox-acceptance.v3"
 
 
@@ -90,19 +94,7 @@ PARSER_ADVERSARIAL_CASE_CONTRACTS = (
 )
 
 
-PARSER_DOCUMENT_CONTRACTS = {
-    ".md": ("text", "1"),
-    ".html": ("beautifulsoup4+lxml", "4.15.0"),
-    ".docx": ("python-docx", "1.2.0"),
-    ".pptx": ("python-pptx", "1.0.2"),
-    ".xlsx": ("openpyxl", "3.1.5"),
-    ".pdf": ("pypdf", "6.14.2"),
-    ".sdf": ("rdkit-sdf", "2026.3.3"),
-    ".mol": ("rdkit-mol", "2026.3.3"),
-    ".pdb": ("gemmi-pdb", "0.7.5"),
-    ".cif": ("gemmi-mmcif", "0.7.5"),
-    ".mmcif": ("gemmi-mmcif", "0.7.5"),
-}
+PARSER_DOCUMENT_CONTRACTS = parser_document_contracts(Path(__file__).resolve().parents[3] / "pyproject.toml")
 
 
 OCR_ACCEPTANCE_SCHEMA = "pharma.local-ocr-acceptance.v1"
