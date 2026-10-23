@@ -615,10 +615,10 @@ flock -u 8
 
 checked "API image complete vulnerability inventory with VEX" "${grype_run[@]}" --mount "type=bind,src=$output_root,dst=/output" --mount "type=bind,src=$security_root,dst=/security,readonly" "${scanner_images[GRYPE_IMAGE]}" sbom:/output/api.syft.json --vex /security/api.openvex.json --output json --file /output/api.grype.json
 checked "PostgreSQL/RDKit image complete vulnerability inventory" "${grype_run[@]}" --mount "type=bind,src=$output_root,dst=/output" "${scanner_images[GRYPE_IMAGE]}" sbom:/output/postgres.syft.json --output json --file /output/postgres.grype.json
-checked "OCR image complete vulnerability inventory with VEX" "${grype_run[@]}" --mount "type=bind,src=$output_root,dst=/output" --mount "type=bind,src=$security_root,dst=/security,readonly" "${scanner_images[GRYPE_IMAGE]}" sbom:/output/ocr.syft.json --vex /security/ocr.openvex.json --output json --file /output/ocr.grype.json
+checked "OCR image complete vulnerability inventory" "${grype_run[@]}" --mount "type=bind,src=$output_root,dst=/output" "${scanner_images[GRYPE_IMAGE]}" sbom:/output/ocr.syft.json --output json --file /output/ocr.grype.json
 checked "API image actionable High/Critical vulnerability gate" "${grype_run[@]}" --mount "type=bind,src=$output_root,dst=/output" --mount "type=bind,src=$security_root,dst=/security,readonly" "${scanner_images[GRYPE_IMAGE]}" sbom:/output/api.syft.json --vex /security/api.openvex.json --only-fixed --fail-on high --output json --file /output/api.grype-gate.json
 checked "PostgreSQL/RDKit image actionable High/Critical vulnerability gate" "${grype_run[@]}" --mount "type=bind,src=$output_root,dst=/output" "${scanner_images[GRYPE_IMAGE]}" sbom:/output/postgres.syft.json --only-fixed --fail-on high --output json --file /output/postgres.grype-gate.json
-checked "OCR image actionable High/Critical vulnerability gate" "${grype_run[@]}" --mount "type=bind,src=$output_root,dst=/output" --mount "type=bind,src=$security_root,dst=/security,readonly" "${scanner_images[GRYPE_IMAGE]}" sbom:/output/ocr.syft.json --vex /security/ocr.openvex.json --only-fixed --fail-on high --output json --file /output/ocr.grype-gate.json
+checked "OCR image actionable High/Critical vulnerability gate" "${grype_run[@]}" --mount "type=bind,src=$output_root,dst=/output" "${scanner_images[GRYPE_IMAGE]}" sbom:/output/ocr.syft.json --only-fixed --fail-on high --output json --file /output/ocr.grype-gate.json
 
 api_unresolved=$(python3 - "$output_root/api.grype.json" <<'PY'
 import json
@@ -721,7 +721,7 @@ manifest = {
         "risk_acceptance_reference": risk_reference,
         "vex": {
             "api": "deploy/security/api.openvex.json",
-            "ocr": "deploy/security/ocr.openvex.json",
+            "ocr": None,
         },
     },
 }
