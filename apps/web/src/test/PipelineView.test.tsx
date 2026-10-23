@@ -521,7 +521,8 @@ it("renders the explicit empty state and clears active filters", async () => {
   expect(
     screen.getByText("可调整或清除筛选条件。查询仅覆盖当前组织有权访问的已发布数据，不代表相关研究不存在。"),
   ).toBeInTheDocument();
-  expect(screen.getByRole("group", { name: "药品、靶点、适应症与研发机构" })).toBeInTheDocument();
+  fireEvent.click(screen.getByText("药品、靶点、适应症与研发机构", { selector: "summary span" }));
+  expect(screen.getByRole("group", { name: "药品、靶点、适应症与研发机构" })).toBeVisible();
   expect(
     screen.getByText("按药品、靶点、适应症、研发机构、全球与中国阶段、权益地区及里程碑组合查询。"),
   ).toBeInTheDocument();

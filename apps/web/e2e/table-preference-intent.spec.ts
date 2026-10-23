@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { installDealFixture } from "./deal-fixture";
+import { expectClinicalTableReading } from "./fixtures/clinical-table-reading";
 import { selectInterfaceLanguage } from "./interface-language";
 
 test("[table-preference-intent] a delayed reset preserves a newer sort, selection and bilingual draft", async ({
@@ -74,6 +75,7 @@ test("[table-preference-intent] a delayed reset preserves a newer sort, selectio
     await page
       .locator(".virtual-table-shell")
       .screenshot({ path: testInfo.outputPath("table-intent-en.png"), animations: "disabled" });
+    await expectClinicalTableReading(page, testInfo);
     expect(state.errors).toEqual([]);
     expect(state.writes).toEqual([]);
   } finally {

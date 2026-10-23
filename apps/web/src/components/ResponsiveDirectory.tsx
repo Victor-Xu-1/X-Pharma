@@ -23,7 +23,7 @@ export function ResponsiveDirectory({
   children: (collapse: () => void) => ReactNode;
 }) {
   useLocale();
-  const compact = useCompactNavigation();
+  const compact = useCompactNavigation(900);
   const [expandedFor, setExpandedFor] = useState<string | null>(null);
   const contentId = useId();
   const contentRef = useRef<HTMLDivElement>(null);

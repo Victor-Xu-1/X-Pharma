@@ -14,6 +14,8 @@ export function CollectionDirectoryControls({
   const t = useMessages(comparisonMessages);
   const total = catalog.query.data?.total ?? 0;
   const loading = pending || catalog.query.isFetching;
+  const emptyCatalog = catalog.query.isSuccess && total === 0 && !catalog.query.isFetching;
+  if (emptyCatalog && !catalog.draft && !catalog.filter.q && catalog.filter.offset === 0) return null;
   return (
     <div className="stack-form">
       <label>
@@ -36,7 +38,7 @@ export function CollectionDirectoryControls({
         <Search size={16} />
         {t("筛选列表")}
       </button>
-      {catalog.query.data ? (
+      {catalog.query.data && (total > 25 || catalog.filter.offset > 0) ? (
         <nav className="row-actions" aria-label={t("列表目录分页")} style={{ flexWrap: "wrap", fontSize: 12 }}>
           <button
             className="icon-button"

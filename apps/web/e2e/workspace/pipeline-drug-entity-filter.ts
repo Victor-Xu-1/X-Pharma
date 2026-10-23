@@ -25,6 +25,10 @@ export async function verifyPipelineDrugEntityFilter(
 
   await page.goto("/workspace/research?view=pipeline");
   const filters = page.getByRole("form", { name: "药物与管线筛选" });
+  const exactFilters = filters.locator(".pipeline-entity-disclosure");
+  await expect(exactFilters).not.toHaveAttribute("open", "");
+  await exactFilters.locator(":scope > summary").click();
+  await expect(exactFilters).toHaveAttribute("open", "");
   const entityComboboxes = filters.getByRole("combobox");
   const controlledListboxes = await entityComboboxes.evaluateAll((inputs) =>
     inputs.map((input) => input.getAttribute("aria-controls")),

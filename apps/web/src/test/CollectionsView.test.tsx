@@ -399,6 +399,44 @@ beforeEach(() => {
   vi.mocked(loadDrugComparison).mockResolvedValue(drugComparisonFor(drugA, drugB, {}));
 });
 
+it("keeps an empty collection catalog focused on its first creation action", async () => {
+  vi.mocked(loadCollectionCatalog).mockResolvedValue({ items: [], total: 0, limit: 25, offset: 0 });
+  renderView();
+  expect(await screen.findByText("建立你的研究列表", { exact: true })).toBeVisible();
+  await waitFor(() => expect(loadCollectionCatalog).toHaveBeenCalledOnce());
+  await waitFor(() => expect(screen.queryByLabelText("搜索列表名称或说明")).not.toBeInTheDocument());
+  expect(screen.getByRole("textbox", { name: "列表名称" })).toBeVisible();
+  expect(screen.queryByRole("navigation", { name: "列表目录分页" })).not.toBeInTheDocument();
+  expect(screen.queryByText("创建后，列表会出现在这里。")).not.toBeInTheDocument();
+  expect(screen.queryByRole("navigation", { name: "对比列表目录" })).not.toBeInTheDocument();
+});
+
+it("keeps a single-page collection searchable without zero-use pagination controls", async () => {
+  renderView();
+  expect(await screen.findByRole("navigation", { name: "对比列表目录" })).toBeVisible();
+  expect(screen.getByRole("textbox", { name: "搜索列表名称或说明" })).toBeVisible();
+  expect(screen.queryByRole("navigation", { name: "列表目录分页" })).not.toBeInTheDocument();
+});
+
+it("keeps a zero-result catalog filter and its draft recoverable", async () => {
+  vi.mocked(loadCollectionCatalog)
+    .mockResolvedValueOnce({ items: [emptySet], total: 1, limit: 25, offset: 0 })
+    .mockResolvedValue({ items: [], total: 0, limit: 25, offset: 0 });
+  renderView();
+  await screen.findByRole("navigation", { name: "对比列表目录" });
+  const search = screen.getByRole("textbox", { name: "搜索列表名称或说明" });
+  fireEvent.change(search, { target: { value: "no matching research" } });
+  fireEvent.click(screen.getByRole("button", { name: "筛选列表" }));
+  expect(await screen.findByText("没有匹配的列表")).toBeVisible();
+  expect(search).toBeVisible();
+  expect(search).toHaveValue("no matching research");
+  expect(screen.getByRole("button", { name: "筛选列表" })).toBeEnabled();
+  fireEvent.change(search, { target: { value: "" } });
+  fireEvent.click(screen.getByRole("button", { name: "筛选列表" }));
+  await waitFor(() => expect(loadCollectionCatalog).toHaveBeenCalledTimes(3));
+  await waitFor(() => expect(screen.queryByLabelText("搜索列表名称或说明")).not.toBeInTheDocument());
+});
+
 it("builds a version-governed comparison set and downloads a bounded standard export", async () => {
   renderView();
   await waitFor(() => expect(screen.getAllByText("EGFR landscape")).toHaveLength(2));

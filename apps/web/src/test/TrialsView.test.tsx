@@ -97,6 +97,12 @@ it("renders governed trial intelligence, filters it and opens linked records", a
   );
 
   expect(await screen.findByRole("table", { name: "临床试验结果" })).toBeInTheDocument();
+  const headers = within(screen.getByRole("table", { name: "临床试验结果" })).getAllByRole("columnheader");
+  const position = (label: string) => headers.findIndex((header) => header.textContent?.startsWith(label));
+  expect(position("分期")).toBeGreaterThanOrEqual(0);
+  expect(position("分期")).toBeLessThan(position("试验简称"));
+  expect(position("状态")).toBeLessThan(position("发起类型"));
+  expect(position("适应症/疾病")).toBeLessThan(position("治疗线次"));
   expect(screen.getByText("结果可能受数据覆盖范围和来源更新时间影响。")).toBeInTheDocument();
   expect(document.body).not.toHaveTextContent(/治理|授权来源/);
   expect(screen.getByText(/全部结果按最近更新降序/)).toBeInTheDocument();

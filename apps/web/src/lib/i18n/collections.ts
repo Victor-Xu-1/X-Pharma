@@ -17,7 +17,6 @@ export const collectionsMessages = {
   没有匹配的列表: "No matching lists",
   "调整名称或说明关键词；已打开的列表不会改变":
     "Adjust the name or description keywords. The open list will stay selected.",
-  "创建后，列表会出现在这里。": "Created lists will appear here.",
   对比列表已创建: "Comparison list created",
   正在加载对比与列表: "Loading comparison list",
   列表不存在或无权访问: "List not found or access denied",
