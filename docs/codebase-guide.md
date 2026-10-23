@@ -130,6 +130,8 @@ ClinicalTrials.gov、NextPharma 与 ChEMBL 的确定性处理分别归属 `adapt
 
 官方来源的连接器、检查点与注册分别属于 `ingest/clinicaltrials.py`、`public_sync.py`/两个 `*_sync.py` 和 `public_sources.py`；`public_http.py` 复用唯一有界读取器统一官方接口的流式响应上限。CLI 只委派，旧内联连接器/重复注册实现已移除。`source_routing` 统一规范配置比较，`governance/source_policy` 统一来源策略身份，`source_updates` 只负责同记录的有锁版本推进。前端来源编辑、参数合同/字段与同步状态位于 `views/dataFactory/`，主视图不再拥有重复来源表单。完整行为见 [自动公开来源入库](automatic-public-source-ingestion.md)。
 
+官方修订替代已发布事实时，`GovernanceService._withdraw_superseded_facts` 在同一事务写入既有撤回 outbox，历史事实、证据和来源关联继续保留用于审计。`search/documents.evidence_claim_projection` 是当前可索引来源的唯一判定：已有治理关联但没有有效已发布来源的证据不得降格为无分类旧数据。索引重建及发布/撤回事件均复用该判定，延迟事件不能复活过期证据，也不能删除仍被其他有效发布共享的证据；无治理历史的旧式证据维持原有未分类语义。对应回归位于 `tests/test_superseded_evidence_projection.py`，修订夹具单独维护于 `tests/governance_revision_fixtures.py`。
+
 数据工厂的隔离处置、源对象/版本、版本重放、运行重放/取消、阶段状态与校验发现各归属 `views/dataFactory/` 的六个小模块；`DataFactoryView` 只组装原查询与命令回调，不保留第二份内联弹窗。共享 `useModalFocus` 拥有可见焦点、可嵌套背景隔离与关闭恢复，`useDismissibleDetails` 只管理临时原生弹出菜单的退出，不读写业务筛选或草稿。所有业务标签页复用 `ResearchTabList`；可显式关联同一活动面板，不复制键盘状态。`InlineEntityLinks` 呈现完整授权关联集合及数量，临床角色与专利列表消费同一呈现，不裁掉第四条记录，不制造来源或推断科学关系。商业生命周期命令仍归属 `useCommercialWorkspace` 的单一操作/审计链路；呈现层等待其成功结果再关闭或清空，失败/提交状态由当前表单呈现。靶点筛选样式退出企业模块归属靶点，知识网格的滚动边界由知识样式独立拥有。
 
 `scripts/release/` 是发布证据的唯一实现，合同、记录、文件安全、策略、领域校验、采集、签名、打包、验证与交接各自归属具体模块。`release_evidence.py` 仅保留已验证的直接 CLI 与其他命令入口依赖的公共委派。该库纳入 Ruff/Mypy、依赖 DAG 和真实文件/子进程/签名回归，不保留旧 7,000 多行实现。
