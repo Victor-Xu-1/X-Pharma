@@ -202,7 +202,19 @@ a:hover,
 }
 
 .research-view-navigation {
-  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  padding: 2px;
+}
+
+.research-view-navigation button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  white-space: nowrap;
 }
 
 .login-brand {

@@ -74,8 +74,6 @@ export const clinicalMessages = {
   关联实体: "Linked entities",
   档案: "Dossier",
   "查看 {registry} 试验详情": "View study {registry}",
-  "聚合注册平台的试验设计、状态、分期、适应症、干预和申办方，并关联药物与靶点信息。":
-    "Study design, status, phases, registered conditions, interventions and sponsors, with evidence-backed drug and target links.",
   "注册干预列表不自动区分主药与联合用药；角色条件只匹配有明确角色证据的记录。":
     "Registered interventions do not identify drug roles by themselves. Role filters match only records with explicit role evidence.",
   临床试验筛选: "Clinical trial filters",

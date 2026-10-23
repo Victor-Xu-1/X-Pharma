@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install pinned uv and Python
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.11.28"
           enable-cache: true
@@ -33,10 +33,10 @@ jobs:
         run: uv sync --locked --dev
       - name: Lint and format gate
         run: |
-          uv run ruff format --check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/run_controlled_browser_acceptance.py
-          uv run ruff check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/run_controlled_browser_acceptance.py
+          uv run ruff format --check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/browser_snapshot_review.py scripts/browser_snapshot_cli.py scripts/run_controlled_browser_acceptance.py
+          uv run ruff check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/browser_snapshot_review.py scripts/browser_snapshot_cli.py scripts/run_controlled_browser_acceptance.py
       - name: Strict typing gate
-        run: uv run mypy src tests scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/run_controlled_browser_acceptance.py
+        run: uv run mypy src tests scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/browser_snapshot_review.py scripts/browser_snapshot_cli.py scripts/run_controlled_browser_acceptance.py
       - name: OpenAPI 3.1.2 drift gate
         run: uv run pharma-openapi --check
       - name: Unit and service tests
@@ -104,7 +104,7 @@ jobs:
           docker logs pharma-postgres-contract
           exit 1
       - name: Install pinned uv and Python
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.11.28"
           enable-cache: true
@@ -167,11 +167,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install pinned uv and Python
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.11.28"
           enable-cache: true
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6
         with:
           version: 11.7.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -188,8 +188,6 @@ jobs:
       - run: pnpm audit --audit-level high
       - name: Prepare isolated account browser
         working-directory: .
-        env:
-          VISUAL_PROFILE_REVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
         run: |
           uv sync --locked --dev
           bash scripts/prepare-ci-browser.sh
@@ -222,11 +220,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install pinned uv and Python
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.11.28"
           enable-cache: true
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6
         with:
           version: 11.7.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -235,8 +233,6 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - name: Install locked browser dependencies
-        env:
-          VISUAL_PROFILE_REVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
         run: |
           uv sync --locked --dev
           pnpm --dir apps/web install --frozen-lockfile
@@ -259,7 +255,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install pinned uv and Python
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.11.28"
           enable-cache: true
@@ -303,11 +299,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install pinned uv and Python
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.11.28"
           enable-cache: true
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6
         with:
           version: 11.7.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -316,8 +312,6 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - name: Install test clients
-        env:
-          VISUAL_PROFILE_REVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
         run: |
           uv sync --locked --dev
           pnpm --dir apps/web install --frozen-lockfile
@@ -376,6 +370,19 @@ jobs:
             pharma-commercial --tenant-slug e2e --actor CI-E2E grant-credit \
             --subscription-key e2e-2026 --units 1000 --external-reference CI-E2E-CREDIT \
             --reason "Ephemeral integration allocation"
+      - name: Generate isolated visual baseline candidates
+        id: snapshot_generation
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
+        env:
+          PHARMA_BROWSER_KEEP_OUTPUT: "true"
+        run: ./scripts/run-browser-acceptance.sh --update-snapshots
+      - name: Archive visual baseline candidates for review
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines && steps.snapshot_generation.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: X-Pharma-visual-baseline-candidates
+          path: apps/web/e2e/visual-baselines/
+          if-no-files-found: error
       - name: Browser workbench smoke
         id: workbench_smoke
         env:
@@ -383,7 +390,6 @@ jobs:
           PHARMA_BROWSER_KEEP_OUTPUT: "true"
         run: |
           if [[ "$REFRESH_VISUAL_BASELINES" == "true" ]]; then
-            ./scripts/run-browser-acceptance.sh --update-snapshots
             ./scripts/run-browser-acceptance.sh --output /tmp/browser-acceptance-report.json
           else
             ./scripts/run-browser-acceptance.sh --phase full-stack --output /tmp/full-stack-browser-acceptance-report.json
@@ -409,7 +415,7 @@ jobs:
           --company /tmp/company-controlled-browser-evidence/company-controlled-browser-acceptance-report.json
           --output /tmp/browser-acceptance-report.json
       - name: Archive failed visual comparisons
-        if: ${{ failure() && steps.workbench_smoke.outcome == 'failure' }}
+        if: ${{ failure() && (steps.workbench_smoke.outcome == 'failure' || steps.snapshot_generation.outcome == 'failure') }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: X-Pharma-failed-visual-comparisons
@@ -417,13 +423,6 @@ jobs:
             /tmp/pharma-browser-acceptance-*/**/*-actual.png
             /tmp/pharma-browser-acceptance-*/**/*-diff.png
           if-no-files-found: warn
-      - name: Archive visual baseline candidates for review
-        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: X-Pharma-visual-baseline-candidates
-          path: apps/web/e2e/visual-baselines/
-          if-no-files-found: error
       - name: Real MCP HTTP and Web canonical fact consistency
         run: ./scripts/verify-entry-consistency.sh --web-url "$E2E_BASE_URL" --mcp-url "$TEST_MCP_URL" --output /tmp/entry-consistency-report.json
       - name: Independent MCP dual-client interoperability
@@ -459,11 +458,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Install pinned uv and Python
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.11.28"
           enable-cache: true
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6
         with:
           version: 11.7.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

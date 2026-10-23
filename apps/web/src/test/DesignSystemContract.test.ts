@@ -746,14 +746,13 @@ describe("unified minimal biomedical light design system", () => {
 
   it("bounds the mobile knowledge scroller instead of letting content overflow a capped parent", () => {
     const responsive = source("../styles/knowledge.css");
-    const listBounds = ruleBody(
-      responsive.slice(responsive.indexOf("@media (max-width: 760px)")),
-      ".knowledge-page-list",
-    );
-    const indexBorders = ruleBody(
-      responsive.slice(responsive.indexOf("@media (max-width: 760px)")),
-      ".knowledge-index",
-    );
+    const directoryBoundary = responsive.indexOf("@media (max-width: 900px)");
+    const mobileBoundary = responsive.indexOf("@media (max-width: 760px)");
+    expect(directoryBoundary).toBeGreaterThanOrEqual(0);
+    expect(mobileBoundary).toBeGreaterThan(directoryBoundary);
+    const compactRules = responsive.slice(directoryBoundary, mobileBoundary);
+    const listBounds = ruleBody(compactRules, ".knowledge-page-list");
+    const indexBorders = ruleBody(compactRules, ".knowledge-index");
     const knowledge = source("../styles/knowledge.css");
     expect(listBounds).toContain("max-height: 300px;");
     expect(indexBorders).not.toContain("max-height:");

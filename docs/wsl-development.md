@@ -15,17 +15,17 @@ Docker Desktop may provide the engine through WSL integration. The required inva
 
 ## First setup
 
-Local backups and acceptance evidence are runtime state, not source. After moving the checkout into WSL, preview and then relocate them to a Linux-native directory outside the repository. The command refuses existing targets, preserves all content and leaves ignored links at the conventional paths:
+Follow [the installation quick start](getting-started.md) to install the locked dependencies and configure a fresh checkout first. Existing workspaces may need a separate runtime-layout migration: local backups and acceptance evidence are runtime state, not source. Preview the inventory and obtain approval before relocating retained state to a Linux-native directory outside the repository. Do not run the apply step merely to start a clean clone. The command refuses existing targets, preserves all content and leaves ignored links at the conventional paths:
 
 ```bash
 export PHARMA_REPO="${PHARMA_REPO:-/srv/wsl/projects/x-pharma}"
 export PHARMA_RUNTIME_ROOT="${PHARMA_RUNTIME_ROOT:-/srv/wsl/data/x-pharma-runtime}"
 
-pharma-runtime-layout \
+uv run pharma-runtime-layout \
   --repository "$PHARMA_REPO" \
   --storage-root "$PHARMA_RUNTIME_ROOT"
 
-pharma-runtime-layout \
+uv run pharma-runtime-layout \
   --repository "$PHARMA_REPO" \
   --storage-root "$PHARMA_RUNTIME_ROOT" \
   --apply
@@ -35,12 +35,11 @@ The runtime root is mode `0700`; its `runtime-layout.json` inventory is mode `06
 
 ```bash
 cd "/srv/wsl/projects/x-pharma"
-cp .env.example .env
-chmod 600 .env
+make configure
 mkdir -p data/sources/empty
 ```
 
-Replace every `replace-*` value in `.env` with a different cryptographically random secret. Keep production secrets in a secret manager; never copy the development `.env` into Kubernetes.
+`make configure` is the single owner of initial private configuration: it generates independent random secrets and a mode `0600` file, and refuses to replace an existing `.env`. Review an existing configuration instead of copying the example over it. Keep production secrets in a secret manager; never copy the development `.env` into Kubernetes.
 
 `POSTGRES_RUNTIME_USER`, `POSTGRES_RUNTIME_PASSWORD` and `RUNTIME_DATABASE_URL` are mandatory. Compose has no runtime-database credential fallback: a missing or placeholder value blocks rendering before any service starts. The URL must use the same runtime user, password and database configured elsewhere in `.env`.
 
@@ -90,7 +89,7 @@ For higher ingestion throughput and stronger failure isolation, register the ent
 
 ## Recover an unresponsive WSL development runtime
 
-Treat a command such as `wsl -l -v` timing out as a Windows WSL service failure, not as an application health failure. First request a normal Docker Desktop quit and wait for it to finish. If Docker reports that it cannot communicate with WSL and both `wsl --shutdown` and distro commands still time out, use an elevated Windows PowerShell only after accepting that in-flight development writes may be interrupted:
+Treat a command such as `wsl -l -v` timing out as a command-channel failure, not proof that the application is unhealthy. Check the existing product health endpoints and owned services first. On a shared host, quitting Docker, restarting WSL or rebooting can interrupt unrelated projects: obtain explicit maintenance approval before any such action. Do not use another project's chat as a substitute for that approval. Within the approved window, first request a normal Docker Desktop quit and wait for it to finish. If Docker cannot communicate with WSL and distro commands still time out, use an elevated Windows PowerShell only when the approved scope includes interrupting in-flight writes:
 
 ```powershell
 Restart-Service WslService -Force
@@ -102,10 +101,11 @@ After WSL returns, verify the substrate before starting the application:
 
 ```powershell
 wsl -l -v
-wsl -d Ubuntu -- bash -lc 'printf "wsl=ready\n"'
+$pharmaDistribution = 'WSL' # Use the actual E-backed distribution from the inventory.
+wsl -d $pharmaDistribution --exec bash -c 'printf "wsl=ready\n"'
 ```
 
-Then start Docker Desktop and verify from Ubuntu:
+Then start the engine and verify from the selected Linux distribution. Restore only the authorized project's original services; do not start unrelated projects or recreate retained volumes:
 
 ```bash
 docker info

@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { expectIntermediateDirectoryReading } from "./fixtures/compact-directory-reading";
 import { knowledgeLanguageFixture } from "./fixtures/knowledge-language";
 import { selectInterfaceLanguage } from "./interface-language";
 
@@ -83,6 +84,7 @@ test("[knowledge-language] retains drafts, original values, version selection an
   await expect(page).toHaveURL(new RegExp(`page=${fixture.detail.id}`));
   await expect(page.getByRole("heading", { name: fixture.detail.title, exact: true })).toBeFocused();
   await audit("controlled-knowledge-selected-title");
+  await expectIntermediateDirectoryReading(page, testInfo, "knowledge", "Topic directory");
   await page.goto(`/workspace/research?view=knowledge&page=${fixture.detail.id}`);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.getByRole("heading", { name: fixture.detail.title, exact: true })).toBeVisible();
