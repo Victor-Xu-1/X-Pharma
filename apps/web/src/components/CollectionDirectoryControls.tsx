@@ -16,6 +16,12 @@ export function CollectionDirectoryControls({
   const loading = pending || catalog.query.isFetching;
   const emptyCatalog = catalog.query.isSuccess && total === 0 && !catalog.query.isFetching;
   if (emptyCatalog && !catalog.draft && !catalog.filter.q && catalog.filter.offset === 0) return null;
+  const hasPagination = total > 25 || catalog.filter.offset > 0;
+  const pageCaption = t("第 {page} / {pages} 页 · 共 {count} 条", {
+    page: Math.floor(catalog.filter.offset / 25) + 1,
+    pages: Math.max(1, Math.ceil(total / 25)),
+    count: total,
+  });
   return (
     <div className="stack-form">
       <label>
@@ -38,7 +44,8 @@ export function CollectionDirectoryControls({
         <Search size={16} />
         {t("筛选列表")}
       </button>
-      {catalog.query.data && (total > 25 || catalog.filter.offset > 0) ? (
+      {catalog.query.data && !hasPagination && total > 0 ? <p className="field-help">{pageCaption}</p> : null}
+      {catalog.query.data && hasPagination ? (
         <nav className="row-actions" aria-label={t("列表目录分页")} style={{ flexWrap: "wrap", fontSize: 12 }}>
           <button
             className="icon-button"
@@ -49,13 +56,7 @@ export function CollectionDirectoryControls({
           >
             <ChevronLeft size={16} />
           </button>
-          <span>
-            {t("第 {page} / {pages} 页 · 共 {count} 条", {
-              page: Math.floor(catalog.filter.offset / 25) + 1,
-              pages: Math.max(1, Math.ceil(total / 25)),
-              count: total,
-            })}
-          </span>
+          <span>{pageCaption}</span>
           <button
             className="icon-button"
             type="button"
