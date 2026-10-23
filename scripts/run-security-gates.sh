@@ -394,8 +394,13 @@ ocr_source_tree=$(docker image inspect --format '{{index .Config.Labels "io.phar
   exit 1
 }
 
-postgres_definition_sha256=$(sha256sum "$staging_root/deploy/postgres-rdkit.Dockerfile")
-postgres_definition_sha256=${postgres_definition_sha256%% *}
+read -r postgres_input_count postgres_definition_sha256 < <(
+  python3 "$root/scripts/source_tree_manifest.py" "$staging_root" --build-definition postgres
+)
+[[ "$postgres_input_count" == 3 && "$postgres_definition_sha256" =~ ^[0-9a-f]{64}$ ]] || {
+  echo "PostgreSQL build input manifest is incomplete" >&2
+  exit 1
+}
 postgres_image_definition=""
 if docker image inspect "$postgres_image" >/dev/null 2>&1; then
   postgres_image_definition=$(
