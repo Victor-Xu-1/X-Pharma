@@ -22,12 +22,17 @@ def test_ci_visual_refresh_is_explicit_and_always_followed_by_readonly_acceptanc
     root = Path(__file__).parents[1]
     workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text(encoding="utf-8"))
     steps = workflow["jobs"]["two-entry-smoke"]["steps"]
+    producer = next(step for step in steps if step.get("id") == "snapshot_generation")
     browser = next(step for step in steps if step.get("name") == "Browser workbench smoke")
+    assert producer["if"] == "${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}"
+    assert producer["run"] == "./scripts/run-browser-acceptance.sh --update-snapshots"
+    assert steps.index(producer) < steps.index(browser)
+    assert not producer.get("continue-on-error", False)
     assert "workflow_dispatch" in browser["env"]["REFRESH_VISUAL_BASELINES"]
     assert 'if [[ "$REFRESH_VISUAL_BASELINES" == "true" ]]' in browser["run"]
-    assert browser["run"].index("--update-snapshots") < browser["run"].index(
-        "--output /tmp/browser-acceptance-report.json"
-    )
+    assert "--update-snapshots" not in browser["run"]
+    assert "--output /tmp/browser-acceptance-report.json" in browser["run"]
+    assert not browser.get("continue-on-error", False)
 
 
 def test_runtime_contract_prohibits_local_llm_services_and_overlays() -> None:

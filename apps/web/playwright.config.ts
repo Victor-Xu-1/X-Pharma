@@ -1,11 +1,22 @@
+import { isAbsolute } from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
 const browserExecutable = process.env.E2E_BROWSER_EXECUTABLE ?? process.env.E2E_CHROME_EXECUTABLE;
+const snapshotReviewDirectory = process.env.E2E_SNAPSHOT_REVIEW_DIR;
+const snapshotReviewMode = process.env.E2E_SNAPSHOT_REVIEW_MODE;
+if (
+  (snapshotReviewDirectory || snapshotReviewMode) &&
+  (snapshotReviewMode !== "capture" || !snapshotReviewDirectory || !isAbsolute(snapshotReviewDirectory))
+) {
+  throw new Error("Isolated snapshots require the owned capture mode and an absolute capture directory");
+}
 
 export default defineConfig({
   testDir: "./e2e",
   testIgnore: "**/account-registration.spec.ts",
-  snapshotPathTemplate: "{testDir}/visual-baselines/{arg}-{projectName}{ext}",
+  snapshotPathTemplate: snapshotReviewDirectory
+    ? `${snapshotReviewDirectory}/{arg}-{projectName}{ext}`
+    : "{testDir}/visual-baselines/{arg}-{projectName}{ext}",
   fullyParallel: false,
   forbidOnly: true,
   retries: 0,

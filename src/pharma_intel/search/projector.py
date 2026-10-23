@@ -144,15 +144,16 @@ class SearchProjectionConsumer:
                 break
         return total
 
-    def delivery_counts(self) -> dict[str, int]:
+    def delivery_counts(self, tenant_id: str | None = None) -> dict[str, int]:
         counts = {state.value: 0 for state in ProjectionDeliveryState}
-        for tenant_id in self._tenant_ids():
+        tenant_ids = [tenant_id] if tenant_id is not None else self._tenant_ids()
+        for current_tenant_id in tenant_ids:
             with self.session_factory() as session:
-                set_tenant_context(session, tenant_id)
+                set_tenant_context(session, current_tenant_id)
                 rows = session.execute(
                     select(ProjectionDelivery.state, func.count())
                     .where(
-                        ProjectionDelivery.tenant_id == tenant_id,
+                        ProjectionDelivery.tenant_id == current_tenant_id,
                         ProjectionDelivery.consumer_name == CONSUMER_NAME,
                     )
                     .group_by(ProjectionDelivery.state)
@@ -322,6 +323,8 @@ class SearchProjectionConsumer:
                 claim_document = evidence_claim_projection(session, event.tenant_id, claim_id)
                 if claim_document is not None:
                     documents.append(claim_document)
+                else:
+                    self.gateway.delete_evidence_claim(event.tenant_id, claim_id)
                 if claim is not None:
                     for entity_id in dict.fromkeys([claim.subject_id, claim.object_id]):
                         if entity_id:
@@ -334,7 +337,13 @@ class SearchProjectionConsumer:
                 claim_id = str(event.payload.get("evidence_claim_id") or "")
                 if not claim_id:
                     raise ValueError("Governance withdrawal event is missing evidence_claim_id")
-                self.gateway.delete_evidence_claim(event.tenant_id, claim_id)
+                current_document = evidence_claim_projection(session, event.tenant_id, claim_id)
+                if current_document is None:
+                    self.gateway.delete_evidence_claim(event.tenant_id, claim_id)
+                else:
+                    # Another valid publication can share this claim. Resolve its
+                    # current authority rather than applying stale event state.
+                    self.gateway.bulk_index([current_document])
                 return
             if event.event_type == "knowledge.page.compiled":
                 page_id = str(event.payload.get("knowledge_page_id") or event.aggregate_id)

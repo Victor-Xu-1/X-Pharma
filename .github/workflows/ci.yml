@@ -33,10 +33,10 @@ jobs:
         run: uv sync --locked --dev
       - name: Lint and format gate
         run: |
-          uv run ruff format --check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/run_controlled_browser_acceptance.py
-          uv run ruff check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/run_controlled_browser_acceptance.py
+          uv run ruff format --check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/browser_snapshot_review.py scripts/browser_snapshot_cli.py scripts/run_controlled_browser_acceptance.py
+          uv run ruff check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/browser_snapshot_review.py scripts/browser_snapshot_cli.py scripts/run_controlled_browser_acceptance.py
       - name: Strict typing gate
-        run: uv run mypy src tests scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/run_controlled_browser_acceptance.py
+        run: uv run mypy src tests scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/browser_snapshot_review.py scripts/browser_snapshot_cli.py scripts/run_controlled_browser_acceptance.py
       - name: OpenAPI 3.1.2 drift gate
         run: uv run pharma-openapi --check
       - name: Unit and service tests
@@ -174,7 +174,7 @@ jobs:
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
         with:
           version: 11.7.0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24.14.0
           cache: pnpm
@@ -188,8 +188,6 @@ jobs:
       - run: pnpm audit --audit-level high
       - name: Prepare isolated account browser
         working-directory: .
-        env:
-          VISUAL_PROFILE_REVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
         run: |
           uv sync --locked --dev
           bash scripts/prepare-ci-browser.sh
@@ -198,7 +196,7 @@ jobs:
         run: uv run python scripts/run_account_browser_acceptance.py --output /tmp/account-browser-acceptance-report.json
       - name: Archive account browser evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: account-browser-evidence
           path: /tmp/account-browser-acceptance-report.json
@@ -209,7 +207,7 @@ jobs:
         run: uv run python -m scripts.run_controlled_browser_acceptance --output /tmp/controlled-browser-acceptance-report.json
       - name: Archive required controlled browser evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: controlled-browser-evidence
           path: /tmp/controlled-browser-acceptance-report.json
@@ -229,14 +227,12 @@ jobs:
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
         with:
           version: 11.7.0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24.14.0
           cache: pnpm
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - name: Install locked browser dependencies
-        env:
-          VISUAL_PROFILE_REVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
         run: |
           uv sync --locked --dev
           pnpm --dir apps/web install --frozen-lockfile
@@ -247,7 +243,7 @@ jobs:
         run: uv run python -m scripts.run_controlled_browser_acceptance --phase company-controlled --output /tmp/company-controlled-browser-acceptance-report.json
       - name: Archive required company browser evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: company-controlled-browser-evidence
           path: /tmp/company-controlled-browser-acceptance-report.json
@@ -271,7 +267,7 @@ jobs:
         run: ./scripts/validate-kubernetes.sh --uv-path uv --output /tmp/kubernetes-api-validation.json
       - name: Archive Kubernetes API validation evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: kubernetes-api-validation
           path: /tmp/kubernetes-api-validation.json
@@ -310,14 +306,12 @@ jobs:
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
         with:
           version: 11.7.0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24.14.0
           cache: pnpm
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - name: Install test clients
-        env:
-          VISUAL_PROFILE_REVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
         run: |
           uv sync --locked --dev
           pnpm --dir apps/web install --frozen-lockfile
@@ -376,6 +370,19 @@ jobs:
             pharma-commercial --tenant-slug e2e --actor CI-E2E grant-credit \
             --subscription-key e2e-2026 --units 1000 --external-reference CI-E2E-CREDIT \
             --reason "Ephemeral integration allocation"
+      - name: Generate isolated visual baseline candidates
+        id: snapshot_generation
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
+        env:
+          PHARMA_BROWSER_KEEP_OUTPUT: "true"
+        run: ./scripts/run-browser-acceptance.sh --update-snapshots
+      - name: Archive visual baseline candidates for review
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines && steps.snapshot_generation.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: X-Pharma-visual-baseline-candidates
+          path: apps/web/e2e/visual-baselines/
+          if-no-files-found: error
       - name: Browser workbench smoke
         id: workbench_smoke
         env:
@@ -383,7 +390,6 @@ jobs:
           PHARMA_BROWSER_KEEP_OUTPUT: "true"
         run: |
           if [[ "$REFRESH_VISUAL_BASELINES" == "true" ]]; then
-            ./scripts/run-browser-acceptance.sh --update-snapshots
             ./scripts/run-browser-acceptance.sh --output /tmp/browser-acceptance-report.json
           else
             ./scripts/run-browser-acceptance.sh --phase full-stack --output /tmp/full-stack-browser-acceptance-report.json
@@ -409,21 +415,14 @@ jobs:
           --company /tmp/company-controlled-browser-evidence/company-controlled-browser-acceptance-report.json
           --output /tmp/browser-acceptance-report.json
       - name: Archive failed visual comparisons
-        if: ${{ failure() && steps.workbench_smoke.outcome == 'failure' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ failure() && (steps.workbench_smoke.outcome == 'failure' || steps.snapshot_generation.outcome == 'failure') }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: X-Pharma-failed-visual-comparisons
           path: |
             /tmp/pharma-browser-acceptance-*/**/*-actual.png
             /tmp/pharma-browser-acceptance-*/**/*-diff.png
           if-no-files-found: warn
-      - name: Archive visual baseline candidates for review
-        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: X-Pharma-visual-baseline-candidates
-          path: apps/web/e2e/visual-baselines/
-          if-no-files-found: error
       - name: Real MCP HTTP and Web canonical fact consistency
         run: ./scripts/verify-entry-consistency.sh --web-url "$E2E_BASE_URL" --mcp-url "$TEST_MCP_URL" --output /tmp/entry-consistency-report.json
       - name: Independent MCP dual-client interoperability
@@ -434,7 +433,7 @@ jobs:
           --max-p95-ms 10000 --output /tmp/mcp-load-report.json
       - name: Archive MCP protocol and concurrency evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: two-entry-protocol-and-load-evidence
           path: |
@@ -466,7 +465,7 @@ jobs:
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
         with:
           version: 11.7.0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24.14.0
           cache: pnpm
@@ -499,7 +498,7 @@ jobs:
         run: ./scripts/run-security-gates.sh
       - name: Archive security evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: security-supply-chain-evidence
           path: manifests/runtime/security/

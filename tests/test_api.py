@@ -597,7 +597,8 @@ def test_authenticated_route_without_session_dependency_is_audited(
             return None
 
         @staticmethod
-        def delivery_counts() -> dict[str, int]:
+        def delivery_counts(tenant_id: str) -> dict[str, int]:
+            assert tenant_id == tenant.id
             return {}
 
     session_factory = sessionmaker(bind=session.get_bind(), autoflush=False, expire_on_commit=False)
