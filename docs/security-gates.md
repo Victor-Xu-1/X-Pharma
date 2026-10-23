@@ -91,6 +91,10 @@ one instrumentation package. The project and separate OCR hash lock use certifi
 2026.10.19 and Pillow 13.0.0; the development audit toolchain constrains pip to
 26.2.0. Vite is pinned to 8.3.3 because the 8.3.2 release still falls in the
 affected range for [the Windows editor-launch advisory](https://github.com/advisories/GHSA-587h-7wmj-h5pm).
+Vitest stays on the 4.1 series at 4.1.12 to fix both
+[manual mock injection](https://github.com/advisories/GHSA-qxg6-89mg-rqv8) and
+[Windows redirect traversal](https://github.com/advisories/GHSA-xp26-3454-mjgp)
+without adopting an unrelated major-version change.
 These are dependency versions, not manual product-version changes.
 
 Both package ecosystems retain their original frozen-lock and vulnerability
