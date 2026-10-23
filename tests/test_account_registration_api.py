@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 from collections.abc import Generator
+from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 
 import pytest
@@ -9,6 +11,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from pharma_intel.accounts.identity import create_account
+from pharma_intel.accounts.request_budget import consume_account_budget
 from pharma_intel.accounts.request_limits import ACCOUNT_BODY_LIMIT
 from pharma_intel.api import app
 from pharma_intel.config import get_settings
@@ -142,7 +145,15 @@ def test_registration_rejects_privilege_injection_and_redacts_sensitive_validati
         assert session.scalar(select(User.id)) is None
 
 
-def test_registration_blocks_cross_origin_and_repeated_anonymous_attempts(registration_client: TestClient) -> None:
+def test_registration_blocks_cross_origin_and_repeated_anonymous_attempts(
+    registration_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Exercise the real persisted counter without letting password hashing cross
+    # a wall-clock reset boundary. Rollover has its own explicit clock contract.
+    monkeypatch.setattr(
+        "pharma_intel.http.registration.consume_account_budget",
+        partial(consume_account_budget, now=datetime(2026, 10, 1, 0, 9, 59, 999999, tzinfo=UTC)),
+    )
     client = registration_client
     assert (
         client.post(
