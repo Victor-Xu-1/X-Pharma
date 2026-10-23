@@ -1,0 +1,19 @@
+.entity-identity-label {
+  display: block;
+  max-inline-size: 260px;
+  overflow-wrap: anywhere;
+}
+.entity-identity-label summary {
+  min-height: 24px;
+  cursor: pointer;
+  color: var(--ds-accent-strong);
+  font-size: var(--ds-text-xs);
+}
+.entity-identity-label p {
+  display: block;
+  margin: 4px 0 0;
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-xs);
+  font-weight: 400;
+  line-height: 1.6;
+}

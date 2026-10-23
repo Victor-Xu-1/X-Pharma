@@ -9,6 +9,7 @@ import {
   getComparisonSet,
   loadCollectionCatalog,
 } from "../lib/contracts/collections";
+import { setLocale } from "../lib/i18n";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/collections", () => ({
@@ -81,6 +82,23 @@ beforeEach(() => {
   });
   vi.mocked(getComparisonSet).mockResolvedValue({ ...editableSet, members: [] });
   vi.mocked(addComparisonSetMembers).mockResolvedValue(addedDetail);
+});
+
+it("changes picker and directory labels without clearing a draft or writing selected entities", async () => {
+  const props = { selectedEntityIds: ["drug-1"], onAdded: vi.fn() };
+  const { rerender } = renderWithQueryClient(<AddToComparisonControl {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: "加入列表（1）" }));
+  await screen.findByLabelText("目标列表");
+  fireEvent.change(screen.getByLabelText("搜索列表名称或说明"), { target: { value: "中文研究草稿" } });
+  const catalogReads = vi.mocked(loadCollectionCatalog).mock.calls.length;
+  act(() => setLocale("en"));
+  rerender(<AddToComparisonControl {...props} />);
+  expect(screen.getByRole("button", { name: "Add to list (1)" })).toBeVisible();
+  expect(screen.getByLabelText("Search list names or descriptions")).toHaveValue("中文研究草稿");
+  expect(screen.getByLabelText("Destination list")).toHaveValue("set-1");
+  expect(loadCollectionCatalog).toHaveBeenCalledTimes(catalogReads);
+  expect(addComparisonSetMembers).not.toHaveBeenCalled();
+  expect(createComparisonSet).not.toHaveBeenCalled();
 });
 
 it("locks submission during the version preflight read", async () => {

@@ -141,3 +141,34 @@ it("removes its shortcut when leaving the search view", () => {
   document.body.dispatchEvent(event);
   expect(event.defaultPrevented).toBe(false);
 });
+
+it("keeps an in-flow suggestion surface stable until an outside pointer target activates", async () => {
+  renderWithQueryClient(<Harness />);
+  const input = screen.getByRole("combobox");
+  fireEvent.change(input, { target: { value: "EGFR" } });
+  await screen.findByRole("listbox");
+  const refresh = document.createElement("button");
+  refresh.type = "button";
+  document.body.append(refresh);
+  try {
+    fireEvent.pointerDown(refresh);
+    fireEvent.blur(input, { relatedTarget: refresh });
+    expect(screen.getByRole("listbox")).toBeVisible();
+    fireEvent.pointerUp(refresh);
+    fireEvent.click(refresh);
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  } finally {
+    refresh.remove();
+  }
+});
+
+it("dismisses suggestions immediately on keyboard focus departure", async () => {
+  renderWithQueryClient(<Harness />);
+  const input = screen.getByRole("combobox");
+  fireEvent.change(input, { target: { value: "EGFR" } });
+  await screen.findByRole("listbox");
+  const outside = document.createElement("button");
+  outside.type = "button";
+  fireEvent.blur(input, { relatedTarget: outside });
+  expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+});

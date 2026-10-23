@@ -5,10 +5,12 @@ import type {
   EnterpriseApiKeyOperation,
   EnterpriseApiKeySecret,
 } from "../../lib/contracts/enterprise";
+import { useLocale } from "../../lib/i18n";
+import { type EnterpriseAccessMessageKey, enterpriseAccessText as t } from "../../lib/i18n/enterpriseAccess";
 import { ModalShell } from "./ModalShell";
 import type { ApiKeyAction } from "./types";
 
-export const apiKeyScopeLabels: Record<string, string> = {
+export const apiKeyScopeLabels: Record<string, EnterpriseAccessMessageKey> = {
   "mcp:connect": "MCP 连接",
   "entities:read": "实体检索",
   "dossiers:read": "专业档案",
@@ -28,7 +30,7 @@ export const apiKeyScopeLabels: Record<string, string> = {
 };
 
 export function apiKeyScopeLabel(scope: string): string {
-  return apiKeyScopeLabels[scope] ?? scope;
+  return apiKeyScopeLabels[scope] ? t(apiKeyScopeLabels[scope]) : scope;
 }
 
 export function localDateTimeValue(value?: string | null, daysFromNow = 90): string {
@@ -50,6 +52,7 @@ export function ApiKeyActionModal({
   close: () => void;
   submit: (operation: EnterpriseApiKeyOperation) => Promise<void>;
 }) {
+  useLocale();
   const apiKey = action.kind === "create" ? null : action.apiKey;
   const [name, setName] = useState(apiKey?.name ?? "");
   const [expiresAt, setExpiresAt] = useState(localDateTimeValue(apiKey?.expires_at));
@@ -64,7 +67,7 @@ export function ApiKeyActionModal({
     (action.kind === "revoke" || (name.trim().length > 0 && expiresAt.length > 0 && scopes.length >= 2));
 
   return (
-    <ModalShell title={title} close={close}>
+    <ModalShell title={t(title)} close={close}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -106,24 +109,26 @@ export function ApiKeyActionModal({
         {action.kind !== "revoke" ? (
           <>
             <label>
-              密钥名称
+              {t("密钥名称")}
               <input required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} />
             </label>
             <label>
-              到期时间
+              {t("到期时间")}
               <input
                 required
                 type="datetime-local"
                 value={expiresAt}
                 onChange={(event) => setExpiresAt(event.target.value)}
               />
-              <span className="cell-subtitle">最长 {catalog.max_ttl_days} 天，到期后自动拒绝认证。</span>
+              <span className="cell-subtitle">
+                {t("最长 {days} 天，到期后自动拒绝认证。", { days: catalog.max_ttl_days })}
+              </span>
             </label>
           </>
         ) : null}
         {action.kind === "create" ? (
           <fieldset className="enterprise-member-list">
-            <legend>授权范围</legend>
+            <legend>{t("授权范围")}</legend>
             {catalog.allowed_scopes.map((scope) => (
               <label key={scope}>
                 <input
@@ -147,10 +152,10 @@ export function ApiKeyActionModal({
           </fieldset>
         ) : null}
         {action.kind === "revoke" ? (
-          <p className="inline-warning">撤销后不能重新启用；该密钥及其 API-key 商业主体会立即失效。</p>
+          <p className="inline-warning">{t("撤销后不能重新启用；该密钥及其 API-key 商业主体会立即失效。")}</p>
         ) : null}
         <label>
-          变更原因
+          {t("变更原因")}
           <textarea
             required
             minLength={3}
@@ -161,10 +166,10 @@ export function ApiKeyActionModal({
         </label>
         <div className="form-actions">
           <button className="secondary-button" type="button" onClick={close}>
-            取消
+            {t("取消")}
           </button>
           <button className="primary-button" type="submit" disabled={busy || !canSubmit}>
-            {action.kind === "create" ? "创建密钥" : action.kind === "rotate" ? "轮换密钥" : "确认撤销"}
+            {action.kind === "create" ? t("创建密钥") : action.kind === "rotate" ? t("轮换密钥") : t("确认撤销")}
           </button>
         </div>
       </form>
@@ -173,18 +178,19 @@ export function ApiKeyActionModal({
 }
 
 export function ApiKeySecretModal({ item, close }: { item: EnterpriseApiKeySecret; close: () => void }) {
-  const [copyStatus, setCopyStatus] = useState("");
+  useLocale();
+  const [copyStatus, setCopyStatus] = useState<EnterpriseAccessMessageKey | null>(null);
 
   return (
-    <ModalShell title="立即保存 API 密钥" close={close}>
+    <ModalShell title={t("立即保存 API 密钥")} close={close}>
       <p className="inline-warning" role="status">
-        这是完整密钥唯一一次显示。关闭后平台无法找回，请立即存入获批的密钥管理器。
+        {t("这是完整密钥唯一一次显示。关闭后平台无法找回，请立即存入获批的密钥管理器。")}
       </p>
       <label>
-        API 密钥
+        {t("API 密钥")}
         <input
           className="mono-value"
-          aria-label="API 密钥"
+          aria-label={t("API 密钥")}
           data-modal-autofocus="true"
           onFocus={(event) => event.currentTarget.select()}
           readOnly
@@ -193,9 +199,12 @@ export function ApiKeySecretModal({ item, close }: { item: EnterpriseApiKeySecre
       </label>
       <p className="enterprise-modal-subject">
         {item.name}
-        <span className="mono-value">密钥 ID：{item.id}</span>
+        <span className="mono-value">
+          {t("密钥 ID：")}
+          {item.id}
+        </span>
       </p>
-      {copyStatus ? <p role="status">{copyStatus}</p> : null}
+      {copyStatus ? <p role="status">{t(copyStatus)}</p> : null}
       <div className="form-actions">
         <button
           className="secondary-button"
@@ -212,10 +221,10 @@ export function ApiKeySecretModal({ item, close }: { item: EnterpriseApiKeySecre
           }}
         >
           <Copy size={16} />
-          复制密钥
+          {t("复制密钥")}
         </button>
         <button className="primary-button" type="button" onClick={close}>
-          已安全保存
+          {t("已安全保存")}
         </button>
       </div>
     </ModalShell>

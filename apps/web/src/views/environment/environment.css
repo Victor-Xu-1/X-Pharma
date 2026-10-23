@@ -1,7 +1,22 @@
 .environment-workbench > [role="tabpanel"] {
+  min-width: 0;
   display: grid;
   gap: 20px;
   padding-top: 20px;
+}
+.environment-workbench > .enterprise-toolbar .secondary-button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.platform-snapshot {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-xs);
+  line-height: var(--ds-leading-body);
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .environment-readiness {
   padding: 24px;
@@ -62,7 +77,17 @@
   border-width: 1px 0 0;
   border-radius: 0 0 var(--ds-radius-panel) var(--ds-radius-panel);
 }
+.environment-probe-table table {
+  table-layout: fixed;
+  min-width: 720px;
+}
+.environment-probe-table td,
+.environment-probe-table code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .environment-installation {
+  min-width: 0;
   display: grid;
   gap: 20px;
 }
@@ -73,6 +98,7 @@
   line-height: 1.75;
 }
 .environment-recipes {
+  min-width: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 12px;
@@ -105,7 +131,12 @@
   min-width: 0;
 }
 .environment-recipes .cell-subtitle {
+  max-width: none;
   margin-top: 7px;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
   font-weight: 400;
   line-height: 1.7;
 }
@@ -113,6 +144,23 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+:root .environment-recipes input,
+:root .environment-offline input {
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
+  margin-top: 3px;
+  flex: none;
+}
+.environment-status-missing,
+.environment-status-blocked {
+  color: var(--ds-danger);
+  background: var(--ds-danger-soft);
+}
+.environment-status-mismatch {
+  color: var(--ds-warning);
+  background: var(--ds-warning-soft);
 }
 .environment-installation > .primary-button {
   justify-self: start;
@@ -143,6 +191,11 @@
   line-height: 1.8;
 }
 @media (max-width: 760px) {
+  .platform-operations > section > header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 8px;
+  }
   .environment-readiness {
     padding: 20px 16px;
   }
@@ -154,5 +207,10 @@
   }
   .environment-recipes > label {
     padding: 16px;
+  }
+}
+@media (max-width: 480px) {
+  .environment-readiness-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

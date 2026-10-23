@@ -1,7 +1,6 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
-
 import {
   emptyRegulatorySearchFilters,
   loadRegulatoryEventDetail,
@@ -9,6 +8,7 @@ import {
   searchRegulatoryEvents,
 } from "../lib/contracts/regulatory";
 import { RegulatoryView } from "../views/RegulatoryView";
+import { eventId, regulatoryEvent, regulatoryResult } from "./fixtures/regulatoryResearch";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/regulatory", async () => {
@@ -24,90 +24,6 @@ vi.mock("../lib/contracts/regulatory", async () => {
     saveRegulatorySearch: vi.fn(),
   };
 });
-
-const eventId = "550e8400-e29b-41d4-a716-446655440010";
-const regulatoryEvent = {
-  id: eventId,
-  subject_entity_id: "550e8400-e29b-41d4-a716-446655440001",
-  agency: "FDA",
-  jurisdiction: "US",
-  event_identifier: "FDA-2026-001",
-  application_number: "NDA 219999",
-  event_type: "approval",
-  status: "approved",
-  title: "VX-101 approved for EGFR-positive NSCLC",
-  decision_date: "2026-02-20T00:00:00Z",
-  designation_type: "breakthrough_therapy" as const,
-  label_change_type: "initial_label" as const,
-  label_version: "USPI v1.0",
-  label_effective_at: "2026-02-20T00:00:00Z",
-  approved_population: "Adults with EGFR exon 20 insertion NSCLC",
-  line_of_therapy: "Second line",
-  biomarker: "EGFR exon 20 insertion",
-  route_of_administration: "Oral",
-  dosage_form: "Tablet",
-  has_boxed_warning: true,
-  safety_signal_type: "adverse_event" as const,
-  safety_term: "Interstitial lung disease",
-  safety_severity: "serious" as const,
-  safety_status: "confirmed" as const,
-  safety_identified_at: "2026-02-01T00:00:00Z",
-  safety_confirmed_at: "2026-02-10T00:00:00Z",
-  safety_resolved_at: null,
-  affected_population: "Patients with prior lung injury",
-  risk_actions: ["Monitor pulmonary symptoms"],
-  source_updated_at: "2026-02-21T00:00:00Z",
-  indication_entity_id: "550e8400-e29b-41d4-a716-446655440002",
-  organization_entity_id: "550e8400-e29b-41d4-a716-446655440003",
-  details: { review_pathway: "priority" },
-  source_document_id: "source-1",
-  subject_entity: {
-    id: "550e8400-e29b-41d4-a716-446655440001",
-    name: "VX-101",
-    entity_type: "drug" as const,
-  },
-  indication_entity: {
-    id: "550e8400-e29b-41d4-a716-446655440002",
-    name: "EGFR-positive NSCLC",
-    entity_type: "disease" as const,
-  },
-  organization_entity: {
-    id: "550e8400-e29b-41d4-a716-446655440003",
-    name: "Acme Pharma",
-    entity_type: "organization" as const,
-  },
-};
-
-const regulatoryResult = {
-  items: [regulatoryEvent],
-  total: 101,
-  limit: 100,
-  offset: 0,
-  facets: {
-    agency: { FDA: 101 },
-    jurisdiction: { US: 101 },
-    event_type: { approval: 101 },
-    status: { approved: 101 },
-    designation_type: { breakthrough_therapy: 12 },
-    label_change_type: { initial_label: 8 },
-    has_boxed_warning: { true: 3, false: 20 },
-    safety_signal_type: { adverse_event: 9 },
-    safety_severity: { serious: 7 },
-    safety_status: { confirmed: 6 },
-  },
-  landscape: {
-    total_events: 101,
-    event_type: [{ key: "approval", label: "approval", count: 101, share: 1 }],
-    agency: [{ key: "FDA", label: "FDA", count: 101, share: 1 }],
-    decision_year: [{ key: "2026", label: "2026", count: 101, share: 1 }],
-  },
-  query_schema_version: "pharma.regulatory.search.v4",
-  sort_by: "decision_date" as const,
-  sort_direction: "desc" as const,
-  applied_filters: [{ field: "q", operator: "contains" as const, value: "VX-101" }],
-  as_of: "2026-07-22T10:00:00Z",
-  warnings: ["未观察到监管事件不代表不存在；结果受监管辖区、数据授权、更新时效和治理状态限制。"],
-};
 
 function renderView(overrides: Partial<ComponentProps<typeof RegulatoryView>> = {}) {
   return renderWithQueryClient(
@@ -128,7 +44,7 @@ function renderView(overrides: Partial<ComponentProps<typeof RegulatoryView>> = 
 beforeEach(() => {
   vi.mocked(searchRegulatoryEvents).mockResolvedValue(regulatoryResult);
   vi.mocked(loadRegulatoryEventDetail).mockResolvedValue(regulatoryEvent);
-  vi.mocked(saveRegulatorySearch).mockResolvedValue({ message: "监管检索已保存并启用监控" });
+  vi.mocked(saveRegulatorySearch).mockResolvedValue({ kind: "saved", monitoring: true });
 });
 
 it("renders governed regulatory intelligence and opens a stable event detail", async () => {

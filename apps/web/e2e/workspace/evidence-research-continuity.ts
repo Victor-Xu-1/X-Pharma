@@ -1,6 +1,7 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs, TestInfo } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
+import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyEvidenceResearchContinuity(
   { page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">,
@@ -11,6 +12,7 @@ export async function verifyEvidenceResearchContinuity(
   if (!credentials) return;
 
   await page.goto("/");
+  await selectInterfaceLanguage(page, "zh-CN");
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
@@ -67,6 +69,20 @@ export async function verifyEvidenceResearchContinuity(
   await expect(page.locator("article.evidence-record[aria-current='true']")).toContainText(
     filteredResult.chunks[0]?.document_name ?? "",
   );
+
+  const stableLocation = page.url();
+  const originalQuote = await page.locator("article.evidence-record[aria-current='true'] blockquote").innerText();
+  await selectInterfaceLanguage(page, "en");
+  await expect(page.getByLabel("Current citation location")).toContainText(
+    filteredResult.chunks[0]?.document_name ?? "",
+  );
+  await expect(page.getByRole("textbox", { name: "Research question or evidence query" })).toHaveValue("EGFR");
+  await expect(datasetButton).toHaveAttribute("aria-pressed", "true");
+  expect(page.url()).toBe(stableLocation);
+  expect(await page.locator("article.evidence-record[aria-current='true'] blockquote").innerText()).toBe(originalQuote);
+  await selectInterfaceLanguage(page, "zh-CN");
+  await expect(page.getByLabel("当前引用定位")).toContainText(filteredResult.chunks[0]?.document_name ?? "");
+  expect(page.url()).toBe(stableLocation);
 
   await page.getByRole("button", { name: "定位引用 02" }).click();
   await expect.poll(() => new URL(page.url()).searchParams.get("chunk")).toBe("2");

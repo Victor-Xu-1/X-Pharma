@@ -1,0 +1,7 @@
+.scientific-trend-tooltip {
+  display: grid;
+  gap: 4px;
+  max-width: min(240px, calc(100vw - 80px));
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

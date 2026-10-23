@@ -422,19 +422,19 @@ it("adds an OpenAI-compatible LLM without ever displaying a stored secret", asyn
   });
 });
 
-it("offers MiMo primary and GLM fallback presets without filling a credential", async () => {
+it("offers existing MiMo and GLM presets without filling a credential or requiring a vendor choice", async () => {
   renderWithQueryClient(<EnterpriseView user={user} authMode="local" />);
   await selectEnterpriseTab("\u6a21\u578b\u8bbe\u7f6e");
   fireEvent.click(screen.getByRole("button", { name: "\u589e\u52a0 LLM" }));
 
-  fireEvent.click(screen.getByRole("button", { name: "\u4f7f\u7528 MiMo v2.5 \u4e3b\u6a21\u578b\u9884\u8bbe" }));
+  fireEvent.click(screen.getByRole("button", { name: "使用 MiMo v2.5 预设" }));
   expect(screen.getByLabelText("\u4f9b\u5e94\u5546\u540d\u79f0")).toHaveValue("mimo");
   expect(screen.getByLabelText("\u6a21\u578b ID")).toHaveValue("mimo-v2.5");
   expect(screen.getByLabelText("API \u6839\u5730\u5740")).toHaveValue("https://token-plan-cn.xiaomimimo.com/v1");
   expect(screen.getByLabelText("API Key")).toHaveValue("");
   expect(screen.getByLabelText("\u5c1d\u8bd5\u6b21\u6570")).toHaveValue(2);
 
-  fireEvent.click(screen.getByRole("button", { name: "\u4f7f\u7528 GLM 5.2 \u5907\u7528\u9884\u8bbe" }));
+  fireEvent.click(screen.getByRole("button", { name: "使用 GLM 5.2 预设" }));
   expect(screen.getByLabelText("\u4f9b\u5e94\u5546\u540d\u79f0")).toHaveValue("glm");
   expect(screen.getByLabelText("\u6a21\u578b ID")).toHaveValue("GLM-5.2");
   expect(screen.getByLabelText("API \u6839\u5730\u5740")).toHaveValue("https://chatapi.weixin.qq.com/openai/v1");
@@ -631,4 +631,45 @@ it("separates live platform signals from external release evidence", async () =>
   expect(screen.getByRole("table", { name: "平台 SLO" })).toHaveTextContent("web-availability");
   expect(screen.getByRole("table", { name: "平台发布证据" })).toHaveTextContent("backup_restore");
   expect(screen.getByText("fc5e8a1b3d72", { exact: true })).toBeInTheDocument();
+});
+
+it.each([
+  ["平台服务状态明细", "平台服务状态"],
+  ["平台 SLO 明细", "平台 SLO"],
+  ["平台发布证据明细", "平台发布证据"],
+])("makes %s keyboard reachable without removing table fields", (regionName, tableName) => {
+  renderWithQueryClient(<PlatformOperationsPanel platform={workspace.platform} />);
+  const region = screen.getByRole("region", { name: regionName });
+  expect(region).toHaveAttribute("tabindex", "0");
+  region.focus();
+  expect(region).toHaveFocus();
+  expect(screen.getByRole("table", { name: tableName })).toBeVisible();
+});
+
+it("keeps complete platform audit event fields in a named keyboard scroll region", () => {
+  const requestId = "browser-only-layout-trace-00000000-0000-4000-8000-000000000001";
+  renderWithQueryClient(
+    <PlatformOperationsPanel
+      platform={{
+        ...workspace.platform,
+        recent_events: [
+          {
+            id: "browser-only-event",
+            action: "platform.report.viewed",
+            occurred_at: "2026-10-08T00:00:00Z",
+            outcome: "success",
+            request_id: requestId,
+            resource_type: "environment-report",
+          },
+        ],
+      }}
+    />,
+  );
+  const region = screen.getByRole("region", { name: "最近平台审计事件明细" });
+  expect(region).toHaveAttribute("tabindex", "0");
+  region.focus();
+  expect(region).toHaveFocus();
+  expect(region).toHaveTextContent(requestId);
+  expect(region).toHaveTextContent("platform.report.viewed");
+  expect(region).toHaveTextContent("environment-report");
 });

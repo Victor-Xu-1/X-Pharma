@@ -19,14 +19,7 @@ CMD ["sh", "-ec", "pnpm api:check && pnpm check && pnpm typecheck && pnpm test &
 
 FROM ghcr.io/astral-sh/uv:0.11.28@sha256:0f36cb9361a3346885ca3677e3767016687b5a170c1a6b88465ec14aefec90aa AS uv
 
-FROM ${DOCKER_LIBRARY_REGISTRY}/python:3.13.14-slim@sha256:9662417aace5ae7b8e2609cce472b72a8958e134ba372808abe9cc1a0c0125e6 AS builder
-
-ARG CPYTHON_HTML_PARSER_COMMIT=7933f4bf7131aa4140750f9404f5de0aa2969ced
-ARG CPYTHON_HTML_PARSER_SHA256=4274e9112adf3fa57c7f9afa7c9b5c631456b18b7403cc627cc5027d02cdd2ae
-ARG CPYTHON_TARFILE_COMMIT=9c17bace90f88dfba6d0e2fe23c8e7ae35f83955
-ARG CPYTHON_TARFILE_SHA256=0fd87b49826f745c16e3ee68b2390a206b2dfcfe9a0b1118bd7fcd7c06deaff1
-LABEL io.pharma.cpython-html-parser-commit=${CPYTHON_HTML_PARSER_COMMIT} \
-      io.pharma.cpython-tarfile-commit=${CPYTHON_TARFILE_COMMIT}
+FROM ${DOCKER_LIBRARY_REGISTRY}/python:3.13.16-slim@sha256:bf44cdfcb76cd3b41e879bc058fc37ec5872002ccfde7fcb765e218cde0cd79c AS builder
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -36,21 +29,13 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_CONCURRENT_DOWNLOADS=2
 COPY --from=uv /uv /bin/uv
 WORKDIR /app
-COPY deploy/cpython/html-parser.py /tmp/cpython-html-parser.py
-COPY deploy/cpython/tarfile.py /tmp/cpython-tarfile.py
-COPY scripts/verify_cpython_tarfile.py /tmp/verify-tarfile.py
-RUN echo "${CPYTHON_HTML_PARSER_SHA256}  /tmp/cpython-html-parser.py" | sha256sum --check --strict \
-    && install -m 0644 /tmp/cpython-html-parser.py /usr/local/lib/python3.13/html/parser.py \
-    && rm -f /tmp/cpython-html-parser.py \
-    && rm -f /usr/local/lib/python3.13/html/__pycache__/parser.*.pyc \
-    && python -c "from html.parser import HTMLParser; p=HTMLParser(); p.feed('<!--'); [p.feed('a' * 64) for _ in range(200000)]; p.feed('-->'); p.close()"
-RUN echo "${CPYTHON_TARFILE_SHA256}  /tmp/cpython-tarfile.py" | sha256sum --check --strict \
-    && install -m 0644 /tmp/cpython-tarfile.py /usr/local/lib/python3.13/tarfile.py \
-    && rm -f /tmp/cpython-tarfile.py \
-    && rm -f /usr/local/lib/python3.13/__pycache__/tarfile.*.pyc \
-    && python -c "import inspect, tarfile; assert 'if not data:' in inspect.getsource(tarfile._Stream.seek); assert 'unfiltered.replace(name=tarinfo.name' in inspect.getsource(tarfile.TarFile.makelink_with_filter)"
-RUN python /tmp/verify-tarfile.py && rm -f /tmp/verify-tarfile.py
-COPY pyproject.toml uv.lock README.md ./
+COPY scripts/verify_cpython_tarfile.py scripts/verify_cpython_tls.py scripts/verify_cpython_html.py /tmp/cpython-probes/
+RUN python /tmp/cpython-probes/verify_cpython_tarfile.py \
+    && python /tmp/cpython-probes/verify_cpython_tls.py \
+    && python /tmp/cpython-probes/verify_cpython_html.py \
+    && rm -rf /tmp/cpython-probes
+COPY pyproject.toml uv.lock README.md .python-version ./
+COPY deploy/cpython/downloads.json ./deploy/cpython/downloads.json
 COPY LICENSE NOTICE THIRD_PARTY_NOTICES.md ./
 COPY licenses ./licenses
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -87,7 +72,7 @@ COPY tests ./tests
 COPY services ./services
 COPY docs ./docs
 COPY deploy/api.Dockerfile ./deploy/api.Dockerfile
-COPY deploy/cpython ./deploy/cpython
+COPY deploy/security ./deploy/security
 COPY deploy/postgres-rdkit.Dockerfile ./deploy/postgres-rdkit.Dockerfile
 COPY deploy/commercial ./deploy/commercial
 COPY deploy/ingestion ./deploy/ingestion
@@ -115,7 +100,7 @@ RUN groupadd --gid 10001 tester \
 USER tester
 CMD ["uv", "run", "--no-sync", "pytest", "-m", "not integration"]
 
-FROM ${DOCKER_LIBRARY_REGISTRY}/python:3.13.14-slim@sha256:9662417aace5ae7b8e2609cce472b72a8958e134ba372808abe9cc1a0c0125e6
+FROM ${DOCKER_LIBRARY_REGISTRY}/python:3.13.16-slim@sha256:bf44cdfcb76cd3b41e879bc058fc37ec5872002ccfde7fcb765e218cde0cd79c
 
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 COPY deploy/security/debian13-runtime-packages.lock /tmp/security-packages.lock
@@ -125,8 +110,6 @@ RUN bash /tmp/install-security-packages.sh /tmp/security-packages.lock \
     && rm -rf /var/lib/apt/lists/*
 RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --create-home app
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
-COPY --from=builder /usr/local/lib/python3.13/html/parser.py /usr/local/lib/python3.13/html/parser.py
-COPY --from=builder /usr/local/lib/python3.13/tarfile.py /usr/local/lib/python3.13/tarfile.py
 USER app
 WORKDIR /app
 COPY --chown=app:app alembic.ini ./

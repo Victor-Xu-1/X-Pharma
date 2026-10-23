@@ -54,12 +54,25 @@ export const rightTypeLabels: Record<string, string> = {
 
 export { compactPhaseLabels as phaseLabels } from "./phasePresentation";
 
+/** Only controlled project captions are localized; source codes and labels remain literal. */
+export function dealLabel(
+  value: string | null | undefined,
+  labels: Readonly<Record<string, string>>,
+  sourceLabel?: string,
+): string {
+  if (!value) return professionalEnumLabel("未披露");
+  return Object.hasOwn(labels, value) ? professionalEnumLabel(labels[value], value) : (sourceLabel ?? value);
+}
+
+export function localizedDealLabels(labels: Readonly<Record<string, string>>): Record<string, string> {
+  return Object.fromEntries(Object.keys(labels).map((key) => [key, dealLabel(key, labels)]));
+}
+
 export function formatAmount(value: number | null, currency: string | null) {
-  if (value === null) return "未披露";
+  if (value === null) return professionalEnumLabel("未披露");
+  if (!Number.isFinite(value)) return "--";
   const prefix = currency ? `${currency} ` : "";
-  if (value >= 1_000_000_000) return `${prefix}${(value / 1_000_000_000).toFixed(2)}B`;
-  if (value >= 1_000_000) return `${prefix}${(value / 1_000_000).toFixed(1)}M`;
-  return `${prefix}${new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 }).format(value)}`;
+  return `${prefix}${new Intl.NumberFormat(formattingLocale(), { maximumSignificantDigits: 21 }).format(value)}`;
 }
 
 export function displayTerms(terms: Record<string, unknown>) {
@@ -67,6 +80,9 @@ export function displayTerms(terms: Record<string, unknown>) {
   if (!entries.length) return "--";
   return entries
     .slice(0, 2)
-    .map(([key, value]) => `${key}: ${String(value)}`)
+    .map(([key, value]) => `${key}: ${typeof value === "string" ? value : JSON.stringify(value)}`)
     .join(" · ");
 }
+
+import { formattingLocale } from "./i18n";
+import { professionalEnumLabel } from "./i18n/professionalEnums";

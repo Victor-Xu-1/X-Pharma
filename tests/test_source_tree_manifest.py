@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import hashlib
-import importlib.util
+import json
 import os
 import re
 import runpy
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -15,24 +13,18 @@ import pytest
 from scripts.source_tree_manifest import SourceTreeManifestError, build_source_tree_manifest
 
 
-def test_vendored_cpython_security_backports_match_reviewed_digests() -> None:
-    root = Path(__file__).parents[1] / "deploy" / "cpython"
+def test_cpython_security_runtime_inputs_match_reviewed_digests() -> None:
+    root = Path(__file__).parents[1]
+    descriptor = json.loads((root / "deploy/cpython/downloads.json").read_text())
+    download = descriptor["cpython-3.13.16-linux-x86_64-gnu"]
+    assert download["sha256"] == "4595c5589fff7bf0cb158d9a88a797e0d791fa33830770fcb7bf3f4b104feeae"
+    image = "python:3.13.16-slim@sha256:bf44cdfcb76cd3b41e879bc058fc37ec5872002ccfde7fcb765e218cde0cd79c"
+    for filename in ("deploy/api.Dockerfile", "services/ocr/Dockerfile"):
+        assert image in (root / filename).read_text()
 
-    assert hashlib.sha256((root / "html-parser.py").read_bytes()).hexdigest() == (
-        "4274e9112adf3fa57c7f9afa7c9b5c631456b18b7403cc627cc5027d02cdd2ae"
-    )
-    assert hashlib.sha256((root / "tarfile.py").read_bytes()).hexdigest() == (
-        "0fd87b49826f745c16e3ee68b2390a206b2dfcfe9a0b1118bd7fcd7c06deaff1"
-    )
 
-
-def test_vendored_tarfile_prevents_hardlink_symlink_relocation(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_installed_tarfile_prevents_hardlink_symlink_relocation() -> None:
     directory = Path(__file__).parents[1] / "deploy" / "cpython"
-    spec = importlib.util.spec_from_file_location("tarfile", directory / "tarfile.py")
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    monkeypatch.setitem(sys.modules, "tarfile", module)
-    spec.loader.exec_module(module)
     probe = runpy.run_path(str(directory.parents[1] / "scripts" / "verify_cpython_tarfile.py"))
     probe["verify_hardlink_relocation"]()
 
@@ -104,7 +96,15 @@ def test_security_gate_is_executable_and_embedded_python_compiles() -> None:
     assert '"$staging_root/deploy/api.Dockerfile"' in source
     assert '"$staging_root/services/ocr/Dockerfile"' in source
     assert '"$staging_root/deploy/postgres-rdkit.Dockerfile"' in source
-    assert "ocr.openvex.json" in source
+    assert "ocr.openvex.json" not in source
+    assert '"ocr": None' in source
+    ocr_scans = [
+        line
+        for line in source.splitlines()
+        if line.startswith('checked "OCR image') and "sbom:/output/ocr.syft.json" in line
+    ]
+    assert len(ocr_scans) == 2 and all("--vex" not in line for line in ocr_scans)
+    assert "sbom:/output/ocr.syft.json --only-fixed --fail-on high" in source
     assert source.index('checked "Application image build from staged source"') < source.index(
         'api_digest=$(docker_image_digest "$api_image")'
     )

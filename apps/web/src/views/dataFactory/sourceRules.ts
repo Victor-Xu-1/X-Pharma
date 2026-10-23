@@ -1,5 +1,6 @@
 import type { DataSource } from "../../lib/contracts/dataFactory";
 import type { DataSourceCreate } from "../../lib/generated/models/DataSourceCreate";
+import { SourceDraftValidationError } from "./sourceDraftValidation";
 
 export const PUBLIC_RESEARCH_SOURCES = {
   pubmed: {
@@ -36,26 +37,17 @@ export function clinicalTrialsSort(value: unknown): ClinicalTrialsSort {
 }
 
 export function isPublicResearchSource(sourceType: DataSource["source_type"]): sourceType is PublicResearchSourceType {
-  return sourceType in PUBLIC_RESEARCH_SOURCES;
+  return Object.hasOwn(PUBLIC_RESEARCH_SOURCES, sourceType);
 }
 
 export function sourceRequiresCredential(sourceType: DataSource["source_type"]): boolean {
   return ["http_manifest", "s3_snapshot", "sftp_snapshot", "smb_snapshot"].includes(sourceType);
 }
 
-export function sourceRootLabel(sourceType: DataSource["source_type"]): string {
-  if (sourceType === "folder") return "服务端只读目录";
-  if (sourceType === "http_manifest") return "Manifest API 地址";
-  if (sourceType === "pubmed") return "PubMed API 地址";
-  if (sourceType === "clinicaltrials_gov") return "ClinicalTrials.gov API 地址";
-  if (sourceType === "chembl") return "ChEMBL API 地址";
-  if (sourceType === "s3_snapshot") return "S3 Bucket / Prefix";
-  if (sourceType === "sftp_snapshot") return "SFTP 目录地址";
-  return "SMB 共享目录地址";
-}
-
 export function toLocalDateTimeInput(value?: string | null): string {
-  const date = value ? new Date(value) : new Date();
+  if (value === null) return "";
+  const date = value === undefined ? new Date() : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
   return local.toISOString().slice(0, 16);
 }
@@ -101,19 +93,20 @@ export function sourceRoutingRules(
 ): NonNullable<DataSourceCreate["routing_rules"]> {
   if (!isPublicResearchSource(sourceType)) return [];
   if (!Number.isInteger(draft.maxRecords) || draft.maxRecords < 1 || draft.maxRecords > 1000) {
-    throw new Error("单批记录数必须是 1–1000 的整数");
+    throw new SourceDraftValidationError("单批记录数必须是 1–1000 的整数");
   }
   const maxPage = sourceType === "pubmed" ? 200 : sourceType === "chembl" ? 100 : 1000;
   if (!Number.isInteger(draft.pageSize) || draft.pageSize < 1 || draft.pageSize > maxPage) {
-    throw new Error(`每页请求数量必须是 1–${maxPage} 的整数`);
+    throw new SourceDraftValidationError("每页请求数量必须是 1–{maximum} 的整数", { maximum: maxPage });
   }
   const budget = { max_records: draft.maxRecords, page_size: draft.pageSize };
   if (sourceType === "chembl") {
-    if (draft.includeActivities && draft.maxRecords > 25) throw new Error("活性补充每批最多 25 条机制记录");
+    if (draft.includeActivities && draft.maxRecords > 25)
+      throw new SourceDraftValidationError("活性补充每批最多 25 条机制记录");
     const targetId = draft.targetChemblId.trim().toUpperCase();
-    if (!/^CHEMBL[0-9]+$/.test(targetId)) throw new Error("请填写有效的 ChEMBL 靶点编号");
+    if (!/^CHEMBL[0-9]+$/.test(targetId)) throw new SourceDraftValidationError("请填写有效的 ChEMBL 靶点编号");
     if (!Number.isInteger(draft.activityLimit) || draft.activityLimit < 1 || draft.activityLimit > 10) {
-      throw new Error("每个药物的活性样本上限必须是 1–10 的整数");
+      throw new SourceDraftValidationError("每个药物的活性样本上限必须是 1–10 的整数");
     }
     return [
       {
@@ -125,13 +118,28 @@ export function sourceRoutingRules(
     ];
   }
   const query = draft.queryTerm.trim();
-  if (!query) throw new Error("检索主题不能为空");
+  if (!query) throw new SourceDraftValidationError("检索主题不能为空");
   if (sourceType === "pubmed") {
     return [{ ...budget, query_term: query, include_abstract: draft.includeAbstract }];
   }
-  if (draft.syncMode === "continuous" && !/^\d{4}-\d{2}-\d{2}$/.test(draft.startDate)) {
-    throw new Error("持续同步需要明确的历史起始日期");
+  if (
+    draft.syncMode === "continuous" &&
+    (!/^\d{4}-\d{2}-\d{2}$/.test(draft.startDate) ||
+      Number.isNaN(new Date(draft.startDate).getTime()) ||
+      new Date(draft.startDate).toISOString().slice(0, 10) !== draft.startDate)
+  ) {
+    throw new SourceDraftValidationError("持续同步需要明确的历史起始日期");
   }
+  if (!Number.isInteger(draft.windowDays) || draft.windowDays < 1 || draft.windowDays > 366)
+    throw new SourceDraftValidationError("日期分区必须是 1–366 天的整数");
+  if (!Number.isInteger(draft.overlapDays) || draft.overlapDays < 1 || draft.overlapDays > 30)
+    throw new SourceDraftValidationError("更新回看必须是 1–30 天的整数");
+  if (
+    !Number.isInteger(draft.reconcileIntervalDays) ||
+    draft.reconcileIntervalDays < 1 ||
+    draft.reconcileIntervalDays > 365
+  )
+    throw new SourceDraftValidationError("完整复核周期必须是 1–365 天的整数");
   return [
     {
       ...budget,

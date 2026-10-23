@@ -13,18 +13,38 @@ export {
 export * from "./workspace/types";
 
 const maximumReturnPathLength = 4_096;
+const maximumReturnFrames = 16;
+const retainedReturnFrames = 3;
 
 const entityDossierViews: ReadonlySet<ViewKey> = new Set(["drug", "target", "company", "disease", "entity"]);
 
 /** Parse only bounded, same-workbench context; never follow a referrer or browser history blindly. */
 export function researchReturnLocation(value: string | null | undefined): WorkspaceLocation | null {
-  return parseResearchReturnLocation(value, 3);
+  const frames: WorkspaceLocation[] = [];
+  let cursor = value;
+  while (cursor) {
+    if (frames.length === maximumReturnFrames) return null;
+    const frame = parseResearchReturnFrame(cursor);
+    if (!frame) break;
+    frames.push(frame.location);
+    cursor = frame.nestedPath;
+  }
+  if (!frames.length) return null;
+  // A return context is not an unbounded history log: keep the two most recent
+  // destinations and the originating research, rather than discarding its query.
+  const retained = frames.length > retainedReturnFrames ? [...frames.slice(0, 2), frames[frames.length - 1]] : frames;
+  let nestedPath: string | undefined;
+  for (const location of [...retained].reverse()) {
+    if (nestedPath) location.returnTo = nestedPath;
+    // Every frame has already passed the same typed/same-workbench validation.
+    // Encode the constructed path directly; do not recursively parse it again.
+    nestedPath = serializeWorkspaceLocation(location, () => location.returnTo);
+    if (nestedPath.length > maximumReturnPathLength) return null;
+  }
+  return retained[0];
 }
 
-function parseResearchReturnLocation(
-  value: string | null | undefined,
-  remainingDepth: number,
-): WorkspaceLocation | null {
+function parseResearchReturnFrame(value: string): { location: WorkspaceLocation; nestedPath: string | null } | null {
   if (
     !value ||
     value.length > maximumReturnPathLength ||
@@ -64,14 +84,12 @@ function parseResearchReturnLocation(
   ) {
     return null;
   }
-  const nested = remainingDepth > 1 ? parseResearchReturnLocation(nestedPath, remainingDepth - 1) : null;
-  if (nested) parsed.returnTo = workspaceUrl(nested);
-  return workspaceUrl(parsed).length <= maximumReturnPathLength ? parsed : null;
+  return { location: parsed, nestedPath };
 }
 
 function boundedResearchReturnPath(value: string | null | undefined): string | undefined {
   const parsed = researchReturnLocation(value);
-  return parsed ? workspaceUrl(parsed) : undefined;
+  return parsed ? serializeWorkspaceLocation(parsed, () => parsed.returnTo) : undefined;
 }
 
 export function parseWorkbenchLocation(workbench: WorkbenchKey, search = ""): WorkspaceLocation {

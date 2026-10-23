@@ -36,7 +36,7 @@ def test_first_party_versions_match_the_authoritative_product_manifest() -> None
     project = tomllib.loads((root / "pyproject.toml").read_text())["project"]
     web = json.loads((root / "apps/web/package.json").read_text())
     contract = json.loads((root / "docs/openapi.json").read_text())
-    assert project["version"] == __version__ == "0.1.0"
+    assert project["version"] == __version__
     assert web["version"] == contract["info"]["version"] == __version__
 
 

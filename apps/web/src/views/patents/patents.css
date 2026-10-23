@@ -1,0 +1,22 @@
+.patent-section .patent-filter-bar {
+  grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
+  align-items: end;
+}
+.patent-filter-bar .domain-query-field {
+  grid-column: auto;
+}
+.patent-filter-bar .patent-filter-actions,
+.patent-filter-bar .patent-filter-error {
+  grid-column: 1 / -1;
+}
+.patent-professional-page .trial-detail-grid dd {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 680px) {
+  .patent-section .patent-filter-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .patent-filter-bar .domain-query-field {
+    grid-column: 1 / -1;
+  }
+}

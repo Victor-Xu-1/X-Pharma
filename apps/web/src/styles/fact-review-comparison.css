@@ -3,6 +3,7 @@
 }
 
 .review-field-differences table {
+  min-width: 540px;
   width: 100%;
   border-collapse: collapse;
   text-align: left;

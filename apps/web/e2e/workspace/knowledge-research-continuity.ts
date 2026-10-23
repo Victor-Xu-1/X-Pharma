@@ -2,6 +2,7 @@ import type { PlaywrightTestArgs, PlaywrightWorkerArgs, TestInfo } from "@playwr
 import { expect, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
 import type { PublicKnowledgePageSearchResult } from "../../src/lib/generated";
+import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyKnowledgeResearchContinuity(
   { page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">,
@@ -12,6 +13,7 @@ export async function verifyKnowledgeResearchContinuity(
   if (!credentials) return;
 
   await page.goto("/");
+  await selectInterfaceLanguage(page, "zh-CN");
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();

@@ -398,6 +398,7 @@ it("preserves a pending lifecycle confirmation and its reason after rejection, w
   const dialog = screen.getByRole("dialog", { name: "解除法律保全" });
   const reason = within(dialog).getByLabelText("生命周期操作原因");
   fireEvent.change(reason, { target: { value: "matter closed with reviewed authority" } });
+  fireEvent.click(within(dialog).getByRole("checkbox", { name: "我已核对目标并了解此操作" }));
   fireEvent.click(within(dialog).getByRole("button", { name: "确认执行" }));
   await waitFor(() => expect(executeCommercialOperation).toHaveBeenCalledOnce());
   expect(dialog).toBeInTheDocument();
@@ -410,7 +411,10 @@ it("preserves a pending lifecycle confirmation and its reason after rejection, w
   expect(await within(dialog).findByRole("alert")).toHaveTextContent("Hold release was not authorized");
   expect(screen.getAllByRole("alert")).toHaveLength(1);
   expect(reason).toHaveValue("matter closed with reviewed authority");
-  expect(reason).toBeEnabled();
+  expect(reason).toBeDisabled();
+  expect(
+    within(dialog).getByText("重试将复用同一目标和原因。解除保全接口没有操作键；重试前请核对最新保全记录。"),
+  ).toBeInTheDocument();
   expect(executeCommercialOperation).toHaveBeenCalledOnce();
   fireEvent.keyDown(reason, { key: "Escape" });
   await waitFor(() => expect(opener).toHaveFocus());
@@ -431,7 +435,6 @@ it("manages the external workbench export policy only from internal commercial o
   await waitFor(() =>
     expect(saveWorkspaceExportPolicy).toHaveBeenCalledWith(
       expect.objectContaining({ policy_version: "workspace-export-v2", max_records_per_export: 25 }),
-      expect.any(Object),
     ),
   );
   expect(await screen.findByRole("status")).toHaveTextContent("导出策略 workspace-export-v2 已生效");
@@ -795,6 +798,7 @@ it("governs retention, legal holds, and verified purge from the lifecycle tab", 
   await waitFor(() => expect(releaseHold).toHaveFocus());
   fireEvent.click(releaseHold);
   fireEvent.change(screen.getByLabelText("生命周期操作原因"), { target: { value: "matter closed" } });
+  fireEvent.click(screen.getByRole("checkbox", { name: "我已核对目标并了解此操作" }));
   fireEvent.click(screen.getByRole("button", { name: "确认执行" }));
   await waitFor(() =>
     expect(executeCommercialOperation).toHaveBeenCalledWith({
@@ -806,6 +810,7 @@ it("governs retention, legal holds, and verified purge from the lifecycle tab", 
 
   fireEvent.click(screen.getByRole("button", { name: "清除到期对象 export-expired-1" }));
   fireEvent.change(screen.getByLabelText("生命周期操作原因"), { target: { value: "retention period ended" } });
+  fireEvent.click(screen.getByRole("checkbox", { name: "我已核对目标并了解此操作" }));
   fireEvent.click(screen.getByRole("button", { name: "确认执行" }));
   await waitFor(() =>
     expect(executeCommercialOperation).toHaveBeenCalledWith({
@@ -820,6 +825,7 @@ it("governs retention, legal holds, and verified purge from the lifecycle tab", 
 
   fireEvent.click(screen.getByRole("button", { name: "撤回源资料 egfr.md" }));
   fireEvent.change(screen.getByLabelText("生命周期操作原因"), { target: { value: "source retention period ended" } });
+  fireEvent.click(screen.getByRole("checkbox", { name: "我已核对目标并了解此操作" }));
   fireEvent.click(screen.getByRole("button", { name: "确认执行" }));
   await waitFor(() =>
     expect(executeCommercialOperation).toHaveBeenCalledWith({
@@ -836,6 +842,7 @@ it("governs retention, legal holds, and verified purge from the lifecycle tab", 
   fireEvent.change(screen.getByLabelText("生命周期操作原因"), {
     target: { value: "source rights restored" },
   });
+  fireEvent.click(screen.getByRole("checkbox", { name: "我已核对目标并了解此操作" }));
   fireEvent.click(screen.getByRole("button", { name: "确认执行" }));
   await waitFor(() =>
     expect(executeCommercialOperation).toHaveBeenCalledWith({

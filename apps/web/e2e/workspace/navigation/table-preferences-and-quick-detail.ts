@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { selectInterfaceLanguage } from "../../interface-language";
 import type { verifyDenseResultAndLandscape } from "./dense-result-and-landscape";
 
 export async function verifyTablePreferencesAndQuickDetail(
@@ -6,6 +7,7 @@ export async function verifyTablePreferencesAndQuickDetail(
 ) {
   const { page, browser, testInfo, credentials, fixtureKey, fixtureName, createdEntity, companyName } = context;
   await page.goto(`/workspace/research?view=explorer&q=${encodeURIComponent(fixtureKey)}&types=target%2Corganization`);
+  await selectInterfaceLanguage(page, "zh-CN");
   await page.reload();
   await expect(page.getByRole("button", { name: /对象类型：靶点/ })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: /对象类型：研发机构/ })).toHaveAttribute("aria-pressed", "true");
@@ -53,6 +55,8 @@ export async function verifyTablePreferencesAndQuickDetail(
       versioned: true,
     });
   await page.evaluate(() => window.localStorage.clear());
+  // Re-select only the UI language; table preferences must still come from the server.
+  await selectInterfaceLanguage(page, "zh-CN");
   if (testInfo.project.name === "desktop-1440") {
     const baseURL = testInfo.project.use.baseURL;
     if (typeof baseURL !== "string") throw new Error("Desktop browser project must define a base URL");
@@ -62,6 +66,7 @@ export async function verifyTablePreferencesAndQuickDetail(
       await secondPage.goto(
         `/workspace/research?view=explorer&q=${encodeURIComponent(fixtureKey)}&types=target%2Corganization`,
       );
+      await selectInterfaceLanguage(secondPage, "zh-CN");
       await secondPage.getByLabel("工作邮箱").fill(credentials.email);
       await secondPage.getByLabel("密码").fill(credentials.password);
       await secondPage.getByRole("button", { name: "进入工作台" }).click();

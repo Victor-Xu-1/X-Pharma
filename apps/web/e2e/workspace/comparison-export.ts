@@ -1,5 +1,6 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs } from "@playwright/test";
 import { expect } from "@playwright/test";
+import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyComparisonExport({ page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">) {
   const setId = "22222222-2222-4222-8222-222222222222";
@@ -112,6 +113,7 @@ export async function verifyComparisonExport({ page }: Pick<PlaywrightTestArgs &
   });
 
   await page.goto("/?view=collections");
+  await selectInterfaceLanguage(page, "zh-CN");
   await expect(page.getByRole("heading", { name: "对比列表" })).toBeVisible();
   await expect(page.getByText("工作台导出策略", { exact: true })).toHaveCount(0);
   await expect(page.getByText("租户导出策略", { exact: true })).toHaveCount(0);
@@ -119,6 +121,8 @@ export async function verifyComparisonExport({ page }: Pick<PlaywrightTestArgs &
   await page.getByRole("button", { name: "检索", exact: true }).click();
   await page.getByRole("button", { name: "加入 EGFR" }).click();
   await expect(page.getByText("UNIPROT: P00533", { exact: true })).toBeVisible();
+  await page.getByText("导出列表", { exact: true }).click();
+  await expect(page.getByRole("button", { name: "导出", exact: true })).toBeEnabled();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "导出", exact: true }).click();
   const artifact = await download;

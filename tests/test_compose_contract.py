@@ -22,12 +22,17 @@ def test_ci_visual_refresh_is_explicit_and_always_followed_by_readonly_acceptanc
     root = Path(__file__).parents[1]
     workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text(encoding="utf-8"))
     steps = workflow["jobs"]["two-entry-smoke"]["steps"]
+    producer = next(step for step in steps if step.get("id") == "snapshot_generation")
     browser = next(step for step in steps if step.get("name") == "Browser workbench smoke")
+    assert producer["if"] == "${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}"
+    assert producer["run"] == "./scripts/run-browser-acceptance.sh --update-snapshots"
+    assert steps.index(producer) < steps.index(browser)
+    assert not producer.get("continue-on-error", False)
     assert "workflow_dispatch" in browser["env"]["REFRESH_VISUAL_BASELINES"]
     assert 'if [[ "$REFRESH_VISUAL_BASELINES" == "true" ]]' in browser["run"]
-    assert browser["run"].index("--update-snapshots") < browser["run"].index(
-        "--output /tmp/browser-acceptance-report.json"
-    )
+    assert "--update-snapshots" not in browser["run"]
+    assert "--output /tmp/browser-acceptance-report.json" in browser["run"]
+    assert not browser.get("continue-on-error", False)
 
 
 def test_runtime_contract_prohibits_local_llm_services_and_overlays() -> None:
@@ -332,13 +337,18 @@ def test_optional_ocr_profile_is_private_pinned_bounded_and_secret_minimized() -
             "OCR_PYPI_INDEX_URL": "${OCR_PYPI_INDEX_URL:-https://pypi.org/simple}",
         },
     }
-    assert "python:3.13.14-slim@sha256:9662417aace5ae7b" in dockerfile
-    assert "libgl1 libglib2.0-0t64 libgomp1" in dockerfile
-    assert "CPYTHON_HTML_PARSER_COMMIT=7933f4bf7131aa4140750f9404f5de0aa2969ced" in dockerfile
-    assert "CPYTHON_TARFILE_COMMIT=9c17bace90f88dfba6d0e2fe23c8e7ae35f83955" in dockerfile
-    assert "COPY deploy/cpython/html-parser.py" in dockerfile
-    assert "COPY deploy/cpython/tarfile.py" in dockerfile
-    assert dockerfile.count("sha256sum --check --strict") == 2
+    assert "python:3.13.16-slim@sha256:bf44cdfcb76cd3b41" in dockerfile
+    assert "libglib2.0-0t64 libgomp1 libjpeg62-turbo libpng16-16t64 libtiff6" in dockerfile
+    assert "libgl1" not in dockerfile
+    assert "AS wheel-builder" in dockerfile
+    assert "--mount=type=bind,from=wheel-builder" in dockerfile
+    assert "--no-index --no-deps --require-hashes" in dockerfile
+    assert "python -m pip check" in dockerfile
+    assert "python /tmp/verify-opencv.py" in dockerfile
+    assert "verify_cpython_html.py" in dockerfile
+    assert "verify_cpython_tarfile.py" in dockerfile
+    assert "verify_cpython_tls.py" in dockerfile
+    assert "COPY deploy/cpython" not in dockerfile
     assert "rm -rf /var/lib/apt/lists/*" in dockerfile
     assert "env_file" not in ocr
     assert "ports" not in ocr

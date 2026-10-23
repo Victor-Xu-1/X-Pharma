@@ -1,5 +1,6 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs } from "@playwright/test";
 import { expect } from "@playwright/test";
+import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyKnowledgeGovernance({ page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">) {
   await page.route("**/api/v1/**", async (route) => {
@@ -163,6 +164,7 @@ export async function verifyKnowledgeGovernance({ page }: Pick<PlaywrightTestArg
   });
 
   await page.goto("/workspace/research?view=knowledge");
+  await selectInterfaceLanguage(page, "zh-CN");
   await expect(page.getByRole("heading", { name: "版本化知识专题" })).toBeVisible();
   await expect(page.locator(".knowledge-count")).toHaveText("1 个专题");
   await page.getByRole("button", { name: /EGFR competitive landscape/ }).click();

@@ -9,6 +9,8 @@ import {
   lookupEntityTypes,
 } from "../lib/contracts/intelligence";
 import type { EntityType } from "../lib/generated";
+import { useMessages } from "../lib/i18n";
+import { entityFilterMessages } from "../lib/i18n/entityFilter";
 import { EntitySearchOption } from "./EntitySearchOption";
 
 export function EntityCandidateInput({
@@ -26,6 +28,7 @@ export function EntityCandidateInput({
   placeholder: string;
   multiple?: boolean;
 }) {
+  const t = useMessages(entityFilterMessages);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -156,7 +159,7 @@ export function EntityCandidateInput({
         onBlur={closeOnBlur}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        aria-label={`${label}筛选`}
+        aria-label={t("{label}筛选", { label })}
         role="combobox"
         aria-autocomplete="list"
         aria-expanded={expanded}
@@ -165,16 +168,26 @@ export function EntityCandidateInput({
       />
       {expanded ? (
         <div className="entity-filter-options">
-          {pending ? <span role="status">正在检索候选项</span> : null}
+          {pending ? <span role="status">{t("正在检索候选项")}</span> : null}
           {!pending && failed ? (
             <div role="alert">
-              <span className="error">实体检索暂不可用，请重试</span>
-              <button type="button" onBlur={closeOnBlur} onClick={retryLookup} aria-label={`重试${label}候选检索`}>
-                重新检索
+              <span className="error">{t("实体检索暂不可用，请重试")}</span>
+              <button
+                type="button"
+                onBlur={closeOnBlur}
+                onClick={retryLookup}
+                aria-label={t("重试{label}候选检索", { label })}
+              >
+                {t("重新检索")}
               </button>
             </div>
           ) : null}
-          <div id={listboxId} role="listbox" aria-label={`${label}候选项`} aria-multiselectable={multiple || undefined}>
+          <div
+            id={listboxId}
+            role="listbox"
+            aria-label={t("{label}候选项", { label })}
+            aria-multiselectable={multiple || undefined}
+          >
             {candidates.map((entity, index) => (
               <button
                 type="button"
@@ -196,7 +209,7 @@ export function EntityCandidateInput({
             ))}
           </div>
           {!pending && !failed && candidates.length === 0 ? (
-            <span role="status">{multiple ? "未找到可添加项" : "未找到匹配项"}</span>
+            <span role="status">{t(multiple ? "未找到可添加项" : "未找到匹配项")}</span>
           ) : null}
         </div>
       ) : null}

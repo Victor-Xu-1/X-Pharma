@@ -23,6 +23,15 @@ test("TargetView only orchestrates the dossier and explicitly owned panels", () 
   expect(declarations).toEqual(["TargetView"]);
 });
 
+test("compact target header and filter styles only reference declared design tokens", () => {
+  const tokens = source(join(viewRoot, "../styles/theme/tokens.css"));
+  for (const relative of ["TargetDossierHeader.css", "pipeline/PipelinePrimaryFilters.css"]) {
+    const stylesheet = source(join(targetRoot, relative));
+    const references = new Set([...stylesheet.matchAll(/var\((--ds-[\w-]+)/g)].map((match) => match[1]));
+    for (const variable of references) expect(tokens, `${relative} references ${variable}`).toContain(`${variable}:`);
+  }
+});
+
 test("target panel imports form an acyclic graph without importing the view facade", () => {
   const files = sourceFiles(targetRoot);
   const fileSet = new Set(files);

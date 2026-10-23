@@ -2,6 +2,98 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { expect, it, vi } from "vitest";
 
 import { WorkspaceShell } from "../components/WorkspaceShell";
+import { setLocale } from "../lib/i18n";
+import { trackSessionWrite } from "../lib/organizationSession";
+import { PRODUCT_RELEASE } from "../lib/product";
+
+it("keeps the environment heading compact in both interface languages without changing identity", () => {
+  setLocale("en");
+  render(
+    <WorkspaceShell
+      user={{
+        id: "admin",
+        tenant_id: "tenant",
+        email: "admin@example.test",
+        display_name: "Original 科研",
+        role: "admin",
+      }}
+      activeWorkbench="internal"
+      activeView="environment"
+      onView={vi.fn()}
+      onLogout={vi.fn()}
+    >
+      environment
+    </WorkspaceShell>,
+  );
+  expect(screen.getByRole("heading", { name: "Environment" })).toBeInTheDocument();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("heading", { name: "环境管理" })).toBeInTheDocument();
+  expect(screen.getByText("Original 科研")).toBeInTheDocument();
+});
+
+it.each(["research", "internal"] as const)(
+  "observes pending writes at the %s account exit without mislabeling them as logout",
+  (workbench) => {
+    const onLogout = vi.fn();
+    render(
+      <WorkspaceShell
+        user={{ id: "admin", tenant_id: "tenant", email: "admin@example.test", display_name: "Admin", role: "admin" }}
+        activeWorkbench={workbench}
+        activeView={workbench === "research" ? "overview" : "factory"}
+        onView={vi.fn()}
+        onLogout={onLogout}
+      >
+        workspace
+      </WorkspaceShell>,
+    );
+    const button = screen.getByRole("button", { name: "退出账号" });
+    let release: (() => void) | undefined;
+    act(() => {
+      release = trackSessionWrite("POST");
+    });
+    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent("退出账号");
+    expect(button).not.toHaveTextContent("退出中");
+    fireEvent.click(button);
+    expect(onLogout).not.toHaveBeenCalled();
+    act(() => release?.());
+    expect(button).toBeEnabled();
+  },
+);
+
+it.each(["research", "internal"] as const)(
+  "marks every controlled %s primary label for readable wrapping",
+  (workbench) => {
+    setLocale("en");
+    render(
+      <WorkspaceShell
+        user={{
+          id: "admin",
+          tenant_id: "tenant",
+          email: "admin@example.test",
+          display_name: "原始用户名字",
+          role: "admin",
+        }}
+        activeWorkbench={workbench}
+        activeView={workbench === "research" ? "overview" : "factory"}
+        onView={vi.fn()}
+        onLogout={vi.fn()}
+      >
+        workspace
+      </WorkspaceShell>,
+    );
+    const primary = screen.getByRole("navigation", { name: "Primary navigation" });
+    const buttons = within(primary).getAllByRole("button");
+    expect(buttons).toHaveLength(5);
+    for (const button of buttons) expect(button.querySelector("span")).toHaveClass("sidebar-nav-label");
+    expect(
+      within(primary).getByRole("button", {
+        name: workbench === "research" ? "Competitive intelligence" : "Environment",
+      }),
+    ).toHaveTextContent(workbench === "research" ? "Competitive intelligence" : "Environment");
+    if (workbench === "internal") expect(screen.getByText("原始用户名字")).not.toHaveClass("sidebar-nav-label");
+  },
+);
 
 it.each(["research", "internal"] as const)(
   "keeps the %s account actions together without an invented online status",
@@ -93,7 +185,7 @@ it.each(["research", "internal"] as const)("uses the same supplied logo in the %
   expect(mark?.querySelector("img")).toHaveAttribute("src", expect.stringContaining("X-Pharma-logo-128.png"));
   expect(mark?.querySelector("svg")).toBeNull();
   expect(screen.getByText("X-Pharma")).toBeInTheDocument();
-  expect(screen.getByText("v0.1.0")).toBeInTheDocument();
+  expect(screen.getByText(PRODUCT_RELEASE)).toBeInTheDocument();
 });
 
 it("keeps the external workbench focused while retaining progressive access to specialist databases", () => {
@@ -354,4 +446,28 @@ it("moves focus into the mobile navigation and restores it after closing", async
   fireEvent.click(document.querySelector(".sidebar-scrim") as HTMLButtonElement);
   await waitFor(() => expect(openNavigation).toHaveFocus());
   expect(openNavigation.closest(".workspace-main")).not.toHaveAttribute("inert");
+});
+it("uses the same concise enterprise title as its navigation in English and Chinese", () => {
+  setLocale("en");
+  render(
+    <WorkspaceShell
+      user={{
+        id: "admin",
+        tenant_id: "tenant",
+        email: "admin@example.test",
+        display_name: "Original name",
+        role: "admin",
+      }}
+      activeWorkbench="internal"
+      activeView="enterprise"
+      onView={vi.fn()}
+      onLogout={vi.fn()}
+    >
+      workspace
+    </WorkspaceShell>,
+  );
+  expect(screen.getByRole("heading", { name: "Enterprise management" })).toBeInTheDocument();
+  fireEvent.change(screen.getByRole("combobox", { name: "Interface language" }), { target: { value: "zh-CN" } });
+  expect(screen.getByRole("heading", { name: "企业管理" })).toBeInTheDocument();
+  expect(screen.queryByText("企业账户与审计")).not.toBeInTheDocument();
 });

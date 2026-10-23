@@ -1,6 +1,7 @@
 import { ApiError } from "../api";
 import { contractRequest } from "../contract";
 import { WorkspaceService, type WorkspaceTablePreferenceRead } from "../generated";
+import { captureOrganizationSession, trackSessionWrite } from "../organizationSession";
 
 export const workspaceTablePreferenceKeys = [
   "clinical-trials",
@@ -135,12 +136,32 @@ export async function saveWorkspaceTablePreference(
   preferenceKey: WorkspaceTablePreferenceKey,
   preferences: WorkspaceTablePreferences,
   expectedVersion: number,
+  isCurrent: () => boolean = captureOrganizationSession(),
 ): Promise<WorkspaceTablePreferenceSnapshot> {
+  const intent = {
+    columnOrder: [...preferences.columnOrder],
+    columnVisibility: { ...preferences.columnVisibility },
+    density: preferences.density,
+  };
+  const assertCurrent = () => {
+    if (!isCurrent()) throw new Error("The table preference operation is no longer current");
+  };
+  const release = trackSessionWrite("PUT");
   try {
-    return await updateWorkspaceTablePreference(preferenceKey, preferences, expectedVersion);
-  } catch (error) {
-    if (!(error instanceof ApiError) || error.status !== 409) throw error;
-    const latest = await loadWorkspaceTablePreference(preferenceKey);
-    return updateWorkspaceTablePreference(preferenceKey, preferences, latest.version);
+    assertCurrent();
+    let snapshot: WorkspaceTablePreferenceSnapshot;
+    try {
+      snapshot = await updateWorkspaceTablePreference(preferenceKey, intent, expectedVersion);
+    } catch (error) {
+      assertCurrent();
+      if (!(error instanceof ApiError) || error.status !== 409) throw error;
+      const latest = await loadWorkspaceTablePreference(preferenceKey);
+      assertCurrent();
+      snapshot = await updateWorkspaceTablePreference(preferenceKey, intent, latest.version);
+    }
+    assertCurrent();
+    return snapshot;
+  } finally {
+    release();
   }
 }

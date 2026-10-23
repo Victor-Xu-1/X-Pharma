@@ -3,6 +3,27 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+it("keeps responsive account ownership in its stylesheet and removes unused status rules", () => {
+  const account = source("../styles/user-center.css");
+  const chemistry = source("../styles/chemistry.css");
+  expect(account).not.toContain(".user-center-status");
+  expect(account).not.toContain(".user-center-eyebrow");
+  expect(account).toContain("@media (max-width: 760px)");
+  expect(chemistry).not.toContain(".user-center-");
+});
+
+it("keeps only the selection gutter pinned in narrow table containers so row actions remain reachable", () => {
+  const layout = source("../styles.css");
+  expect(ruleBody(layout, ".virtual-table-shell")).toContain("container: workbench-table / inline-size;");
+  const narrow = layout.split("@container workbench-table (max-width: 640px)")[1];
+  expect(narrow).toBeDefined();
+  expect(narrow).toContain(".virtual-table-cell:first-child:not(.virtual-table-selection-cell)");
+  expect(narrow).toContain(".has-row-selection .virtual-table-cell:nth-child(2)");
+  expect(narrow).toMatch(/position:\s*static;/);
+  expect(narrow).toMatch(/left:\s*auto;/);
+  expect(narrow).toMatch(/z-index:\s*auto;/);
+});
+
 function source(relativePath: string) {
   const url = new URL(relativePath, import.meta.url);
   // Include the real on-demand domain sheet in design checks, without making it initial payload.
@@ -13,11 +34,46 @@ function source(relativePath: string) {
   return url.pathname.endsWith(".css") ? stylesheetSource(url) : readFileSync(fileURLToPath(url), "utf8");
 }
 
+it("stacks only primary intelligence commands at narrow widths without shrinking or hiding their labels", () => {
+  const layout = source("../styles/entity-results.css");
+  const narrow = layout.split("@media (max-width: 360px)")[1];
+  expect(narrow).toBeDefined();
+  const commands = ruleBody(narrow ?? "", ".intelligence-query-panel > .query-row:first-child");
+  expect(commands).toContain("grid-template-columns: minmax(0, 1fr);");
+  expect(commands).not.toMatch(/font-size:|overflow:\s*hidden|text-overflow:|white-space:/);
+  expect(source("../views/ExplorerView.tsx")).toContain('import "../styles/entity-results.css"');
+});
+
+it("owns environment-specific controls and statuses in the environment sheet only", () => {
+  expect(source("../styles/enterprise.css")).not.toMatch(/\.environment-/);
+  const environment = source("../views/environment/environment.css");
+  expect(environment).toContain(".environment-status-missing");
+  expect(environment).toContain(".environment-status-mismatch");
+  expect(environment).toContain(".environment-recipes input");
+});
+
+it("keeps the complete platform snapshot readable rather than using a clipped cell subtitle", () => {
+  const environment = source("../views/environment/environment.css");
+  expect(ruleBody(environment, ".platform-snapshot")).toContain("white-space: normal;");
+  expect(ruleBody(environment, ".platform-snapshot")).toContain("overflow-wrap: anywhere;");
+  expect(source("../views/environment/PlatformPanel.tsx")).toContain('className="platform-snapshot"');
+});
+
+it("balances complete workspace headings without clipping text or changing the language control", () => {
+  const layout = source("../components/LanguageSwitcher.css");
+  const heading = ruleBody(layout, ".page-heading:has(> .language-switcher) h1");
+  expect(heading).toContain("text-wrap: balance;");
+  expect(heading).toContain("min-width: 0;");
+  expect(heading).not.toMatch(/text-overflow:\s*ellipsis|overflow:\s*hidden|font-size:/);
+});
+
 it("keeps target primary filters bounded and readable instead of a fixed three-column minimum", () => {
   const layout = source("../styles.css");
   const filters = ruleBody(layout, ".target-evidence-filters");
   expect(filters).toContain("min-width: 0;");
-  expect(filters).toContain("repeat(auto-fit, minmax(min(100%, 150px), 1fr))");
+  expect(filters).toContain("repeat(auto-fit, minmax(min(100%, 180px), 1fr))");
+  expect(filters).toContain("border: 0;");
+  expect(filters).toContain("border-bottom: 1px solid var(--ds-border);");
   expect(ruleBody(layout, ".target-evidence-filters select")).toContain("min-height: var(--ds-control-height);");
 });
 
@@ -26,6 +82,33 @@ it("bounds knowledge coverage and version tracks while their tables and history 
   expect(ruleBody(layout, ".knowledge-governance")).toContain("grid-template-columns: minmax(0, 1fr);");
   expect(ruleBody(layout, ".knowledge-version-list")).toContain("overflow-y: auto;");
   expect(layout).toMatch(/\.knowledge-version-list\s*\{[^}]*overflow-x:\s*auto;/);
+});
+
+it("lets controlled sidebar labels wrap without altering raw identity summaries or collapsed visibility", () => {
+  const layout = source("../styles/navigation.css");
+  const label = ruleBody(layout, ".nav-button .sidebar-nav-label");
+  expect(label).toContain("min-width: 0;");
+  expect(label).toContain("white-space: normal;");
+  expect(label).toContain("overflow-wrap: anywhere;");
+  expect(label).toContain("text-overflow: clip;");
+  expect(layout).toMatch(/\.sidebar-account-copy small\s*\{[^}]*overflow:\s*hidden;/);
+  expect(layout).toMatch(/\.sidebar-collapsed \.nav-button span,[^}]*display:\s*none;/);
+});
+
+it("keeps internal action toolbars below the shared heading and language control", () => {
+  const toolbar = ruleBody(source("../styles/enterprise.css"), ".enterprise-toolbar");
+  expect(toolbar).toContain("margin-top: 0;");
+  expect(toolbar).toContain("min-width: 0;");
+  expect(toolbar).toContain("flex-wrap: wrap;");
+});
+
+it("bounds environment probe columns without clipping status or original diagnostic values", () => {
+  const layout = source("../views/environment/environment.css");
+  const table = ruleBody(layout, ".environment-probe-table table");
+  expect(table).toContain("table-layout: fixed;");
+  expect(table).toContain("min-width: 720px;");
+  expect(layout).toMatch(/\.environment-probe-table td,[^}]*white-space:\s*normal;/);
+  expect(layout).toMatch(/\.environment-probe-table code[^}]*overflow-wrap:\s*anywhere;/);
 });
 
 function stylesheetSource(url: URL, parents = new Set<string>()): string {
