@@ -333,7 +333,13 @@ def test_optional_ocr_profile_is_private_pinned_bounded_and_secret_minimized() -
         },
     }
     assert "python:3.13.16-slim@sha256:bf44cdfcb76cd3b41" in dockerfile
-    assert "libgl1 libglib2.0-0t64 libgomp1" in dockerfile
+    assert "libglib2.0-0t64 libgomp1 libjpeg62-turbo libpng16-16t64 libtiff6" in dockerfile
+    assert "libgl1" not in dockerfile
+    assert "AS wheel-builder" in dockerfile
+    assert "--mount=type=bind,from=wheel-builder" in dockerfile
+    assert "--no-index --no-deps --require-hashes" in dockerfile
+    assert "python -m pip check" in dockerfile
+    assert "python /tmp/verify-opencv.py" in dockerfile
     assert "verify_cpython_html.py" in dockerfile
     assert "verify_cpython_tarfile.py" in dockerfile
     assert "verify_cpython_tls.py" in dockerfile
