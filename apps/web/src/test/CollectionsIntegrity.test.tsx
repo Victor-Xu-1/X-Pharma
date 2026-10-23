@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../lib/api";
 import {
   type CollectionDetail,
@@ -9,6 +9,7 @@ import {
   loadCollectionCatalog,
   updateComparisonSet,
 } from "../lib/contracts/collections";
+import { setLocale } from "../lib/i18n";
 import { CollectionsView } from "../views/CollectionsView";
 
 vi.mock("../lib/contracts/collections", () => ({
@@ -49,6 +50,45 @@ const first: CollectionDetail = {
 };
 const second: CollectionDetail = { ...first, id: "22222222-2222-4222-8222-222222222222", name: "Second list" };
 
+describe("compact research directory", () => {
+  let previous: PropertyDescriptor | undefined;
+  beforeEach(() => {
+    previous = Object.getOwnPropertyDescriptor(window, "matchMedia");
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    });
+  });
+  afterEach(() => {
+    if (previous) Object.defineProperty(window, "matchMedia", previous);
+    else Reflect.deleteProperty(window, "matchMedia");
+  });
+  it("prioritizes the selected list and keeps its directory form draft reachable", async () => {
+    setup(first.id);
+    expect(await screen.findByRole("heading", { name: first.name })).toBeVisible();
+    const draft = screen.getByLabelText("列表名称");
+    expect(draft).not.toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "展开列表目录" }));
+    expect(draft).toBeVisible();
+    fireEvent.change(draft, { target: { value: "Retained new-list draft" } });
+    fireEvent.click(screen.getByRole("button", { name: "收起列表目录" }));
+    expect(draft).not.toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "展开列表目录" }));
+    expect(draft).toHaveValue("Retained new-list draft");
+  });
+  it("keeps one navigation authority and moves selection focus to the resulting list heading", async () => {
+    const result = setup(first.id);
+    await screen.findByRole("heading", { name: first.name });
+    fireEvent.click(screen.getByRole("button", { name: "展开列表目录" }));
+    fireEvent.click(screen.getByRole("button", { name: /Second list/ }));
+    expect(result.navigate).toHaveBeenLastCalledWith(second.id, [], false);
+    result.switchTo(second.id);
+    const heading = await screen.findByRole("heading", { name: second.name });
+    await waitFor(() => expect(heading).toHaveFocus());
+    expect(screen.getByLabelText("列表名称")).not.toBeVisible();
+  });
+});
+
 beforeEach(() => {
   vi.mocked(loadCollectionCatalog).mockResolvedValue({
     items: [first, second],
@@ -75,6 +115,71 @@ function setup(id: string) {
   const result = render(view(id));
   return { ...result, navigate, switchTo: (active: string) => result.rerender(view(active)), queryClient };
 }
+
+it("switches list controls without losing raw metadata, editor drafts, directory drafts or cached reads", async () => {
+  setLocale("en");
+  setup(first.id);
+  expect(await screen.findByRole("heading", { name: first.name })).toBeVisible();
+  fireEvent.change(screen.getByRole("textbox", { name: "List name" }), {
+    target: { value: "未提交列表草稿" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Edit list" }));
+  const dialog = screen.getByRole("dialog", { name: "Edit comparison list" });
+  fireEvent.change(within(dialog).getByRole("textbox", { name: "Name" }), {
+    target: { value: "编辑中的原始名称" },
+  });
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("textbox", { name: "列表名称" })).toHaveValue("未提交列表草稿");
+  expect(
+    within(screen.getByRole("dialog", { name: "编辑对比列表" })).getByRole("textbox", {
+      name: "名称",
+    }),
+  ).toHaveValue("编辑中的原始名称");
+  act(() => setLocale("en"));
+  expect(
+    within(screen.getByRole("dialog", { name: "Edit comparison list" })).getByRole("textbox", {
+      name: "Name",
+    }),
+  ).toHaveValue("编辑中的原始名称");
+  expect(getComparisonSet).toHaveBeenCalledOnce();
+  expect(loadCollectionCatalog).toHaveBeenCalledOnce();
+  expect(updateComparisonSet).not.toHaveBeenCalled();
+});
+
+it("keeps a completed list notice localizable without replaying the write", async () => {
+  setLocale("en");
+  vi.mocked(updateComparisonSet).mockResolvedValue({ ...first, version: 2 });
+  setup(first.id);
+  fireEvent.click(await screen.findByRole("button", { name: "Edit list" }));
+  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  expect(await screen.findByText("List name and description saved")).toBeVisible();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("列表名称与说明已保存")).toBeVisible();
+  expect(updateComparisonSet).toHaveBeenCalledOnce();
+});
+
+it("shows an unknown historical sharing scope literally instead of inventing private ownership", async () => {
+  setLocale("en");
+  vi.mocked(listCollectionVersions).mockResolvedValue([
+    {
+      id: "history-fixture",
+      version: 1,
+      changed_by_user_id: "owner",
+      created_at: first.created_at,
+      snapshot_json: { name: "原始历史标题", visibility: "FUTURE_SCOPE", member_entity_ids: [] },
+    },
+  ]);
+  setup(first.id);
+  const summary = await screen.findByText("List change history", { selector: "summary" });
+  const details = summary.closest("details");
+  if (!details) throw new Error("History disclosure missing");
+  details.open = true;
+  fireEvent(details, new Event("toggle"));
+  const history = await screen.findByRole("table", { name: "List change history" });
+  expect(within(history).getByRole("cell", { name: "FUTURE_SCOPE" })).toBeVisible();
+  expect(within(history).queryByRole("cell", { name: "Private" })).not.toBeInTheDocument();
+  expect(within(history).getByText("原始历史标题")).toBeVisible();
+});
 
 it("loads an explicit collection independently of the catalog window", async () => {
   const old = { ...first, id: "33333333-3333-4333-8333-333333333333", name: "Older list" };
@@ -103,7 +208,7 @@ it("does not navigate away when a write to the old collection completes", async 
       }),
   );
   const result = setup(first.id);
-  fireEvent.click(await screen.findByRole("button", { name: "团队共享" }));
+  fireEvent.click(await screen.findByRole("button", { name: "与团队共享" }));
   await waitFor(() => expect(updateComparisonSet).toHaveBeenCalled());
   result.switchTo(second.id);
   await waitFor(() => expect(getComparisonSet).toHaveBeenCalledWith(second.id, expect.any(AbortSignal)));
@@ -241,7 +346,13 @@ it("returns an out-of-range directory page to the last valid page without replac
   await screen.findByRole("button", { name: "列表目录下一页" });
   total = 25;
   fireEvent.click(screen.getByRole("button", { name: "列表目录下一页" }));
+  await waitFor(() => expect(loadCollectionCatalog).toHaveBeenCalledWith("", 25, expect.any(AbortSignal)));
+  // Disabled controls also occur while loading; wait for the actual recovery request.
+  await waitFor(() => expect(loadCollectionCatalog).toHaveBeenLastCalledWith("", 0, expect.any(AbortSignal)));
   await waitFor(() => expect(screen.getByRole("button", { name: "列表目录上一页" })).toBeDisabled());
   expect(loadCollectionCatalog).toHaveBeenLastCalledWith("", 0, expect.any(AbortSignal));
+  await waitFor(() => expect(screen.getByText("第 1 / 1 页 · 共 25 条")).toBeVisible());
+  expect(screen.getByRole("heading", { name: first.name })).toBeVisible();
+  expect(getComparisonSet).toHaveBeenCalledOnce();
   expect(result.navigate).not.toHaveBeenCalled();
 });

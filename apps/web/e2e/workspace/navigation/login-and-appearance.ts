@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { selectInterfaceLanguage } from "../../interface-language";
 import {
   expandProfessionalQuery,
   installBrowserQualityProbe,
@@ -21,6 +22,7 @@ export async function verifyResearchAppearance(context: AppearanceContext) {
   const { page, testInfo, credentials, fixtureKey, rumBatches, rumStatuses } = context;
   await installBrowserQualityProbe(page);
   await page.goto("/");
+  await selectInterfaceLanguage(page, "zh-CN");
   expect(await page.evaluate(() => document.documentElement.dataset.workbench)).toBe("research");
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
@@ -97,7 +99,7 @@ export async function verifyResearchAppearance(context: AppearanceContext) {
       .getByRole("group", { name: "药物模态" })
       .getByLabel("药物模态：全部"),
   ).toBeVisible();
-  await expect(page).toHaveScreenshot("research-workbench.png", {
+  await expect.soft(page).toHaveScreenshot("research-workbench.png", {
     animations: "disabled",
     caret: "hide",
     fullPage: true,

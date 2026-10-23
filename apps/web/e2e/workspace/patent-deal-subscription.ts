@@ -1,6 +1,7 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs, TestInfo } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
+import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyPatentDealSubscription(
   { page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">,
@@ -38,6 +39,7 @@ export async function verifyPatentDealSubscription(
     return;
 
   await page.goto("/");
+  await selectInterfaceLanguage(page, "zh-CN");
   await page.getByLabel("工作邮箱").fill(credentials.email);
   await page.getByLabel("密码").fill(credentials.password);
   await page.getByRole("button", { name: "进入工作台" }).click();
@@ -240,7 +242,7 @@ export async function verifyPatentDealSubscription(
   const dealFilters = page.getByRole("form", { name: "交易筛选" });
   await expect(dealFilters.getByLabel("交易方向", { exact: true })).toHaveValue("outbound");
   await expect(dealFilters.getByLabel("参与角色", { exact: true })).toHaveValue("licensor");
-  await dealFilters.getByText("更多交易条件", { exact: true }).click();
+  await expect(dealFilters.getByLabel(/资产模态：/)).toBeVisible();
   await dealFilters.getByLabel(/资产模态：/).click();
   await expect(dealFilters.getByRole("checkbox", { name: /small molecule/ })).toBeChecked();
   await expect(dealFilters.getByRole("checkbox", { name: /antibody/ })).toBeChecked();

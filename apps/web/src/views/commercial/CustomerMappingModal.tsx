@@ -1,6 +1,8 @@
 import { X } from "lucide-react";
 import type { FormEvent } from "react";
 import { FormStatus } from "../../components/FormStatus";
+import { useLocale } from "../../lib/i18n";
+import { commercialWorkspaceText as t } from "../../lib/i18n/commercialWorkspace";
 import { useModalFocus } from "../../lib/useModalFocus";
 import type { MappingAction } from "./types";
 
@@ -25,6 +27,7 @@ export function CustomerMappingModal({
   onClose: () => void;
   onSubmit: (event: FormEvent) => void;
 }) {
+  useLocale();
   const dialogRef = useModalFocus<HTMLElement>(true, onClose, { closeOnEscape: !busy });
   return (
     <div className="modal-backdrop" role="presentation">
@@ -39,9 +42,9 @@ export function CustomerMappingModal({
         <header>
           <div>
             <p className="eyebrow">BILLING PROVIDER</p>
-            <h2 id="customer-mapping-title">配置客户编号</h2>
+            <h2 id="customer-mapping-title">{t("配置客户编号")}</h2>
           </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="关闭" disabled={busy}>
+          <button className="icon-button" type="button" onClick={onClose} aria-label={t("关闭")} disabled={busy}>
             <X size={18} />
           </button>
         </header>
@@ -51,7 +54,7 @@ export function CustomerMappingModal({
             <span className="mono-cell">{action.account.account_key}</span>
           </p>
           <label>
-            <span>Provider 客户编号</span>
+            <span>{t("Provider 客户编号")}</span>
             <input
               disabled={busy}
               required
@@ -64,7 +67,7 @@ export function CustomerMappingModal({
             />
           </label>
           <label>
-            <span>变更原因</span>
+            <span>{t("变更原因")}</span>
             <textarea
               disabled={busy}
               rows={4}
@@ -78,14 +81,14 @@ export function CustomerMappingModal({
           <FormStatus pending={busy} error={error} />
           <div className="form-actions">
             <button className="text-button" type="button" onClick={onClose} disabled={busy}>
-              取消
+              {t("取消")}
             </button>
             <button
               className="primary-button"
               type="submit"
               disabled={busy || externalReference.trim().length < 1 || reason.trim().length < 3}
             >
-              保存映射
+              {t("保存映射")}
             </button>
           </div>
         </form>

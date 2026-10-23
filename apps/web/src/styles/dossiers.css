@@ -1,8 +1,44 @@
 /* Cross-domain entity dossier */
+.target-pipeline-metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+:where(.disease-burden-summary) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px 20px;
+  margin: 0;
+  padding: 12px 0;
+}
+:where(.disease-burden-summary) > div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+:where(.disease-burden-summary) dt {
+  color: var(--ds-ink-muted);
+  font-size: var(--ds-text-xs);
+}
+:where(.disease-burden-summary) dd {
+  margin: 0;
+  color: var(--ds-ink-strong);
+  font-size: var(--ds-text-sm);
+  font-weight: 600;
+}
+:where(.disease-target-disclosure) > summary {
+  padding: 12px 0;
+  cursor: pointer;
+  color: var(--ds-accent-strong);
+}
+:where(.disease-methodology) {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .entity-dossier-page {
   min-width: 0;
 }
-.entity-dossier-title,
 .drug-profile-header,
 .company-profile-header {
   display: grid;
@@ -10,7 +46,6 @@
   align-items: center;
   gap: 20px;
 }
-.entity-dossier-symbol,
 .drug-profile-symbol,
 .company-profile-symbol {
   width: 72px;
@@ -21,7 +56,6 @@
   background: var(--ds-surface-muted);
   color: var(--ds-accent-strong);
 }
-.entity-dossier-title span,
 .drug-profile-identity span,
 .company-profile-identity span,
 .drug-profile-section > header span,
@@ -30,13 +64,11 @@
   font-size: var(--ds-text-xs);
   font-weight: 600;
 }
-.entity-dossier-title h2,
 .drug-profile-identity h2,
 .company-profile-identity h2 {
   margin: 2px 0 0;
   font-size: 30px;
 }
-.entity-dossier-title p,
 .drug-profile-identity p,
 .company-profile-identity p {
   max-width: 900px;
@@ -56,9 +88,6 @@
 }
 .drug-profile-symbol {
   background: var(--ds-accent-soft);
-}
-.drug-profile-metrics {
-  grid-template-columns: repeat(6, minmax(110px, 1fr));
 }
 .drug-profile-overview {
   display: grid;
@@ -178,6 +207,7 @@
 }
 .drug-clinical-outcomes,
 .drug-clinical-outcomes > span,
+.drug-clinical-outcomes .program-history > div,
 .drug-clinical-role-links {
   display: grid;
   gap: 4px;
@@ -188,6 +218,9 @@
 .drug-clinical-outcomes > span + span {
   border-top: 1px solid var(--ds-border-subtle);
   padding-top: 5px;
+}
+.drug-clinical-outcomes .program-history > div {
+  margin-top: 8px;
 }
 .drug-clinical-outcomes strong {
   color: var(--ds-ink-strong);
@@ -361,9 +394,6 @@
 }
 .company-profile-page {
   min-width: 0;
-}
-.company-profile-metrics {
-  grid-template-columns: repeat(6, minmax(110px, 1fr));
 }
 .company-profile-overview {
   display: grid;
@@ -621,6 +651,20 @@
 .entity-record-list article > svg {
   color: var(--ds-accent-strong);
 }
+.entity-patent-list article {
+  align-items: start;
+}
+.entity-patent-list .patent-timeline {
+  grid-column: 2 / -1;
+}
+@media (min-width: 821px) {
+  .entity-patent-list article {
+    grid-template-columns: 30px minmax(0, 1fr) auto minmax(180px, 240px) auto;
+  }
+  .entity-patent-list .patent-timeline {
+    grid-column: auto;
+  }
+}
 .entity-record-list h3 {
   margin: 3px 0;
   color: var(--ds-ink-strong);
@@ -725,14 +769,8 @@
 }
 
 @media (max-width: 980px) {
-  .drug-profile-metrics {
-    grid-template-columns: repeat(3, minmax(110px, 1fr));
-  }
   .drug-profile-overview-grid {
     grid-template-columns: 1fr;
-  }
-  .company-profile-metrics {
-    grid-template-columns: repeat(3, minmax(110px, 1fr));
   }
   .company-profile-overview-grid {
     grid-template-columns: 1fr;
@@ -766,7 +804,6 @@
     width: 40px;
     height: 40px;
   }
-  .drug-profile-metrics,
   .drug-profile-attribute-strip,
   .drug-profile-structure-content {
     grid-template-columns: 1fr;
@@ -791,7 +828,6 @@
     width: 40px;
     height: 40px;
   }
-  .company-profile-metrics,
   .company-profile-recent-events {
     grid-template-columns: 1fr;
   }
@@ -809,17 +845,6 @@
   }
   .company-asset-list > li > span:not(.badge) {
     grid-column: 1;
-  }
-  .entity-dossier-title {
-    grid-template-columns: 40px minmax(0, 1fr);
-  }
-  .entity-dossier-title > .badge {
-    grid-column: 2;
-    justify-self: start;
-  }
-  .entity-dossier-symbol {
-    width: 40px;
-    height: 40px;
   }
   .entity-dossier-metrics,
   .entity-attribute-grid,
@@ -854,5 +879,59 @@
   .company-event-timeline li > button:last-child {
     grid-column: 3;
     justify-self: start;
+  }
+}
+
+/* Query feedback stays visible without replacing the edited filter controls. */
+.target-pipeline-feedback {
+  position: sticky;
+  top: 8px;
+  z-index: 4;
+  max-height: 40vh;
+  overflow-y: auto;
+  margin: 8px 0;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface);
+}
+.target-pipeline-feedback .state-message {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  align-content: start;
+  justify-content: stretch;
+  justify-items: start;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 10px 12px;
+  text-align: left;
+}
+.target-pipeline-feedback .state-icon {
+  grid-row: 1 / span 2;
+  width: 28px;
+  height: 28px;
+}
+.target-pipeline-feedback .error-state > strong,
+.target-pipeline-feedback .error-state > span:not(.state-icon) {
+  grid-column: 2;
+  overflow-wrap: anywhere;
+}
+.target-pipeline-feedback .error-state > strong {
+  font-size: var(--ds-text-sm);
+}
+.target-pipeline-feedback .error-state > button {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  min-height: 44px;
+  margin: 0;
+}
+.target-pipeline-feedback > p {
+  margin: 0;
+  padding: 0 12px 10px;
+}
+@media (max-width: 760px) {
+  .target-pipeline-feedback {
+    top: 72px;
   }
 }

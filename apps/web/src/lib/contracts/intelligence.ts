@@ -170,6 +170,10 @@ export async function getEntity(entityId: string, signal?: AbortSignal): Promise
   return contractRequest(EntitiesService.getEntityApiV1EntitiesEntityIdGet({ entityId }), signal);
 }
 
+export type EntitySearchSaveOutcome =
+  | { kind: "saved"; monitoring: boolean }
+  | { kind: "monitor_failed"; reason: string | null };
+
 export async function saveEntitySearch({
   name,
   query,
@@ -196,7 +200,7 @@ export async function saveEntitySearch({
   shared: boolean;
   monitor: boolean;
   includeRelated?: boolean;
-}): Promise<{ message: string }> {
+}): Promise<EntitySearchSaveOutcome> {
   const normalizedTypes = asEntityTypes(entityTypes);
   const saved = await contractRequest(
     MonitoringService.createSavedSearchApiV1MonitoringSavedSearchesPost({
@@ -228,9 +232,8 @@ export async function saveEntitySearch({
         }),
       );
     } catch (error) {
-      const reason = error instanceof Error ? error.message : "未知错误";
-      return { message: `检索已保存，但监控未启用：${reason}` };
+      return { kind: "monitor_failed", reason: error instanceof Error ? error.message : null };
     }
   }
-  return { message: monitor ? "基础查询检索已保存并启用监控" : "基础查询检索已保存" };
+  return { kind: "saved", monitoring: monitor };
 }

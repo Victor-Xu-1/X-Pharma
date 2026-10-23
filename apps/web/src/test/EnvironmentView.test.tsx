@@ -1,8 +1,11 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { loadEnvironment, prepareEnvironmentPlan } from "../lib/contracts/environment";
 import type { EnvironmentRead } from "../lib/generated";
+import { setLocale } from "../lib/i18n";
+import { PRODUCT_VERSION } from "../lib/product";
 import { EnvironmentView } from "../views/EnvironmentView";
+import { EnvironmentProbeTable } from "../views/environment/ProbeTable";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/environment", () => ({
@@ -12,7 +15,7 @@ vi.mock("../lib/contracts/environment", () => ({
 }));
 const environment: EnvironmentRead = {
   generated_at: "2026-10-04T00:00:00Z",
-  product_version: "0.1.0",
+  product_version: PRODUCT_VERSION,
   environment: "development",
   host_status: "not_configured",
   host: null,
@@ -41,6 +44,156 @@ const environment: EnvironmentRead = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(loadEnvironment).mockResolvedValue(environment);
+});
+
+it("uses three concise environment commands without changing the active report", async () => {
+  setLocale("en");
+  renderWithQueryClient(<EnvironmentView />);
+  const commands = await screen.findByRole("tablist", { name: "Environment management functions" });
+  expect(within(commands).getByRole("tab", { name: "Checks" })).toHaveAttribute("aria-selected", "true");
+  expect(within(commands).getByRole("tab", { name: "Installation" })).toBeInTheDocument();
+  expect(within(commands).getByRole("tab", { name: "Evidence" })).toBeInTheDocument();
+  expect(loadEnvironment).toHaveBeenCalledOnce();
+  expect(prepareEnvironmentPlan).not.toHaveBeenCalled();
+});
+
+it("keeps original identity uncertainty expanded while dependency readiness is evaluated separately", async () => {
+  setLocale("en");
+  vi.mocked(loadEnvironment).mockResolvedValue({
+    ...environment,
+    runtime: [
+      { ...environment.runtime[0], observed: "3.13.16", expected: ">=3.13.16,<3.14" },
+      {
+        id: "human-identity",
+        scope: "gateway",
+        label: "Original identity signal",
+        status: "unverified",
+        observed: "Original identity value",
+        expected: "Original recovery requirement",
+        detail: "Original diagnostic",
+      },
+    ],
+  });
+  renderWithQueryClient(<EnvironmentView />);
+  const readiness = await screen.findByRole("region", { name: "Dependency readiness overview" });
+  expect(within(readiness).getByText("Application gateway").nextElementSibling).toHaveTextContent(
+    "Dependencies available",
+  );
+  expect(within(readiness).getByText("Project environment").nextElementSibling).toHaveTextContent("Unverified");
+  const table = screen.getByRole("table", { name: "Gateway dependency versions" });
+  expect(table).toBeVisible();
+  expect(table).toHaveTextContent("Original identity value");
+  expect(table).toHaveTextContent("Original diagnostic");
+  expect(table).toHaveTextContent("Not verified");
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("table", { name: "网关依赖版本" })).toHaveTextContent("Original recovery requirement");
+  expect(loadEnvironment).toHaveBeenCalledOnce();
+});
+
+it("localizes readiness without re-reading reports or treating missing versions as compatible", async () => {
+  vi.mocked(loadEnvironment).mockResolvedValue({
+    ...environment,
+    runtime: [{ ...environment.runtime[0], observed: null, expected: ">=3.13,<3.14" }],
+  });
+  setLocale("en");
+  renderWithQueryClient(<EnvironmentView />);
+  const table = await screen.findByRole("table", { name: "Gateway dependency versions" });
+  expect(screen.getByRole("region", { name: "Dependency readiness overview" })).toHaveTextContent("Unverified");
+  expect(table).toHaveTextContent("Not detected");
+  expect(table).toHaveTextContent("Not verified");
+  expect(table).not.toHaveTextContent("Meets declared requirements");
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("table", { name: "网关依赖版本" })).not.toHaveTextContent("符合已声明要求");
+  expect(loadEnvironment).toHaveBeenCalledOnce();
+});
+
+it("presents an absent probe set as unverified information instead of an empty wide table", () => {
+  setLocale("en");
+  renderWithQueryClient(<EnvironmentProbeTable probes={[]} label="Host dependency versions" />);
+  expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("No probe observations");
+});
+
+it("preserves installation choices across locale switching without creating a plan", async () => {
+  renderWithQueryClient(<EnvironmentView />);
+  fireEvent.click(await screen.findByRole("tab", { name: "安装与修复" }));
+  fireEvent.click(screen.getByRole("checkbox"));
+  act(() => setLocale("en"));
+  expect(screen.getByRole("tab", { name: "Installation" })).toHaveAttribute("aria-selected", "true");
+  expect(
+    screen.getByRole("checkbox", { name: "Use offline cache only (fail if unavailable; no automatic downloads)" }),
+  ).not.toBeChecked();
+  expect(screen.getByRole("radio", { name: "Frontend dependencies" })).toBeChecked();
+  expect(screen.getByRole("button", { name: "Prepare installation plan" })).toBeDisabled();
+  expect(prepareEnvironmentPlan).not.toHaveBeenCalled();
+  expect(loadEnvironment).toHaveBeenCalledOnce();
+});
+
+it("retains installation drafts when checking another environment tab", async () => {
+  renderWithQueryClient(<EnvironmentView />);
+  fireEvent.click(await screen.findByRole("tab", { name: "安装与修复" }));
+  fireEvent.click(screen.getByRole("checkbox"));
+  expect(screen.getByRole("checkbox")).not.toBeChecked();
+  fireEvent.click(screen.getByRole("tab", { name: "环境检测" }));
+  fireEvent.click(screen.getByRole("tab", { name: "安装与修复" }));
+  expect(screen.getByRole("checkbox")).not.toBeChecked();
+  expect(prepareEnvironmentPlan).not.toHaveBeenCalled();
+});
+
+it("locks recipe and offline settings while an installation plan is being prepared", async () => {
+  vi.mocked(loadEnvironment).mockResolvedValue({
+    ...environment,
+    host_status: "current",
+    host: {
+      generated_at: environment.generated_at,
+      product_version: PRODUCT_VERSION,
+      revision: "a".repeat(40),
+      clean_source: true,
+      manifest_sha256: "b".repeat(64),
+      probes: [],
+      disk_free_bytes: 4 * 1024 ** 3,
+      disk_total_bytes: 8 * 1024 ** 3,
+    },
+  });
+  vi.mocked(prepareEnvironmentPlan).mockReturnValue(new Promise(() => {}));
+  renderWithQueryClient(<EnvironmentView />);
+  fireEvent.click(await screen.findByRole("tab", { name: "安装与修复" }));
+  fireEvent.click(screen.getByRole("button", { name: "生成安装计划" }));
+  await waitFor(() => expect(screen.getByRole("checkbox")).toBeDisabled());
+  expect(screen.getByRole("radio")).toBeDisabled();
+  act(() => setLocale("en"));
+  expect(screen.getByRole("button", { name: "Preparing…" })).toBeDisabled();
+  expect(screen.getByRole("radio", { name: "Frontend dependencies" })).toBeDisabled();
+  expect(prepareEnvironmentPlan).toHaveBeenCalledExactlyOnceWith({ recipe_id: "frontend-dependencies", offline: true });
+});
+
+it.each(["missing", "online-only"] as const)("does not prepare an unavailable %s installation scope", async (kind) => {
+  vi.mocked(loadEnvironment).mockResolvedValue({
+    ...environment,
+    recipes: kind === "missing" ? [] : [{ ...environment.recipes[0], offline_supported: false }],
+    host_status: "current",
+    host: {
+      generated_at: environment.generated_at,
+      product_version: PRODUCT_VERSION,
+      revision: "a".repeat(40),
+      clean_source: true,
+      manifest_sha256: "b".repeat(64),
+      probes: [],
+      disk_free_bytes: 4 * 1024 ** 3,
+      disk_total_bytes: 8 * 1024 ** 3,
+    },
+  });
+  setLocale("en");
+  renderWithQueryClient(<EnvironmentView />);
+  fireEvent.click(await screen.findByRole("tab", { name: "Installation" }));
+  const prepare = screen.getByRole("button", { name: "Prepare installation plan" });
+  expect(prepare).toBeDisabled();
+  expect(prepareEnvironmentPlan).not.toHaveBeenCalled();
+  if (kind === "online-only") {
+    fireEvent.click(screen.getByRole("checkbox"));
+    expect(prepare).toBeEnabled();
+    expect(prepareEnvironmentPlan).not.toHaveBeenCalled();
+  }
 });
 
 it("keeps probe requirements and actionable failures without repeating routine explanations", async () => {
@@ -83,7 +236,7 @@ it.each([null, "d".repeat(40)])(
       host_status: "current",
       host: {
         generated_at: "2026-10-04T00:00:00Z",
-        product_version: "0.1.0",
+        product_version: PRODUCT_VERSION,
         revision: "a".repeat(40),
         clean_source: true,
         manifest_sha256: "b".repeat(64),
@@ -101,7 +254,8 @@ it.each([null, "d".repeat(40)])(
       },
     });
     renderWithQueryClient(<EnvironmentView />);
-    await screen.findByRole("table", { name: "主机依赖版本" });
+    await screen.findByText(/最近安装/);
+    expect(screen.getByText("暂无探针记录").closest('[role="status"]')).toBeInTheDocument();
     expect(screen.getByText(/最近安装/)).toHaveTextContent(
       revision ? "安装时源码 dddddddddddd" : "旧记录未绑定源码，不能作为当前源码的安装证明",
     );
@@ -137,7 +291,7 @@ it("generates an offline-bound plan but never executes it in the browser", async
     host_status: "current",
     host: {
       generated_at: "2026-10-04T00:00:00Z",
-      product_version: "0.1.0",
+      product_version: PRODUCT_VERSION,
       revision: "a".repeat(40),
       clean_source: true,
       manifest_sha256: "b".repeat(64),
@@ -150,7 +304,7 @@ it("generates an offline-bound plan but never executes it in the browser", async
   vi.mocked(prepareEnvironmentPlan).mockResolvedValue({
     generated_at: "2026-10-04T00:00:00Z",
     expires_at: "2026-10-05T00:00:00Z",
-    product_version: "0.1.0",
+    product_version: PRODUCT_VERSION,
     revision: "a".repeat(40),
     manifest_sha256: "b".repeat(64),
     recipe_id: "frontend-dependencies",
@@ -174,7 +328,7 @@ it("shows a failed plan request without claiming installation success", async ()
     host_status: "current",
     host: {
       generated_at: "2026-10-04T00:00:00Z",
-      product_version: "0.1.0",
+      product_version: PRODUCT_VERSION,
       revision: "a".repeat(40),
       clean_source: true,
       manifest_sha256: "b".repeat(64),
@@ -188,6 +342,8 @@ it("shows a failed plan request without claiming installation success", async ()
   await screen.findByRole("tab", { name: "安装与修复" });
   fireEvent.click(screen.getByRole("tab", { name: "安装与修复" }));
   fireEvent.click(screen.getByRole("button", { name: "生成安装计划" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("主机报告已过期");
+  const error = await screen.findByRole("alert");
+  expect(error).toHaveTextContent("主机报告已过期");
+  expect(error).toHaveClass("form-status-error");
   expect(screen.queryByText("安装计划已生成，尚未执行")).not.toBeInTheDocument();
 });

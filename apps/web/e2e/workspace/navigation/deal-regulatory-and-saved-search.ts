@@ -1,80 +1,14 @@
 import { expect } from "@playwright/test";
+import { parseWorkbenchLocation } from "../../../src/lib/workspaceRouting";
 import type { verifyNewsDealAndPatentDetails } from "./news-deal-and-patent-details";
+import { verifyProfessionalDealQuery } from "./professional-deal-query";
 
 export async function verifyDealRegulatoryAndSavedSearch(
   context: Awaited<ReturnType<typeof verifyNewsDealAndPatentDetails>>,
 ) {
-  const {
-    page,
-    fixtureKeyBase,
-    pipelineTargetId,
-    pipelineCombinationTargetId,
-    pipelineDiseaseId,
-    companyName,
-    createdCompany,
-  } = context;
-  await page.goto("/workspace/research?view=deals&q=license");
-  const dealFilters = page.getByRole("form", { name: "交易筛选" });
-  await expect(dealFilters.getByLabel("关键词")).toHaveValue("license");
-  await dealFilters.getByLabel("交易状态").selectOption("active");
-  await dealFilters.getByLabel("交易方向").selectOption("outbound");
-  await dealFilters.getByLabel("参与机构").fill(companyName);
-  await page
-    .getByRole("option")
-    .filter({ has: page.getByText(companyName, { exact: true }) })
-    .click();
-  await dealFilters.getByLabel("参与角色").selectOption("licensor");
-  await dealFilters.getByText("更多交易条件").click();
-  await dealFilters.getByLabel("方向参照地区").fill("US");
-  await dealFilters.getByLabel("机构所在地区").fill("US");
-  await dealFilters.getByLabel("机构类型").fill("biopharma");
-  await dealFilters.getByLabel("交易时阶段").selectOption("phase_2");
-  await dealFilters.getByLabel("当前最高阶段").selectOption("phase_3");
-  await dealFilters.getByLabel("权益类型").selectOption("commercialization");
-  const announcedRange = dealFilters.getByRole("group", { name: "初始披露" });
-  await announcedRange.getByLabel("起").fill("2026-01-01");
-  await announcedRange.getByLabel("止").fill("2026-12-31");
-  const terminatedRange = dealFilters.getByRole("group", { name: "终止日期" });
-  await terminatedRange.getByLabel("起").fill("2026-02-01");
-  await terminatedRange.getByLabel("止").fill("2026-12-31");
-  const updatedRange = dealFilters.getByRole("group", { name: "信息更新" });
-  await updatedRange.getByLabel("起").fill("2026-03-01");
-  await updatedRange.getByLabel("止").fill("2026-12-31");
-  const upfrontRange = dealFilters.getByRole("group", { name: "首付款" });
-  await upfrontRange.getByLabel("下限").fill("10000000");
-  await upfrontRange.getByLabel("上限").fill("30000000");
-  const totalRange = dealFilters.getByRole("group", { name: "潜在总额" });
-  await totalRange.getByLabel("下限").fill("100000000");
-  await totalRange.getByLabel("上限").fill("500000000");
-  await dealFilters.getByRole("button", { name: "查询", exact: true }).click();
-  await expect(page).toHaveURL(/status=active/);
-  await expect(page).toHaveURL(/direction=outbound/);
-  await expect(page).toHaveURL(/direction_reference_jurisdiction=US/);
-  await expect(page).toHaveURL(new RegExp(`party_entity_id=${createdCompany.id}`));
-  await expect(page).toHaveURL(/party_role=licensor/);
-  await expect(page).toHaveURL(/party_country_region=US/);
-  await expect(page).toHaveURL(/party_organization_type=biopharma/);
-  await expect(page).toHaveURL(/development_phase_at_transaction=phase_2/);
-  await expect(page).toHaveURL(/current_development_phase=phase_3/);
-  await expect(page).toHaveURL(/right_type=commercialization/);
-  await expect(page).toHaveURL(/announced_from=2026-01-01/);
-  await expect(page).toHaveURL(/terminated_from=2026-02-01/);
-  await expect(page).toHaveURL(/source_updated_from=2026-03-01/);
-  await expect(page).toHaveURL(/upfront_amount_min=10000000/);
-  await expect(page).toHaveURL(/total_potential_amount_max=500000000/);
-  const appliedDealFilters = page.getByRole("region", { name: "已应用查询条件" });
-  await expect(appliedDealFilters).toContainText("active");
-  await expect(appliedDealFilters).toContainText("licensor");
-  await expect(appliedDealFilters).toContainText("phase_2");
-  await page.reload();
-  await expect(dealFilters.getByLabel("交易状态")).toHaveValue("active");
-  await expect(dealFilters.getByLabel("交易方向")).toHaveValue("outbound");
-  await expect(dealFilters.getByLabel("参与机构")).toHaveValue(companyName);
-  await expect(dealFilters.getByLabel("参与角色")).toHaveValue("licensor");
-  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(
-    false,
-  );
-
+  const { page, fixtureKeyBase, pipelineTargetId, pipelineCombinationTargetId, pipelineDiseaseId } = context;
+  const { dealFilters, announcedRange, terminatedRange, updatedRange, upfrontRange, totalRange, appliedDealFilters } =
+    await verifyProfessionalDealQuery(context);
   await page.goto(
     `/workspace/research?view=pipeline&target_entity_id=${pipelineTargetId}` +
       `&disease_entity_id=${pipelineDiseaseId}&display=landscape`,
@@ -148,7 +82,20 @@ export async function verifyDealRegulatoryAndSavedSearch(
   const savedPipelineRow = page.getByRole("row").filter({ hasText: pipelineSubscriptionName });
   await expect(savedPipelineRow).toContainText("药物与管线");
   await expect(savedPipelineRow).toContainText("统计表");
-  await expect(savedPipelineRow).toContainText("条件：靶点=已选");
+  await savedPipelineRow.getByText("7 个条件", { exact: true }).click();
+  const savedConditions = savedPipelineRow.getByRole("list", { name: "全部检索条件" });
+  await expect(savedConditions.getByRole("listitem")).toHaveCount(7);
+  for (const condition of [
+    "靶点=已选",
+    "适应症=已选",
+    "分析维度=targets",
+    "分析范围=50",
+    "阶段口径=global",
+    "靶点聚合=primary",
+    "多字段排序=status_date:desc",
+  ]) {
+    await expect(savedConditions.getByText(condition, { exact: true })).toBeVisible();
+  }
   const editSavedPipelineTrigger = savedPipelineRow.getByRole("button", { name: `编辑 ${pipelineSubscriptionName}` });
   await editSavedPipelineTrigger.click();
   const savedSearchEditor = page.getByRole("dialog", { name: "编辑已保存检索" });
@@ -174,6 +121,25 @@ export async function verifyDealRegulatoryAndSavedSearch(
   await expect(page).toHaveURL(/analysis_top=50/);
   await expect(page).toHaveURL(/analysis_stage=global/);
   await expect(page).toHaveURL(/target_aggregation=primary/);
+  await expect(page).toHaveURL(new RegExp(`target_entity_id=${pipelineTargetId}`));
+  await expect(page).toHaveURL(new RegExp(`disease_entity_id=${pipelineDiseaseId}`));
+  // Canonical URLs omit the default sort; assert the effective state and actual transport instead.
+  expect(parseWorkbenchLocation("research", new URL(page.url()).search).pipelineSort).toEqual([
+    { field: "status_date", direction: "desc" },
+  ]);
+  const freshPipelineResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      response.request().method() === "GET" &&
+      url.pathname === "/api/v1/pipelines" &&
+      url.searchParams.get("target_entity_id") === pipelineTargetId &&
+      url.searchParams.get("disease_entity_id") === pipelineDiseaseId
+    );
+  });
+  await page.getByRole("button", { name: "刷新当前结果", exact: true }).click();
+  const refreshedPipeline = await freshPipelineResponse;
+  expect(refreshedPipeline.status()).toBe(200);
+  expect(new URL(refreshedPipeline.url()).searchParams.getAll("sort")).toEqual(["status_date:desc"]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(
     false,
   );

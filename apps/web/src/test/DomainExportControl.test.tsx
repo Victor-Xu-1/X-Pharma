@@ -5,6 +5,7 @@ import { DomainExportControl } from "../components/DomainExportControl";
 import { getWorkspaceExportPolicy } from "../lib/contracts/collections";
 import { exportDomainQuery } from "../lib/contracts/domainExports";
 import { downloadBlob } from "../lib/download";
+import { setLocale } from "../lib/i18n";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/collections", () => ({
@@ -177,5 +178,20 @@ it("fails closed on a stale cached policy read and preserves selected fields aft
   fireEvent.click(screen.getByRole("button", { name: "重新读取导出策略" }));
   expect(await screen.findByRole("checkbox", { name: "名称" })).not.toBeChecked();
   expect(screen.getByRole("checkbox", { name: "稳定 ID" })).toBeDisabled();
+  expect(exportDomainQuery).not.toHaveBeenCalled();
+});
+
+it("changes export copy without resetting licensed field choices or issuing an export", async () => {
+  const { rerender } = renderWithQueryClient(<DomainExportControl dataset="entities" totalRows={5} />);
+  fireEvent.click(screen.getByText("导出", { selector: "summary" }));
+  fireEvent.click(await screen.findByRole("checkbox", { name: "名称" }));
+  const reads = vi.mocked(getWorkspaceExportPolicy).mock.calls.length;
+  act(() => setLocale("en"));
+  rerender(<DomainExportControl dataset="entities" totalRows={5} />);
+  expect(screen.getByText("Export", { selector: "summary" }).closest("details")).toHaveAttribute("open");
+  expect(screen.getByRole("checkbox", { name: "Name" })).not.toBeChecked();
+  expect(screen.getByRole("checkbox", { name: "Stable ID" })).toBeDisabled();
+  expect(screen.getByRole("combobox", { name: "Format" })).toHaveValue("json");
+  expect(getWorkspaceExportPolicy).toHaveBeenCalledTimes(reads);
   expect(exportDomainQuery).not.toHaveBeenCalled();
 });

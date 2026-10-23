@@ -36,10 +36,10 @@
 }
 
 .collection-picker > button {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
-  align-items: center;
-  justify-content: space-between;
+  align-items: start;
   gap: 10px;
   padding: 13px 15px;
   border: 0;
@@ -49,9 +49,8 @@
   text-align: left;
 }
 
-.collection-picker span,
+.collection-picker > button > span:not(.badge),
 .collection-heading > span,
-.export-panel > div,
 .policy-form header > div,
 .entity-add-strip button span {
   display: grid;
@@ -59,9 +58,19 @@
   gap: 3px;
 }
 
+.collection-picker .badge {
+  max-width: 100%;
+  justify-self: start;
+  white-space: normal;
+}
+
+.collection-picker > .field-help {
+  margin: 0;
+  padding: 13px 15px;
+}
+
 .collection-picker small,
 .collection-heading small,
-.export-panel small,
 .policy-form header small,
 .entity-add-strip small {
   color: var(--ds-ink-muted);
@@ -75,6 +84,10 @@
 
 .collection-heading {
   margin-bottom: 14px;
+}
+
+.collection-heading > .row-actions {
+  flex-wrap: wrap;
 }
 
 .collection-heading strong {
@@ -143,26 +156,6 @@
   font-size: var(--ds-text-xs);
 }
 
-.export-panel {
-  display: grid;
-  grid-template-columns: minmax(150px, 1fr) auto minmax(260px, 2fr) auto;
-  align-items: center;
-  gap: 14px;
-  margin-top: 18px;
-  padding: 14px 0 0;
-  border-top: 1px solid var(--ds-border);
-}
-
-.export-fields {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px 13px;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
 .policy-form {
   display: grid;
   grid-template-columns: minmax(190px, 0.8fr) 130px minmax(260px, 1.7fr) auto;
@@ -203,13 +196,6 @@
 }
 
 @media (max-width: 1050px) {
-  .export-panel {
-    grid-template-columns: 1fr auto;
-  }
-  .export-fields {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
   .policy-form {
     grid-template-columns: 1fr 1fr;
   }
@@ -219,6 +205,9 @@
 }
 
 @media (max-width: 760px) {
+  .collection-heading > .row-actions {
+    width: 100%;
+  }
   .collections-layout {
     grid-template-columns: 1fr;
   }
@@ -233,11 +222,9 @@
   .collections-main {
     padding: 14px 10px;
   }
-  .export-panel,
   .policy-form {
     grid-template-columns: 1fr;
   }
-  .export-fields,
   .policy-form .policy-attribution {
     grid-column: auto;
     grid-row: auto;

@@ -1,5 +1,5 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
-import { beforeEach, expect, it, vi } from "vitest";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   getKnowledgePage,
@@ -8,6 +8,7 @@ import {
   listKnowledgePageVersions,
   searchKnowledgePages,
 } from "../lib/contracts/knowledge";
+import { setLocale } from "../lib/i18n";
 import { KnowledgeView } from "../views/KnowledgeView";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
@@ -33,6 +34,106 @@ const summary = {
   title: "EGFR landscape",
   updated_at: "2026-07-18T11:00:00Z",
 };
+
+describe("compact knowledge reading", () => {
+  let previous: PropertyDescriptor | undefined;
+  beforeEach(() => {
+    previous = Object.getOwnPropertyDescriptor(window, "matchMedia");
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    });
+  });
+  afterEach(() => {
+    if (previous) Object.defineProperty(window, "matchMedia", previous);
+    else Reflect.deleteProperty(window, "matchMedia");
+  });
+  it("prioritizes the selected document while keeping the searchable catalogue and its draft reachable", async () => {
+    renderWithQueryClient(<KnowledgeView initialPageId="page-1" />);
+    expect(await screen.findByRole("heading", { name: "EGFR landscape" })).toBeVisible();
+    expect(screen.getByLabelText("检索知识专题")).not.toBeVisible();
+    const opener = screen.getByRole("button", { name: "展开专题目录" });
+    expect(opener).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(opener);
+    const search = screen.getByLabelText("检索知识专题");
+    expect(search).toBeVisible();
+    fireEvent.change(search, { target: { value: "retained research draft" } });
+    fireEvent.click(screen.getByRole("button", { name: "收起专题目录" }));
+    expect(search).not.toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "展开专题目录" }));
+    expect(search).toHaveValue("retained research draft");
+    expect(getKnowledgePage).toHaveBeenCalledWith("page-1", expect.any(AbortSignal));
+  });
+  it("keeps an unselected catalogue visible and transfers selection focus to the complete document title", async () => {
+    renderWithQueryClient(<KnowledgeView />);
+    const selected = await screen.findByRole("button", { name: /EGFR landscape/ });
+    expect(screen.getByLabelText("检索知识专题")).toBeVisible();
+    selected.focus();
+    fireEvent.click(selected);
+    const heading = await screen.findByRole("heading", { name: "EGFR landscape" });
+    await waitFor(() => expect(heading).toHaveFocus());
+    expect(screen.getByLabelText("检索知识专题")).not.toBeVisible();
+    expect(screen.getByRole("button", { name: "展开专题目录" })).toBeVisible();
+  });
+  it("retains the complete original topic title on the bounded catalogue entry and selected document", async () => {
+    const title = "Original topic / 原始标题 — ".repeat(12);
+    vi.mocked(searchKnowledgePages).mockResolvedValue({
+      query_schema_version: "pharma.knowledge.search.v1",
+      items: [{ ...summary, title }],
+      total: 1,
+      limit: 50,
+      offset: 0,
+      sort_by: "title",
+      sort_direction: "asc",
+      facets: { page_type: { target: 1 } },
+      as_of: summary.updated_at,
+    });
+    vi.mocked(getKnowledgePage).mockResolvedValue({
+      ...summary,
+      title,
+      rendered_markdown: "# Original source\n\nUnchanged content.",
+      source_snapshot_at: summary.updated_at,
+      version_number: 2,
+    });
+    renderWithQueryClient(<KnowledgeView />);
+    const entry = await screen.findByRole("button", { name: /Original topic \/ 原始标题/ });
+    expect(entry).toHaveAttribute("title", title);
+    expect(entry.querySelector("strong")).toHaveTextContent(title.trim());
+    const reads = vi.mocked(searchKnowledgePages).mock.calls.length;
+    act(() => setLocale("en"));
+    expect(entry).toHaveAttribute("title", title);
+    expect(entry.querySelector("strong")).toHaveTextContent(title.trim());
+    expect(searchKnowledgePages).toHaveBeenCalledTimes(reads);
+    fireEvent.click(entry);
+    const heading = await screen.findByRole("heading", { name: title.trim() });
+    await waitFor(() => expect(heading).toHaveFocus());
+    expect(entry).toHaveAttribute("aria-current", "true");
+    expect(getKnowledgePage).toHaveBeenCalledWith(summary.id, expect.any(AbortSignal));
+  });
+  it("uses the singular English topic count while preserving the source title and query on language change", async () => {
+    setLocale("en");
+    renderWithQueryClient(<KnowledgeView />);
+    expect(await screen.findByText("1 topic", { exact: true })).toBeVisible();
+    const entry = screen.getByRole("button", { name: /EGFR landscape/ });
+    const reads = vi.mocked(searchKnowledgePages).mock.calls.length;
+    act(() => setLocale("zh-CN"));
+    expect(screen.getByText("1 个专题", { exact: true })).toBeVisible();
+    expect(entry).toHaveAttribute("title", summary.title);
+    expect(searchKnowledgePages).toHaveBeenCalledTimes(reads);
+  });
+  it("keeps a failed selection recoverable without stranding focus in the hidden catalogue", async () => {
+    vi.mocked(getKnowledgePage).mockRejectedValueOnce(new Error("专题暂时无法读取"));
+    renderWithQueryClient(<KnowledgeView />);
+    const selected = await screen.findByRole("button", { name: /EGFR landscape/ });
+    selected.focus();
+    fireEvent.click(selected);
+    expect(await screen.findByRole("alert")).toHaveTextContent("专题暂时无法读取");
+    expect(screen.getByRole("button", { name: "展开专题目录" })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
+    const heading = await screen.findByRole("heading", { name: "EGFR landscape" });
+    await waitFor(() => expect(heading).toHaveFocus());
+  });
+});
 
 it("keeps knowledge document and coverage switching keyboard-operable without losing the selected page", async () => {
   renderWithQueryClient(<KnowledgeView />);
@@ -137,6 +238,28 @@ beforeEach(() => {
     to_version_number: versionNumber,
     truncated: false,
   }));
+});
+
+it("switches knowledge controls and coverage without discarding the query draft or cached immutable reads", async () => {
+  setLocale("en");
+  renderWithQueryClient(<KnowledgeView initialPageId="page-1" />);
+  expect(await screen.findByRole("heading", { name: "EGFR landscape" })).toBeVisible();
+  const search = screen.getByRole("textbox", { name: "Search knowledge topics" });
+  fireEvent.change(search, { target: { value: "未提交研究草稿" } });
+  fireEvent.click(screen.getByRole("tab", { name: "Coverage and versions" }));
+  await screen.findByRole("table", { name: "Knowledge fact coverage" });
+  expect(screen.getByText("Source records")).toBeInTheDocument();
+  expect(screen.queryByText("Independent sources")).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Version history" })).toBeInTheDocument();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("textbox", { name: "检索知识专题" })).toHaveValue("未提交研究草稿");
+  expect(screen.getByRole("tab", { name: "覆盖与版本" })).toHaveAttribute("aria-selected", "true");
+  act(() => setLocale("en"));
+  expect(screen.getByRole("textbox", { name: "Search knowledge topics" })).toHaveValue("未提交研究草稿");
+  expect(getKnowledgePage).toHaveBeenCalledOnce();
+  expect(getKnowledgePageCoverage).toHaveBeenCalledOnce();
+  expect(listKnowledgePageVersions).toHaveBeenCalledOnce();
+  expect(searchKnowledgePages).toHaveBeenCalledOnce();
 });
 
 it("loads a searchable page index and a separately cached immutable version", async () => {

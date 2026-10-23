@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { useLayoutEffect, useState } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 
@@ -18,6 +18,7 @@ import { loadPatentFacetCatalog } from "../lib/contracts/patents";
 import { loadPipelineFacetCatalog } from "../lib/contracts/pipeline";
 import { loadRegulatoryFacetCatalog } from "../lib/contracts/regulatory";
 import { loadTargetProfile } from "../lib/contracts/target";
+import { setLocale } from "../lib/i18n";
 import { resolveProfessionalDatePreset } from "../lib/professionalSearch";
 import type { Entity } from "../lib/types";
 import { ExplorerView } from "../views/ExplorerView";
@@ -120,6 +121,63 @@ function openAdvancedQuery(): void {
   fireEvent.click(screen.getByText(/^高级条件查询/, { selector: "summary" }));
 }
 
+it("changes memoized search headers and labels without repeating the query or clearing the draft", async () => {
+  const onSearchChange = vi.fn();
+  renderWithQueryClient(
+    <ExplorerView
+      initialQuery="EGFR"
+      initialEntityType="target"
+      initialReviewStatus="verified"
+      onSearchChange={onSearchChange}
+      onOpenEntity={vi.fn()}
+      onOpenSpecializedSearch={vi.fn()}
+    />,
+  );
+  await screen.findByRole("table", { name: "实体检索结果" });
+  fireEvent.change(screen.getByRole("combobox", { name: "情报检索词" }), {
+    target: { value: "未提交的中文名称 EGFR" },
+  });
+  const requests = vi.mocked(searchEntities).mock.calls.length;
+  act(() => setLocale("en"));
+  expect(screen.getByRole("columnheader", { name: "Name" })).toBeInTheDocument();
+  expect(screen.getByRole("table", { name: "Entity search results" })).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: "Intelligence query" })).toHaveValue("未提交的中文名称 EGFR");
+  expect(screen.getByRole("button", { name: "EGFR" })).toBeInTheDocument();
+  expect(vi.mocked(searchEntities).mock.calls.length).toBe(requests);
+  expect(onSearchChange).not.toHaveBeenCalled();
+});
+
+it("keeps a preview opener's DOM identity when route callbacks change and uses the latest handler", async () => {
+  const first = vi.fn();
+  const latest = vi.fn();
+  function RouteOwner() {
+    const [updated, setUpdated] = useState(false);
+    return (
+      <>
+        <button type="button" onClick={() => setUpdated(true)}>
+          Commit new route callbacks
+        </button>
+        <ExplorerView
+          initialQuery="EGFR"
+          initialEntityType="target"
+          initialReviewStatus="verified"
+          onSearchChange={vi.fn()}
+          onOpenEntity={vi.fn()}
+          onSelectedEntityChange={(entity) => (updated ? latest : first)(entity)}
+          onOpenSpecializedSearch={vi.fn()}
+        />
+      </>
+    );
+  }
+  renderWithQueryClient(<RouteOwner />);
+  const opener = await screen.findByRole("button", { name: "查看 EGFR 实体详情" });
+  fireEvent.click(screen.getByRole("button", { name: "Commit new route callbacks" }));
+  expect(screen.getByRole("button", { name: "查看 EGFR 实体详情" })).toBe(opener);
+  fireEvent.click(opener);
+  expect(latest).toHaveBeenCalledWith(target);
+  expect(first).not.toHaveBeenCalled();
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   // Mirrors what the server echoes for the standard render props used across this file
@@ -156,7 +214,7 @@ beforeEach(() => {
     target_evidence_count: 0,
     as_of: "2026-08-12T00:00:00Z",
   });
-  vi.mocked(saveEntitySearch).mockResolvedValue({ message: "已保存并启用监控" });
+  vi.mocked(saveEntitySearch).mockResolvedValue({ kind: "saved", monitoring: true });
   vi.mocked(loadCollectionCatalog).mockResolvedValue({
     items: [comparisonSet],
     total: [comparisonSet].length,
@@ -299,7 +357,17 @@ it("searches through the typed contract and opens a governed target result", asy
   expect(screen.getByRole("table", { name: "实体检索结果" })).not.toHaveTextContent("已核验");
   expect(screen.queryByText("opensearch")).not.toBeInTheDocument();
   expect(screen.queryByText("12 ms")).not.toBeInTheDocument();
-  expect(screen.getByText("别名精确匹配：ERBB1")).toBeInTheDocument();
+  const matchContext = screen.getByText("别名精确匹配：ERBB1");
+  expect(matchContext.closest("small")).toHaveAttribute(
+    "title",
+    "别名精确匹配：ERBB1 · Epidermal growth factor receptor",
+  );
+  expect(matchContext).not.toHaveTextContent("Epidermal growth factor receptor");
+  expect(screen.getByText("Epidermal growth factor receptor")).toHaveClass("cell-subtitle");
+  expect(screen.getByRole("button", { name: "EGFR" })).toHaveAttribute(
+    "aria-description",
+    "别名精确匹配：ERBB1 · Epidermal growth factor receptor",
+  );
   const directTarget = screen.getByRole("region", { name: "EGFR 靶点直达" });
   expect(within(directTarget).getByText("靶点精确命中")).toBeInTheDocument();
   expect(await within(directTarget).findByText(/已关联 80 个研发项目/)).toBeVisible();
@@ -944,7 +1012,7 @@ it("restores field sorting from canonical URL state into the accessible table he
 });
 
 it("saves the normalized query and reports a partial monitoring outcome without retrying the write", async () => {
-  vi.mocked(saveEntitySearch).mockResolvedValue({ message: "检索已保存，但监控未启用：上游不可用" });
+  vi.mocked(saveEntitySearch).mockResolvedValue({ kind: "monitor_failed", reason: "上游不可用" });
   renderWithQueryClient(
     <ExplorerView
       initialQuery="EGFR"
@@ -978,6 +1046,59 @@ it("saves the normalized query and reports a partial monitoring outcome without 
   expect(saveEntitySearch).toHaveBeenCalledOnce();
 });
 
+it("retains a structured partial outcome across language switches without replaying its save or query", async () => {
+  setLocale("en");
+  vi.mocked(saveEntitySearch).mockResolvedValue({ kind: "monitor_failed", reason: "Original <EGFR> 科研 reason" });
+  renderWithQueryClient(
+    <ExplorerView
+      initialQuery="EGFR"
+      initialEntityType="target"
+      initialReviewStatus="verified"
+      onSearchChange={vi.fn()}
+      onOpenEntity={vi.fn()}
+      onOpenSpecializedSearch={vi.fn()}
+    />,
+  );
+  await screen.findByRole("table", { name: "Entity search results" });
+  fireEvent.click(screen.getByRole("button", { name: "Save search" }));
+  const dialog = screen.getByRole("dialog", { name: "Save current search" });
+  fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "Original saved query 科研" } });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Save search" }));
+  expect(
+    await screen.findByText("Search saved, but monitoring was not enabled: Original <EGFR> 科研 reason"),
+  ).toBeVisible();
+  const reads = vi.mocked(searchEntities).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("检索已保存，但监控未启用：Original <EGFR> 科研 reason")).toBeVisible();
+  act(() => setLocale("en"));
+  expect(screen.getByText("Search saved, but monitoring was not enabled: Original <EGFR> 科研 reason")).toBeVisible();
+  expect(saveEntitySearch).toHaveBeenCalledOnce();
+  expect(searchEntities).toHaveBeenCalledTimes(reads);
+});
+
+it("keeps the completed saved-and-monitored notice in the active language", async () => {
+  setLocale("en");
+  renderWithQueryClient(
+    <ExplorerView
+      initialQuery="EGFR"
+      initialEntityType="target"
+      initialReviewStatus="verified"
+      onSearchChange={vi.fn()}
+      onOpenEntity={vi.fn()}
+      onOpenSpecializedSearch={vi.fn()}
+    />,
+  );
+  await screen.findByRole("table", { name: "Entity search results" });
+  fireEvent.click(screen.getByRole("button", { name: "Save search" }));
+  fireEvent.click(
+    within(screen.getByRole("dialog", { name: "Save current search" })).getByRole("button", { name: "Save search" }),
+  );
+  expect(await screen.findByText("Search saved and monitoring enabled")).toBeVisible();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("基础查询检索已保存并启用监控")).toBeVisible();
+  expect(saveEntitySearch).toHaveBeenCalledOnce();
+});
+
 it("saves the statistics presentation state with the entity query", async () => {
   renderWithQueryClient(
     <ExplorerView
@@ -1006,7 +1127,7 @@ it("saves the statistics presentation state with the entity query", async () => 
 it("presents a rejected save in the active dialog and retains the same query for an explicit retry", async () => {
   vi.mocked(saveEntitySearch)
     .mockRejectedValueOnce(new Error("暂时无法保存，请重试"))
-    .mockResolvedValueOnce({ message: "检索已保存" });
+    .mockResolvedValueOnce({ kind: "saved", monitoring: false });
   renderWithQueryClient(
     <ExplorerView
       initialQuery="EGFR"
@@ -1032,7 +1153,7 @@ it("presents a rejected save in the active dialog and retains the same query for
   expect(saveEntitySearch).toHaveBeenCalledOnce();
   const submitted = vi.mocked(saveEntitySearch).mock.calls[0];
   fireEvent.click(within(dialog).getByRole("button", { name: "确认保存" }));
-  expect(await screen.findByText("检索已保存")).toBeVisible();
+  expect(await screen.findByText("基础查询检索已保存")).toBeVisible();
   expect(saveEntitySearch).toHaveBeenCalledTimes(2);
   expect(vi.mocked(saveEntitySearch).mock.calls[1]).toEqual(submitted);
   fireEvent.click(opener);
@@ -1871,6 +1992,49 @@ it("surfaces and retries an authoritative news facet catalog failure without exp
   expect(await screen.findByRole("option", { name: "会议摘要 (2)" })).toBeInTheDocument();
   expect(screen.getByRole("combobox", { name: "会议 / 场景" })).toBeInTheDocument();
 });
+
+it.each([
+  ["exact", "精确"],
+  ["partial", "相关"],
+] as const)(
+  "prioritizes the original source summary over a duplicated %s canonical-name match in a compact row",
+  async (relation, caption) => {
+    vi.mocked(searchEntities).mockResolvedValue({
+      query_schema_version: "pharma.entity.search.v2",
+      applied_filters: [],
+      items: [
+        {
+          ...target,
+          match: { ...target.match, match_type: "canonical_name", match_relation: relation, matched_value: "EGFR" },
+        },
+      ],
+      total: 1,
+      limit: 100,
+      offset: 0,
+      sort_by: "relevance",
+      sort_direction: "desc",
+      facets: {},
+      suggestions: [],
+      engine: "opensearch",
+      took_ms: 12,
+    });
+    renderWithQueryClient(
+      <ExplorerView
+        initialQuery="EGFR"
+        initialEntityType="target"
+        initialReviewStatus="verified"
+        onSearchChange={vi.fn()}
+        onOpenEntity={vi.fn()}
+        onOpenSpecializedSearch={vi.fn()}
+      />,
+    );
+    const table = await screen.findByRole("table", { name: "实体检索结果" });
+    const name = within(table).getByRole("button", { name: "EGFR" });
+    expect(name.querySelector(".entity-match-context")).toBeNull();
+    expect(name.querySelector(".cell-subtitle")).toHaveTextContent("Epidermal growth factor receptor");
+    expect(name).toHaveAttribute("aria-description", `名称${caption}匹配：EGFR · Epidermal growth factor receptor`);
+  },
+);
 
 it("keeps the professional query on the current page when a date range is invalid", async () => {
   const onOpenSpecializedSearch = vi.fn();

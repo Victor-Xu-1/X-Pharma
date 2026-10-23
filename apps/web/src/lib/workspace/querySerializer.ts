@@ -1,3 +1,4 @@
+import { boundedDealAmount } from "../contracts/dealFilterValidation";
 import {
   companyDossierSectionSet,
   dealAmountSortFields,
@@ -825,7 +826,7 @@ export function serializeWorkspaceLocation(
       ["total_potential_amount_min", location.dealTotalPotentialAmountMin],
       ["total_potential_amount_max", location.dealTotalPotentialAmountMax],
     ] as const) {
-      if (boundedAmount(value ?? "")) params.set(key, value ?? "");
+      if (boundedDealAmount(value ?? "")) params.set(key, value ?? "");
     }
     const hasDealCurrency = /^[A-Z]{3}$/.test(location.dealCurrency ?? "");
     const dealSort = location.dealSort?.some(

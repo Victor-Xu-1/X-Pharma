@@ -1,8 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
-
 import { expect, type Page, test } from "@playwright/test";
-
 import { resolveBrowserCredentials } from "../src/lib/browserAcceptanceCredentials";
+import { selectInterfaceLanguage } from "./interface-language";
 import { navigateResearchView } from "./workspace/helpers";
 
 // These flows display a one-time secret; never retain a trace or screenshot of it.
@@ -23,6 +22,13 @@ async function openNavigation(page: Page) {
   const opener = page.getByRole("button", { name: "打开导航", exact: true });
   if (await opener.isVisible()) await opener.click();
   await expect(page.getByRole("navigation", { name: "主导航" })).toBeVisible();
+}
+
+async function expectPrivateResearch(page: Page, name: string) {
+  await expect(page.getByRole("heading", { name, level: 2, exact: true })).toBeVisible();
+  const directory = page.getByRole("button", { name: "展开列表目录", exact: true });
+  if (await directory.isVisible()) await directory.click();
+  await expect(page.getByRole("button").filter({ has: page.getByText(name, { exact: true }) })).toBeVisible();
 }
 
 async function logout(page: Page, workbench: "research" | "internal") {
@@ -64,6 +70,7 @@ test("[account-registration][human-session] independently registers researchers 
   const password = randomBytes(32).toString("base64url");
   const researcher = `account-browser-research-${randomUUID()}@example.test`;
   await page.goto("/workspace/research");
+  await selectInterfaceLanguage(page, "zh-CN");
   const independent = await register(page, researcher, password);
   expect(independent.role).toBe("viewer");
   await login(page, researcher, password);
@@ -111,6 +118,7 @@ test("[multi-organization][organization-isolation][session-context] joins an exi
   const password = randomBytes(32).toString("base64url");
   const email = `account-browser-member-${randomUUID()}@example.test`;
   await page.goto("/workspace/research");
+  await selectInterfaceLanguage(page, "zh-CN");
   await register(page, email, password);
   await login(page, email, password);
   const original = await (await page.request.get("/api/v1/auth/me")).json();
@@ -123,6 +131,7 @@ test("[multi-organization][organization-isolation][session-context] joins an exi
     data: { name: privateName },
   });
   expect(collection.status()).toBe(201);
+  const privateCollection = (await collection.json()) as { id: string };
   await logout(page, "research");
 
   await page.goto("/workspace/internal");
@@ -154,9 +163,7 @@ test("[multi-organization][organization-isolation][session-context] joins an exi
   await expect(organizations.getByText("已加入组织，请从上方选择切换。")).toBeVisible();
   const otherTab = await page.context().newPage();
   await otherTab.goto("/workspace/research?view=collections");
-  await expect(
-    otherTab.getByRole("button").filter({ has: otherTab.getByText(privateName, { exact: true }) }),
-  ).toBeVisible();
+  await expectPrivateResearch(otherTab, privateName);
   const previousCookie = (await page.context().cookies()).find((cookie) => cookie.name === "pharma_session")?.value;
   await organizations.getByRole("button", { name: "切换到 Disposable account acceptance", exact: true }).click();
   await expect(page.getByRole("heading", { name: "全局情报检索", exact: true })).toBeVisible();
@@ -177,6 +184,7 @@ test("[multi-organization][organization-isolation][session-context] joins an exi
   await expect(page.getByText(privateName)).toHaveCount(0);
   const otherCollections = await (await page.request.get("/api/v1/comparison-sets")).json();
   expect(JSON.stringify(otherCollections)).not.toContain(privateName);
+  expect((await page.request.get(`/api/v1/comparison-sets/${privateCollection.id}`)).status()).toBe(404);
 
   await openNavigation(page);
   await page.getByRole("button", { name: "组织与账号", exact: true }).click();
@@ -191,7 +199,7 @@ test("[multi-organization][organization-isolation][session-context] joins an exi
     role: "viewer",
   });
   await navigateResearchView(page, "collections");
-  await expect(page.getByRole("button").filter({ has: page.getByText(privateName, { exact: true }) })).toBeVisible();
+  await expectPrivateResearch(page, privateName);
   await otherTab.close();
   await logout(page, "research");
 });

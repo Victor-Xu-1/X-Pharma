@@ -206,10 +206,16 @@
   flex-direction: column;
 }
 .knowledge-page-list strong {
-  overflow: hidden;
   font-size: var(--ds-text-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* Bound browse-only previews without shortening original text or the selected title. */
+.knowledge-page-list > button:not(.active) strong {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
 }
 .knowledge-page-list small {
   margin-top: 3px;
@@ -477,6 +483,10 @@
   .knowledge-document {
     min-height: 360px;
     padding: 20px 15px;
+  }
+  .knowledge-document h2 {
+    font-size: 20px;
+    line-height: 1.45;
   }
   .document-metadata,
   .knowledge-coverage-metrics {

@@ -1,16 +1,18 @@
-const targetClassLabels: Record<string, string> = {
+import { targetDossierText } from "./i18n/targetDossier";
+
+const targetClassLabels = {
   SINGLE_PROTEIN: "单蛋白",
   PROTEIN_COMPLEX: "蛋白复合物",
   PROTEIN_COMPLEX_GROUP: "蛋白复合物组",
   PROTEIN_FAMILY: "蛋白家族",
   RNA: "RNA",
-};
+} as const;
 
-const organismLabels: Record<string, string> = {
+const organismLabels = {
   HOMO_SAPIENS: "人",
   MUS_MUSCULUS: "小鼠",
   RATTUS_NORVEGICUS: "大鼠",
-};
+} as const;
 
 function vocabularyKey(value: string): string {
   return value
@@ -19,10 +21,15 @@ function vocabularyKey(value: string): string {
     .replace(/[\s-]+/g, "_");
 }
 
-function displayValue(value: string | null | undefined, fallback: string, labels: Record<string, string>): string {
+function displayValue(
+  value: string | null | undefined,
+  fallback: Parameters<typeof targetDossierText>[0],
+  labels: Record<string, Parameters<typeof targetDossierText>[0]>,
+): string {
   const normalized = value?.trim() ?? "";
-  if (!normalized) return fallback;
-  return labels[vocabularyKey(normalized)] ?? normalized;
+  if (!normalized) return targetDossierText(fallback);
+  const key = vocabularyKey(normalized);
+  return Object.hasOwn(labels, key) ? targetDossierText(labels[key]) : normalized;
 }
 
 export function targetClassLabel(value: string | null | undefined): string {

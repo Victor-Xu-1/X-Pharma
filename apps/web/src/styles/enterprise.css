@@ -2,6 +2,15 @@
 .enterprise-workbench {
   min-width: 0;
 }
+.enterprise-form-boundary {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.enterprise-modal-panel > .form-status {
+  margin: 0 20px 12px;
+}
 .account-invitation-form,
 .account-invitation-content {
   display: grid;
@@ -23,13 +32,37 @@
 }
 .enterprise-toolbar {
   min-height: 38px;
+  min-width: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 14px;
-  margin-top: -58px;
+  margin-top: 0;
   margin-bottom: 20px;
   font-size: 12px;
+}
+.enterprise-model-toolbar {
+  align-items: flex-start;
+  gap: 12px;
+}
+.enterprise-model-toolbar > span {
+  min-width: 0;
+  line-height: 1.5;
+}
+.enterprise-model-toolbar .primary-button {
+  flex: 0 0 auto;
+}
+@media (max-width: 560px) {
+  .enterprise-model-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .enterprise-model-toolbar .primary-button {
+    align-self: flex-start;
+    max-width: 100%;
+    white-space: nowrap;
+  }
 }
 .enterprise-metrics {
   display: grid;
@@ -98,6 +131,12 @@
 }
 .mono-value {
   font-size: var(--ds-text-xs);
+}
+.enterprise-audit-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
 }
 .enterprise-audit-filter {
   display: grid;
@@ -326,7 +365,6 @@ fieldset.enterprise-modal-subject legend {
 
 @media (max-width: 720px) {
   .enterprise-toolbar {
-    margin-top: 0;
     justify-content: space-between;
   }
   .enterprise-metrics,
@@ -610,60 +648,4 @@ fieldset.enterprise-modal-subject legend {
   overflow-wrap: anywhere;
   font-size: var(--ds-text-xs);
   line-height: 1.5;
-}
-.environment-workbench > [role="tabpanel"] > section,
-.environment-installation {
-  margin-top: 20px;
-}
-.environment-workbench header p {
-  margin: 6px 0 14px;
-  color: var(--ds-ink-muted);
-}
-.environment-recipes {
-  display: grid;
-  gap: 12px;
-  margin: 18px 0;
-  padding: 0;
-  border: 0;
-}
-.environment-recipes label,
-.environment-offline {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-.environment-recipes .cell-subtitle {
-  font-weight: 400;
-}
-:root .environment-recipes input,
-:root .environment-offline input {
-  width: 16px;
-  height: 16px;
-  min-height: 16px;
-  margin-top: 3px;
-  flex: none;
-}
-.environment-plan {
-  margin-top: 20px;
-  padding: 16px;
-  border: 1px solid var(--ds-border);
-  border-radius: var(--ds-radius-panel);
-}
-.environment-workbench pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  padding: 12px;
-  background: var(--ds-surface-muted);
-}
-.environment-installation details {
-  margin-top: 20px;
-}
-.environment-status-missing,
-.environment-status-blocked {
-  color: var(--ds-danger);
-  background: var(--ds-danger-soft);
-}
-.environment-status-mismatch {
-  color: var(--ds-warning);
-  background: var(--ds-warning-soft);
 }

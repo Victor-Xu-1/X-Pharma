@@ -1,6 +1,8 @@
 import { X } from "lucide-react";
 import type { FormEvent } from "react";
 import { FormStatus } from "../../components/FormStatus";
+import { useLocale } from "../../lib/i18n";
+import { commercialWorkspaceText as t } from "../../lib/i18n/commercialWorkspace";
 import { useModalFocus } from "../../lib/useModalFocus";
 import type { RiskAction } from "./types";
 
@@ -23,6 +25,7 @@ export function RiskReviewModal({
   onClose: () => void;
   onSubmit: (event: FormEvent) => void;
 }) {
+  useLocale();
   const dialogRef = useModalFocus<HTMLElement>(true, onClose, { closeOnEscape: !busy });
   return (
     <div className="modal-backdrop" role="presentation">
@@ -37,9 +40,9 @@ export function RiskReviewModal({
         <header>
           <div>
             <p className="eyebrow">POLICY RISK</p>
-            <h2 id="risk-review-title">处置风险事件</h2>
+            <h2 id="risk-review-title">{t("处置风险事件")}</h2>
           </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="关闭" disabled={busy}>
+          <button className="icon-button" type="button" onClick={onClose} aria-label={t("关闭")} disabled={busy}>
             <X size={18} />
           </button>
         </header>
@@ -49,19 +52,19 @@ export function RiskReviewModal({
             <span>{action.event.reason_code}</span>
           </p>
           <label>
-            <span>处置状态</span>
+            <span>{t("处置状态")}</span>
             <select
               disabled={busy}
               value={action.status}
               onChange={(event) => onStatus(event.target.value as RiskAction["status"])}
             >
-              <option value="acknowledged">已确认</option>
-              <option value="resolved">已解决</option>
-              <option value="dismissed">不构成风险</option>
+              <option value="acknowledged">{t("已确认")}</option>
+              <option value="resolved">{t("已解决")}</option>
+              <option value="dismissed">{t("不构成风险")}</option>
             </select>
           </label>
           <label>
-            <span>处置记录</span>
+            <span>{t("处置记录")}</span>
             <textarea
               disabled={busy}
               rows={4}
@@ -73,10 +76,10 @@ export function RiskReviewModal({
           <FormStatus pending={busy} error={error} />
           <div className="form-actions">
             <button className="text-button" type="button" onClick={onClose} disabled={busy}>
-              取消
+              {t("取消")}
             </button>
             <button className="primary-button" type="submit" disabled={busy}>
-              提交处置
+              {t("提交处置")}
             </button>
           </div>
         </form>

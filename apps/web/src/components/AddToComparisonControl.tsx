@@ -1,28 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListPlus } from "lucide-react";
 import { type FormEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
-
+import { type ComparisonFeedback, comparisonFailure, comparisonFeedbackText } from "../lib/comparisonFeedback";
 import {
   addComparisonSetMembers,
   collectionsKeys,
   createComparisonSet,
   getComparisonSet,
 } from "../lib/contracts/collections";
+import { useMessages } from "../lib/i18n";
+import { comparisonMessages, comparisonText } from "../lib/i18n/comparison";
 import { useCollectionCatalog } from "../lib/useCollectionCatalog";
 import { CollectionDirectoryControls } from "./CollectionDirectoryControls";
 import { ComparisonSetPickerDialog } from "./ComparisonSetPickerDialog";
-
-function comparisonFailureMessage(caught: unknown, fallback: string): string {
-  if (!(caught instanceof Error)) return fallback;
-  if (/already in this comparison set/i.test(caught.message)) {
-    return "列表内容刚刚发生变化，请重新确认后再试";
-  }
-  if (/limited to \d+ entities/i.test(caught.message)) return "该对比列表已达到 20 个实体上限";
-  if (/version|expected_version|changed concurrently/i.test(caught.message)) {
-    return "列表内容已更新，请重新确认后再试";
-  }
-  return /[\u3400-\u9fff]/u.test(caught.message) ? caught.message : fallback;
-}
 
 function uniqueEntityIds(entityIds: string[]): string[] {
   return [...new Set(entityIds)];
@@ -45,10 +35,11 @@ export function AddToComparisonControl({
   onAdded: (message: string) => void;
   onComparisonReady?: (comparisonSetId: string, entityIds: string[]) => void;
 }) {
+  const t = useMessages(comparisonMessages);
   const queryClient = useQueryClient();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [comparisonSetId, setComparisonSetId] = useState("");
-  const [comparisonError, setComparisonError] = useState("");
+  const [comparisonError, setComparisonError] = useState<ComparisonFeedback | null>(null);
   const catalog = useCollectionCatalog(pickerOpen, true);
   const comparisonSets = catalog.query;
   const lock = useRef(false);
@@ -105,7 +96,7 @@ export function AddToComparisonControl({
     setBusy(true);
     const generation = live.current.generation;
     const stillHere = () => live.current.mounted && live.current.generation === generation;
-    setComparisonError("");
+    setComparisonError(null);
     try {
       const current = await getComparisonSet(activeComparisonSetId);
       queryClient.setQueryData(collectionsKeys.detail(current.id), current);
@@ -115,7 +106,7 @@ export function AddToComparisonControl({
       const skippedCount = selectedIds.length - entityIdsToAdd.length;
       if (!entityIdsToAdd.length) {
         if (!stillHere()) return;
-        onAdded(`所选实体均已在 ${current.name} 中，无需重复添加`);
+        onAdded(comparisonText("所选实体均已在 {name} 中，无需重复添加", { name: current.name }));
         onComparisonReady?.(
           current.id,
           current.members.map((member) => member.entity.id),
@@ -125,7 +116,10 @@ export function AddToComparisonControl({
       }
       if (current.member_count + entityIdsToAdd.length > 20) {
         if (stillHere())
-          setComparisonError(`该列表还可添加 ${Math.max(0, 20 - current.member_count)} 个实体，请减少选择后重试`);
+          setComparisonError({
+            key: "该列表还可添加 {count} 个实体，请减少选择后重试",
+            parameters: { count: Math.max(0, 20 - current.member_count) },
+          });
         return;
       }
       const detail = await addToComparison.mutateAsync({
@@ -137,7 +131,8 @@ export function AddToComparisonControl({
       await queryClient.invalidateQueries({ queryKey: collectionsKeys.catalogs });
       if (!stillHere()) return;
       onAdded(
-        `${entityIdsToAdd.length} 个实体已加入 ${detail.name}${skippedCount ? `，已跳过 ${skippedCount} 个已存在实体` : ""}`,
+        comparisonText("{count} 个实体已加入 {name}", { count: entityIdsToAdd.length, name: detail.name }) +
+          (skippedCount ? comparisonText("，已跳过 {count} 个已存在实体", { count: skippedCount }) : ""),
       );
       onComparisonReady?.(
         detail.id,
@@ -147,7 +142,7 @@ export function AddToComparisonControl({
     } catch (caught) {
       await queryClient.invalidateQueries({ queryKey: collectionsKeys.detail(activeComparisonSetId), exact: true });
       if (stillHere()) {
-        setComparisonError(comparisonFailureMessage(caught, "加入对比列表失败，请稍后重试"));
+        setComparisonError(comparisonFailure(caught, "加入对比列表失败，请稍后重试"));
         await comparisonSets.refetch();
       }
     } finally {
@@ -163,7 +158,7 @@ export function AddToComparisonControl({
     const generation = live.current.generation;
     const stillHere = () => live.current.mounted && live.current.generation === generation;
     let createdId = "";
-    setComparisonError("");
+    setComparisonError(null);
     try {
       const created = await createComparison.mutateAsync({ name, visibility });
       createdId = created.id;
@@ -177,7 +172,7 @@ export function AddToComparisonControl({
       queryClient.setQueryData(collectionsKeys.detail(detail.id), detail);
       await queryClient.invalidateQueries({ queryKey: collectionsKeys.catalogs });
       if (!stillHere()) return;
-      onAdded(`${selectedEntityIds.length} 个实体已加入 ${detail.name}`);
+      onAdded(comparisonText("{count} 个实体已加入 {name}", { count: selectedEntityIds.length, name: detail.name }));
       onComparisonReady?.(
         detail.id,
         detail.members.map((member) => member.entity.id),
@@ -187,8 +182,8 @@ export function AddToComparisonControl({
       if (stillHere()) {
         setComparisonError(
           createdId
-            ? `列表已创建，但成员尚未加入；已保留新列表，请重新确认加入。${comparisonFailureMessage(caught, "成员写入失败")}`
-            : comparisonFailureMessage(caught, "创建对比列表失败，请稍后重试"),
+            ? { created: comparisonFailure(caught, "成员写入失败") }
+            : comparisonFailure(caught, "创建对比列表失败，请稍后重试"),
         );
         await comparisonSets.refetch();
       }
@@ -211,13 +206,13 @@ export function AddToComparisonControl({
         type="button"
         disabled={pending || !selectedEntityIds.length}
         onClick={() => {
-          setComparisonError("");
+          setComparisonError(null);
           setComparisonSetId("");
           setPickerOpen(true);
         }}
       >
         <ListPlus size={14} />
-        {selectedEntityIds.length ? `加入列表（${selectedEntityIds.length}）` : "加入列表"}
+        {selectedEntityIds.length ? t("加入列表（{count}）", { count: selectedEntityIds.length }) : t("加入列表")}
       </button>
       <ComparisonSetPickerDialog
         open={pickerOpen}
@@ -230,10 +225,11 @@ export function AddToComparisonControl({
         loading={comparisonSets.isFetching || Boolean(activeComparisonSetId && comparisonDetail.isFetching)}
         pending={pending}
         error={
-          comparisonError || (comparisonSets.error || comparisonDetail.error ? "对比列表加载失败，请稍后重试" : "")
+          comparisonFeedbackText(comparisonError) ||
+          (comparisonSets.error || comparisonDetail.error ? t("对比列表加载失败，请稍后重试") : "")
         }
         onSetChange={(value) => {
-          setComparisonError("");
+          setComparisonError(null);
           setComparisonSetId(value);
         }}
         onClose={() => setPickerOpen(false)}

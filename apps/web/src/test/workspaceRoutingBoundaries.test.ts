@@ -25,7 +25,10 @@ describe("workspace URL ownership", () => {
   it("keeps source-context validation in one public owner", () => {
     const facade = readFileSync(resolve(libraryRoot, "workspaceRouting.ts"), "utf8");
     expect(facade).toContain("function researchReturnLocation(");
-    expect(facade).toContain("parseResearchReturnLocation(value, 3)");
+    expect(facade).toContain("const maximumReturnFrames = 16");
+    expect(facade).toContain("const retainedReturnFrames = 3");
+    expect(facade).toContain("parseResearchReturnFrame(cursor)");
+    expect(facade).not.toContain("parseResearchReturnLocation");
     expect(facade).toContain("4_096");
     for (const name of ["queryParser", "querySerializer"]) {
       const source = readFileSync(resolve(libraryRoot, "workspace", `${name}.ts`), "utf8");

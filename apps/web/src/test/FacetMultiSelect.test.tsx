@@ -1,8 +1,9 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { expect, it, vi } from "vitest";
 
 import { FacetMultiSelect } from "../components/FacetMultiSelect";
+import { setLocale } from "../lib/i18n";
 import { useModalFocus } from "../lib/useModalFocus";
 
 function SelectionHarness() {
@@ -43,6 +44,24 @@ it("dismisses a facet popover with Escape without clearing its selection", async
   expect(summary).toHaveAttribute("aria-label", "临床分期：I 期");
   fireEvent.click(summary);
   expect(screen.getByRole("checkbox", { name: "I 期8" })).toBeChecked();
+});
+
+it("localizes selection feedback without changing raw facet labels, open state or selected IDs", () => {
+  const onChange = vi.fn();
+  const props = {
+    label: "Modality",
+    options: [{ value: "raw-1", label: "来源原文药物模态", count: 3 }],
+    selected: ["raw-1"],
+    onChange,
+  };
+  const { rerender } = render(<FacetMultiSelect {...props} />);
+  fireEvent.click(screen.getByLabelText("Modality：来源原文药物模态"));
+  act(() => setLocale("en"));
+  rerender(<FacetMultiSelect {...props} />);
+  expect(screen.getByLabelText("Modality: 来源原文药物模态").closest("details")).toHaveAttribute("open");
+  expect(screen.getByRole("checkbox", { name: "来源原文药物模态3" })).toBeChecked();
+  expect(screen.getByRole("button", { name: "Clear Modality selection" })).toBeVisible();
+  expect(onChange).not.toHaveBeenCalled();
 });
 
 it("keeps in-flow geometry stable until an outside pointer gesture activates its intended sibling", async () => {

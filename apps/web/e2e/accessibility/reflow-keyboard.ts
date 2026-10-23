@@ -1,5 +1,6 @@
 import { expect, type PlaywrightTestArgs, type TestInfo, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
+import { selectInterfaceLanguage } from "../interface-language";
 import { expectNamedKeyboardScrollableTables, expectPageReflow } from "./reflow-support";
 
 export async function verifyKeyboardReflow({ page }: Pick<PlaywrightTestArgs, "page">, testInfo: TestInfo) {
@@ -17,6 +18,7 @@ export async function verifyKeyboardReflow({ page }: Pick<PlaywrightTestArgs, "p
 
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto("/");
+  await selectInterfaceLanguage(page, "zh-CN");
   const email = page.getByLabel("工作邮箱");
   const password = page.getByLabel("密码");
   const submit = page.getByRole("button", { name: "进入工作台" });

@@ -1,13 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUpRight, BookmarkPlus, Check, Code2, Copy, PencilLine, Search } from "lucide-react";
-import { Component, type FormEvent, lazy, type ReactNode, Suspense, useCallback, useEffect, useState } from "react";
+import { BookmarkPlus, Code2, PencilLine, Search } from "lucide-react";
+import { type FormEvent, lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 
-import { EmptyState, formatDate, Spinner } from "../components/common";
-import { MoleculeDepiction } from "../components/MoleculeDepiction";
+import { Spinner } from "../components/common";
+import { FormStatus } from "../components/FormStatus";
 import { ResearchTabList } from "../components/ResearchTabList";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
 import {
-  type ChemistrySearchHit,
   type ChemistrySearchInput,
   type ChemistrySearchMode,
   chemistryKeys,
@@ -15,14 +14,19 @@ import {
   searchChemistry,
 } from "../lib/contracts/chemistry";
 import type { SavedSearchRead } from "../lib/generated";
+import { useLocale } from "../lib/i18n";
+import {
+  type ChemistryMessageKey,
+  chemistryMessages,
+  chemistryModeKeys as modeLabels,
+  chemistryText as t,
+} from "../lib/i18n/chemistry";
+import { ChemistryResults } from "./chemistry/ChemistryResults";
+import { StructureEditorBoundary } from "./chemistry/StructureEditorBoundary";
 
-const modeLabels: Record<ChemistrySearchMode, string> = {
-  exact: "精确匹配",
-  substructure: "子结构",
-  similarity: "相似结构",
-};
+type ChemistryFailure = { key: ChemistryMessageKey } | { raw: string };
 
-const chemistrySearchErrorMessages: Record<string, string> = {
+const chemistrySearchErrorMessages: Record<string, ChemistryMessageKey> = {
   invalid_smiles: "无法识别该 SMILES，请检查结构式后重试",
   invalid_smarts: "无法识别该 SMARTS，请检查子结构表达式后重试",
 };
@@ -37,39 +41,17 @@ function chemistrySearchErrorMessage(error: unknown): string {
       };
       const code = typeof payload.code === "string" ? payload.code : payload.detail?.code;
       const message = typeof code === "string" ? chemistrySearchErrorMessages[code] : undefined;
-      if (message) return message;
+      if (message) return t(message);
     } catch {
       // Fall through to the public-safe message for transport and unexpected server errors.
     }
   }
-  return "结构检索暂时不可用，请稍后重试";
+  return t("结构检索暂时不可用，请稍后重试");
 }
 
 const StructureEditor = lazy(() =>
   import("../components/StructureEditor").then((module) => ({ default: module.StructureEditor })),
 );
-
-class StructureEditorBoundary extends Component<{ children: ReactNode; onFallback: () => void }, { failed: boolean }> {
-  state = { failed: false };
-
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-
-  render() {
-    if (this.state.failed) {
-      return (
-        <div className="structure-editor-fallback" role="alert">
-          <strong>结构画板加载失败</strong>
-          <button className="secondary-button" type="button" onClick={this.props.onFallback}>
-            改用高级输入
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 export function ChemistryView({
   onInspectEntity,
@@ -84,13 +66,22 @@ export function ChemistryView({
   onSearchCommit?: () => void;
   onSavedSearch?: (savedSearch: SavedSearchRead) => void;
 }) {
+  useLocale();
+  const saveLock = useRef(false),
+    mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const [mode, setMode] = useState<ChemistrySearchMode>("exact");
   const [inputMode, setInputMode] = useState<"draw" | "text">("draw");
   const [editorActive, setEditorActive] = useState(false);
   const [query, setQuery] = useState("");
   const [threshold, setThreshold] = useState(0.7);
   const [limit, setLimit] = useState(20);
-  const [validationError, setValidationError] = useState("");
+  const [validationError, setValidationError] = useState<ChemistryFailure | null>(null);
   const [request, setRequest] = useState<{
     mode: ChemistrySearchMode;
     query: string;
@@ -102,8 +93,8 @@ export function ChemistryView({
   const [saveName, setSaveName] = useState("");
   const [shared, setShared] = useState(false);
   const [savePending, setSavePending] = useState(false);
-  const [saveError, setSaveError] = useState("");
-  const [saveMessage, setSaveMessage] = useState("");
+  const [saveError, setSaveError] = useState<ChemistryFailure | null>(null);
+  const [saveMessage, setSaveMessage] = useState(false);
   const search = useQuery({
     queryKey: chemistryKeys.search(request),
     queryFn: ({ signal }) => {
@@ -113,7 +104,11 @@ export function ChemistryView({
     enabled: request !== null,
   });
   const result = search.error ? undefined : search.data;
-  const error = validationError || chemistrySearchErrorMessage(search.error);
+  const error = validationError
+    ? "key" in validationError
+      ? t(validationError.key)
+      : validationError.raw
+    : chemistrySearchErrorMessage(search.error);
   const busy = search.isFetching;
   const canSave = Boolean(request && result && !busy);
 
@@ -125,8 +120,8 @@ export function ChemistryView({
     setQuery(initialSearch.query);
     setThreshold(initialSearch.threshold ?? 0.7);
     setLimit(initialSearch.limit ?? 20);
-    setValidationError("");
-    setSaveMessage("");
+    setValidationError(null);
+    setSaveMessage(false);
     setRequest({
       mode: initialSearch.mode,
       query: initialSearch.query,
@@ -138,8 +133,8 @@ export function ChemistryView({
 
   const invalidateCommittedSearch = useCallback(() => {
     setRequest(null);
-    setValidationError("");
-    setSaveMessage("");
+    setValidationError(null);
+    setSaveMessage(false);
   }, []);
   const changeQuery = useCallback(
     (nextQuery: string) => {
@@ -156,8 +151,10 @@ export function ChemistryView({
   );
   const handleEditorError = useCallback((message: string) => {
     setRequest(null);
-    setSaveMessage("");
-    setValidationError(message);
+    setSaveMessage(false);
+    setValidationError(
+      Object.hasOwn(chemistryMessages, message) ? { key: message as ChemistryMessageKey } : { raw: message },
+    );
   }, []);
   const changeInputMode = useCallback(
     (nextInputMode: "draw" | "text") => {
@@ -173,10 +170,10 @@ export function ChemistryView({
     event.preventDefault();
     const normalizedQuery = query.trim();
     if (!normalizedQuery) {
-      setValidationError("请输入结构查询");
+      setValidationError({ key: "请输入结构查询" });
       return;
     }
-    setValidationError("");
+    setValidationError(null);
     const next = { mode, query: normalizedQuery, threshold, limit };
     if (
       request?.mode === next.mode &&
@@ -188,33 +185,38 @@ export function ChemistryView({
     } else {
       setRequest(next);
     }
-    setSaveMessage("");
+    setSaveMessage(false);
     onSearchCommit?.();
   }
 
   function openSaveDialog() {
     if (!request || !result) return;
-    setSaveName(`${modeLabels[request.mode]}结构检索`);
+    setSaveName(t("{mode}结构检索", { mode: t(modeLabels[request.mode]) }));
     setShared(false);
-    setSaveError("");
-    setSaveMessage("");
+    setSaveError(null);
+    setSaveMessage(false);
     setSaveOpen(true);
   }
 
   async function saveSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!request || !result || !saveName.trim()) return;
+    if (saveLock.current || !mounted.current || !request || !result || !saveName.trim()) return;
+    saveLock.current = true;
+    const intent = { name: saveName.trim(), input: { ...request }, shared };
     setSavePending(true);
-    setSaveError("");
+    setSaveError(null);
     try {
-      const saved = await saveChemistrySearch({ name: saveName.trim(), input: request, shared });
+      const saved = await saveChemistrySearch(intent);
+      if (!mounted.current) return;
       setSaveOpen(false);
-      setSaveMessage("结构检索已保存，可通过当前链接恢复");
+      setSaveMessage(true);
       onSavedSearch?.(saved);
     } catch (caught) {
-      setSaveError(caught instanceof Error ? caught.message : "结构检索保存失败");
+      if (mounted.current)
+        setSaveError(caught instanceof Error ? { raw: caught.message } : { key: "结构检索保存失败" });
     } finally {
-      setSavePending(false);
+      saveLock.current = false;
+      if (mounted.current) setSavePending(false);
     }
   }
 
@@ -223,7 +225,7 @@ export function ChemistryView({
       <div className="chemistry-query">
         <div className="chemistry-query-head">
           <fieldset className="mode-control">
-            <legend>检索模式</legend>
+            <legend>{t("检索模式")}</legend>
             <div>
               {(Object.keys(modeLabels) as ChemistrySearchMode[]).map((item) => (
                 <button
@@ -237,24 +239,24 @@ export function ChemistryView({
                     invalidateCommittedSearch();
                   }}
                 >
-                  {modeLabels[item]}
+                  {t(modeLabels[item])}
                 </button>
               ))}
             </div>
           </fieldset>
           <ResearchTabList
             idPrefix="chemistry-input"
-            ariaLabel="结构输入方式"
+            ariaLabel={t("结构输入方式")}
             className="structure-input-tabs"
             activeTab={inputMode}
             tabs={[
               {
                 key: "draw",
-                label: "绘制结构",
+                label: t("绘制结构"),
                 icon: <PencilLine size={16} />,
                 panelId: "chemistry-input-active-panel",
               },
-              { key: "text", label: "高级输入", icon: <Code2 size={16} />, panelId: "chemistry-input-active-panel" },
+              { key: "text", label: t("高级输入"), icon: <Code2 size={16} />, panelId: "chemistry-input-active-panel" },
             ]}
             onChange={(next) => {
               changeInputMode(next);
@@ -265,12 +267,12 @@ export function ChemistryView({
 
         <div role="tabpanel" id="chemistry-input-active-panel" aria-labelledby={`chemistry-input-tab-${inputMode}`}>
           {inputMode === "draw" && !editorActive ? (
-            <section className="structure-editor-gate" aria-label="结构画板">
+            <section className="structure-editor-gate" aria-label={t("结构画板")}>
               <PencilLine size={22} aria-hidden="true" />
-              <strong>结构画板尚未打开</strong>
+              <strong>{t("结构画板尚未打开")}</strong>
               <button className="primary-button" type="button" onClick={() => setEditorActive(true)}>
                 <PencilLine size={16} />
-                打开结构画板
+                {t("打开结构画板")}
               </button>
             </section>
           ) : inputMode === "draw" ? (
@@ -278,7 +280,7 @@ export function ChemistryView({
               <Suspense
                 fallback={
                   <div className="structure-editor-loading">
-                    <Spinner label="正在加载结构画板" />
+                    <Spinner label={t("正在加载结构画板")} />
                   </div>
                 }
               >
@@ -299,7 +301,7 @@ export function ChemistryView({
                 onChange={(event) => {
                   changeQuery(event.target.value);
                 }}
-                placeholder={mode === "substructure" ? "输入 SMARTS" : "输入 SMILES"}
+                placeholder={t(mode === "substructure" ? "输入 SMARTS" : "输入 SMILES")}
                 maxLength={20_000}
                 spellCheck={false}
               />
@@ -310,7 +312,7 @@ export function ChemistryView({
           {mode === "similarity" ? (
             <label className="threshold-control">
               <span>
-                相似度阈值 <output>{threshold.toFixed(2)}</output>
+                {t("相似度阈值")} <output>{threshold.toFixed(2)}</output>
               </span>
               <input
                 type="range"
@@ -318,7 +320,7 @@ export function ChemistryView({
                 max="1"
                 step="0.05"
                 value={threshold}
-                aria-label="相似度阈值"
+                aria-label={t("相似度阈值")}
                 onChange={(event) => {
                   setThreshold(Number(event.target.value));
                   invalidateCommittedSearch();
@@ -327,9 +329,9 @@ export function ChemistryView({
             </label>
           ) : null}
           <details className="chemistry-more-options">
-            <summary>更多选项</summary>
+            <summary>{t("更多选项")}</summary>
             <label>
-              <span>结果上限</span>
+              <span>{t("结果上限")}</span>
               <select
                 value={limit}
                 onChange={(event) => {
@@ -345,73 +347,36 @@ export function ChemistryView({
           </details>
           <button className="primary-button chemistry-search-button" type="submit" disabled={busy || !query.trim()}>
             <Search size={17} />
-            {busy ? "检索中" : "检索"}
+            {t(busy ? "检索中" : "检索")}
           </button>
           <button
             className="secondary-button"
             type="button"
             disabled={!canSave}
             onClick={openSaveDialog}
-            aria-label="保存结构检索"
+            aria-label={t("保存结构检索")}
           >
             <BookmarkPlus size={16} />
-            保存检索
+            {t("保存检索")}
           </button>
         </form>
         {saveMessage ? (
           <p className="inline-feedback" role="status">
-            {saveMessage}
+            {t("结构检索已保存，可通过当前链接恢复")}
           </p>
         ) : null}
-        {error ? (
-          <p className="form-error" role="alert">
-            {error}
-          </p>
-        ) : null}
+        <FormStatus pending={false} error={error} />
       </div>
 
-      <div className="chemistry-results" aria-busy={busy}>
-        {!result && !busy ? <EmptyState title="尚未执行结构查询" /> : null}
-        {result ? (
-          <>
-            <header className="chemistry-result-head">
-              <div>
-                <strong>{result.count}</strong>
-                <span>条{modeLabels[result.mode]}命中</span>
-              </div>
-              <dl>
-                <div>
-                  <dt>检索结构</dt>
-                  <dd>
-                    <code>{result.normalized_query}</code>
-                  </dd>
-                </div>
-                <div>
-                  <dt>查询时间</dt>
-                  <dd title="本次结构查询时间，不代表来源数据的最后更新时间">{formatDate(result.as_of, true)}</dd>
-                </div>
-              </dl>
-            </header>
-            {result.items.length ? (
-              <div className="chemistry-hit-list">
-                {result.items.map((item) => (
-                  <ChemistryHitRow key={item.id} item={item} onInspectEntity={onInspectEntity} />
-                ))}
-              </div>
-            ) : (
-              <EmptyState title="没有符合条件的结构" />
-            )}
-          </>
-        ) : null}
-      </div>
+      <ChemistryResults result={result} busy={busy} failed={Boolean(error)} onInspectEntity={onInspectEntity} />
       <SavedSearchDialog
         open={saveOpen}
-        domainLabel="结构"
+        domainLabel={t("结构")}
         name={saveName}
         shared={shared}
         monitor={false}
         allowMonitor={false}
-        error={saveError}
+        error={saveError ? ("key" in saveError ? t(saveError.key) : saveError.raw) : ""}
         pending={savePending}
         onNameChange={setSaveName}
         onSharedChange={setShared}
@@ -421,99 +386,4 @@ export function ChemistryView({
       />
     </section>
   );
-}
-
-function ChemistryHitRow({
-  item,
-  onInspectEntity,
-}: {
-  item: ChemistrySearchHit;
-  onInspectEntity: (entityId: string) => void;
-}) {
-  const [copied, setCopied] = useState<"smiles" | "key" | null>(null);
-
-  async function copy(value: string, field: "smiles" | "key") {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(field);
-      window.setTimeout(() => setCopied((current) => (current === field ? null : current)), 1200);
-    } catch {
-      setCopied(null);
-    }
-  }
-
-  return (
-    <article className="chemistry-hit">
-      <MoleculeDepiction smiles={item.canonical_smiles} name={item.entity_name} />
-      <div className="chemistry-hit-core">
-        <header>
-          <div>
-            <h3>{item.entity_name}</h3>
-            <code>{item.standard_inchi_key}</code>
-          </div>
-          {item.similarity !== null ? (
-            <strong className="similarity-score">
-              {(item.similarity * 100).toFixed(1)}
-              <small>%</small>
-            </strong>
-          ) : null}
-        </header>
-        <dl className="chemistry-properties">
-          <div>
-            <dt>分子式</dt>
-            <dd>{item.molecular_formula ?? "--"}</dd>
-          </div>
-          <div>
-            <dt>分子量</dt>
-            <dd>{number(item.molecular_weight)}</dd>
-          </div>
-          <div>
-            <dt>精确质量</dt>
-            <dd>{number(item.exact_mass)}</dd>
-          </div>
-          <div>
-            <dt>更新时间</dt>
-            <dd>{formatDate(item.updated_at)}</dd>
-          </div>
-        </dl>
-        <div className="structure-identifiers">
-          <div>
-            <span>SMILES</span>
-            <code>{item.canonical_smiles}</code>
-            <button
-              className="icon-button"
-              type="button"
-              title="复制 SMILES"
-              aria-label={`复制 ${item.entity_name} SMILES`}
-              onClick={() => void copy(item.canonical_smiles, "smiles")}
-            >
-              {copied === "smiles" ? <Check size={15} /> : <Copy size={15} />}
-            </button>
-          </div>
-          <div>
-            <span>InChIKey</span>
-            <code>{item.standard_inchi_key}</code>
-            <button
-              className="icon-button"
-              type="button"
-              title="复制 InChIKey"
-              aria-label={`复制 ${item.entity_name} InChIKey`}
-              onClick={() => void copy(item.standard_inchi_key, "key")}
-            >
-              {copied === "key" ? <Check size={15} /> : <Copy size={15} />}
-            </button>
-          </div>
-        </div>
-        <footer>
-          <button className="text-button" type="button" onClick={() => onInspectEntity(item.entity_id)}>
-            查看实体 <ArrowUpRight size={14} />
-          </button>
-        </footer>
-      </div>
-    </article>
-  );
-}
-
-function number(value: number | null): string {
-  return value === null ? "--" : value.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
 }

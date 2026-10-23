@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
+import { DossierActivityTable as Activities } from "../components/DossierActivityTable";
 import type { EntityDossier } from "../lib/contracts/entityDossier";
 import type { BioactivityRead, EntityRead } from "../lib/generated";
-import { Activities } from "../views/EntityDossierView";
 
 function entity(id: string, name: string, entityType: "drug" | "target"): EntityRead {
   return {

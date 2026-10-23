@@ -1,3 +1,4 @@
+import { boundedDealAmount } from "../contracts/dealFilterValidation";
 import {
   companyDossierSectionSet,
   dealAmountSortFields,
@@ -471,10 +472,10 @@ export function parseWorkspaceQuery(
           dealTerminatedTo: boundedIsoDate(params.get("terminated_to")),
           dealSourceUpdatedFrom: boundedIsoDate(params.get("source_updated_from")),
           dealSourceUpdatedTo: boundedIsoDate(params.get("source_updated_to")),
-          dealUpfrontAmountMin: boundedAmount(params.get("upfront_amount_min")),
-          dealUpfrontAmountMax: boundedAmount(params.get("upfront_amount_max")),
-          dealTotalPotentialAmountMin: boundedAmount(params.get("total_potential_amount_min")),
-          dealTotalPotentialAmountMax: boundedAmount(params.get("total_potential_amount_max")),
+          dealUpfrontAmountMin: boundedDealAmount(params.get("upfront_amount_min")),
+          dealUpfrontAmountMax: boundedDealAmount(params.get("upfront_amount_max")),
+          dealTotalPotentialAmountMin: boundedDealAmount(params.get("total_potential_amount_min")),
+          dealTotalPotentialAmountMax: boundedDealAmount(params.get("total_potential_amount_max")),
           dealSort,
           dealSortBy: dealSort[0]?.field ?? "announced_at",
           dealSortDirection: dealSort[0]?.direction ?? "desc",

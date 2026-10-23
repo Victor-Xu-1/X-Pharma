@@ -1,5 +1,6 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs } from "@playwright/test";
 import { expect } from "@playwright/test";
+import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyPermissionBoundary({ page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">) {
   let loggedOut = false;
@@ -40,6 +41,7 @@ export async function verifyPermissionBoundary({ page }: Pick<PlaywrightTestArgs
   });
 
   await page.goto("/workspace/internal?view=governance");
+  await selectInterfaceLanguage(page, "zh-CN");
   expect(await page.evaluate(() => document.documentElement.dataset.workbench)).toBe("internal");
   await expect(page.getByText("无权访问该工作区", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "AI 审核" })).toHaveCount(0);

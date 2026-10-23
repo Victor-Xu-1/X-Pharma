@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 
 import { ComparisonSetPickerDialog } from "../components/ComparisonSetPickerDialog";
+import { setLocale } from "../lib/i18n";
 
 it("lets a user create a comparison list without losing selected entities", () => {
   const onCreateSet = vi.fn().mockResolvedValue(undefined);
@@ -32,6 +33,33 @@ it("lets a user create a comparison list without losing selected entities", () =
 
   fireEvent.click(createButton);
   expect(onCreateSet).toHaveBeenCalledWith("EGFR 竞品对比", "tenant");
+});
+
+it("preserves new-list name and sharing choices while switching the dialog language", () => {
+  const onCreateSet = vi.fn();
+  const props = {
+    open: true,
+    selectedCount: 2,
+    sets: [],
+    selectedSetId: "",
+    loading: false,
+    pending: false,
+    error: "",
+    onSetChange: vi.fn(),
+    onClose: vi.fn(),
+    onSubmit: vi.fn(),
+    onCreateSet,
+  };
+  const { rerender } = render(<ComparisonSetPickerDialog {...props} />);
+  fireEvent.change(screen.getByLabelText("新建列表"), { target: { value: "我的 EGFR 研究" } });
+  fireEvent.click(screen.getByRole("checkbox", { name: "与团队共享" }));
+  act(() => setLocale("en"));
+  rerender(<ComparisonSetPickerDialog {...props} />);
+  expect(screen.getByRole("dialog", { name: "Add to comparison list" })).toBeVisible();
+  expect(screen.getByLabelText("New list")).toHaveValue("我的 EGFR 研究");
+  expect(screen.getByRole("checkbox", { name: "Share with team" })).toBeChecked();
+  expect(screen.getByRole("button", { name: "Create and add" })).toBeEnabled();
+  expect(onCreateSet).not.toHaveBeenCalled();
 });
 
 it("creates the list when the user submits the new-list field with Enter", () => {

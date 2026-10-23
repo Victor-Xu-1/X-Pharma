@@ -4,9 +4,16 @@ import type {
   BillingDispute,
   BillingDisputeAction,
   CommercialClient,
+  CommercialOperation,
   CommercialRiskEvent,
   RiskCaseStatus,
 } from "../../lib/contracts/commercial";
+import type { commercialWorkspaceMessages } from "../../lib/i18n/commercialWorkspace";
+export type CommercialOperationRunner = (
+  key: string,
+  operation: CommercialOperation,
+  fallback: keyof typeof commercialWorkspaceMessages,
+) => Promise<boolean>;
 
 export type CommercialTab =
   | "overview"

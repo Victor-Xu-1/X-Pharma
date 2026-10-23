@@ -35,7 +35,11 @@ docker compose -f compose.yaml -f compose.dev.yaml -f compose.ocr.yaml build ocr
 docker compose -f compose.yaml -f compose.dev.yaml -f compose.ocr.yaml up -d ocr worker
 ```
 
-`ocr` 只加入 `ocr-sandbox` internal 网络，不读取平台 `.env`，只读挂载模型，使用只读根文件系统、tmpfs、drop-all capabilities、单请求推理槽和 CPU/内存/PID 上限。默认构建从官方 PyPI 下载哈希锁定 wheel；受控企业环境可通过 `OCR_PYPI_INDEX_URL` 指向只读制品代理，但 `--require-hashes` 仍强制校验内容。
+`ocr` 只加入 `ocr-sandbox` internal 网络，不读取平台 `.env`，只读挂载模型，使用只读根文件系统、tmpfs、drop-all capabilities、单请求推理槽和 CPU/内存/PID 上限。默认构建从官方 PyPI 下载哈希锁定来源；受控企业环境可通过 `OCR_PYPI_INDEX_URL` 指向只读制品代理，但 `--require-hashes` 仍强制校验内容。
+
+OpenCV 仍使用运行锁中的 `opencv-contrib-python==4.10.0.84`，但从同一已锁定源码归档构建，不安装带旧 FFmpeg 的上游通用轮子。构建只保留当前 PaddleX 静态文档消费的图像处理/几何 API 与导入所需符号；FFmpeg、GStreamer、摄像头、插件和 GUI 后端关闭，PNG/JPEG/TIFF 使用 Debian 图片库。它不增加视频、网络流或桌面显示能力。
+
+`opencv-build.in`/`opencv-build.lock` 只拥有隔离构建工具，按文件头的固定 uv 命令再生成；完整运行版本与上游摘要仍由 `requirements.lock` 唯一拥有。`pip wheel` 先强制验证上游哈希，再由 `wheel_manifest.py` 校验输出与完整运行锁逐包同版本、无缺失/重复/外来项，记录每个派生轮子的实际 SHA-256。最终阶段通过只读 wheelhouse、`--no-index --require-hashes` 安装并执行 `pip check`，不携带编译器或轮子缓存。镜像构建还验证五种静态图片后缀、几何操作、PaddleX 全部 cv2 引用、PaddleOCR 导入和无 FFmpeg 库；这些探针不下载模型，也不替代真实扫描件/模型验收及 SBOM 漏洞门禁。
 
 本机存在完全相同的 Python 3.13/Paddle 运行时和模型时，可运行真实 TCP、typed fallback 和中英文扫描件验收：
 

@@ -1,0 +1,57 @@
+.factory-layout .factory-status-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.source-form-fields {
+  display: grid;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+:root .modal-panel:is(.source-modal, .quarantine-dialog, .factory-reason-dialog) > header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--ds-canvas);
+}
+:root .modal-panel:is(.source-modal, .quarantine-dialog, .factory-reason-dialog) > form > .form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--ds-canvas);
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+.factory-source-details > summary {
+  cursor: pointer;
+  color: var(--ds-ink-muted);
+  min-height: var(--ds-control-height);
+  padding: 10px 0;
+}
+.factory-source-details[open] > summary {
+  margin-bottom: 8px;
+}
+.factory-projection-alert {
+  flex-wrap: wrap;
+  align-items: center;
+}
+.factory-projection-alert > .text-button {
+  margin-left: auto;
+}
+@media (max-width: 680px) {
+  .factory-layout .factory-status-strip {
+    grid-template-columns: 1fr;
+  }
+  .factory-layout .factory-status-strip > div {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    align-items: start;
+    gap: 4px 12px;
+  }
+  .factory-layout .factory-status-strip > div > small {
+    grid-column: 1 / -1;
+  }
+  .factory-layout .factory-status-strip > div > strong {
+    font-size: 20px;
+  }
+}

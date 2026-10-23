@@ -466,10 +466,10 @@
   .pipeline-stages {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  .pipeline-stages > div:nth-child(3) {
+  .pipeline-stages > li:nth-child(3) {
     border-right: 0;
   }
-  .pipeline-stages > div:nth-child(-n + 3) {
+  .pipeline-stages > li:nth-child(-n + 3) {
     border-bottom: 1px solid var(--ds-border-subtle);
   }
   .commercial-metrics {
@@ -480,9 +480,6 @@
   }
   .commercial-metrics > div:nth-child(-n + 4) {
     border-bottom: 1px solid var(--ds-border-subtle);
-  }
-  .user-center-settings-grid {
-    grid-template-columns: 1fr;
   }
   .dossier-metrics {
     grid-template-columns: repeat(3, 1fr);
@@ -572,8 +569,6 @@
   .factory-status-strip > div:nth-child(-n + 2) {
     border-bottom: 1px solid var(--ds-border-subtle);
   }
-  .pipeline-panel > header,
-  .quarantine-panel > header,
   .source-form-section > header {
     align-items: flex-start;
     flex-direction: column;
@@ -584,12 +579,12 @@
   .source-form-grid {
     grid-template-columns: 1fr;
   }
-  .pipeline-stages > div,
-  .pipeline-stages > div:nth-child(3) {
+  .pipeline-stages > li,
+  .pipeline-stages > li:nth-child(3) {
     border-right: 0;
     border-bottom: 1px solid var(--ds-border-subtle);
   }
-  .pipeline-stages > div:last-child {
+  .pipeline-stages > li:last-child {
     border-bottom: 0;
   }
   .source-form-grid .source-path-field {
@@ -612,25 +607,6 @@
   }
   .factory-main .section-actions .primary-button {
     white-space: nowrap;
-  }
-  .user-center-identity-card {
-    grid-template-columns: 52px minmax(0, 1fr);
-  }
-  .user-center-identity-avatar {
-    width: 48px;
-    height: 48px;
-  }
-  .user-center-status {
-    grid-column: 2;
-    justify-self: start;
-  }
-  .user-center-account-actions {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .user-center-account-actions .secondary-button {
-    align-self: flex-start;
   }
   .query-toolbar {
     grid-template-columns: 1fr;
@@ -742,9 +718,6 @@
     max-height: 190px;
     box-shadow: none;
   }
-  .virtual-table-toolbar {
-    flex-wrap: wrap;
-  }
   .table-column-menu[open],
   .table-sort-menu[open] {
     flex: 1 0 100%;
@@ -849,86 +822,6 @@
   .provenance-metadata {
     grid-template-columns: 1fr;
   }
-  .governance-layout {
-    display: block;
-  }
-  .governance-run-toolbar {
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-  }
-  .governance-run-toolbar code {
-    flex-basis: 100%;
-    min-width: 0;
-    margin-left: 0;
-    overflow-wrap: anywhere;
-  }
-  .governance-run-metadata {
-    grid-template-columns: 1fr;
-  }
-  .identity-scope-toolbar {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 7px;
-  }
-  .publication-control-body {
-    grid-template-columns: 1fr;
-  }
-  .publication-control-body > section {
-    border-right: 0;
-    border-bottom: 1px solid var(--ds-border-subtle);
-  }
-  .publication-control-body > section:last-child {
-    border-bottom: 0;
-  }
-  .projection-maintenance > header,
-  .projection-maintenance-result {
-    align-items: stretch;
-    grid-template-columns: 1fr;
-  }
-  .projection-maintenance > header {
-    display: grid;
-  }
-  .projection-maintenance > header > div {
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
-  .identity-scope-toolbar > p {
-    text-align: left;
-  }
-  .identity-scope-control {
-    width: 100%;
-  }
-  .identity-scope-control button {
-    flex: 1 1 50%;
-    justify-content: center;
-  }
-  .review-list {
-    max-height: 300px;
-  }
-  .review-list {
-    border-right: 0;
-    border-bottom: 1px solid var(--ds-border);
-  }
-  .review-detail {
-    min-height: 360px;
-    padding: 20px 15px;
-  }
-  .canonical-choice {
-    grid-template-columns: 1fr;
-  }
-  .canonical-choice small {
-    grid-column: 1;
-  }
-  .identity-impact-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .identity-impact-metrics > div:nth-child(2n) {
-    border-right: 0;
-  }
-  .identity-impact-metrics > div:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--ds-border);
-  }
   .news-display-control {
     width: 100%;
   }
@@ -962,11 +855,6 @@
   }
   .source-list .row-actions {
     grid-column: 2;
-  }
-  .review-source,
-  .payload-comparison {
-    grid-template-columns: 1fr;
-    gap: 6px;
   }
   .chemistry-query-head {
     align-items: stretch;
@@ -1020,6 +908,7 @@
   }
   .chemistry-search-button {
     min-width: 120px;
+    align-self: flex-end;
   }
   .chemistry-result-head {
     display: block;

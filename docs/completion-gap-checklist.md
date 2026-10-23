@@ -5,7 +5,7 @@
 | 文档 ID | `PIP-GAP-001` |
 | 权威目标 | [`GOAL.md`](../GOAL.md) |
 | 适用范围 | Code Complete、Pilot、Commercial Production、Scale Production 条件项 |
-| 当前判断 | 软件为 `X-Pharma v0.1.0`；当前架构候选位于 `refactor/architecture`，采用变动及关联模块定向验证，自动 CI 与正式交付门禁尚须按最新提交确认；下方 `124/124`、`1176 passed` 等均为历史快照，不代表当前源码已完整验收；整体离线迁移包与 Commercial Production 未完成 |
+| 当前判断 | X-Pharma 软件版本由 [`pyproject.toml`](../pyproject.toml) 唯一确定，按[贡献规范](../CONTRIBUTING.md#product-version-counter)自动递增；候选、合并主线与实际部署必须分别绑定精确提交和镜像身份。采用变动及关联模块定向验证，自动 CI 与正式交付门禁尚须按最新提交确认；下方 `124/124`、`1176 passed` 等均为历史快照，不代表当前源码已完整验收；整体离线迁移包与 Commercial Production 未完成 |
 | 更新规则 | 只有完成判据全部满足且证据可定位时，才把 `[ ]` 改为 `[x]`；部分实现、测试替身、本地通过或口头批准均不得勾选 |
 
 本表是项目剩余工作的单一勾选入口。详细技术状态仍由外部/内部能力矩阵、`docs/commercial-readiness.md` 和 `docs/release-evidence.md` 管理；发生冲突时，以 `GOAL.md` 的完成标准和更严格证据为准。任何新发现的生产缺口必须先增加稳定 ID，再开始关闭。

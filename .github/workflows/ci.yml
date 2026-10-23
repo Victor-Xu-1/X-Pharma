@@ -33,10 +33,10 @@ jobs:
         run: uv sync --locked --dev
       - name: Lint and format gate
         run: |
-          uv run ruff format --check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py
-          uv run ruff check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py
+          uv run ruff format --check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/browser_snapshot_review.py scripts/browser_snapshot_cli.py scripts/run_controlled_browser_acceptance.py
+          uv run ruff check src tests migrations scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/browser_snapshot_review.py scripts/browser_snapshot_cli.py scripts/run_controlled_browser_acceptance.py
       - name: Strict typing gate
-        run: uv run mypy src tests scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py
+        run: uv run mypy src tests scripts/mcp_inspector_probe.py scripts/release scripts/release_evidence.py scripts/project_overview.py scripts/browser_cases.py scripts/browser_phases.py scripts/browser_phase_runtime.py scripts/browser_phase_cli.py scripts/browser_snapshot_review.py scripts/browser_snapshot_cli.py scripts/run_controlled_browser_acceptance.py
       - name: OpenAPI 3.1.2 drift gate
         run: uv run pharma-openapi --check
       - name: Unit and service tests
@@ -166,10 +166,15 @@ jobs:
         working-directory: apps/web
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install pinned uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.28"
+          enable-cache: true
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
         with:
           version: 11.7.0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24.14.0
           cache: pnpm
@@ -181,6 +186,68 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - run: pnpm audit --audit-level high
+      - name: Prepare isolated account browser
+        working-directory: .
+        run: |
+          uv sync --locked --dev
+          bash scripts/prepare-ci-browser.sh
+      - name: Isolated real Chrome account registration and logout
+        working-directory: .
+        run: uv run python scripts/run_account_browser_acceptance.py --output /tmp/account-browser-acceptance-report.json
+      - name: Archive account browser evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: account-browser-evidence
+          path: /tmp/account-browser-acceptance-report.json
+          if-no-files-found: error
+
+      - name: Controlled UI browser cases with no backend
+        working-directory: .
+        run: uv run python -m scripts.run_controlled_browser_acceptance --output /tmp/controlled-browser-acceptance-report.json
+      - name: Archive required controlled browser evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: controlled-browser-evidence
+          path: /tmp/controlled-browser-acceptance-report.json
+          if-no-files-found: error
+
+  # Additional isolated UI capacity; the original six jobs and their deadlines remain unchanged.
+  company-controlled:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install pinned uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.28"
+          enable-cache: true
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.14.0
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - name: Install locked browser dependencies
+        run: |
+          uv sync --locked --dev
+          pnpm --dir apps/web install --frozen-lockfile
+          bash scripts/prepare-ci-browser.sh
+      - name: Build both original workbenches
+        run: pnpm --dir apps/web build
+      - name: Company bilingual browser cases with no backend
+        run: uv run python -m scripts.run_controlled_browser_acceptance --phase company-controlled --output /tmp/company-controlled-browser-acceptance-report.json
+      - name: Archive required company browser evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: company-controlled-browser-evidence
+          path: /tmp/company-controlled-browser-acceptance-report.json
+          if-no-files-found: error
 
   deployment-contract:
     runs-on: ubuntu-24.04
@@ -200,7 +267,7 @@ jobs:
         run: ./scripts/validate-kubernetes.sh --uv-path uv --output /tmp/kubernetes-api-validation.json
       - name: Archive Kubernetes API validation evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: kubernetes-api-validation
           path: /tmp/kubernetes-api-validation.json
@@ -224,6 +291,7 @@ jobs:
       # paid MCP concurrency is exercised independently below.
       PHARMA_BROWSER_WORKERS: "1"
       PHARMA_BROWSER_TENANT_SLUG: e2e
+      APP_IMAGE_TAG: ci-integration
       COMPOSE_PROJECT_NAME: x-pharma-ci
       COMPOSE_FILE: compose.yaml:compose.dev.yaml:compose.telemetry.yaml
       DOCKER_LIBRARY_REGISTRY: docker.io/library
@@ -238,37 +306,45 @@ jobs:
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
         with:
           version: 11.7.0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24.14.0
           cache: pnpm
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - name: Install test clients
-        env:
-          VISUAL_PROFILE_REVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
         run: |
           uv sync --locked --dev
           pnpm --dir apps/web install --frozen-lockfile
-          pnpm --dir apps/web exec playwright install-deps chrome
-          chrome_args=(--reviewed)
-          if [[ "$VISUAL_PROFILE_REVIEW" == "true" ]]; then chrome_args=(); fi
-          chrome_output=$(PHARMA_CHROME_CACHE_DIR="$RUNNER_TEMP/x-pharma-chrome" ./scripts/bootstrap-wsl-chrome.sh "${chrome_args[@]}")
-          chrome_executable=$(printf '%s\n' "$chrome_output" | sed -n 's/^chrome_executable=//p')
-          test -n "$chrome_executable"
-          echo "E2E_BROWSER_EXECUTABLE=$chrome_executable" >> "$GITHUB_ENV"
-          source scripts/lib/browser_fonts.sh
-          sudo apt-get install --yes --no-install-recommends "$BROWSER_FONT_PACKAGE=$BROWSER_FONT_VERSION"
-          verify_browser_fonts
-          profile_args=()
-          if [[ "$VISUAL_PROFILE_REVIEW" == "true" ]]; then profile_args+=(--review-update); fi
-          uv run --locked python -m scripts.browser_visual_profile --browser "$("$chrome_executable" --version)" "${profile_args[@]}"
+          bash scripts/prepare-ci-browser.sh
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build source-verified PostgreSQL 18 / RDKit image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: deploy/postgres-rdkit.Dockerfile
+          build-args: DOCKER_LIBRARY_REGISTRY=docker.io/library
+          load: true
+          tags: pharma-postgres-rdkit:18.4-2026.03.3
+          cache-from: type=gha,scope=postgres-rdkit
+          cache-to: type=gha,mode=max,scope=postgres-rdkit
+      - name: Build source-verified application integration image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: deploy/api.Dockerfile
+          build-args: DOCKER_LIBRARY_REGISTRY=docker.io/library
+          load: true
+          tags: pharma-intelligence-api:ci-integration
+          cache-from: type=gha,scope=pharma-api-security
+          cache-to: type=gha,mode=max,scope=pharma-api-security
       - name: Start integration stack
         env:
           KNOWLEDGE_SOURCE_ROOT: /tmp/pharma-source
         run: |
           mkdir -p /tmp/pharma-source
           python3 scripts/configure-development.py
-          docker compose up -d --build --wait --wait-timeout 600 api worker parser otel-collector
+          docker compose build otel-collector
+          docker compose up -d --no-build --wait --wait-timeout 600 api worker parser otel-collector
           docker compose ps
       - name: Bootstrap ephemeral tenant
         run: |
@@ -294,10 +370,19 @@ jobs:
             pharma-commercial --tenant-slug e2e --actor CI-E2E grant-credit \
             --subscription-key e2e-2026 --units 1000 --external-reference CI-E2E-CREDIT \
             --reason "Ephemeral integration allocation"
-      - name: Isolated real Chrome account registration and logout
-        run: |
-          corepack pnpm@11.7.0 --dir apps/web build
-          uv run python scripts/run_account_browser_acceptance.py --output /tmp/account-browser-acceptance-report.json
+      - name: Generate isolated visual baseline candidates
+        id: snapshot_generation
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
+        env:
+          PHARMA_BROWSER_KEEP_OUTPUT: "true"
+        run: ./scripts/run-browser-acceptance.sh --update-snapshots
+      - name: Archive visual baseline candidates for review
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines && steps.snapshot_generation.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: X-Pharma-visual-baseline-candidates
+          path: apps/web/e2e/visual-baselines/
+          if-no-files-found: error
       - name: Browser workbench smoke
         id: workbench_smoke
         env:
@@ -305,25 +390,39 @@ jobs:
           PHARMA_BROWSER_KEEP_OUTPUT: "true"
         run: |
           if [[ "$REFRESH_VISUAL_BASELINES" == "true" ]]; then
-            ./scripts/run-browser-acceptance.sh --update-snapshots
+            ./scripts/run-browser-acceptance.sh --output /tmp/browser-acceptance-report.json
+          else
+            ./scripts/run-browser-acceptance.sh --phase full-stack --output /tmp/full-stack-browser-acceptance-report.json
           fi
-          ./scripts/run-browser-acceptance.sh --output /tmp/browser-acceptance-report.json
+      - name: Read controlled UI evidence from this workflow
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines) }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: controlled-browser-evidence
+          path: /tmp/controlled-browser-evidence
+      - name: Read isolated company UI evidence from this workflow
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines) }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: company-controlled-browser-evidence
+          path: /tmp/company-controlled-browser-evidence
+      - name: Require exact disjoint complete original browser coverage
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines) }}
+        run: >-
+          uv run python -m scripts.browser_phase_cli close
+          --stack /tmp/full-stack-browser-acceptance-report-verified.json
+          --controlled /tmp/controlled-browser-evidence/controlled-browser-acceptance-report.json
+          --company /tmp/company-controlled-browser-evidence/company-controlled-browser-acceptance-report.json
+          --output /tmp/browser-acceptance-report.json
       - name: Archive failed visual comparisons
-        if: ${{ failure() && steps.workbench_smoke.outcome == 'failure' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ failure() && (steps.workbench_smoke.outcome == 'failure' || steps.snapshot_generation.outcome == 'failure') }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: X-Pharma-failed-visual-comparisons
           path: |
             /tmp/pharma-browser-acceptance-*/**/*-actual.png
             /tmp/pharma-browser-acceptance-*/**/*-diff.png
           if-no-files-found: warn
-      - name: Archive visual baseline candidates for review
-        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: X-Pharma-visual-baseline-candidates
-          path: apps/web/e2e/visual-baselines/
-          if-no-files-found: error
       - name: Real MCP HTTP and Web canonical fact consistency
         run: ./scripts/verify-entry-consistency.sh --web-url "$E2E_BASE_URL" --mcp-url "$TEST_MCP_URL" --output /tmp/entry-consistency-report.json
       - name: Independent MCP dual-client interoperability
@@ -334,12 +433,11 @@ jobs:
           --max-p95-ms 10000 --output /tmp/mcp-load-report.json
       - name: Archive MCP protocol and concurrency evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: two-entry-protocol-and-load-evidence
           path: |
             /tmp/browser-acceptance-report.json
-            /tmp/account-browser-acceptance-report.json
             /tmp/mcp-interoperability-report.json
             /tmp/entry-consistency-report.json
             /tmp/mcp-load-report.json
@@ -367,7 +465,7 @@ jobs:
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
         with:
           version: 11.7.0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24.14.0
           cache: pnpm
@@ -400,7 +498,7 @@ jobs:
         run: ./scripts/run-security-gates.sh
       - name: Archive security evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: security-supply-chain-evidence
           path: manifests/runtime/security/

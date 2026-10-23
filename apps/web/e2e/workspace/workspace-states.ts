@@ -1,5 +1,6 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs } from "@playwright/test";
 import { expect } from "@playwright/test";
+import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyWorkspaceStates({ page }: Pick<PlaywrightTestArgs & PlaywrightWorkerArgs, "page">) {
   let releaseSearch: (() => void) | undefined;
@@ -44,6 +45,7 @@ export async function verifyWorkspaceStates({ page }: Pick<PlaywrightTestArgs & 
   });
 
   await page.goto("/?view=explorer&q=EGFR&type=target");
+  await selectInterfaceLanguage(page, "zh-CN");
   await expect(page.getByText("正在检索结构化情报", { exact: true })).toBeVisible();
   releaseSearch?.();
   await expect(page.getByText("Search backend unavailable", { exact: true })).toBeVisible();
