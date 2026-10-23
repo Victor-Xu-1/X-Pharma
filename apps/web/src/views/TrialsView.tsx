@@ -1,10 +1,11 @@
 import { useMutation } from "@tanstack/react-query";
 import { Search } from "lucide-react";
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useState } from "react";
 import { AppliedFiltersBar } from "../components/AppliedFiltersBar";
 import { ProfessionalQueryState } from "../components/common";
 import { RecordProvenanceDrawer } from "../components/RecordProvenanceDrawer";
 import { SavedSearchDialog } from "../components/SavedSearchDialog";
+import { useSecondaryFiltersState } from "../components/SecondaryFilters";
 import type { SortingState } from "../components/VirtualDataTable";
 import type { ProvenanceSelection } from "../lib/contracts/provenance";
 import { type SortCriterion, sortCriteriaFromTable, tableSortingFromCriteria } from "../lib/contracts/sorting";
@@ -183,16 +184,15 @@ export function TrialsView({
     analysisView,
   };
 
-  const [linkedProgramFiltersOpen, setLinkedProgramFiltersOpen] = useState(
-    Boolean(
-      initialLinkedDrugModalities.length ||
-        initialLinkedDrugInnovationTypes.length ||
-        initialLinkedDrugCategories.length ||
-        initialLinkedDrugProgramTags.length ||
-        initialLinkedDrugGlobalPhase ||
-        initialLinkedDrugOrganizationCountryRegion,
-    ),
-  );
+  const linkedProgramActiveCount = [
+    filters.linkedDrugModalities.length,
+    filters.linkedDrugInnovationTypes.length,
+    filters.linkedDrugCategories.length,
+    filters.linkedDrugProgramTags.length,
+    filters.linkedDrugGlobalPhase,
+    filters.linkedDrugOrganizationCountryRegion,
+  ].filter(Boolean).length;
+  const linkedProgramFilters = useSecondaryFiltersState(linkedProgramActiveCount);
 
   const [roleEntityLabels, setRoleEntityLabels] = useState<Record<string, string>>({});
 
@@ -203,17 +203,6 @@ export function TrialsView({
   const [saveMonitor, setSaveMonitor] = useState(true);
   const [saveMessage, setSaveMessage] = useState<ClinicalFeedback>("");
 
-  const hasAppliedLinkedFilters = Boolean(
-    initialLinkedDrugModalities.length ||
-      initialLinkedDrugInnovationTypes.length ||
-      initialLinkedDrugCategories.length ||
-      initialLinkedDrugProgramTags.length ||
-      initialLinkedDrugGlobalPhase ||
-      initialLinkedDrugOrganizationCountryRegion,
-  );
-  useEffect(() => {
-    if (hasAppliedLinkedFilters) setLinkedProgramFiltersOpen(true);
-  }, [hasAppliedLinkedFilters]);
   const { resultQueryKey, result, detail, resultData, detailData } = useTrialQueries(
     appliedSearchInput,
     initialOffset,
@@ -247,7 +236,7 @@ export function TrialsView({
 
   function clearFilters() {
     setFilters(emptyTrialFilterConditions);
-    setLinkedProgramFiltersOpen(false);
+    linkedProgramFilters.setOpen(false);
     setRoleEntityLabels({});
     onSearchChange({
       ...emptyTrialSearchInput,
@@ -348,7 +337,6 @@ export function TrialsView({
     <>
       <section className="data-section trial-section">
         <div className="explorer-intro">
-          <p>{t("聚合注册平台的试验设计、状态、分期、适应症、干预和申办方，并关联药物与靶点信息。")}</p>
           <p>{t("注册干预列表不自动区分主药与联合用药；角色条件只匹配有明确角色证据的记录。")}</p>
         </div>
 
@@ -359,22 +347,34 @@ export function TrialsView({
             data={data}
             rememberRoleEntity={rememberRoleEntity}
           />
-          <TrialDesignFilters filters={filters} setters={setters} data={data} rememberRoleEntity={rememberRoleEntity} />
-          <TrialCombinationFilters
-            filters={filters}
-            setters={setters}
-            data={data}
-            rememberRoleEntity={rememberRoleEntity}
-          />
-          <TrialLinkedProgramFilters
-            filters={filters}
-            setters={setters}
-            data={data}
-            rememberRoleEntity={rememberRoleEntity}
-            linkedProgramFiltersOpen={linkedProgramFiltersOpen}
-            setLinkedProgramFiltersOpen={setLinkedProgramFiltersOpen}
-          />
-          <TrialResultFilters filters={filters} setters={setters} data={data} rememberRoleEntity={rememberRoleEntity} />
+          <div className="trial-secondary-filters">
+            <TrialDesignFilters
+              filters={filters}
+              setters={setters}
+              data={data}
+              rememberRoleEntity={rememberRoleEntity}
+            />
+            <TrialCombinationFilters
+              filters={filters}
+              setters={setters}
+              data={data}
+              rememberRoleEntity={rememberRoleEntity}
+            />
+            <TrialLinkedProgramFilters
+              filters={filters}
+              setters={setters}
+              data={data}
+              rememberRoleEntity={rememberRoleEntity}
+              disclosureState={linkedProgramFilters}
+              activeCount={linkedProgramActiveCount}
+            />
+            <TrialResultFilters
+              filters={filters}
+              setters={setters}
+              data={data}
+              rememberRoleEntity={rememberRoleEntity}
+            />
+          </div>
           <div className="domain-filter-actions">
             <button className="primary-button" type="submit" disabled={result.isFetching}>
               <Search size={16} />

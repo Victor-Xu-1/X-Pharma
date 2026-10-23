@@ -66,6 +66,8 @@ ORM 的公共入口是 `models/__init__.py`，只聚合显式导出；领域表�
 
 ## 本次整理
 
+临床筛选沿用 `SecondaryFilters` 的单一展开状态与呈现：桌面常闭组两列排列，展开组占满行，窄屏回到单列。关联药物条件按草稿统计并自动展开，清除仍重置原面板；不再保留另一套 details 状态 effect 或重复页面介绍。主药/联用药的证据限制和同一药物项目语义保留，筛选、草稿、结果列与已保存个人列序不因布局变化而改写。真实 Chrome 桌面用例直接守护首条注册号在原视口内完整可见，不靠截图阈值放宽。
+
 前端所有安装入口共用 `apps/web/pnpm-workspace.yaml` 的 `optimisticRepeatInstall: false`。固定 pnpm 的温热目录快路径可能在依赖清单与已提交锁不一致时提前成功；禁用该快路径后，原 `--frozen-lockfile` 必须真实拒绝旧锁。`test_frontend_lock_policy.py` 守护这个唯一策略，不变更安全 overrides、固定工具版本或测试门槛。
 
 覆盖率配置由 `pyproject.toml` 的 `[tool.coverage.run]` 唯一拥有。pytest-cov 7 不再内置采集子进程，因此显式启用 coverage 的 `subprocess` patch；不新增第二份配置或改变原 CI 的 80% 门槛。`test_subprocess_coverage_contract.py` 使用这份真实配置运行独立父/子 Python 夹具，必须采集两侧全部四行并达到 100%，不能以空报告或只采集父进程代替。
