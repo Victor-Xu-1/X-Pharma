@@ -63,7 +63,7 @@ def test_full_stack_requires_partition_closure_before_the_unchanged_mcp_checks()
     assert len(downloads) == 1
 
 
-def test_browser_phase_is_explicit_and_visual_review_remains_unpartitioned() -> None:
+def test_browser_phase_is_explicit_and_review_readonly_remains_unpartitioned() -> None:
     script = (ROOT / "scripts/run-browser-acceptance.sh").read_text()
     assert "browser_phase=all" in script
     assert '"${assigned_browser_files[@]}"' in script
@@ -72,9 +72,14 @@ def test_browser_phase_is_explicit_and_visual_review_remains_unpartitioned() -> 
     )
     assert script.index("scripts.browser_phase_cli prepare") < script.index('browser_user_id=""')
     jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
-    step = next(step for step in jobs["two-entry-smoke"]["steps"] if step.get("id") == "workbench_smoke")
+    steps = jobs["two-entry-smoke"]["steps"]
+    producer = next(step for step in steps if step.get("id") == "snapshot_generation")
+    assert producer["run"] == "./scripts/run-browser-acceptance.sh --update-snapshots"
+    assert "--phase" not in producer["run"]
+    step = next(step for step in steps if step.get("id") == "workbench_smoke")
+    assert steps.index(producer) < steps.index(step)
     review, normal = step["run"].split("else", 1)
-    assert "--update-snapshots" in review and "--phase" not in review
+    assert "--output" in review and "--phase" not in review and "--update-snapshots" not in review
     assert "--phase full-stack" in normal and "--update-snapshots" not in normal
 
 

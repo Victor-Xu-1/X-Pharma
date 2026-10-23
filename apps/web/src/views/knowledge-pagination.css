@@ -1,11 +1,52 @@
 .knowledge-index .domain-pagination {
   grid-template-columns: minmax(0, 1fr);
-  padding-inline: 12px;
+  padding-inline: 8px;
 }
 
 .knowledge-index .domain-pagination-controls {
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 44px 44px minmax(48px, 1fr) 44px 44px;
   min-width: 0;
+  gap: 2px;
+}
+
+.knowledge-index .domain-pagination-controls > .icon-button {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+
+.knowledge-index .domain-pagination-pages {
+  min-width: 0;
+  justify-content: flex-start;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 2px;
+}
+
+.knowledge-index .domain-pagination-pages button {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+}
+
+.knowledge-index .domain-pagination-pages > span {
+  flex: 0 0 20px;
+}
+
+.knowledge-index .domain-pagination-jump {
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  margin: 0;
+}
+
+.knowledge-index .domain-pagination-jump input {
+  height: 44px;
+}
+
+.knowledge-index .domain-pagination-jump .secondary-button {
+  min-height: 44px;
 }
 
 .knowledge-index .domain-pagination-error {
