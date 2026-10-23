@@ -216,7 +216,7 @@ def test_target_dossier_returns_structures_from_target_activity_compounds(
     assert dossier.structures[0].standard_inchi_key == "LFQSCWFLJHTTHZ-UHFFFAOYSA-N"
 
 
-def test_target_profile_reuses_exact_external_id_profile_from_duplicate_entity(
+def test_target_profile_keeps_unreconciled_external_id_profile_separate(
     session: Session,
     tenant: Tenant,
 ) -> None:
@@ -241,10 +241,12 @@ def test_target_profile_reuses_exact_external_id_profile_from_duplicate_entity(
 
     assert result is not None
     assert result.entity.id == verified_target.id
-    assert result.profile_id == profile.id
-    assert result.gene_symbol == "EGFR"
-    assert result.uniprot_accession == "P00533"
-    assert result.target_class == "SINGLE PROTEIN"
+    assert result.profile_id is None
+    assert result.gene_symbol is None
+    assert result.uniprot_accession is None
+    assert result.target_class is None
+    assert session.get(TargetProfile, profile.id) is profile
+    assert profile.entity_id == duplicate_target.id
 
 
 def test_target_dossier_summary_rejects_substring_status_matches(
