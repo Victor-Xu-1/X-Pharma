@@ -1,4 +1,5 @@
-import { type KeyboardEvent, type ReactNode, useEffect, useLayoutEffect, useRef } from "react";
+import { type KeyboardEvent, type ReactNode, useEffect, useRef } from "react";
+import { useHorizontalActiveItem } from "../lib/useHorizontalActiveItem";
 
 export type ResearchTabOption<Tab extends string> = {
   key: Tab;
@@ -27,28 +28,7 @@ export function ResearchTabList<Tab extends string>({
 }) {
   const activeTabRef = useRef<HTMLButtonElement>(null);
   const tabListRef = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    if (!tabs.some((tab) => tab.key === activeTab)) return;
-    const rail = tabListRef.current;
-    const button = activeTabRef.current;
-    if (!rail || !button || button.dataset.tabKey !== activeTab) return;
-    function alignHorizontally() {
-      if (!rail || !button) return;
-      const visible = rail.getBoundingClientRect();
-      const selected = button.getBoundingClientRect();
-      if (selected.left < visible.left || selected.width > visible.width) {
-        rail.scrollLeft += selected.left - visible.left;
-      } else if (selected.right > visible.right) {
-        rail.scrollLeft += selected.right - visible.right;
-      }
-    }
-    alignHorizontally();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(alignHorizontally);
-    observer.observe(rail);
-    observer.observe(button);
-    return () => observer.disconnect();
-  }, [activeTab, tabs]);
+  useHorizontalActiveItem(tabListRef, activeTabRef, tabs, activeTab);
 
   useEffect(() => {
     if (activeTabRef.current?.dataset.tabKey === activeTab) {

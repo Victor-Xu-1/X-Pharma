@@ -323,13 +323,31 @@ def test_ci_installs_branded_chrome_instead_of_playwright_chromium() -> None:
     assert "playwright install --with-deps chromium" not in workflow + ci_setup
 
 
+def test_ui_baseline_refresh_keeps_the_committed_browser_identity() -> None:
+    root = Path(__file__).parents[1]
+    workflow = (root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    setup = (root / "scripts/prepare-ci-browser.sh").read_text(encoding="utf-8")
+
+    assert workflow.count("bash scripts/prepare-ci-browser.sh") == 3
+    assert "VISUAL_PROFILE_REVIEW" not in workflow
+    assert (
+        "REFRESH_VISUAL_BASELINES: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}"
+        in workflow
+    )
+    assert "visual_profile_review=${VISUAL_PROFILE_REVIEW:-false}" in setup
+    assert "chrome_args=(--reviewed)" in setup
+
+
 def test_browser_acceptance_uses_bounded_assertions_without_retries() -> None:
     root = Path(__file__).parents[1]
     config = (root / "apps" / "web" / "playwright.config.ts").read_text(encoding="utf-8")
 
     assert "retries: 0" in config
     assert "expect: { timeout: 10_000 }" in config
-    assert 'snapshotPathTemplate: "{testDir}/visual-baselines/{arg}-{projectName}{ext}"' in config
+    assert "snapshotPathTemplate: snapshotReviewDirectory" in config
+    assert ': "{testDir}/visual-baselines/{arg}-{projectName}{ext}"' in config
+    assert 'snapshotReviewMode !== "capture"' in config
+    assert "isAbsolute(snapshotReviewDirectory)" in config
     assert 'name: "desktop-1440"' in config
     assert 'name: "desktop-1920"' in config
     assert 'name: "tablet-1024"' in config
