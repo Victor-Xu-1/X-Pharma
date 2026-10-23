@@ -17,7 +17,7 @@ export async function expectClinicalTableReading(page: Page, testInfo: TestInfo)
     }
     if (new URL(request.url()).pathname === "/api/v1/trials") {
       reads++;
-      return route.fulfill({ json: { ...trialResult, total: 1, offset: 0 } });
+      return route.fulfill({ json: { ...trialResult, total: 1, offset: 0, applied_filters: {} } });
     }
     return route.fulfill({
       json: {
@@ -44,6 +44,10 @@ export async function expectClinicalTableReading(page: Page, testInfo: TestInfo)
     expect(position("Study acronym")).toBeGreaterThanOrEqual(0);
     expect(position("Phase")).toBeLessThan(position("Study acronym"));
     expect(position("Status")).toBeLessThan(position("Study acronym"));
+    const viewport = page.viewportSize();
+    if (viewport && viewport.width >= 1440) {
+      await expect(table.getByText(trialResult.items[0].registry_id, { exact: true })).toBeInViewport({ ratio: 1 });
+    }
     await page.screenshot({ path: testInfo.outputPath("clinical-table-default-en.png"), animations: "disabled" });
     const cachedReads = reads;
     await selectInterfaceLanguage(page, "zh-CN");
