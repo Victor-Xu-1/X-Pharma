@@ -129,9 +129,15 @@ for a deeply nested untrusted payload, rather than a raw `RecursionError`.
 `tests/test_security_boundary.py` captures this regression; human OIDC, MCP OIDC,
 DPoP and signed internal-token paths remain part of the affected regression set.
 
-The pinned OpenCV contribution wheel bundles FFmpeg 5.1.4. Its vulnerable library
-is retained in the complete SBOM and raw scan inventory; a VEX `not_affected`
-statement is not a binary patch or a claim of zero vulnerabilities. The OCR API
+Historical upstream OpenCV wheels bundled FFmpeg 5.1.4; those original failures
+and inventories remain release evidence, not successful scans. The current OCR
+build compiles the same hash-locked source without FFmpeg/GStreamer/video plugins
+or GUI backends, retaining the still-image and geometry operations used by the
+locked PaddleX package. Build tooling is separately hash-locked; all runtime
+source hashes, complete package versions and derived wheel hashes are verified
+before offline installation and `pip check`. No new VEX exception is introduced.
+The image itself must pass real codec/import probes and the original complete
+SBOM/actionable vulnerability scan before this remediation is accepted. The OCR API
 has no video, audio, stream URL, DASH, subtitle or muxing input. Authentication,
 bounded input, SHA-256 and generated local paths precede inference. Pillow's
 decoded format must exactly match the allowed PNG/JPEG/TIFF extension; PDFs use
