@@ -1,0 +1,8 @@
+# Build-time tools only; the runtime dependency authority remains requirements.lock.
+cmake==3.31.10
+ninja==1.13.0
+numpy==2.3.5
+pip==26.2.0
+scikit-build==0.18.1
+setuptools==83.0.0
+wheel==0.46.3
