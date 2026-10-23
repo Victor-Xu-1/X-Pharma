@@ -7,6 +7,7 @@ import yaml
 
 ROOT = Path(__file__).parents[1]
 NODE_SETUP = "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1"
+UV_SETUP = "astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884"
 
 
 def test_accounts_run_once_after_the_frontend_build_with_the_original_driver() -> None:
@@ -62,7 +63,7 @@ def test_both_browser_jobs_use_the_same_pinned_setup_without_adding_a_gate() -> 
         assert "VISUAL_PROFILE_REVIEW" not in setup.get("env", {})
         assert "if" not in setup and not setup.get("continue-on-error", False)
         uv = next(step for step in steps if step.get("name") == "Install pinned uv and Python")
-        assert uv["uses"] == "astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b"
+        assert uv["uses"] == UV_SETUP
         assert uv["with"]["version"] == "0.11.28"
         assert any("uv sync --locked --dev" in step.get("run", "") for step in steps)
         node = next(step for step in steps if step.get("uses", "").startswith("actions/setup-node@"))
@@ -86,3 +87,20 @@ def test_ci_and_version_reconciliation_keep_one_exact_node_action_and_runtime() 
         for setup in setups:
             assert setup["uses"] == NODE_SETUP
             assert setup["with"]["node-version"] == "24.14.0"
+
+
+def test_ci_and_version_reconciliation_keep_one_exact_uv_action_and_runtime() -> None:
+    assert (ROOT / ".python-version").read_text().strip() == "3.13.16"
+    for filename, expected_owners in (("ci.yml", 7), ("product-version.yml", 1)):
+        workflow = cast(dict[str, Any], yaml.safe_load((ROOT / ".github/workflows" / filename).read_text()))
+        setups = [
+            step
+            for job in workflow["jobs"].values()
+            for step in job["steps"]
+            if step.get("uses", "").startswith("astral-sh/setup-uv@")
+        ]
+        assert len(setups) == expected_owners
+        for setup in setups:
+            assert setup["uses"] == UV_SETUP
+            assert setup["with"]["version"] == "0.11.28"
+            assert "python-version" not in setup["with"]
