@@ -19,9 +19,11 @@ Run the real wide desktop, desktop, tablet and mobile browser acceptance suite
 against the local authenticated runtime. The optional report never contains test credentials.
 Snapshot updates are an explicit review operation and cannot produce release evidence.
 Chrome owns the visual baseline. Edge targets compare against it but cannot update it.
-The default phase remains the original full suite. The explicit CI full-stack
+The default read-only phase remains the original full suite. The explicit CI full-stack
 phase requires closure with same-source controlled UI evidence; its partial report
-is not complete browser release evidence. Review updates and recovery stay unpartitioned.
+is not complete browser release evidence. Updates run the four original screenshot
+owners in an empty isolated directory; they cannot publish release evidence.
+Recovery remains unpartitioned. Read-only acceptance still retains every original case.
 --recover-interrupted-run removes only browser acceptance fixtures and temporary e2e accounts left by an interrupted run.
 EOF
 }
@@ -97,6 +99,10 @@ if [[ "$update_snapshots" == true && "$browser_target" != chrome ]]; then
   echo "Only Google Chrome may update the repository visual baseline" >&2
   exit 2
 fi
+[[ -z "${E2E_SNAPSHOT_REVIEW_DIR:-}" && -z "${E2E_SNAPSHOT_REVIEW_MODE:-}" ]] || {
+  echo 'Snapshot review environment is reserved for the owned capture producer' >&2
+  exit 2
+}
 
 selected_tenant_slug=${PHARMA_BROWSER_TENANT_SLUG:-}
 [[ "$selected_tenant_slug" =~ ^[a-z0-9][a-z0-9-]{0,79}$ ]] || {
@@ -192,6 +198,8 @@ else
 fi
 fixture_source_root="$ROOT_DIR/data/sources/empty/.browser-$fixture_key"
 assigned_browser_files=()
+snapshot_review_arguments=()
+snapshot_review_state_dir=""
 if [[ "$browser_phase" == full-stack ]]; then
   # Playwright recreates its output directory before executing any case.
   # Source identity is owned by this runner in a separate, retained sibling.
@@ -200,6 +208,12 @@ if [[ "$browser_phase" == full-stack ]]; then
     --manifest "$browser_phase_state_dir/phase-manifest.json" --arguments "$browser_phase_state_dir/phase-arguments"
   mapfile -t assigned_browser_files < "$browser_phase_state_dir/phase-arguments"
   printf 'browser_phase_state=%s\n' "$browser_phase_state_dir"
+elif [[ "$update_snapshots" == true ]]; then
+  snapshot_review_state_dir=$(mktemp -d "$(dirname "$output_dir")/pharma-browser-review.XXXXXXXX")
+  printf 'snapshot_review_state=%s\n' "$snapshot_review_state_dir"
+  python3 -m scripts.browser_snapshot_cli prepare \
+    --manifest "$snapshot_review_state_dir/manifest.json" --arguments "$snapshot_review_state_dir/arguments"
+  mapfile -t snapshot_review_arguments < "$snapshot_review_state_dir/arguments"
 fi
 fixture_ids_path="$output_dir/fixture-ids"
 touch "$fixture_ids_path"
@@ -2153,6 +2167,7 @@ fi
 started_ns=$(date +%s%N)
 playwright_args=(
   "${assigned_browser_files[@]}"
+  "${snapshot_review_arguments[@]}"
   --reporter=line,json
   --fail-on-flaky-tests
   "--workers=$browser_workers"
@@ -2161,7 +2176,15 @@ playwright_args=(
 if [[ "$update_snapshots" == true ]]; then
   playwright_args+=(--update-snapshots=all)
 fi
-run_playwright() {
+run_playwright() (
+  if [[ "$update_snapshots" == true ]]; then
+    review_capture_path="$snapshot_review_state_dir/snapshots"
+    if [[ -n "${MSYSTEM:-}" && -x "$(command -v cygpath || true)" ]]; then
+      review_capture_path=$(cygpath -w "$review_capture_path")
+    fi
+    export E2E_SNAPSHOT_REVIEW_DIR="$review_capture_path"
+    export E2E_SNAPSHOT_REVIEW_MODE=capture
+  fi
   if [[ -n "${E2E_PLAYWRIGHT_COMMAND:-}" ]]; then
     (
       cd "${E2E_PLAYWRIGHT_WORKDIR:-apps/web}"
@@ -2170,59 +2193,34 @@ run_playwright() {
   else
     corepack "$package_manager" --dir apps/web exec playwright test "${playwright_args[@]}"
   fi
-}
+)
 sync_updated_snapshots() {
-  [[ "$update_snapshots" == true && -n "${E2E_PLAYWRIGHT_COMMAND:-}" ]] || return 0
-  local source_dir="${E2E_PLAYWRIGHT_WORKDIR:-apps/web}/e2e/visual-baselines"
+  [[ "$update_snapshots" == true ]] || return 0
+  local source_dir="$snapshot_review_state_dir/snapshots"
   local target_dir="$ROOT_DIR/apps/web/e2e/visual-baselines"
-  # An alternate launcher can still execute this exact checkout. In that case
-  # Playwright already wrote the owned baseline and copying it onto itself fails.
-  if [[ "$(realpath -- "$source_dir")" == "$(realpath -- "$target_dir")" ]]; then
-    return 0
-  fi
   local source_path="$source_dir"
   local target_path="$target_dir"
   if [[ -n "${MSYSTEM:-}" && -x "$(command -v cygpath || true)" ]]; then
     source_path=$(cygpath -w "$source_dir")
     target_path=$(cygpath -w "$target_dir")
   fi
-  python3 - "$source_path" "$target_path" <<'PY'
+  python3 - "$source_path" "$target_path" "$started_ns" <<'PY'
 from __future__ import annotations
 
 import shutil
 import sys
 from pathlib import Path
 
-source_dir, target_dir = map(Path, sys.argv[1:])
-expected = {
-    "research-workbench-desktop-1440.png",
-    "research-workbench-desktop-1920.png",
-    "research-workbench-tablet-1024.png",
-    "research-workbench-mobile-390.png",
-    "research-dense-results-desktop-1440.png",
-    "research-dense-results-desktop-1920.png",
-    "research-dense-results-tablet-1024.png",
-    "research-dense-results-mobile-390.png",
-    "research-trial-outcomes-desktop-1440.png",
-    "research-trial-outcomes-desktop-1920.png",
-    "research-trial-outcomes-tablet-1024.png",
-    "research-trial-outcomes-mobile-390.png",
-    "research-patent-timeline-desktop-1440.png",
-    "research-patent-timeline-desktop-1920.png",
-    "research-patent-timeline-tablet-1024.png",
-    "research-patent-timeline-mobile-390.png",
-    "research-deal-rights-desktop-1440.png",
-    "research-deal-rights-desktop-1920.png",
-    "research-deal-rights-tablet-1024.png",
-    "research-deal-rights-mobile-390.png",
-}
+from scripts.browser_snapshot_review import CAPTURE_FILES, verify_fresh_captures
+
+source_dir, target_dir = map(Path, sys.argv[1:3])
+expected = CAPTURE_FILES
 if not source_dir.is_dir() or not target_dir.is_dir():
     raise SystemExit("snapshot synchronization directories are missing")
+verify_fresh_captures(source_dir, expected, int(sys.argv[3]))
 for name in sorted(expected):
     source = source_dir / name
     target = target_dir / name
-    if not source.is_file() or source.is_symlink():
-        raise SystemExit(f"generated snapshot is missing or unsafe: {name}")
     shutil.copyfile(source, target)
 PY
 }
@@ -2290,18 +2288,25 @@ CI=1 \
   E2E_QUALITY_OWNER_ID_MOBILE_390="${project_user_ids[mobile-390]}" \
   PLAYWRIGHT_JSON_OUTPUT_FILE="$playwright_json_output_file" \
   run_playwright
+if [[ "$update_snapshots" == true ]]; then
+  python3 -m scripts.browser_snapshot_cli verify --manifest "$snapshot_review_state_dir/manifest.json" \
+    --results "$output_dir/results.json" --started-ns "$started_ns"
+fi
 sync_updated_snapshots
 finished_ns=$(date +%s%N)
 duration_ms=$(((finished_ns - started_ns) / 1000000))
 
-python3 - "$output_dir/results.json" "$output_dir/result-counts" "$output_dir/browser-quality.json" <<'PY'
+python3 - "$output_dir/results.json" "$output_dir/result-counts" "$output_dir/browser-quality.json" "$update_snapshots" <<'PY'
 from __future__ import annotations
 
 import json
 import sys
 from pathlib import Path
 
-report_path, counts_path, quality_path = map(Path, sys.argv[1:])
+from scripts.browser_snapshot_review import capture_scenarios
+
+report_path, counts_path, quality_path = map(Path, sys.argv[1:4])
+snapshot_update = sys.argv[4] == "true"
 report = json.loads(report_path.read_text(encoding="utf-8"))
 stats = report.get("stats")
 if not isinstance(stats, dict):
@@ -2397,6 +2402,8 @@ scenario_markers = {
     "professional_query_state_matrix": "[professional-query-state-matrix]",
     "professional_error_permission_matrix": "[professional-error-permission-matrix]",
 }
+if snapshot_update:
+    scenario_markers = capture_scenarios(scenario_markers)
 scenario_projects = {name: set() for name in scenario_markers}
 
 
@@ -2486,7 +2493,7 @@ read -r total_tests desktop_1440_tests desktop_1920_tests tablet_1024_tests mobi
   < "$output_dir/result-counts"
 quality_json=$(<"$output_dir/browser-quality.json")
 
-python3 - "$update_snapshots" "$browser_version" "$ROOT_DIR/apps/web/e2e/visual-baselines" <<'PY'
+python3 - "$update_snapshots" "$browser_version" "$ROOT_DIR/apps/web/e2e/visual-baselines" "$started_ns" <<'PY'
 from __future__ import annotations
 
 import hashlib
@@ -2496,6 +2503,8 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+from scripts.browser_snapshot_review import verify_fresh_captures
 
 update = sys.argv[1] == "true"
 browser_version = sys.argv[2]
@@ -2536,6 +2545,7 @@ for name, (viewport, state, capture) in expected.items():
     }
 
 if update:
+    verify_fresh_captures(baseline_dir, set(expected), int(sys.argv[4]))
     payload = {
         "schema": "pharma.workbench-visual-baselines.v3",
         "schema_version": 3,

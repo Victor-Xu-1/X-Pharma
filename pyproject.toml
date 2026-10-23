@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "X-Pharma"
-version = "0.1.69"
+version = "0.1.84"
 description = "Enterprise pharmaceutical intelligence database with human and agent interfaces"
 readme = "README.md"
 requires-python = ">=3.13.16,<3.14"
@@ -14,7 +14,7 @@ authors = [{ name = "Victor Xu" }]
 
 dependencies = [
   "alembic==1.16.4",
-  "anyio==4.14.2",
+  "anyio==4.15.1",
   "fastapi==0.139.0",
   "beautifulsoup4==4.15.0",
   "boto3==1.43.48",
@@ -35,14 +35,14 @@ dependencies = [
   "python-pptx==1.0.2",
   "openpyxl==3.1.5",
   "opensearch-py==3.2.0",
-  "opentelemetry-api==1.43.0",
-  "opentelemetry-exporter-otlp-proto-grpc==1.43.0",
-  "opentelemetry-instrumentation-fastapi==0.64b0",
-  "opentelemetry-instrumentation-httpx==0.64b0",
-  "opentelemetry-instrumentation-logging==0.64b0",
-  "opentelemetry-instrumentation-sqlalchemy==0.64b0",
-  "opentelemetry-sdk==1.43.0",
-  "pypdf==6.19.0",
+  "opentelemetry-api==1.45.1",
+  "opentelemetry-exporter-otlp-proto-grpc==1.45.1",
+  "opentelemetry-instrumentation-fastapi==0.66b1",
+  "opentelemetry-instrumentation-httpx==0.66b1",
+  "opentelemetry-instrumentation-logging==0.66b1",
+  "opentelemetry-instrumentation-sqlalchemy==0.66b1",
+  "opentelemetry-sdk==1.45.1",
+  "pypdf==6.21.1",
   "rdkit==2026.3.3",
   "sqlalchemy==2.0.42",
   "starlette==1.7.0",
@@ -62,14 +62,14 @@ Issues = "https://github.com/Victor-Xu-1/X-Pharma/issues"
 [dependency-groups]
 dev = [
   "mypy==1.17.1",
-  "Pillow==12.3.0",
+  "Pillow==13.0.0",
   "pip-audit==2.10.1",
   "pytest==9.0.3",
   "pytest-asyncio==1.4.0",
-  "pytest-cov==6.2.1",
+  "pytest-cov==7.1.0",
   "pyyaml==6.0.3",
   "reportlab==5.0.0",
-  "respx==0.22.0",
+  "respx==0.23.1",
   "ruff==0.16.9",
   "types-openpyxl==3.1.5.20260518",
   "types-pyyaml==6.0.12.20260518",
@@ -120,6 +120,9 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 markers = ["integration: requires a real external service"]
 
+[tool.coverage.run]
+patch = ["subprocess"]
+
 [tool.ruff]
 line-length = 120
 target-version = "py313"
@@ -139,7 +142,7 @@ packages = ["pharma_intel"]
 required-version = "==0.11.28"
 python-downloads-json-url = "deploy/cpython/downloads.json"
 package = true
-constraint-dependencies = ["soupsieve==2.9.0", "urllib3==2.8.0"]
+constraint-dependencies = ["certifi==2026.10.19", "pip==26.2.0", "soupsieve==2.9.0", "urllib3==2.8.0"]
 
 [tool.x-pharma.versioning]
-processed-through = "ac25d50ab5aece832af72843e73ef3d0536edb90"
+processed-through = "53cbff43838ca65d6492de2a33a5801a33a2c27e"

@@ -27,7 +27,11 @@
 
 入口、领域、持久化和适配器各自负责一层。新增规则进入对应领域模块，不能在 UI、路由和 MCP 重复实现。数据流见 [architecture.md](architecture.md)。
 
+`scripts/browser_snapshot_review.py` 唯一拥有截图生成角色的原用例选择、四视口身份、九个原场景标记与二十张新图完整性；`browser_snapshot_cli.py` 复用现有 `browser_phase_runtime` 的干净源码发现和不可覆盖元数据，只编排生成计划与验证，不发布完整验收。`run-browser-acceptance.sh` 仍拥有原夹具、真实运行、同步和清理；截图先写入私有空目录，通过验证才同步。Playwright 配置中的生成目录只接受生成子进程的成对模式，普通调用保留原基准。只读完整场景、严格 case union、性能与像素预算的原权威不变，不将截图生成计数冒充完整测试覆盖。
+
 通用 `EntityDossierView` 在呈现或修正分节前，必须核对返回档案与请求实体的 ID 和类型；身份不一致只开放显式重试，不展示另一实体的记录，也不据此修改当前深链。`locationModel.specializedResearchView` 为四类专业实体的唯一视图分派，未知类型保留通用档案；`EntityRoute` 在已确认身份、等待现有导航提交时不挂载竞争的通用档案，避免缓存返回导航额外启动通用公司档案和时间线读取。既有 URL、分节映射和专业来源身份警告不变。公司时间线独立核对请求公司身份：错误归属或明确 401/403 时，不将缓存计数、日期和事件交给展示模块；暂时性 503 保留原授权快照并显示错误。`CompanyIntelligence` 的时间线日期只取自该时间线，缺失时明确显示缺失，不借用档案查询时间。服务器 RLS、查询键和来源事实权威不变。
+
+靶点 profile 优先读取自身权威记录；缺失时 `target_profile_identity` 只沿本组织、同类型、已批准且仍活跃的 canonical 身份链读取唯一档案，外部读取要求链中实体均已验证。多个档案保持缺失，交由原身份治理决定，不按字段丰富度、更新时间或外部编号猜配；撤销身份链接立即停止关联读取。不扫描/物化整个组织的其他靶点，也不修改原档案、关系、来源和历史。
 
 公司双语浏览器用例与新增通用档案身份/缓存返回用例分别占有原有的 30 秒预算，共用 `company-browser-fixture` 的响应控制及同一可访问性检查；不在已覆盖九个分节、完整资产和双语切换的公司用例尾部追加另一条长流程。原始用例、断言、四种视口和单 worker 保留，新增用例由实时清单一起校验，不能用旧清单或旧结果代替。
 
@@ -61,6 +65,10 @@ ORM 的公共入口是 `models/__init__.py`，只聚合显式导出；领域表�
 企业管理的查询键按概况、用户、用户组、访问治理、模型与审计划分，按活动功能加载。`views/enterprise/` 拥有各功能面板及操作表单，`FeatureQuery` 负责加载和失败反馈；权限复查失败不继续显示旧管理数据，也不把失败伪装成空列表。`useEnterpriseOperationBoundary` 统一同步锁与操作对账，不将凭据放入通用 Mutation 历史；`useEnterpriseCommands` 提交前读取同一查询缓存的当前状态、目标身份与已声明版本，不改写捕获意图、不替代服务端授权。`components/accountInvitations/` 的状态所有者由工作台组装，面板与一次性代码弹窗仅呈现；没有第二条邀请提交链路。`ModelsPanel` 与 `LLMProviderModal` 分别拥有列表和配置，旧内联弹窗已移除。审计的筛选/查询仍由主视图拥有，面板保留输入、错误恢复和匹配查询的正常缓存，不显示另一组条件的旧事件。平台面板已移至唯一 `views/environment/PlatformPanel.tsx`，不在企业页保留竞争入口。环境模块的网关版本、主机报告、安装配方、CLI 执行和平台证据分别有独立职责；只有受控本地主机可以明确执行安装，Web 不执行命令。源码/安全/部署连接见 [环境管理](environment-management.md)。
 
 ## 本次整理
+
+前端所有安装入口共用 `apps/web/pnpm-workspace.yaml` 的 `optimisticRepeatInstall: false`。固定 pnpm 的温热目录快路径可能在依赖清单与已提交锁不一致时提前成功；禁用该快路径后，原 `--frozen-lockfile` 必须真实拒绝旧锁。`test_frontend_lock_policy.py` 守护这个唯一策略，不变更安全 overrides、固定工具版本或测试门槛。
+
+覆盖率配置由 `pyproject.toml` 的 `[tool.coverage.run]` 唯一拥有。pytest-cov 7 不再内置采集子进程，因此显式启用 coverage 的 `subprocess` patch；不新增第二份配置或改变原 CI 的 80% 门槛。`test_subprocess_coverage_contract.py` 使用这份真实配置运行独立父/子 Python 夹具，必须采集两侧全部四行并达到 100%，不能以空报告或只采集父进程代替。
 
 证据查证使用独立的双语目录；`evidencePresentation` 仅格式化界面定位标签和安全来源链接，`EvidenceRecord` 拥有原文预览/展开与引用卡片。旧视图内联呈现已退出。证据域名、归属说明、文档名、引文内容、URL 与坐标值始终保留来源原值；界面语言切换不提交查询、不改写草稿、当前定位或研究 URL。原真实引证连续性用例增加语言验证，独立受控用例验证英文初访、中文持久化及原文保持，均不替代真实授权检索。
 
@@ -127,6 +135,8 @@ CI 仍保留原六项作业及 15/45 分钟、单 worker、四种浏览器项目
 ClinicalTrials.gov、NextPharma 与 ChEMBL 的确定性处理分别归属 `adapter_clinicaltrials`、`adapter_nextpharma` 和 `adapter_chembl`。`AdapterContext` 显式复用同一来源版本、会话、组织、对象存储、规范化器和统一暂存/失败/状态回调；适配器保留来源授权、不可变内容哈希、幂等策略和审计，不自行构造另一套治理服务。`govern_version` 只负责选择已识别来源及受控模型处理。
 
 官方来源的连接器、检查点与注册分别属于 `ingest/clinicaltrials.py`、`public_sync.py`/两个 `*_sync.py` 和 `public_sources.py`；`public_http.py` 复用唯一有界读取器统一官方接口的流式响应上限。CLI 只委派，旧内联连接器/重复注册实现已移除。`source_routing` 统一规范配置比较，`governance/source_policy` 统一来源策略身份，`source_updates` 只负责同记录的有锁版本推进。前端来源编辑、参数合同/字段与同步状态位于 `views/dataFactory/`，主视图不再拥有重复来源表单。完整行为见 [自动公开来源入库](automatic-public-source-ingestion.md)。
+
+官方修订替代已发布事实时，`GovernanceService._withdraw_superseded_facts` 在同一事务写入既有撤回 outbox，历史事实、证据和来源关联继续保留用于审计。`search/documents.evidence_claim_projection` 是当前可索引来源的唯一判定：已有治理关联但没有有效已发布来源的证据不得降格为无分类旧数据。索引重建及发布/撤回事件均复用该判定，延迟事件不能复活过期证据，也不能删除仍被其他有效发布共享的证据；无治理历史的旧式证据维持原有未分类语义。对应回归位于 `tests/test_superseded_evidence_projection.py`，修订夹具单独维护于 `tests/governance_revision_fixtures.py`。
 
 数据工厂的隔离处置、源对象/版本、版本重放、运行重放/取消、阶段状态与校验发现各归属 `views/dataFactory/` 的六个小模块；`DataFactoryView` 只组装原查询与命令回调，不保留第二份内联弹窗。共享 `useModalFocus` 拥有可见焦点、可嵌套背景隔离与关闭恢复，`useDismissibleDetails` 只管理临时原生弹出菜单的退出，不读写业务筛选或草稿。所有业务标签页复用 `ResearchTabList`；可显式关联同一活动面板，不复制键盘状态。`InlineEntityLinks` 呈现完整授权关联集合及数量，临床角色与专利列表消费同一呈现，不裁掉第四条记录，不制造来源或推断科学关系。商业生命周期命令仍归属 `useCommercialWorkspace` 的单一操作/审计链路；呈现层等待其成功结果再关闭或清空，失败/提交状态由当前表单呈现。靶点筛选样式退出企业模块归属靶点，知识网格的滚动边界由知识样式独立拥有。
 
@@ -198,7 +208,13 @@ SMB 协议验收将容器账户 UID 映射到创建私有夹具的非 root 主�
 
 `ResearchTabList` 保持原稳定 ID、ARIA 面板关联、键盘移动和启用状态；翻译、标签计数或可用宽度改变时，仅在横向轨道内校正当前标签，不重置查询、夺取输入焦点或在重新排版时滚动整页。观察器随组件卸载释放。当前标签改变的原导航行为保留。窄屏横向位置、待返回焦点与失败恢复需要本次 Chrome 几何及交互验收，不由元素存在或历史截图代替。
 
+`useHorizontalActiveItem` 唯一拥有横向选中项的可见性与尺寸观察生命周期，研究分类导航和 `ResearchTabList` 消费同一实现。研究分类保留五组十三个目的地及普通导航按钮语义；窄屏为完整名称的单行横向轨道，按钮至少44px高，深链、翻译与可用宽度变化只校正轨道，不滚动整页、触发查询或抢占焦点。
+
+知识目录的分页保留 `ResultPagination` 唯一状态/命令权威：首尾页与相邻页固定在同一行，中间页码可独立横向阅读，跳页表单独占下一行，交互目标至少44px。当前/聚焦页码复用同一横向可见性实现，不因焦点或宽度变化提交页码；完整页集合、边界禁用、非法输入、授权提示与旧 URL 越界恢复均保留。
+
 靶点查询的加载／错误／分面时点说明由 `TargetPipelineFeedback` 唯一呈现，位于稳定的筛选区域前并随当前面板可见；结果模块不再重复拥有提示。反馈保留完整服务端原因与原重试回调，不替换输入或夺取焦点。`focusVisibility` 只在本面板的当前控件实际被导航／反馈遮挡或超出可见区域时按测量值做最小滚动校正；已可见的控件、其他页面和非筛选焦点不受影响，不依赖无效固定滚动余量。长诊断区使用和表格相同的 `KeyboardScrollRegion` 具名键盘滚动合同；`ScrollableTableRegion` 只保留表格布局包装，原 HTML 和键盘入口不变，不增加第二条焦点实现。
+
+数据工厂的投影投递计数在 HTTP 边界显式传入当前人员组织；同一消费者只在该组织的签名 RLS 上下文聚合，不枚举其他组织或泄露其他组织的运行量。受信主机 `pharma-search status` 保留显式运维场景的全局聚合，未把全局权限交给 Web。该改动不重放或删除死信，也不把集群 green 解释为投影完整。
 
 容器安全以固定基础镜像摘要和 `deploy/security/debian13-runtime-packages.lock` 为权威。共享安装脚本只升级镜像中已有的指定包，版本更高时要求审阅，禁止降级与通用漏洞忽略。CPython 供应商源码、来源 commit、SHA-256、真实解析器探针及 OpenVEX 声明成组更新。
 
@@ -222,3 +238,11 @@ SMB 协议验收将容器账户 UID 映射到创建私有夹具的非 root 主�
 暂时禁用的控件推断恢复完成。原精确请求、禁用状态与详情不跳转断言保留；
 独立延迟响应测试同时检查缩页与清空总量，响应到达前不提前回退，完成后
 只恢复一次。生产分页、请求键、重试与测试时限不改变。
+
+档案关联交易与公司时间线的金额只消费 `lib/dealDisplay.formatAmount`，
+与药物交易页共用同一精度呈现。保留已提供的有限数值、真实零值与原始币种；
+不将小额舍入为零、不用百万／万缩写替代档案事实，不进行汇率换算。
+缺失值只本地化应用提示，语言更新不改写记录、触发查询或操作。
+旧 `dossier/presentation.formatMoney` 和它独有的 locale 导入在替换路径的
+同组件回归与严格类型通过后退出，不保留备用金额实现。最终门禁与实际部署
+仍须绑定当前提交；组件测试通过不等同于本机或科学数据完整性验收。

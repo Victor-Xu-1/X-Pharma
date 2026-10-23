@@ -1,4 +1,18 @@
 ARG DOCKER_LIBRARY_REGISTRY=public.ecr.aws/docker/library
+FROM ${DOCKER_LIBRARY_REGISTRY}/python:3.13.16-slim@sha256:bf44cdfcb76cd3b41e879bc058fc37ec5872002ccfde7fcb765e218cde0cd79c AS wheel-builder
+
+ARG OCR_PYPI_INDEX_URL=https://pypi.org/simple
+ENV PIP_DEFAULT_TIMEOUT=300 PIP_RETRIES=3 PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_INDEX_URL=${OCR_PYPI_INDEX_URL}
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends build-essential pkg-config libjpeg62-turbo-dev libpng-dev libtiff-dev \
+    && rm -rf /var/lib/apt/lists/*
+COPY services/ocr/opencv-build.lock /build/opencv-build.lock
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    python -m pip install --require-hashes -r /build/opencv-build.lock
+COPY services/ocr/requirements.lock services/ocr/opencv-build.sh services/ocr/wheel_manifest.py /build/
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    bash /build/opencv-build.sh
+
 FROM ${DOCKER_LIBRARY_REGISTRY}/python:3.13.16-slim@sha256:bf44cdfcb76cd3b41e879bc058fc37ec5872002ccfde7fcb765e218cde0cd79c
 
 ARG OCR_PYPI_INDEX_URL=https://pypi.org/simple
@@ -14,7 +28,7 @@ RUN bash /tmp/install-security-packages.sh /tmp/security-packages.lock \
     && rm -f /tmp/security-packages.lock /tmp/install-security-packages.sh
 
 RUN apt-get update \
-    && apt-get install --yes --no-install-recommends libgl1 libglib2.0-0t64 libgomp1 \
+    && apt-get install --yes --no-install-recommends libglib2.0-0t64 libgomp1 libjpeg62-turbo libpng16-16t64 libtiff6 \
     && rm -rf /var/lib/apt/lists/*
 COPY scripts/verify_cpython_tarfile.py scripts/verify_cpython_tls.py scripts/verify_cpython_html.py /tmp/cpython-probes/
 RUN python /tmp/cpython-probes/verify_cpython_tarfile.py \
@@ -24,8 +38,13 @@ RUN python /tmp/cpython-probes/verify_cpython_tarfile.py \
 
 WORKDIR /service
 COPY services/ocr/requirements.lock ./requirements.lock
-RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    python -m pip install --require-hashes -r requirements.lock
+RUN --mount=type=bind,from=wheel-builder,source=/wheelhouse,target=/wheelhouse,readonly \
+    python -m pip install --no-index --no-deps --require-hashes --find-links=/wheelhouse -r /wheelhouse/requirements.lock \
+    && python -m pip check
+
+COPY services/ocr/verify_opencv.py /tmp/verify-opencv.py
+RUN PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True python /tmp/verify-opencv.py \
+    && rm /tmp/verify-opencv.py
 
 RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --no-create-home app
 COPY --chown=app:app services/ocr/service.py ./service.py
