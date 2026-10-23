@@ -33,68 +33,6 @@ export function useTrialColumns(openTrialEntity: TrialEntityOpener, onTrialChang
         ),
       },
       {
-        accessorKey: "acronym",
-        header: t("试验简称"),
-        size: 130,
-        cell: ({ getValue }) => String(getValue() ?? "--"),
-      },
-      {
-        accessorKey: "initiation_type",
-        header: t("发起类型"),
-        size: 150,
-        cell: ({ getValue }) =>
-          initiationTypeLabels[String(getValue() ?? "")]
-            ? professionalEnumLabel(initiationTypeLabels[String(getValue() ?? "")], String(getValue()))
-            : String(getValue() ?? "--"),
-      },
-      {
-        accessorKey: "therapy_lines",
-        header: t("治疗线次"),
-        size: 150,
-        enableSorting: false,
-        cell: ({ row }) =>
-          displayList(
-            row.original.therapy_lines.map((value) =>
-              therapyLineLabels[value] ? professionalEnumLabel(therapyLineLabels[value], value) : value,
-            ),
-            "--",
-            3,
-          ),
-      },
-      {
-        id: "primary_outcome",
-        header: t("报告终点"),
-        size: 220,
-        enableSorting: false,
-        cell: ({ row }) => primaryOutcomeSummary(row.original),
-      },
-      {
-        accessorKey: "has_results",
-        header: t("结果"),
-        size: 82,
-        cell: ({ getValue }) => (
-          <StatusBadge value={getValue() ? "已发布" : "未发布"} label={getValue() ? t("已发布") : t("未发布")} />
-        ),
-      },
-      {
-        accessorKey: "result_evaluation",
-        header: t("最优评价"),
-        size: 96,
-        cell: ({ getValue }) => {
-          const value = getValue() as TrialResultEvaluation | null;
-          return value ? (
-            <StatusBadge
-              value={value}
-              label={
-                resultEvaluationLabels[value] ? professionalEnumLabel(resultEvaluationLabels[value], value) : value
-              }
-            />
-          ) : (
-            <span>{t("未评价")}</span>
-          );
-        },
-      },
-      {
         accessorKey: "phases",
         header: t("分期"),
         size: 90,
@@ -212,6 +150,68 @@ export function useTrialColumns(openTrialEntity: TrialEntityOpener, onTrialChang
         header: t("最近更新"),
         size: 105,
         cell: ({ getValue }) => formatDate(String(getValue() ?? "")),
+      },
+      {
+        accessorKey: "acronym",
+        header: t("试验简称"),
+        size: 130,
+        cell: ({ getValue }) => String(getValue() ?? "--"),
+      },
+      {
+        accessorKey: "initiation_type",
+        header: t("发起类型"),
+        size: 150,
+        cell: ({ getValue }) =>
+          initiationTypeLabels[String(getValue() ?? "")]
+            ? professionalEnumLabel(initiationTypeLabels[String(getValue() ?? "")], String(getValue()))
+            : String(getValue() ?? "--"),
+      },
+      {
+        accessorKey: "therapy_lines",
+        header: t("治疗线次"),
+        size: 150,
+        enableSorting: false,
+        cell: ({ row }) =>
+          displayList(
+            row.original.therapy_lines.map((value) =>
+              therapyLineLabels[value] ? professionalEnumLabel(therapyLineLabels[value], value) : value,
+            ),
+            "--",
+            3,
+          ),
+      },
+      {
+        id: "primary_outcome",
+        header: t("报告终点"),
+        size: 220,
+        enableSorting: false,
+        cell: ({ row }) => primaryOutcomeSummary(row.original),
+      },
+      {
+        accessorKey: "has_results",
+        header: t("结果"),
+        size: 82,
+        cell: ({ getValue }) => (
+          <StatusBadge value={getValue() ? "已发布" : "未发布"} label={getValue() ? t("已发布") : t("未发布")} />
+        ),
+      },
+      {
+        accessorKey: "result_evaluation",
+        header: t("最优评价"),
+        size: 96,
+        cell: ({ getValue }) => {
+          const value = getValue() as TrialResultEvaluation | null;
+          return value ? (
+            <StatusBadge
+              value={value}
+              label={
+                resultEvaluationLabels[value] ? professionalEnumLabel(resultEvaluationLabels[value], value) : value
+              }
+            />
+          ) : (
+            <span>{t("未评价")}</span>
+          );
+        },
       },
       {
         id: "linked_entities",

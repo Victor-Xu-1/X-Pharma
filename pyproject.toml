@@ -42,7 +42,7 @@ dependencies = [
   "opentelemetry-instrumentation-logging==0.66b1",
   "opentelemetry-instrumentation-sqlalchemy==0.66b1",
   "opentelemetry-sdk==1.45.1",
-  "pypdf==6.21.1",
+  "pypdf==6.21.2",
   "rdkit==2026.3.3",
   "sqlalchemy==2.0.42",
   "starlette==1.7.0",

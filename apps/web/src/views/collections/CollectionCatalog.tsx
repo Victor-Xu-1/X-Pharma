@@ -77,12 +77,8 @@ export function CollectionCatalog({
               message={catalog.query.error instanceof Error ? catalog.query.error.message : text("列表目录加载失败")}
               retry={() => void catalog.query.refetch()}
             />
-          ) : (
-            <nav
-              className="collection-picker"
-              aria-label={text("对比列表目录")}
-              style={{ maxHeight: 520, overflow: "auto" }}
-            >
+          ) : catalog.query.data?.items.length || catalog.filter.q ? (
+            <nav className="collection-picker" aria-label={text("对比列表目录")}>
               {catalog.query.data?.items.length ? (
                 catalog.query.data.items.map((item) => (
                   <button
@@ -105,16 +101,14 @@ export function CollectionCatalog({
                     />
                   </button>
                 ))
-              ) : catalog.filter.q ? (
+              ) : (
                 <EmptyState
                   title={text("没有匹配的列表")}
                   detail={text("调整名称或说明关键词；已打开的列表不会改变")}
                 />
-              ) : (
-                <p className="field-help">{text("创建后，列表会出现在这里。")}</p>
               )}
             </nav>
-          )}
+          ) : null}
         </>
       )}
     </ResponsiveDirectory>

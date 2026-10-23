@@ -630,7 +630,6 @@
       .entity-filter-select,
       .advanced-filter-panel,
       .advanced-filters,
-      .trial-linked-program-filters,
       .domain-filter-actions
     ) {
     grid-column: 1 / -1;

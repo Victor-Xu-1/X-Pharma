@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { PipelineSearchResult } from "../src/lib/generated";
 import { expectCompactSecondaryFilters } from "./fixtures/compact-secondary-filters";
+import { expectDistinctEntityComboboxes } from "./fixtures/entity-comboboxes";
 import { readViewportOverflow } from "./fixtures/viewport-overflow";
 import { selectInterfaceLanguage } from "./interface-language";
 
@@ -61,6 +62,17 @@ test("[pipeline-disclosure] retains unsent dates and false-valued signal filters
   });
   await page.goto("/workspace/research?view=pipeline");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator(".pipeline-section .domain-results")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("pipeline-default-en.png"), animations: "disabled" });
+  const exact = page.locator(".pipeline-entity-disclosure");
+  await expect(exact).not.toHaveAttribute("open", "");
+  await expect(exact.getByRole("combobox")).toHaveCount(0);
+  await exact.locator(":scope > summary").click();
+  await expectDistinctEntityComboboxes(exact, 4);
+  const targetDraft = exact.getByRole("combobox", { name: "Target filter", exact: true });
+  await targetDraft.fill("x");
+  await exact.locator(":scope > summary").click();
+  await expect(targetDraft).toBeHidden();
   const advanced = page.locator(".pipeline-advanced-filters").first();
   const signals = page.locator(".pipeline-advanced-filters").nth(1);
   await expect(advanced).toHaveClass(/secondary-filter-panel/);
@@ -68,9 +80,13 @@ test("[pipeline-disclosure] retains unsent dates and false-valued signal filters
   await expect(advanced).not.toHaveAttribute("open", "");
   await expect.poll(() => reads).toBe(1);
   await selectInterfaceLanguage(page, "zh-CN");
+  await exact.locator(":scope > summary").click();
+  await expect(exact.getByRole("combobox", { name: "靶点筛选", exact: true })).toHaveValue("x");
+  await exact.locator(":scope > summary").click();
   await expect(advanced.locator(":scope > summary > span")).toHaveText("机构、区域阶段、权益与里程碑");
   await expect(signals.locator(":scope > summary > span")).toHaveText("临床结果与交易信号");
   await selectInterfaceLanguage(page, "en");
+  await expect(exact).not.toHaveAttribute("open", "");
   await expect(advanced.locator(":scope > summary > span")).toHaveText(
     "Organizations, regional phases, rights and milestones",
   );
