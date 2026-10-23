@@ -14,9 +14,7 @@ def test_cpython_security_runtime_is_pinned_without_superseded_overlays() -> Non
         dockerfile = (root / relative).read_text()
         assert dockerfile.count(reference) == stages
         python_bases = [
-            line.split()[1]
-            for line in dockerfile.splitlines()
-            if line.startswith("FROM ") and "python:" in line
+            line.split()[1] for line in dockerfile.splitlines() if line.startswith("FROM ") and "python:" in line
         ]
         assert len(python_bases) == stages
         assert all(base == f"${{DOCKER_LIBRARY_REGISTRY}}/{reference}" for base in python_bases)
@@ -62,7 +60,8 @@ def test_superseded_python_overlays_have_no_files_or_vex_suppressions() -> None:
     root = Path(__file__).resolve().parents[1]
     for filename in ("html-parser.py", "tarfile.py"):
         assert not (root / "deploy/cpython" / filename).exists()
-    for filename in ("api.openvex.json", "ocr.openvex.json"):
+    assert not (root / "deploy/security/ocr.openvex.json").exists()
+    for filename in ("api.openvex.json",):
         evidence = json.loads((root / "deploy/security" / filename).read_text())
         for statement in evidence["statements"]:
             assert statement["vulnerability"]["name"] not in {"CVE-2026-19445", "CVE-2026-19553"}

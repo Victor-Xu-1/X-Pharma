@@ -96,7 +96,15 @@ def test_security_gate_is_executable_and_embedded_python_compiles() -> None:
     assert '"$staging_root/deploy/api.Dockerfile"' in source
     assert '"$staging_root/services/ocr/Dockerfile"' in source
     assert '"$staging_root/deploy/postgres-rdkit.Dockerfile"' in source
-    assert "ocr.openvex.json" in source
+    assert "ocr.openvex.json" not in source
+    assert '"ocr": None' in source
+    ocr_scans = [
+        line
+        for line in source.splitlines()
+        if line.startswith('checked "OCR image') and "sbom:/output/ocr.syft.json" in line
+    ]
+    assert len(ocr_scans) == 2 and all("--vex" not in line for line in ocr_scans)
+    assert "sbom:/output/ocr.syft.json --only-fixed --fail-on high" in source
     assert source.index('checked "Application image build from staged source"') < source.index(
         'api_digest=$(docker_image_digest "$api_image")'
     )
