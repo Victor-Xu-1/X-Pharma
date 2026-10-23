@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { ResearchViewNavigation } from "../components/ResearchViewNavigation";
 import { setLocale } from "../lib/i18n";
@@ -11,6 +11,18 @@ function mockBounds(position: { left: number }) {
     return { left, right: left + width, top: 1000, bottom: 1048, width, height: 48, x: left, y: 1000, toJSON() {} };
   });
 }
+
+it("fully reveals a focused inactive destination without selecting or navigating it", () => {
+  mockBounds({ left: 400 });
+  const onView = vi.fn();
+  render(<ResearchViewNavigation activeView="pipeline" onView={onView} />);
+  const rail = screen.getByRole("navigation", { name: "研发数据分类" });
+  rail.scrollLeft = 0;
+  fireEvent.focus(screen.getByRole("button", { name: "流行病学" }));
+  expect(rail.scrollLeft).toBe(220);
+  expect(screen.getByRole("button", { name: "药物与管线" })).toHaveAttribute("aria-current", "page");
+  expect(onView).not.toHaveBeenCalled();
+});
 
 it("reveals a deep-linked destination horizontally without changing focus or invoking navigation", () => {
   mockBounds({ left: 400 });

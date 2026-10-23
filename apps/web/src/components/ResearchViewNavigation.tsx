@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { t, useLocale } from "../lib/i18n";
-import { useHorizontalActiveItem } from "../lib/useHorizontalActiveItem";
+import { revealHorizontalItem, useHorizontalActiveItem } from "../lib/useHorizontalActiveItem";
 import { researchWorkflowForView } from "../lib/workspace/researchNavigation";
 import type { ViewKey } from "../lib/workspaceRouting";
 
@@ -33,6 +33,9 @@ export function ResearchViewNavigation({
           type="button"
           className={view === activeView ? "active" : undefined}
           aria-current={view === activeView ? "page" : undefined}
+          onFocus={(event) => {
+            if (navigationRef.current) revealHorizontalItem(navigationRef.current, event.currentTarget);
+          }}
           onClick={() => {
             if (view !== activeView) onView(view);
           }}

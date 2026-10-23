@@ -1,5 +1,16 @@
 import { type RefObject, useLayoutEffect } from "react";
 
+export function revealHorizontalItem(rail: HTMLElement, button: HTMLElement) {
+  if (!rail.contains(button)) return;
+  const visible = rail.getBoundingClientRect();
+  const selected = button.getBoundingClientRect();
+  if (selected.left < visible.left || selected.width > visible.width) {
+    rail.scrollLeft += selected.left - visible.left;
+  } else if (selected.right > visible.right) {
+    rail.scrollLeft += selected.right - visible.right;
+  }
+}
+
 /** Reveal selection on its own horizontal rail without moving page scroll or focus. */
 export function useHorizontalActiveItem(
   railRef: RefObject<HTMLElement | null>,
@@ -14,13 +25,7 @@ export function useHorizontalActiveItem(
     if (!rail || !button || !rail.contains(button)) return;
     function alignHorizontally() {
       if (!rail || !button) return;
-      const visible = rail.getBoundingClientRect();
-      const selected = button.getBoundingClientRect();
-      if (selected.left < visible.left || selected.width > visible.width) {
-        rail.scrollLeft += selected.left - visible.left;
-      } else if (selected.right > visible.right) {
-        rail.scrollLeft += selected.right - visible.right;
-      }
+      revealHorizontalItem(rail, button);
     }
     alignHorizontally();
     if (typeof ResizeObserver === "undefined") return;
