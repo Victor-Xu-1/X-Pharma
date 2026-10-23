@@ -263,6 +263,7 @@ def test_enterprise_database_acceptance_requires_explicit_tenant_signing_secret(
         ("verify-local-ingestion.sh", "never creates source files", 1),
         ("verify-local-malware.sh", "only temporary source content", 1),
         ("verify-local-parser.sh", "real format parsers", 2),
+        ("restore-smoke-linux.sh", "never pulls images", 8),
         ("verify-local-backup-restore.sh", "never copied into release evidence", 1),
         ("verify-pilot-ingestion.sh", "unattended Temporal ingestion first", 0),
         ("run-sftp-source-acceptance.sh", "never records private credentials", 2),

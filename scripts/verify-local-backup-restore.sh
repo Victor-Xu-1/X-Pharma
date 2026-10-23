@@ -9,12 +9,13 @@ output_path=""
 backup_root="$root/backups/release-candidates"
 project_name="${COMPOSE_PROJECT_NAME:-pharma-intelligence}"
 quiesce_runtime=0
+postgres_image_id=""
 started_epoch=$(date +%s)
 
 usage() {
   cat <<'EOF'
 Usage: verify-local-backup-restore.sh [--output FILE] [--backup-root DIR]
-       [--project-name NAME] [--quiesce-runtime]
+       [--project-name NAME] [--quiesce-runtime] [--postgres-image-id sha256:IMAGE_ID]
 
 Create a checksummed local WSL authority backup and restore it into isolated
 containers and volumes. The successful backup is retained below backups/;
@@ -23,6 +24,9 @@ database dumps and archives are never copied into release evidence.
 --quiesce-runtime briefly pauses application writers and Temporal while the
 authority snapshot is captured, then always resumes containers before restore
 verification. Use it for a deterministic release gate on an active runtime.
+
+--postgres-image-id tests an installed immutable target image in the isolated
+restore only. It never pulls an image, changes the backup, or deploys the target.
 EOF
 }
 
@@ -47,6 +51,15 @@ while [[ $# -gt 0 ]]; do
       quiesce_runtime=1
       shift
       ;;
+    --postgres-image-id)
+      [[ $# -ge 2 && -z "$postgres_image_id" ]] || { echo "--postgres-image-id requires one value" >&2; exit 2; }
+      [[ "$2" =~ ^sha256:[a-f0-9]{64}$ ]] || {
+        echo "--postgres-image-id requires an immutable lowercase sha256 image ID" >&2
+        exit 2
+      }
+      postgres_image_id=$2
+      shift 2
+      ;;
     --help|-h)
       usage
       exit 0
@@ -69,6 +82,12 @@ for command in docker python3 realpath dirname basename mktemp sha256sum; do
     exit 1
   }
 done
+if [[ -n "$postgres_image_id" ]]; then
+  [[ $(docker image inspect "$postgres_image_id" --format '{{.Id}}') == "$postgres_image_id" ]] || {
+    echo "target PostgreSQL image is unavailable or its identity differs" >&2
+    exit 1
+  }
+fi
 mkdir -p "$backup_root"
 backup_root=$(realpath "$backup_root")
 authority_root=$(realpath "$root/backups")
@@ -164,7 +183,11 @@ resume_runtime_writers || {
   echo "failed to resume the quiesced runtime after backup capture" >&2
   exit 1
 }
-./scripts/restore-smoke-linux.sh "$backup_path" > "$work/restore.json"
+restore_arguments=("$backup_path")
+if [[ -n "$postgres_image_id" ]]; then
+  restore_arguments+=(--postgres-image-id "$postgres_image_id")
+fi
+./scripts/restore-smoke-linux.sh "${restore_arguments[@]}" > "$work/restore.json"
 chmod 600 "$work/restore.json"
 
 if [[ -n "$output_path" ]]; then
@@ -180,7 +203,7 @@ if [[ -n "$output_path" ]]; then
 fi
 duration_seconds=$(( $(date +%s) - started_epoch ))
 python3 - "$backup_path/manifest.json" "$backup_path/checksums.sha256" "$work/restore.json" \
-  "$backup_path" "$authority_root" "$duration_seconds" "$output_path" <<'PY'
+  "$backup_path" "$authority_root" "$duration_seconds" "$output_path" "$postgres_image_id" <<'PY'
 from __future__ import annotations
 
 import hashlib
@@ -189,7 +212,7 @@ import os
 import sys
 from pathlib import Path
 
-manifest_path, checksums_path, restore_path, backup_text, authority_text, duration, output_text = sys.argv[1:]
+manifest_path, checksums_path, restore_path, backup_text, authority_text, duration, output_text, target_image = sys.argv[1:]
 manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
 restore = json.loads(Path(restore_path).read_text(encoding="utf-8"))
 backup = Path(backup_text).resolve()
@@ -211,6 +234,15 @@ if not isinstance(restore.get("alembic_head"), str) or not restore["alembic_head
     raise SystemExit("restored Alembic head is missing")
 if not isinstance(restore.get("rdkit_version"), str) or not restore["rdkit_version"]:
     raise SystemExit("restored RDKit extension version is missing")
+if restore.get("rdkit_function_probe") != "passed":
+    raise SystemExit("restored RDKit function probe did not pass")
+if restore.get("backup_postgres_image_id") != manifest.get("postgresImageId"):
+    raise SystemExit("restore evidence does not belong to the backup PostgreSQL image")
+expected_image = target_image or manifest["postgresImageId"]
+if restore.get("restored_postgres_image_id") != expected_image:
+    raise SystemExit("restore did not verify the requested PostgreSQL image")
+if restore.get("postgres_image_changed") is not (expected_image != manifest["postgresImageId"]):
+    raise SystemExit("restore PostgreSQL image-change evidence is inconsistent")
 authority = manifest.get("authority")
 artifacts = manifest.get("artifacts")
 if not isinstance(authority, list) or len(authority) < 6 or not isinstance(artifacts, dict):
@@ -237,6 +269,10 @@ report = {
     "tables_verified": restore.get("tables_verified"),
     "alembic_head": restore.get("alembic_head"),
     "rdkit_version": restore.get("rdkit_version"),
+    "rdkit_function_probe": restore["rdkit_function_probe"],
+    "backup_postgres_image_id": restore["backup_postgres_image_id"],
+    "restored_postgres_image_id": restore["restored_postgres_image_id"],
+    "postgres_image_changed": restore["postgres_image_changed"],
     "temporal_databases_restored": restore.get("temporal_databases_restored"),
     "rls_probe": restore.get("rls_probe"),
     "archives_verified": restore.get("archives_verified"),

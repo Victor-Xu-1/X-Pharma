@@ -4,10 +4,27 @@ set -euo pipefail
 umask 077
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
+usage() {
+  printf 'usage: %s BACKUP_DIR [--postgres-image-id sha256:IMAGE_ID]\n' "$0"
+  printf 'Restore only into isolated resources; never pulls images or modifies the main runtime.\n'
+}
+if [[ $# -eq 1 && ( "$1" == --help || "$1" == -h ) ]]; then
+  usage
+  exit 0
+fi
 backup=${1:-}
-if [[ -z "$backup" || $# -ne 1 ]]; then
-  echo "usage: $0 BACKUP_DIR" >&2
+candidate_postgres_image_id=""
+if [[ -z "$backup" || ( $# -ne 1 && $# -ne 3 ) ]]; then
+  usage >&2
   exit 2
+fi
+if [[ $# -eq 3 ]]; then
+  [[ "$2" == --postgres-image-id ]] || { usage >&2; exit 2; }
+  [[ "$3" =~ ^sha256:[a-f0-9]{64}$ ]] || {
+    echo "--postgres-image-id requires an immutable lowercase sha256 image ID" >&2
+    exit 2
+  }
+  candidate_postgres_image_id=$3
 fi
 for command in docker python3 sha256sum realpath openssl cmp; do
   command -v "$command" >/dev/null 2>&1 || {
@@ -102,6 +119,14 @@ PY
   echo "installed API image identity differs from the backup manifest" >&2
   exit 1
 }
+restored_postgres_image_id=$postgres_image_id
+if [[ -n "$candidate_postgres_image_id" ]]; then
+  [[ $(docker image inspect "$candidate_postgres_image_id" --format '{{.Id}}') == "$candidate_postgres_image_id" ]] || {
+    echo "target PostgreSQL image is unavailable or its identity differs" >&2
+    exit 1
+  }
+  restored_postgres_image_id=$candidate_postgres_image_id
+fi
 
 suffix="$(date +%s)-$$"
 container="pharma-restore-smoke-$suffix"
@@ -134,7 +159,7 @@ trap cleanup EXIT INT TERM
 for volume in "${temporary_volumes[@]}"; do
   docker volume create "$volume" >/dev/null
 done
-docker run -d --name "$container" --network none -e POSTGRES_DB=bootstrap -e POSTGRES_USER="$bootstrap_user" -e POSTGRES_PASSWORD="$bootstrap_password" --mount "type=volume,src=$postgres_volume,dst=/var/lib/postgresql" "$postgres_image" >/dev/null
+docker run --pull=never -d --name "$container" --network none -e POSTGRES_DB=bootstrap -e POSTGRES_USER="$bootstrap_user" -e POSTGRES_PASSWORD="$bootstrap_password" --mount "type=volume,src=$postgres_volume,dst=/var/lib/postgresql" "$restored_postgres_image_id" >/dev/null
 
 ready=0
 for _ in $(seq 1 90); do
@@ -213,6 +238,11 @@ rdkit_version=$(docker exec "$container" psql -X -U "$bootstrap_user" -d "$datab
   echo "RDKit extension is missing from the restored database" >&2
   exit 1
 }
+rdkit_probe=$(docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At -v ON_ERROR_STOP=1 -c "SELECT mol_to_smiles(mol_from_smiles('CCO'))")
+[[ "$rdkit_probe" == CCO ]] || {
+  echo "RDKit function probe failed in the restored target image" >&2
+  exit 1
+}
 for temporal_database in temporal temporal_visibility; do
   temporal_tables=$(docker exec "$container" psql -X -U "$bootstrap_user" -d "$temporal_database" -At -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')")
   [[ "$temporal_tables" =~ ^[1-9][0-9]*$ ]] || {
@@ -228,27 +258,27 @@ tenant_signing_secret=$(docker exec "$container" psql -X -U "$bootstrap_user" -d
   exit 1
 }
 probe_url="postgresql+psycopg://$probe_role:$probe_password@127.0.0.1:5432/$database"
-docker run --rm --network "container:$container" --read-only --tmpfs /tmp -e "DATABASE_URL=$probe_url" -e "TENANT_CONTEXT_SIGNING_SECRET=$tenant_signing_secret" "$api_image" pharma-verify-rls >/dev/null
+docker run --pull=never --rm --network "container:$container" --read-only --tmpfs /tmp -e "DATABASE_URL=$probe_url" -e "TENANT_CONTEXT_SIGNING_SECRET=$tenant_signing_secret" "$api_image_id" pharma-verify-rls >/dev/null
 
 busybox_image='busybox:1.36.1@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662'
 docker image inspect "$busybox_image" >/dev/null
 for archive_spec in "object-store.tar.gz:$object_volume" "markdown-wiki.tar.gz:$markdown_volume"; do
   archive=${archive_spec%%:*}
   volume=${archive_spec#*:}
-  docker run --rm --read-only --mount "type=bind,src=$backup,dst=/backup,readonly" "$busybox_image" tar -tzf "/backup/$archive" >/dev/null
-  docker run --rm --read-only --mount "type=bind,src=$backup,dst=/backup,readonly" --mount "type=volume,src=$volume,dst=/restore" "$busybox_image" tar -xzf "/backup/$archive" -C /restore
+  docker run --pull=never --rm --network none --read-only --mount "type=bind,src=$backup,dst=/backup,readonly" "$busybox_image" tar -tzf "/backup/$archive" >/dev/null
+  docker run --pull=never --rm --network none --read-only --mount "type=bind,src=$backup,dst=/backup,readonly" --mount "type=volume,src=$volume,dst=/restore" "$busybox_image" tar -xzf "/backup/$archive" -C /restore
 done
 
 tables_verified=$(wc -l < "$expected_counts")
 duration_seconds=$(( $(date +%s) - started_epoch ))
-python3 - "$backup" "$tables_verified" "$actual_head" "$rdkit_version" "$duration_seconds" <<'PY'
+python3 - "$backup" "$tables_verified" "$actual_head" "$rdkit_version" "$duration_seconds" "$postgres_image_id" "$restored_postgres_image_id" <<'PY'
 from __future__ import annotations
 
 import json
 import sys
 from datetime import UTC, datetime
 
-backup, tables, head, rdkit, duration = sys.argv[1:]
+backup, tables, head, rdkit, duration, backup_postgres, restored_postgres = sys.argv[1:]
 print(
     json.dumps(
         {
@@ -259,6 +289,10 @@ print(
             "tables_verified": int(tables),
             "alembic_head": head,
             "rdkit_version": rdkit,
+            "rdkit_function_probe": "passed",
+            "backup_postgres_image_id": backup_postgres,
+            "restored_postgres_image_id": restored_postgres,
+            "postgres_image_changed": restored_postgres != backup_postgres,
             "temporal_databases_restored": 2,
             "rls_probe": "passed",
             "archives_verified": 2,

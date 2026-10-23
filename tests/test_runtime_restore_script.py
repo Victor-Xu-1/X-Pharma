@@ -1,0 +1,166 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).parents[1]
+POSTGRES_ID = "sha256:" + "1" * 64
+API_ID = "sha256:" + "2" * 64
+CANDIDATE_ID = "sha256:" + "3" * 64
+
+
+def _run_restore(*arguments: str, script: str = "restore-smoke-linux.sh") -> subprocess.CompletedProcess[str]:
+    bash = shutil.which("bash")
+    assert bash is not None
+    return subprocess.run(  # noqa: S603 - The executable and local script are controlled.
+        [bash, str(ROOT / "scripts" / script), *arguments],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=10,
+    )
+
+
+@pytest.fixture
+def restore_preflight(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
+    backup = tmp_path / "backup"
+    backup.mkdir()
+    names = [
+        "postgres.dump",
+        "postgres-globals.sql",
+        "temporal.dump",
+        "temporal-visibility.dump",
+        "object-store.tar.gz",
+        "markdown-wiki.tar.gz",
+    ]
+    checksums = []
+    for name in names:
+        payload = f"controlled preflight fixture: {name}\n".encode()
+        (backup / name).write_bytes(payload)
+        checksums.append(f"{hashlib.sha256(payload).hexdigest()}  {name}\n")
+    (backup / "checksums.sha256").write_text("".join(checksums), encoding="utf-8")
+    (backup / "manifest.json").write_text(
+        json.dumps(
+            {
+                "schemaVersion": 1,
+                "database": "pharma_intel",
+                "authority": names,
+                "rowCounts": {"public.alembic_version": 1},
+                "postgresImage": "backup-postgres",
+                "postgresImageId": POSTGRES_ID,
+                "apiImage": "backup-api",
+                "apiImageId": API_ID,
+            }
+        ),
+        encoding="utf-8",
+    )
+    bin_directory = tmp_path / "bin"
+    bin_directory.mkdir()
+    docker = bin_directory / "docker"
+    docker.write_text(
+        "#!/usr/bin/env bash\n"
+        'printf \'%s\\n\' "$*" >> "$RESTORE_DOCKER_TRACE"\n'
+        'case "$1:$2:${3:-}" in\n'
+        f"  image:inspect:backup-postgres) printf '%s\\n' '{POSTGRES_ID}' ;;\n"
+        f"  image:inspect:backup-api) printf '%s\\n' '{API_ID}' ;;\n"
+        f"  image:inspect:{CANDIDATE_ID})\n"
+        '    case "${RESTORE_CANDIDATE_MODE:-present}" in\n'
+        "      missing) exit 1 ;;\n"
+        "      mismatch) printf 'sha256:%064d\\n' 4 ;;\n"
+        f"      *) printf '%s\\n' '{CANDIDATE_ID}' ;;\n"
+        "    esac ;;\n"
+        "  volume:create:*) exit 86 ;;\n"
+        "  rm:-f:*|volume:rm:-f) exit 0 ;;\n"
+        "  *) exit 87 ;;\n"
+        "esac\n",
+        encoding="utf-8",
+    )
+    docker.chmod(0o755)
+    trace = tmp_path / "docker-argv.txt"
+    monkeypatch.setenv("RESTORE_DOCKER_TRACE", str(trace))
+    monkeypatch.setenv("PATH", str(bin_directory) + os.pathsep + os.environ["PATH"])
+    return backup, trace
+
+
+@pytest.mark.parametrize("script", ["restore-smoke-linux.sh", "verify-local-backup-restore.sh"])
+@pytest.mark.parametrize(
+    "image", ["postgres:latest", "sha256:abc", "sha256:" + "A" * 64, "sha256:" + "1" * 64 + ";true"]
+)
+def test_rejects_mutable_or_malformed_target_before_docker(
+    restore_preflight: tuple[Path, Path], script: str, image: str
+) -> None:
+    backup, trace = restore_preflight
+    arguments = (str(backup),) if script == "restore-smoke-linux.sh" else ()
+    result = _run_restore(*arguments, "--postgres-image-id", image, script=script)
+    assert result.returncode == 2
+    assert "immutable" in result.stderr
+    assert not trace.exists()
+
+
+def test_default_restore_keeps_both_original_manifest_identity_checks(restore_preflight: tuple[Path, Path]) -> None:
+    backup, trace = restore_preflight
+    result = _run_restore(str(backup))
+    assert result.returncode == 86
+    calls = trace.read_text(encoding="utf-8").splitlines()
+    assert calls[0].startswith("image inspect backup-postgres ")
+    assert calls[1].startswith("image inspect backup-api ")
+    assert calls[2].startswith("volume create pharma-restore-smoke-postgres-")
+
+
+def test_target_is_inspected_locally_before_creating_restore_resources(restore_preflight: tuple[Path, Path]) -> None:
+    backup, trace = restore_preflight
+    result = _run_restore(str(backup), "--postgres-image-id", CANDIDATE_ID)
+    assert result.returncode == 86
+    calls = trace.read_text(encoding="utf-8").splitlines()
+    assert calls[0].startswith("image inspect backup-postgres ")
+    assert calls[1].startswith("image inspect backup-api ")
+    assert calls[2].startswith(f"image inspect {CANDIDATE_ID} ")
+    assert calls[3].startswith("volume create pharma-restore-smoke-postgres-")
+    assert not any(call.startswith("pull ") for call in calls)
+
+
+@pytest.mark.parametrize("mode", ["missing", "mismatch"])
+def test_missing_or_wrong_target_never_creates_resources(
+    restore_preflight: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch, mode: str
+) -> None:
+    backup, trace = restore_preflight
+    monkeypatch.setenv("RESTORE_CANDIDATE_MODE", mode)
+    result = _run_restore(str(backup), "--postgres-image-id", CANDIDATE_ID)
+    assert result.returncode != 0
+    calls = trace.read_text(encoding="utf-8").splitlines()
+    assert len(calls) == 3
+    assert all(call.startswith("image inspect ") for call in calls)
+
+
+def test_restore_runs_only_exact_local_images_and_probes_the_actual_cartridge() -> None:
+    source = (ROOT / "scripts" / "restore-smoke-linux.sh").read_text(encoding="utf-8")
+    runs = [
+        line
+        for line in source.splitlines()
+        if line.startswith("docker run ") or line.lstrip().startswith("docker run ")
+    ]
+    assert len(runs) == 4
+    assert all("--pull=never" in line for line in runs)
+    assert '"$restored_postgres_image_id" >/dev/null' in runs[0]
+    assert '"$api_image_id" pharma-verify-rls' in runs[1]
+    assert "SELECT mol_to_smiles(mol_from_smiles('CCO'))" in source
+    assert '[[ "$rdkit_probe" == CCO ]]' in source
+    assert '"backup_postgres_image_id": backup_postgres' in source
+    assert '"restored_postgres_image_id": restored_postgres' in source
+
+
+def test_release_backup_verifies_target_before_quiescing_and_preserves_restore_identity() -> None:
+    source = (ROOT / "scripts" / "verify-local-backup-restore.sh").read_text(encoding="utf-8")
+    assert source.index('docker image inspect "$postgres_image_id"') < source.index(
+        'docker pause "${paused_containers[@]}"'
+    )
+    assert 'restore_arguments+=(--postgres-image-id "$postgres_image_id")' in source
+    assert '"rdkit_function_probe": restore["rdkit_function_probe"]' in source
+    assert '"restored_postgres_image_id": restore["restored_postgres_image_id"]' in source
