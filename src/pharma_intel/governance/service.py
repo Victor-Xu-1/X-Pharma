@@ -674,6 +674,20 @@ class GovernanceService:
         decided_at = datetime.now(UTC)
         for fact in facts:
             fact.status = GovernanceStatus.WITHDRAWN
+            if fact.published_resource_type == "evidence_claim" and fact.published_resource_id:
+                self.session.add(
+                    OutboxEvent(
+                        tenant_id=self.tenant_id,
+                        aggregate_type="staged_fact",
+                        aggregate_id=fact.id,
+                        event_type="governance.fact.withdrawn",
+                        payload={
+                            "staged_fact_id": fact.id,
+                            "evidence_claim_id": fact.published_resource_id,
+                            "reason": "superseded_official_source_revision",
+                        },
+                    )
+                )
             task = self.session.scalar(
                 select(ReviewTask).where(
                     ReviewTask.tenant_id == self.tenant_id,
