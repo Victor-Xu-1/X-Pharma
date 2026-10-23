@@ -1,13 +1,13 @@
 .knowledge-index .domain-pagination {
   grid-template-columns: minmax(0, 1fr);
-  padding-inline: 12px;
+  padding-inline: 8px;
 }
 
 .knowledge-index .domain-pagination-controls {
   display: grid;
-  grid-template-columns: 44px 44px minmax(0, 1fr) 44px 44px;
+  grid-template-columns: 44px 44px minmax(48px, 1fr) 44px 44px;
   min-width: 0;
-  gap: 4px;
+  gap: 2px;
 }
 
 .knowledge-index .domain-pagination-controls > .icon-button {
