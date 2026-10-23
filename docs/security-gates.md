@@ -150,19 +150,17 @@ calls. Separate tests preserve all five supported still-image suffixes. The
 engine boundary is isolated in these tests; they do not claim model-inference
 quality or a real-model acceptance run.
 
-The reviewed findings recorded individually in `deploy/security/ocr.openvex.json` are:
+The source-built image's complete inventory must confirm that FFmpeg is absent.
+The obsolete OCR OpenVEX file and its historical bundled-codec exceptions have
+been removed: both OCR scans now run without VEX, and the evidence manifest records
+`vex.ocr` as `null`. Historical failing inventories remain evidence rather than
+current exceptions. API-specific reviewed VEX is unchanged.
 
-| Finding | Affected upstream path | OCR reachability |
-| --- | --- | --- |
-| [CVE-2026-70628](https://security-tracker.debian.org/tracker/CVE-2026-70628) | DVB subtitle parser / WTV input | No subtitle or video input |
-| [CVE-2026-70632](https://security-tracker.debian.org/tracker/CVE-2026-70632) | CineForm HD decoder / AVI input | No video decoding input |
-| [CVE-2026-75142](https://www.cve.org/CVERecord?id=CVE-2026-75142) | MPEG-PS muxer | No video muxing or encoding operation |
-| [CVE-2026-75146](https://www.cve.org/CVERecord?id=CVE-2026-75146) | DASH live-manifest demuxer | No stream manifest or input URL |
-
-Any relaxation of the input-format contract, or addition of video/audio,
-subtitles, streaming or encoding, invalidates these reachability statements and
-requires dependency remediation plus new real-path security acceptance. Do not
-generalize them to another use of OpenCV or FFmpeg.
+Passing the original actionable gate means no High/Critical finding with an
+upstream fix remains; it does not mean the image has no vulnerabilities. Preserve
+the complete inventory, including `not-fixed` and `wont-fix` findings. Release mode
+still requires an explicit risk-acceptance reference for unresolved High/Critical
+findings. No new exception or risk acceptance is implied by removing unused code.
 
 Run locally; the gate performs deterministic target image builds itself:
 
