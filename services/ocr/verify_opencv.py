@@ -6,6 +6,16 @@ import ast
 import importlib.metadata
 import re
 from pathlib import Path
+from typing import Any
+
+
+def verify_video_backends(cv2: Any, build: str) -> None:
+    # 4.10 omits disabled backend lines entirely. Query the real registry instead
+    # of treating a missing display label as either proof of safety or failure.
+    for label, backend in (("FFMPEG", cv2.CAP_FFMPEG), ("GStreamer", cv2.CAP_GSTREAMER)):
+        assert not cv2.videoio_registry.hasBackend(backend), f"Unexpected video backend: {label}"
+        status = re.search(rf"^\s*{label}:\s*(\S+)", build, re.MULTILINE)
+        assert status is None or status[1] == "NO", f"Unexpected {label} build status"
 
 
 def verify() -> None:
@@ -14,8 +24,7 @@ def verify() -> None:
 
     assert importlib.metadata.version("opencv-contrib-python") == "4.10.0.84"
     build = cv2.getBuildInformation()
-    assert re.search(r"^\s*FFMPEG:\s*NO\s*$", build, re.MULTILINE), build
-    assert re.search(r"^\s*GStreamer:\s*NO\s*$", build, re.MULTILINE), build
+    verify_video_backends(cv2, build)
     for distribution in importlib.metadata.distributions():
         for item in distribution.files or []:
             name = Path(str(item)).name.lower()
