@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import re
 import shutil
 import subprocess
@@ -10,7 +11,7 @@ import pytest
 import yaml
 
 from scripts.browser_cases import PROJECTS
-from scripts.browser_snapshot_review import CAPTURE_FILES
+from scripts.browser_snapshot_review import CAPTURE_FILES, CAPTURE_MARKERS, capture_scenarios
 
 ROOT = Path(__file__).parents[1]
 RUNNER = ROOT / "scripts/run-browser-acceptance.sh"
@@ -77,6 +78,18 @@ def test_capture_policy_remains_in_the_original_format_lint_and_strict_type_gate
     for filename in ("scripts/browser_snapshot_review.py", "scripts/browser_snapshot_cli.py"):
         assert all(filename in command for command in lint.splitlines())
         assert filename in strict
+
+
+def test_capture_summary_accepts_the_actual_unchanged_runner_scenario_registry() -> None:
+    match = re.search(r"^scenario_markers = (\{.*?^\})", RUNNER.read_text(), re.MULTILINE | re.DOTALL)
+    assert match is not None
+    scenarios = cast(dict[str, str], ast.literal_eval(match.group(1)))
+    before = scenarios.copy()
+    assert CAPTURE_MARKERS - set(scenarios.values()) == {"[global-search-landscape]"}
+    expected = {name: marker for name, marker in scenarios.items() if marker in CAPTURE_MARKERS}
+    assert len(expected) == 8
+    assert capture_scenarios(scenarios) == expected
+    assert scenarios == before
 
 
 def test_every_original_screenshot_still_belongs_to_the_same_capture_inventory() -> None:

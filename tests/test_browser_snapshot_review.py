@@ -61,7 +61,9 @@ def test_generation_selects_four_original_owners_without_claiming_complete_cover
     assert result["scope"] == "snapshot-generation-only"
 
 
-@pytest.mark.parametrize("change", ["missing-project", "extra-owner", "different-file", "missing-domain"])
+@pytest.mark.parametrize(
+    "change", ["missing-project", "extra-owner", "different-file", "missing-domain", "missing-global-search"]
+)
 def test_capture_owner_discovery_rejects_ambiguous_missing_or_replaced_cases(change: str) -> None:
     discovery = capture_report()
     specs = sequence(mapping(sequence(discovery["suites"])[0])["specs"])
@@ -74,6 +76,8 @@ def test_capture_owner_discovery_rejects_ambiguous_missing_or_replaced_cases(cha
         specs.append(extra)
     elif change == "different-file":
         owner["file"] = "another.spec.ts"
+    elif change == "missing-global-search":
+        owner["title"] = str(owner["title"]).replace("[global-search-landscape]", "")
     else:
         owner["title"] = str(owner["title"]).replace("[professional-deal-query]", "")
     with pytest.raises(ValueError):
@@ -124,7 +128,7 @@ def test_generation_has_only_its_capture_markers_but_does_not_mutate_readonly_re
     original = {str(index): value for index, value in enumerate(sorted(CAPTURE_MARKERS))}
     original["additional"] = "[accessibility]"
     before = original.copy()
-    assert set(capture_scenarios(original).values()) == CAPTURE_MARKERS
+    assert set(capture_scenarios(original).values()) == CAPTURE_MARKERS - {"[global-search-landscape]"}
     assert original == before and original["additional"] == "[accessibility]"
     original.pop("0")
     with pytest.raises(ValueError):

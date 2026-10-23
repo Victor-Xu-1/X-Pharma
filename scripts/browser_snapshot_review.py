@@ -82,8 +82,11 @@ def verify_capture_results(plan: dict[str, object], results: dict[str, object]) 
 
 
 def capture_scenarios(scenarios: Mapping[str, str]) -> dict[str, str]:
-    selected = {name: marker for name, marker in scenarios.items() if marker in CAPTURE_MARKERS}
-    if set(selected.values()) != CAPTURE_MARKERS:
+    # The original summary has no separate global-search counter. Its marker
+    # remains mandatory in capture_cases; do not invent or delete readonly counters.
+    required = CAPTURE_MARKERS - {"[global-search-landscape]"}
+    selected = {name: marker for name, marker in scenarios.items() if marker in required}
+    if set(selected.values()) != required:
         raise ValueError("The original screenshot-owner scenario contract is incomplete")
     return selected
 
