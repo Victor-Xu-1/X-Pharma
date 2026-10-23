@@ -7,11 +7,12 @@ deployment manifests. Review these licenses when distributing binaries/images.
 
 ## Included upstream source
 
-`deploy/cpython/html-parser.py` and `deploy/cpython/tarfile.py` are unmodified
-CPython security backports. Official commits, SHA-256 digests and probes are
-documented in [deploy/cpython/README.md](deploy/cpython/README.md). The complete
-upstream license and historical notices are included in
-[licenses/PSF-2.0.txt](licenses/PSF-2.0.txt). Preserve their attribution.
+CPython is supplied by the fixed official runtime rather than local standard-library
+overlays. Runtime digests, the frozen native-download descriptor and executable
+probes are documented in [deploy/cpython/README.md](deploy/cpython/README.md).
+The descriptor preserves factual supplier URLs/checksums from Astral's uv metadata.
+The complete Python license and historical notices remain in
+[licenses/PSF-2.0.txt](licenses/PSF-2.0.txt). Preserve them when redistributing images.
 
 The generated TypeScript client comes from X-Pharma's OpenAPI schema using
 openapi-typescript-codegen. The installed generator retains its own license.

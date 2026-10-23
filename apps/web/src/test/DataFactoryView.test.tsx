@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-
+import { ApiError } from "../lib/api";
 import {
   cancelIngestionRun,
   createDataSource,
@@ -16,6 +16,7 @@ import {
   replaySourceVersion,
   updateDataSource,
 } from "../lib/contracts/dataFactory";
+import { setLocale } from "../lib/i18n";
 import type { DataSource, User } from "../lib/types";
 import { DataFactoryView } from "../views/DataFactoryView";
 import { renderWithQueryClient } from "./renderWithQueryClient";
@@ -166,6 +167,49 @@ beforeEach(() => {
   });
 });
 
+it("renders factory controls in English and retains the original source name and URI when switching", async () => {
+  act(() => setLocale("en"));
+  renderWithQueryClient(<DataFactoryView user={user} />);
+  expect(await screen.findByRole("heading", { name: "Data sources" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Connect data source" })).toBeVisible();
+  expect(screen.getByText(source.name, { exact: true })).toBeVisible();
+  expect(screen.getByText(source.root_uri, { exact: true })).toBeVisible();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("heading", { name: "自动数据源" })).toBeVisible();
+  expect(screen.getByText(source.name, { exact: true })).toBeVisible();
+  act(() => setLocale("en"));
+  expect(screen.getByRole("button", { name: "Connect data source" })).toBeVisible();
+});
+
+it("does not present a pending source asset request as an empty catalog", async () => {
+  act(() => setLocale("en"));
+  vi.mocked(loadSourceAssets).mockReturnValue(new Promise(() => undefined));
+  renderWithQueryClient(<DataFactoryView user={user} />);
+  await screen.findByText(source.name, { exact: true });
+  expect(screen.getByText("Loading source assets", { exact: true })).toBeVisible();
+  expect(screen.queryByText("No source assets yet", { exact: true })).not.toBeInTheDocument();
+  expect(screen.queryByText("暂无源对象", { exact: true })).not.toBeInTheDocument();
+});
+
+it("shows a source asset read failure and retry without converting it into a zero inventory", async () => {
+  act(() => setLocale("en"));
+  vi.mocked(loadSourceAssets).mockRejectedValue(new ApiError("RAW_ASSET_FAILURE", 503, null));
+  renderWithQueryClient(<DataFactoryView user={user} />);
+  expect(await screen.findByRole("alert")).toHaveTextContent("RAW_ASSET_FAILURE");
+  expect(screen.getByRole("button", { name: "Retry source assets" })).toBeVisible();
+  expect(screen.queryByText("No source assets yet", { exact: true })).not.toBeInTheDocument();
+});
+
+it("hides cached factory facts and source operations after a current transport permission denial", async () => {
+  const { queryClient } = renderWithQueryClient(<DataFactoryView user={user} />);
+  await screen.findByText(source.name, { exact: true });
+  vi.mocked(loadDataFactory).mockRejectedValue(new ApiError("RAW_FACTORY_DENIAL", 403, null));
+  await act(() => queryClient.refetchQueries({ queryKey: ["data-factory"], exact: true }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("RAW_FACTORY_DENIAL");
+  expect(screen.queryByText(source.name, { exact: true })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "接入自动数据源" })).not.toBeInTheDocument();
+});
+
 it("does not block the data factory on a slow search projection status request", async () => {
   vi.mocked(loadSearchProjectionStatus).mockImplementation(() => new Promise(() => undefined));
 
@@ -173,6 +217,105 @@ it("does not block the data factory on a slow search projection status request",
 
   expect(await screen.findByRole("button", { name: "接入自动数据源" })).toBeInTheDocument();
   expect(loadSearchProjectionStatus).toHaveBeenCalledOnce();
+});
+
+it("updates an open run graph from the current refreshed run instead of the originally selected object", async () => {
+  act(() => setLocale("en"));
+  const snapshot = await loadDataFactory();
+  const run = {
+    id: "current-run",
+    data_source_id: source.id,
+    workflow_id: "Original workflow",
+    state: "running" as const,
+    effective_state: "running" as const,
+    cancelable: true,
+    cancel_requested_at: null,
+    total_versions: 0,
+    completed_versions: 0,
+    counters: { discovered: 3 },
+    progress_percent: 10,
+    stages: [],
+    result: {},
+    error_summary: null,
+    created_at: "2026-01-01T00:00:00Z",
+    started_at: null,
+    heartbeat_at: null,
+    completed_at: null,
+    temporal_run_id: null,
+    temporal_workflow_id: null,
+  };
+  vi.mocked(loadDataFactory).mockResolvedValue({ ...snapshot, runs: [run] });
+  vi.mocked(loadIngestionFindings).mockResolvedValue([]);
+  const { queryClient } = renderWithQueryClient(<DataFactoryView user={user} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Run details" }));
+  await screen.findByRole("heading", { name: "Run stages" });
+  vi.mocked(loadDataFactory).mockResolvedValue({
+    ...snapshot,
+    runs: [{ ...run, state: "succeeded", effective_state: "succeeded", progress_percent: 100, cancelable: false }],
+  });
+  await act(() => queryClient.refetchQueries({ queryKey: ["data-factory"], exact: true }));
+  expect(
+    await screen.findByText("Overall progress 100% · 3 objects checked · no new versions in this run"),
+  ).toBeInTheDocument();
+});
+
+it("collapses healthy operational details and flow guidance without removing source controls", async () => {
+  vi.mocked(loadSearchProjectionStatus).mockResolvedValue({
+    available: true,
+    version: "3.7.0",
+    cluster_name: "pharma-search",
+    cluster_status: "green",
+    aliases: {},
+    deliveries: { pending: 0, failed: 0, dead: 0 },
+    error: null,
+  });
+  renderWithQueryClient(<DataFactoryView user={user} />);
+  await screen.findByRole("button", { name: "接入自动数据源" });
+  expect(screen.getByRole("heading", { name: "采集与治理流程" }).closest("details")).not.toHaveAttribute("open");
+  expect(screen.getByRole("heading", { name: "检索投影运行状态" }).closest("details")).not.toHaveAttribute("open");
+  expect(screen.getByRole("heading", { name: "恶意文件隔离" }).closest("details")).not.toHaveAttribute("open");
+  expect(screen.getByRole("button", { name: "编辑 Legacy literature" })).toBeInTheDocument();
+  expect(screen.getByText("处理能力说明，不代表某次入库已完成；实际执行结果请查看入库运行记录。")).toBeInTheDocument();
+});
+
+it("does not hide a failed projection read behind a missing status panel", async () => {
+  vi.mocked(loadSearchProjectionStatus).mockRejectedValue(new Error("Projection request failed"));
+  renderWithQueryClient(<DataFactoryView user={user} />);
+  expect(await screen.findByText("检索投影状态读取失败")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "检索投影运行状态" }).closest("details")).toHaveAttribute("open");
+  expect(screen.getByRole("button", { name: "接入自动数据源" })).toBeInTheDocument();
+  expect(screen.queryByText("检索投影正常")).not.toBeInTheDocument();
+  vi.mocked(loadSearchProjectionStatus).mockResolvedValue({
+    available: true,
+    version: "3.7.0",
+    cluster_name: "recovered-search",
+    cluster_status: "green",
+    aliases: {},
+    deliveries: {},
+    error: null,
+  });
+  fireEvent.click(screen.getByRole("button", { name: "重试" }));
+  await waitFor(() => expect(screen.queryByText("检索投影状态读取失败")).not.toBeInTheDocument());
+});
+
+it("marks cached projection information as historical after a failed refresh", async () => {
+  renderWithQueryClient(<DataFactoryView user={user} />);
+  await screen.findByText("pharma-search");
+  vi.mocked(loadSearchProjectionStatus).mockRejectedValue(new Error("Projection refresh failed"));
+  fireEvent.click(screen.getByRole("button", { name: "刷新数据工厂" }));
+  expect(await screen.findByText("上次读取的状态（非实时）")).toBeInTheDocument();
+  expect(screen.getByText("pharma-search")).toBeInTheDocument();
+  expect(screen.queryByText("检索投影正常")).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "检索投影运行状态" }).closest("details")).toHaveAttribute("open");
+});
+
+it("reveals failed deliveries instead of labelling connectivity as complete projection success", async () => {
+  renderWithQueryClient(<DataFactoryView user={user} />);
+  await screen.findByText("pharma-search");
+  const panel = screen.getByRole("heading", { name: "检索投影运行状态" }).closest("details");
+  expect(panel).toHaveAttribute("open");
+  expect(panel?.querySelector("summary")).toHaveTextContent("1 条失败投递");
+  expect(screen.queryByText("检索投影正常")).not.toBeInTheDocument();
 });
 
 it("refreshes source assets together with the data factory snapshot", async () => {
@@ -215,7 +358,7 @@ it("identifies governed inference as a third-party remote API", async () => {
   renderWithQueryClient(<DataFactoryView user={user} />);
 
   expect(await screen.findByText("第三方 LLM API")).toBeInTheDocument();
-  expect(screen.getByText("远程 API 已启用")).toBeInTheDocument();
+  expect(screen.getByText("远程 API 已配置")).toBeInTheDocument();
   expect(screen.getByText("远程 API · governed-extractor")).toBeInTheDocument();
   expect(screen.getByText("结构化治理")).toBeInTheDocument();
   expect(screen.getByText("官方结构化来源可直接校验")).toBeInTheDocument();
@@ -314,6 +457,19 @@ it("requires an audited decision and keeps malware rescans behind ClamAV", async
 
   expect(await screen.findByLabelText("1 个待处置案件")).toBeInTheDocument();
   expect(screen.getByText("Win.Test.EICAR_HDB-1")).toBeInTheDocument();
+  const quarantinePanel = screen.getByRole("heading", { name: "恶意文件隔离" }).closest("details");
+  expect(quarantinePanel).toHaveAttribute("open");
+  const quarantineRegion = screen.getByRole("region", { name: "恶意文件隔离案件" });
+  expect(quarantineRegion).toHaveAttribute("tabindex", "0");
+  expect(within(quarantineRegion).getByText("待审核", { exact: true })).toBeInTheDocument();
+  expect(Array.from(quarantineRegion.querySelectorAll("tbody td"), (cell) => cell.getAttribute("data-label"))).toEqual([
+    "隔离文件",
+    "威胁",
+    "处置状态",
+    "决策版本",
+    "最近变更",
+    "操作",
+  ]);
   await verifyDialogKeyboard(screen.getByRole("button", { name: "处置" }), "隔离案件处置");
   expect(await screen.findByRole("dialog", { name: "隔离案件处置" })).toBeInTheDocument();
   expect(await screen.findByText(/仍强制经过 ClamAV/)).toBeInTheDocument();
@@ -356,6 +512,7 @@ it("moves focus into the data source dialog and restores it to the opener", asyn
   fireEvent.click(opener);
 
   const dialog = screen.getByRole("dialog", { name: "接入自动数据源" });
+  expect(within(dialog).queryByText("DATA SOURCE")).not.toBeInTheDocument();
   const nameInput = screen.getByLabelText("数据源名称");
   await waitFor(() => expect(nameInput).toHaveFocus());
   expect(dialog).toContainElement(document.activeElement as HTMLElement);

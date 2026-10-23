@@ -70,7 +70,7 @@ export async function verifyProfessionalQueryDomains(context: Awaited<ReturnType
   await expect(restoredProfessionalRegulatoryFilters.getByLabel("关键词")).toHaveValue(fixtureKeyBase);
   await expect(restoredProfessionalRegulatoryFilters.getByLabel("监管机构")).toHaveValue("FDA");
   await expect(restoredProfessionalRegulatoryFilters.getByLabel("信号状态")).toHaveValue("confirmed");
-  await restoredProfessionalRegulatoryFilters.getByText("更多监管与安全条件").click();
+  await expect(restoredProfessionalRegulatoryFilters.locator(".secondary-filter-panel")).toHaveAttribute("open", "");
   const restoredProfessionalDecisionRange = restoredProfessionalRegulatoryFilters.getByRole("group", {
     name: "决定日期",
   });

@@ -35,7 +35,7 @@ export async function verifyCrossWorkbenchReturn(context: Awaited<ReturnType<typ
   await expect(page).toHaveURL(/\/workspace\/internal/);
   await openNavigation(page);
   await page.getByRole("button", { name: "商业运营" }).click();
-  await expect(page.getByRole("heading", { name: "Agent 商业运营" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "商业运营" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "合同与额度" })).toBeVisible();
   await page.getByRole("tab", { name: "导出策略" }).click();
   await expect(page.getByText("工作台导出策略", { exact: true })).toBeVisible();

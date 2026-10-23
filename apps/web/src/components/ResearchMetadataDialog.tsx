@@ -1,5 +1,7 @@
 import { X } from "lucide-react";
 import { type FormEvent, useId } from "react";
+import { useMessages } from "../lib/i18n";
+import { researchMetadataMessages } from "../lib/i18n/researchMetadata";
 import { useModalFocus } from "../lib/useModalFocus";
 import { FormStatus } from "./FormStatus";
 
@@ -26,6 +28,7 @@ export function ResearchMetadataDialog({
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const text = useMessages(researchMetadataMessages);
   const titleId = useId();
   const dialogRef = useModalFocus<HTMLFormElement>(open, onClose, { closeOnEscape: !pending });
   if (!open) return null;
@@ -46,13 +49,13 @@ export function ResearchMetadataDialog({
       >
         <header>
           <h2 id={titleId}>{title}</h2>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="关闭" disabled={pending}>
+          <button className="icon-button" type="button" onClick={onClose} aria-label={text("关闭")} disabled={pending}>
             <X size={18} />
           </button>
         </header>
-        <FormStatus pending={pending} error={error} pendingLabel="正在保存研究信息" />
+        <FormStatus pending={pending} error={error} pendingLabel={text("正在保存研究信息")} />
         <label>
-          名称
+          {text("名称")}
           <input
             value={name}
             disabled={pending}
@@ -63,22 +66,22 @@ export function ResearchMetadataDialog({
           />
         </label>
         <label>
-          业务说明
+          {text("业务说明")}
           <textarea
             value={description}
             disabled={pending}
             onChange={(event) => onDescriptionChange(event.target.value)}
             maxLength={1000}
             rows={4}
-            placeholder="记录适用场景、筛选口径或交付用途"
+            placeholder={text("记录适用场景、筛选口径或交付用途")}
           />
         </label>
         <footer>
           <button className="secondary-button" type="button" onClick={onClose} disabled={pending}>
-            取消
+            {text("取消")}
           </button>
           <button className="primary-button" type="submit" disabled={pending || !name.trim()}>
-            {pending ? "保存中" : "保存修改"}
+            {pending ? text("保存中") : text("保存修改")}
           </button>
         </footer>
       </form>

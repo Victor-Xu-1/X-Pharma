@@ -1,17 +1,18 @@
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-
 import {
   createMonitoringTopic,
   loadMonitoring,
   loadMonitoringAlertReplay,
   loadMonitoringTopicReplay,
+  loadSavedSearch,
   markMonitoringAlertRead,
   setMonitoringTopicActive,
   setMonitoringTopicQueryVersion,
   setSavedSearchVisibility,
   updateSavedSearchMetadata,
 } from "../lib/contracts/monitoring";
+import { setLocale } from "../lib/i18n";
 import type { MonitoringAlert, MonitoringTopic, SavedSearch } from "../lib/types";
 import { MonitoringView } from "../views/MonitoringView";
 import { renderWithQueryClient } from "./renderWithQueryClient";
@@ -19,6 +20,7 @@ import { renderWithQueryClient } from "./renderWithQueryClient";
 vi.mock("../lib/contracts/monitoring", () => ({
   monitoringKeys: { all: (unreadOnly: boolean) => ["monitoring", { unreadOnly }] },
   loadMonitoring: vi.fn(),
+  loadSavedSearch: vi.fn(),
   loadMonitoringAlertReplay: vi.fn(),
   loadMonitoringTopicReplay: vi.fn(),
   createMonitoringTopic: vi.fn(),
@@ -73,6 +75,7 @@ const user = {
 };
 
 beforeEach(() => {
+  vi.mocked(loadSavedSearch).mockResolvedValue(saved);
   vi.mocked(loadMonitoringTopicReplay).mockResolvedValue({
     ...saved,
     query_version: 1,
@@ -105,6 +108,15 @@ it("never substitutes the latest query when fixed replay is unavailable", async 
   fireEvent.click(await screen.findByRole("button", { name: "运行 EGFR changes 固定检索" }));
   await screen.findByText("Fixed version unavailable");
   expect(openSearch).not.toHaveBeenCalled();
+});
+
+it("renders every monitoring alert control in the initial English interface", async () => {
+  setLocale("en");
+  renderWithQueryClient(<MonitoringView user={user} onOpenEntity={vi.fn()} onOpenSearch={vi.fn()} />);
+  expect(await screen.findByRole("checkbox", { name: "Unread only" })).toBeVisible();
+  expect(screen.getByText("1 unread in the current results")).toBeVisible();
+  expect(within(screen.getByRole("table", { name: "Intelligence alerts" })).getByText("Unread")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Mark alert for EGFR as read" })).toBeVisible();
 });
 
 it("does not let a delayed fixed replay navigate after changing monitoring tabs", async () => {
@@ -210,6 +222,10 @@ it("keeps a monitoring action error recoverable without hiding existing data", a
 
 it("replays a saved search with every governed filter", async () => {
   const openSearch = vi.fn();
+  vi.mocked(loadSavedSearch).mockResolvedValue({
+    ...saved,
+    query_json: { q: "EGFR", entity_type: "target", review_status: "verified" },
+  });
   vi.mocked(loadMonitoring).mockResolvedValueOnce({
     searches: [{ ...saved, query_json: { q: "EGFR", entity_type: "target", review_status: "verified" } }],
     topics: [topic],
@@ -219,10 +235,12 @@ it("replays a saved search with every governed filter", async () => {
 
   fireEvent.click(await screen.findByRole("tab", { name: "已保存检索" }));
   fireEvent.click(screen.getByRole("button", { name: "运行 EGFR competitors" }));
-  expect(openSearch).toHaveBeenCalledWith({
-    ...saved,
-    query_json: { q: "EGFR", entity_type: "target", review_status: "verified" },
-  });
+  await waitFor(() =>
+    expect(openSearch).toHaveBeenCalledWith({
+      ...saved,
+      query_json: { q: "EGFR", entity_type: "target", review_status: "verified" },
+    }),
+  );
 });
 
 it("labels global saved-search types and presentation state for quick scanning", async () => {
@@ -244,7 +262,7 @@ it("labels global saved-search types and presentation state for quick scanning",
   fireEvent.click(await screen.findByRole("tab", { name: "已保存检索" }));
   expect(screen.getByText("基础查询 · 靶点、机构")).toBeVisible();
   expect(screen.getByText("统计表")).toBeVisible();
-  expect(screen.getByTitle("实体类型=靶点、机构")).toBeVisible();
+  expect(screen.getByTitle("实体类型=靶点、机构 · 数据状态=verified")).toBeVisible();
   expect(document.body).not.toHaveTextContent("治理=已设置");
 });
 
@@ -265,15 +283,16 @@ it("identifies and replays a saved professional pipeline query", async () => {
       target_aggregation: "primary",
     },
   };
+  vi.mocked(loadSavedSearch).mockResolvedValue(pipelineSaved);
   vi.mocked(loadMonitoring).mockResolvedValueOnce({ searches: [pipelineSaved], topics: [], alerts: [] });
   renderWithQueryClient(<MonitoringView user={user} onOpenEntity={vi.fn()} onOpenSearch={openSearch} />);
 
   fireEvent.click(await screen.findByRole("tab", { name: "已保存检索" }));
   expect(screen.getByText("药物与管线")).toBeVisible();
   expect(screen.getByText("统计图")).toBeVisible();
-  expect(screen.getByTitle(/全球阶段=已设置.*分析维度=已设置.*分析范围=已设置/)).toBeVisible();
+  expect(screen.getByTitle(/全球阶段=II期.*分析维度=targets.*分析范围=50/)).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "运行 EGFR global pipelines" }));
-  expect(openSearch).toHaveBeenCalledWith(pipelineSaved);
+  await waitFor(() => expect(openSearch).toHaveBeenCalledWith(pipelineSaved));
 });
 
 it("identifies and replays a complete saved clinical trial query", async () => {
@@ -296,13 +315,14 @@ it("identifies and replays a complete saved clinical trial query", async () => {
       sort_direction: "asc",
     },
   };
+  vi.mocked(loadSavedSearch).mockResolvedValue(trialSaved);
   vi.mocked(loadMonitoring).mockResolvedValueOnce({ searches: [trialSaved], topics: [], alerts: [] });
   renderWithQueryClient(<MonitoringView user={user} onOpenEntity={vi.fn()} onOpenSearch={openSearch} />);
 
   fireEvent.click(await screen.findByRole("tab", { name: "已保存检索" }));
   expect(screen.getByText("临床试验")).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "运行 EGFR recruiting results" }));
-  expect(openSearch).toHaveBeenCalledWith(trialSaved);
+  await waitFor(() => expect(openSearch).toHaveBeenCalledWith(trialSaved));
 });
 
 it("identifies and replays patent and deal saved queries", async () => {
@@ -321,6 +341,7 @@ it("identifies and replays patent and deal saved queries", async () => {
     query_type: "deal_search",
     query_json: { status: "active", direction: "outbound", territory: "Greater China" },
   };
+  vi.mocked(loadSavedSearch).mockImplementation(async (id) => (id === patentSaved.id ? patentSaved : dealSaved));
   vi.mocked(loadMonitoring).mockResolvedValueOnce({ searches: [patentSaved, dealSaved], topics: [], alerts: [] });
   renderWithQueryClient(<MonitoringView user={user} onOpenEntity={vi.fn()} onOpenSearch={openSearch} />);
 
@@ -328,9 +349,9 @@ it("identifies and replays patent and deal saved queries", async () => {
   expect(screen.getByText("专利情报")).toBeVisible();
   expect(screen.getByText("交易与公司")).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "运行 Active EGFR patents" }));
+  await waitFor(() => expect(openSearch).toHaveBeenNthCalledWith(1, patentSaved));
   fireEvent.click(screen.getByRole("button", { name: "运行 Outbound licenses" }));
-  expect(openSearch).toHaveBeenNthCalledWith(1, patentSaved);
-  expect(openSearch).toHaveBeenNthCalledWith(2, dealSaved);
+  await waitFor(() => expect(openSearch).toHaveBeenNthCalledWith(2, dealSaved));
 });
 
 it("identifies and replays a complete regulatory safety query", async () => {
@@ -355,13 +376,14 @@ it("identifies and replays a complete regulatory safety query", async () => {
       sort_direction: "asc",
     },
   };
+  vi.mocked(loadSavedSearch).mockResolvedValue(regulatorySaved);
   vi.mocked(loadMonitoring).mockResolvedValueOnce({ searches: [regulatorySaved], topics: [], alerts: [] });
   renderWithQueryClient(<MonitoringView user={user} onOpenEntity={vi.fn()} onOpenSearch={openSearch} />);
 
   fireEvent.click(await screen.findByRole("tab", { name: "已保存检索" }));
   expect(screen.getByText("监管与安全")).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "运行 FDA pulmonary signals" }));
-  expect(openSearch).toHaveBeenCalledWith(regulatorySaved);
+  await waitFor(() => expect(openSearch).toHaveBeenCalledWith(regulatorySaved));
 });
 
 it("identifies and replays epidemiology and research-news queries", async () => {
@@ -406,6 +428,9 @@ it("identifies and replays epidemiology and research-news queries", async () => 
       limit: 20,
     },
   };
+  vi.mocked(loadSavedSearch).mockImplementation(async (id) =>
+    id === epidemiologySaved.id ? epidemiologySaved : id === newsSaved.id ? newsSaved : chemistrySaved,
+  );
   vi.mocked(loadMonitoring).mockResolvedValueOnce({
     searches: [epidemiologySaved, newsSaved, chemistrySaved],
     topics: [],
@@ -417,15 +442,18 @@ it("identifies and replays epidemiology and research-news queries", async () => 
   expect(screen.getByText("流行病学")).toBeVisible();
   expect(screen.getByText("新闻与会议")).toBeVisible();
   expect(screen.getByText("结构检索")).toBeVisible();
+  expect(screen.getByText(/结构原文受控保存/)).not.toBeVisible();
+  const structureRow = screen.getByRole("row", { name: /结构检索/ });
+  fireEvent.click(within(structureRow).getByText(/个条件/, { selector: "summary" }));
   expect(screen.getByText(/结构原文受控保存/)).toBeVisible();
   expect(screen.queryByText("CC(=O)Oc1ccccc1C(=O)O")).not.toBeInTheDocument();
   expect(screen.getByText("时间线")).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "运行 China NSCLC burden" }));
+  await waitFor(() => expect(openSearch).toHaveBeenNthCalledWith(1, epidemiologySaved));
   fireEvent.click(screen.getByRole("button", { name: "运行 ASCO research watch" }));
+  await waitFor(() => expect(openSearch).toHaveBeenNthCalledWith(2, newsSaved));
   fireEvent.click(screen.getByRole("button", { name: "运行 Aspirin similarity" }));
-  expect(openSearch).toHaveBeenNthCalledWith(1, epidemiologySaved);
-  expect(openSearch).toHaveBeenNthCalledWith(2, newsSaved);
-  expect(openSearch).toHaveBeenNthCalledWith(3, chemistrySaved);
+  await waitFor(() => expect(openSearch).toHaveBeenNthCalledWith(3, chemistrySaved));
 });
 
 it("does not offer chemistry saved searches as unsupported monitoring topics", async () => {

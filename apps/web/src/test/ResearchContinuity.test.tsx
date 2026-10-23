@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ResearchContinuity } from "../components/ResearchContinuity";
 import { loadRecentResearch } from "../lib/contracts/researchActivity";
+import { setLocale } from "../lib/i18n";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/researchActivity", () => ({
@@ -11,6 +12,19 @@ vi.mock("../lib/contracts/researchActivity", () => ({
 
 beforeEach(() => {
   vi.mocked(loadRecentResearch).mockResolvedValue([]);
+});
+
+it("keeps the recent-research disclosure and cached read when its language changes", async () => {
+  const open = vi.fn();
+  const { rerender } = renderWithQueryClient(<ResearchContinuity onOpenEntity={open} />);
+  fireEvent.click(screen.getByRole("button", { name: "继续最近的研究" }));
+  await screen.findByText("暂无最近研究");
+  const calls = vi.mocked(loadRecentResearch).mock.calls.length;
+  setLocale("en");
+  rerender(<ResearchContinuity onOpenEntity={open} />);
+  expect(screen.getByRole("button", { name: "Continue recent research" })).toHaveAttribute("aria-expanded", "true");
+  expect(screen.getByText("No recent research yet")).toBeVisible();
+  expect(loadRecentResearch).toHaveBeenCalledTimes(calls);
 });
 
 it("loads recent research only when requested and provides an honest empty state", async () => {

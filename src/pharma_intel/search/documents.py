@@ -208,6 +208,21 @@ def evidence_claim_projection(
         .order_by(FactProvenanceLink.created_at.desc(), FactProvenanceLink.id.desc())
         .limit(1)
     ).first()
+    if source_context is None:
+        governed_link_id = session.scalar(
+            select(FactProvenanceLink.id)
+            .where(
+                FactProvenanceLink.tenant_id == tenant_id,
+                FactProvenanceLink.resource_type == "evidence_claim",
+                FactProvenanceLink.resource_id == claim.id,
+                FactProvenanceLink.evidence_claim_id == claim.id,
+            )
+            .limit(1)
+        )
+        if governed_link_id is not None:
+            # Retained audit claims are not legacy unclassified evidence. A rebuild
+            # or delayed publication must not resurrect their retired provenance.
+            return None
     source_version_id = str(source_context[0]) if source_context else None
     source_asset_id = str(source_context[1]) if source_context else None
     dataset_key = str(source_context[2]) if source_context else "unclassified"

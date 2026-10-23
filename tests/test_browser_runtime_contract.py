@@ -313,12 +313,29 @@ def test_api_serves_both_same_origin_workbench_routes_before_the_static_mount(
 def test_ci_installs_branded_chrome_instead_of_playwright_chromium() -> None:
     root = Path(__file__).parents[1]
     workflow = (root / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    ci_setup = (root / "scripts/prepare-ci-browser.sh").read_text(encoding="utf-8")
 
-    assert "playwright install-deps chrome" in workflow
-    assert "scripts/bootstrap-wsl-chrome.sh" in workflow and "--reviewed" in workflow
-    assert "E2E_BROWSER_EXECUTABLE" in workflow
-    assert "playwright install --with-deps chrome" not in workflow
-    assert "playwright install --with-deps chromium" not in workflow
+    assert workflow.count("bash scripts/prepare-ci-browser.sh") == 3
+    assert "playwright install-deps chrome" in ci_setup
+    assert "scripts/bootstrap-wsl-chrome.sh" in ci_setup and "--reviewed" in ci_setup
+    assert "E2E_BROWSER_EXECUTABLE" in ci_setup
+    assert "playwright install --with-deps chrome" not in workflow + ci_setup
+    assert "playwright install --with-deps chromium" not in workflow + ci_setup
+
+
+def test_ui_baseline_refresh_keeps_the_committed_browser_identity() -> None:
+    root = Path(__file__).parents[1]
+    workflow = (root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    setup = (root / "scripts/prepare-ci-browser.sh").read_text(encoding="utf-8")
+
+    assert workflow.count("bash scripts/prepare-ci-browser.sh") == 3
+    assert "VISUAL_PROFILE_REVIEW" not in workflow
+    assert (
+        "REFRESH_VISUAL_BASELINES: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines }}"
+        in workflow
+    )
+    assert "visual_profile_review=${VISUAL_PROFILE_REVIEW:-false}" in setup
+    assert "chrome_args=(--reviewed)" in setup
 
 
 def test_browser_acceptance_uses_bounded_assertions_without_retries() -> None:
@@ -327,7 +344,10 @@ def test_browser_acceptance_uses_bounded_assertions_without_retries() -> None:
 
     assert "retries: 0" in config
     assert "expect: { timeout: 10_000 }" in config
-    assert 'snapshotPathTemplate: "{testDir}/visual-baselines/{arg}-{projectName}{ext}"' in config
+    assert "snapshotPathTemplate: snapshotReviewDirectory" in config
+    assert ': "{testDir}/visual-baselines/{arg}-{projectName}{ext}"' in config
+    assert 'snapshotReviewMode !== "capture"' in config
+    assert "isAbsolute(snapshotReviewDirectory)" in config
     assert 'name: "desktop-1440"' in config
     assert 'name: "desktop-1920"' in config
     assert 'name: "tablet-1024"' in config

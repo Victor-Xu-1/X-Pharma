@@ -1,9 +1,10 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SessionBoundary } from "../components/SessionBoundary";
 import { ApiError } from "../lib/api";
 import { loadSession, logout } from "../lib/contracts/session";
+import { trackSessionWrite } from "../lib/organizationSession";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 vi.mock("../lib/contracts/session", () => ({
@@ -60,6 +61,40 @@ describe("shared account logout", () => {
     await screen.findByRole("heading", { name: "账户登录" });
     expect(queryClient.getQueryData(["private", "records"])).toBeUndefined();
     expect(window.location.pathname + window.location.search).toBe("/workspace/research");
+  });
+
+  it("holds a same-tick logout intent once until the actual request settles", async () => {
+    let finish: (() => void) | undefined;
+    vi.mocked(logout).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    renderSession();
+    await screen.findByText("Fixture");
+    const button = screen.getByRole("button", { name: "退出账号" });
+    act(() => {
+      fireEvent.click(button);
+      fireEvent.click(button);
+    });
+    await waitFor(() => expect(logout).toHaveBeenCalledTimes(1));
+    await act(async () => finish?.());
+    await screen.findByRole("heading", { name: "账户登录" });
+  });
+
+  it("does not sign out during an active identity or business operation, but permits a later explicit attempt", async () => {
+    vi.mocked(logout).mockResolvedValue(undefined);
+    renderSession();
+    await screen.findByText("Fixture");
+    const release = trackSessionWrite("POST");
+    fireEvent.click(screen.getByRole("button", { name: "退出账号" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("请等待完成后再退出账号");
+    expect(logout).not.toHaveBeenCalled();
+    release();
+    fireEvent.click(screen.getByRole("button", { name: "退出账号" }));
+    await screen.findByRole("heading", { name: "账户登录" });
+    expect(logout).toHaveBeenCalledTimes(1);
   });
 
   it("treats an already expired session as signed out", async () => {

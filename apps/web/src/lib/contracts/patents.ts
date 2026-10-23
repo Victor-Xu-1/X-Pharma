@@ -1,6 +1,7 @@
 import { contractRequest } from "../contract";
 import type { PatentFamilySearchItemRead, PatentFamilySearchResult, PatentSavedSearchQuery } from "../generated";
-import { MonitoringService, PatentsService } from "../generated";
+import { PatentsService } from "../generated";
+import { type SavedSearchCreationOutcome, saveAndSubscribeSearch } from "./savedSearchCreation";
 import { effectiveSort, type SortCriterion } from "./sorting";
 
 export const patentSortFields = ["priority_date", "family_identifier", "legal_status", "expiration_date"] as const;
@@ -37,6 +38,30 @@ export interface PatentSavedSearchInput {
   sort?: SortCriterion<PatentSortField>[];
   displayMode: "list" | "landscape";
   analysisView: "chart" | "table";
+}
+
+export type PatentSearchFilters = Pick<
+  PatentSavedSearchInput,
+  "query" | "entityId" | "applicant" | "legalStatus" | "priorityFrom" | "priorityTo" | "expirationFrom" | "expirationTo"
+>;
+
+export const emptyPatentSearchFilters: PatentSearchFilters = {
+  query: "",
+  entityId: "",
+  applicant: "",
+  legalStatus: "",
+  priorityFrom: "",
+  priorityTo: "",
+  expirationFrom: "",
+  expirationTo: "",
+};
+
+export function validatePatentSearchFilters(filters: PatentSearchFilters) {
+  if (filters.priorityFrom && filters.priorityTo && filters.priorityFrom > filters.priorityTo)
+    return "优先权日期起始值不能晚于结束值" as const;
+  if (filters.expirationFrom && filters.expirationTo && filters.expirationFrom > filters.expirationTo)
+    return "预计到期日期起始值不能晚于结束值" as const;
+  return null;
 }
 
 function savedPatentQuery(input: PatentSavedSearchInput): PatentSavedSearchQuery {
@@ -77,29 +102,16 @@ export async function savePatentSearch({
   input: PatentSavedSearchInput;
   shared: boolean;
   monitor: boolean;
-}): Promise<{ message: string }> {
-  const saved = await contractRequest(
-    MonitoringService.createSavedSearchApiV1MonitoringSavedSearchesPost({
-      requestBody: {
-        name: name.trim(),
-        query_type: "patent_search",
-        query: savedPatentQuery(input),
-        visibility: shared ? "tenant" : "private",
-      },
-    }),
+}): Promise<SavedSearchCreationOutcome> {
+  return saveAndSubscribeSearch(
+    {
+      name: name.trim(),
+      query_type: "patent_search",
+      query: savedPatentQuery(input),
+      visibility: shared ? "tenant" : "private",
+    },
+    monitor,
   );
-  if (monitor) {
-    try {
-      await contractRequest(
-        MonitoringService.createMonitoringTopicApiV1MonitoringTopicsPost({
-          requestBody: { name: name.trim(), saved_search_id: saved.id },
-        }),
-      );
-    } catch (error) {
-      return { message: `检索已保存，但监控未启用：${error instanceof Error ? error.message : "未知错误"}` };
-    }
-  }
-  return { message: monitor ? "专利检索已保存并启用监控" : "专利检索已保存" };
 }
 
 export const patentKeys = {

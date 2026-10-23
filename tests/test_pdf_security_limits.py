@@ -15,8 +15,8 @@ def test_pdf_security_release_is_consistent_across_parser_and_optional_ocr() -> 
     root = Path(__file__).parents[1]
     manifest = tomllib.loads((root / "pyproject.toml").read_text())
     installed = version("pypdf")
-    # The audited September advisories require at least this upstream patch set.
-    assert Version(installed) >= Version("6.19.0")
+    # October's audited resource-consumption fixes supersede the September floor.
+    assert Version(installed) >= Version("6.21.1")
     pin = f"pypdf=={installed}"
     assert pin in manifest["project"]["dependencies"]
     assert pin in (root / "services/ocr/requirements.in").read_text().splitlines()

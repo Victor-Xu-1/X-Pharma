@@ -3,6 +3,8 @@ import { useState } from "react";
 import { EmptyState, StatusBadge } from "../../components/common";
 import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { EnterpriseGroup, EnterpriseOperation, EnterpriseUser } from "../../lib/contracts/enterprise";
+import { useLocale } from "../../lib/i18n";
+import { enterpriseWorkspaceText as t } from "../../lib/i18n/enterpriseWorkspace";
 import { ModalShell } from "./ModalShell";
 import type { GroupAction } from "./types";
 
@@ -17,25 +19,26 @@ export function GroupsPanel({
   onCreate: () => void;
   onAction: (action: GroupAction) => void;
 }) {
+  useLocale();
   return (
     <>
       <div className="section-toolbar">
-        <span>{groups.length} 个用户组</span>
+        <span>{t("{count} 个用户组", { count: groups.length })}</span>
         <button className="primary-button" type="button" onClick={onCreate} disabled={Boolean(busy)}>
           <Plus size={16} />
-          新建用户组
+          {t("新建用户组")}
         </button>
       </div>
       {groups.length ? (
-        <ScrollableTableRegion className="enterprise-table" ariaLabel="企业用户组滚动区域">
-          <table aria-label="企业用户组">
+        <ScrollableTableRegion className="enterprise-table" ariaLabel={t("企业用户组滚动区域")}>
+          <table aria-label={t("企业用户组")}>
             <thead>
               <tr>
-                <th>用户组</th>
-                <th>成员</th>
-                <th>状态</th>
-                <th>版本</th>
-                <th aria-label="操作" />
+                <th>{t("用户组")}</th>
+                <th>{t("成员")}</th>
+                <th>{t("状态")}</th>
+                <th>{t("版本")}</th>
+                <th aria-label={t("操作")} />
               </tr>
             </thead>
             <tbody>
@@ -43,7 +46,7 @@ export function GroupsPanel({
                 <tr key={group.id}>
                   <td>
                     <strong>{group.name}</strong>
-                    <span className="cell-subtitle">{group.description || "未填写说明"}</span>
+                    <span className="cell-subtitle">{group.description || t("未填写说明")}</span>
                   </td>
                   <td>{group.member_count}</td>
                   <td>
@@ -55,8 +58,8 @@ export function GroupsPanel({
                       <button
                         className="icon-button"
                         type="button"
-                        title="编辑用户组"
-                        aria-label={`编辑 ${group.name}`}
+                        title={t("编辑用户组")}
+                        aria-label={t("编辑 {name}", { name: group.name })}
                         onClick={() => onAction({ group, kind: "edit" })}
                         disabled={Boolean(busy)}
                       >
@@ -65,8 +68,8 @@ export function GroupsPanel({
                       <button
                         className="icon-button"
                         type="button"
-                        title="管理成员"
-                        aria-label={`管理 ${group.name} 的成员`}
+                        title={t("管理成员")}
+                        aria-label={t("管理 {name} 的成员", { name: group.name })}
                         onClick={() => onAction({ group, kind: "members" })}
                         disabled={Boolean(busy)}
                       >
@@ -80,7 +83,7 @@ export function GroupsPanel({
           </table>
         </ScrollableTableRegion>
       ) : (
-        <EmptyState title="尚未建立用户组" detail="用户组用于集中维护组织成员，后续可绑定细粒度资源策略。" />
+        <EmptyState title={t("尚未建立用户组")} detail={t("创建用户组以集中维护组织成员。")} />
       )}
     </>
   );
@@ -95,10 +98,11 @@ export function CreateGroupModal({
   close: () => void;
   submit: (operation: EnterpriseOperation) => Promise<void>;
 }) {
+  useLocale();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   return (
-    <ModalShell title="新建用户组" close={close}>
+    <ModalShell title={t("新建用户组")} close={close}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -106,19 +110,19 @@ export function CreateGroupModal({
         }}
       >
         <label>
-          用户组名称
+          {t("用户组名称")}
           <input required maxLength={160} value={name} onChange={(event) => setName(event.target.value)} />
         </label>
         <label>
-          说明
+          {t("说明")}
           <textarea maxLength={500} value={description} onChange={(event) => setDescription(event.target.value)} />
         </label>
         <div className="form-actions">
           <button className="secondary-button" type="button" onClick={close}>
-            取消
+            {t("取消")}
           </button>
           <button className="primary-button" type="submit" disabled={busy}>
-            创建用户组
+            {t("创建用户组")}
           </button>
         </div>
       </form>
@@ -141,6 +145,7 @@ export function GroupActionModal({
   submit: (operation: EnterpriseOperation) => Promise<void>;
   embedded?: boolean;
 }) {
+  useLocale();
   const [name, setName] = useState(action.group.name);
   const [description, setDescription] = useState(action.group.description);
   const [active, setActive] = useState(action.group.active);
@@ -178,16 +183,16 @@ export function GroupActionModal({
       {action.kind === "edit" ? (
         <>
           <label>
-            用户组名称
+            {t("用户组名称")}
             <input required maxLength={160} value={name} onChange={(event) => setName(event.target.value)} />
           </label>
           <label>
-            说明
+            {t("说明")}
             <textarea maxLength={500} value={description} onChange={(event) => setDescription(event.target.value)} />
           </label>
           <label className="check-control">
             <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
-            启用用户组
+            {t("启用用户组")}
           </label>
         </>
       ) : (
@@ -214,7 +219,7 @@ export function GroupActionModal({
         </fieldset>
       )}
       <label>
-        变更原因
+        {t("变更原因")}
         <textarea
           required
           minLength={3}
@@ -225,10 +230,10 @@ export function GroupActionModal({
       </label>
       <div className="form-actions">
         <button className="secondary-button" type="button" onClick={close}>
-          取消
+          {t("取消")}
         </button>
         <button className="primary-button" type="submit" disabled={busy}>
-          保存变更
+          {t("保存变更")}
         </button>
       </div>
     </form>
@@ -236,7 +241,7 @@ export function GroupActionModal({
   return embedded ? (
     form
   ) : (
-    <ModalShell title="编辑用户组" close={close}>
+    <ModalShell title={t("编辑用户组")} close={close}>
       {form}
     </ModalShell>
   );

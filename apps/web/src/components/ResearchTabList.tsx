@@ -1,4 +1,5 @@
 import { type KeyboardEvent, type ReactNode, useEffect, useRef } from "react";
+import { useHorizontalActiveItem } from "../lib/useHorizontalActiveItem";
 
 export type ResearchTabOption<Tab extends string> = {
   key: Tab;
@@ -26,6 +27,8 @@ export function ResearchTabList<Tab extends string>({
   className?: string;
 }) {
   const activeTabRef = useRef<HTMLButtonElement>(null);
+  const tabListRef = useRef<HTMLDivElement>(null);
+  useHorizontalActiveItem(tabListRef, activeTabRef, tabs, activeTab);
 
   useEffect(() => {
     if (activeTabRef.current?.dataset.tabKey === activeTab) {
@@ -63,7 +66,7 @@ export function ResearchTabList<Tab extends string>({
   }
 
   return (
-    <div className={className} role="tablist" aria-label={ariaLabel} aria-orientation="horizontal">
+    <div ref={tabListRef} className={className} role="tablist" aria-label={ariaLabel} aria-orientation="horizontal">
       {tabs.map((tab) => (
         <button
           key={tab.key}

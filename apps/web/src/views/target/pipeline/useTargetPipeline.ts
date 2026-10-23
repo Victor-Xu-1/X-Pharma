@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import type { PipelineLandscapeFilterField } from "../../../components/PipelineLandscape";
+import { useSecondaryFiltersState } from "../../../components/SecondaryFilters";
 import {
   emptyPipelineSearchFilters,
   type PipelineAnalysisDimension,
@@ -14,6 +15,7 @@ import {
   type SortDirection,
   searchPipelines,
 } from "../../../lib/contracts/pipeline";
+import type { PipelineSearchResult } from "../../../lib/generated";
 import {
   countAdvancedPipelineFilters,
   defaultTargetDrugColumns,
@@ -77,7 +79,9 @@ export function useTargetPipeline({
     comparisonSetId: string;
     entityIds: string[];
   } | null>(null);
-  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
+  const { open: advancedFiltersOpen, setOpen: setAdvancedFiltersOpen } = useSecondaryFiltersState(
+    countAdvancedPipelineFilters(filters),
+  );
   const targetFacetCache = useRef<{
     targetId: string;
     values: Partial<Record<TargetFacetKey, Record<string, number>>>;
@@ -100,10 +104,6 @@ export function useTargetPipeline({
     return targetFacetOptions(cachedValues);
   }
 
-  const advancedFilterCountForState = countAdvancedPipelineFilters(filters);
-  useEffect(() => {
-    setAdvancedFiltersOpen(advancedFilterCountForState > 0);
-  }, [advancedFilterCountForState]);
   const [debouncedPipelineQuery, setDebouncedPipelineQuery] = useState(effectiveInitialFilters.query);
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedPipelineQuery(filters.query), 250);
@@ -121,6 +121,13 @@ export function useTargetPipeline({
     queryKey: pipelineKeys.search(queryFilters, queryAnalysis, resultGrain),
     queryFn: ({ signal }) => searchPipelines(queryFilters, queryAnalysis, signal, resultGrain),
   });
+  // Option metadata only, scoped to this target. Never reuse old rows, totals or coverage as a new result.
+  const facetSnapshot = useRef<{ targetId: string; facets: PipelineSearchResult["facets"] }>({
+    targetId,
+    facets: undefined,
+  });
+  if (facetSnapshot.current.targetId !== targetId) facetSnapshot.current = { targetId, facets: undefined };
+  if (result.data?.facets && !result.error) facetSnapshot.current = { targetId, facets: result.data.facets };
 
   function updateFilter<Key extends keyof PipelineSearchFilters>(key: Key, value: PipelineSearchFilters[Key]) {
     setComparisonMessage("");
@@ -236,6 +243,7 @@ export function useTargetPipeline({
     setAdvancedFiltersOpen,
     cachedFacetOptions,
     result,
+    filterFacets: result.data?.facets ?? facetSnapshot.current.facets,
     updateFilter,
     updateSorting,
     resetFilters,

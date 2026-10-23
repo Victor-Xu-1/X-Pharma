@@ -1,5 +1,7 @@
 import { Activity, CalendarDays, FileCheck2, FileText, ShieldCheck } from "lucide-react";
 import type { TargetDossier } from "../../lib/contracts/target";
+import { formattingLocale, useMessages } from "../../lib/i18n";
+import { targetCoverageLabelKeys, targetDossierMessages } from "../../lib/i18n/targetDossier";
 import type { TargetDossierSection } from "../../lib/workspaceRouting";
 import { developmentPhaseLabel } from "./pipeline/presentation";
 
@@ -16,20 +18,6 @@ const targetCoverageSections: Partial<Record<string, TargetDossierSection>> = {
   structures: "structures",
 };
 
-const targetCoverageLabels: Record<string, string> = {
-  relationships: "关系网络",
-  evidence: "来源证据",
-  target_evidence: "转化证据",
-  activities: "活性数据",
-  programs: "竞品管线",
-  clinical_trials: "临床试验",
-  patents: "专利",
-  deals: "交易",
-  regulatory_events: "监管动态",
-  news_events: "新闻与会议",
-  structures: "化学结构",
-};
-
 export function Overview({
   data,
   onOpenSection,
@@ -39,6 +27,8 @@ export function Overview({
   onOpenSection: (section: TargetDossierSection) => void;
   onOpenEvidence?: (query: string) => void;
 }) {
+  const text = useMessages(targetDossierMessages);
+  const number = new Intl.NumberFormat(formattingLocale());
   const { profile, summary } = data;
   // Every landscape figure comes from the server summary, which aggregates the complete
   // authorized result set. The record collections on `data` are display-bounded and must
@@ -47,15 +37,15 @@ export function Overview({
   return (
     <div className="dossier-overview">
       <article className="narrative-section">
-        <h3>功能摘要</h3>
-        <p>{profile.function_summary ?? profile.entity.description ?? "暂无功能摘要。"}</p>
+        <h3>{text("功能摘要")}</h3>
+        <p>{profile.function_summary ?? profile.entity.description ?? text("暂无功能摘要。")}</p>
       </article>
       <div className="landscape-grid">
         <article>
           <Activity size={18} />
           <span>
-            <strong>{summary.program_count}</strong>
-            <small>研发项目</small>
+            <strong>{number.format(summary.program_count)}</strong>
+            <small>{text("研发项目")}</small>
           </span>
           <dl>
             {Object.entries(phases)
@@ -63,7 +53,7 @@ export function Overview({
               .map(([phase, count]) => (
                 <div key={phase}>
                   <dt>{developmentPhaseLabel(phase)}</dt>
-                  <dd>{count}</dd>
+                  <dd>{number.format(count)}</dd>
                 </div>
               ))}
           </dl>
@@ -71,61 +61,72 @@ export function Overview({
         <article>
           <CalendarDays size={18} />
           <span>
-            <strong>{summary.clinical_trial_count}</strong>
-            <small>关联试验</small>
+            <strong>{number.format(summary.clinical_trial_count)}</strong>
+            <small>{text("关联试验")}</small>
           </span>
-          <p>{summary.recruiting_trial_count} 项处于招募状态</p>
+          <p>{text("{count} 项处于招募状态", { count: number.format(summary.recruiting_trial_count) })}</p>
           {summary.unclassified_trial_status_count > 0 ? (
             <small className="summary-gap-note">
-              {summary.unclassified_trial_status_count} 项状态信息不完整，未计入招募统计
+              {text("{count} 项状态信息不完整，未计入招募统计", {
+                count: number.format(summary.unclassified_trial_status_count),
+              })}
             </small>
           ) : null}
         </article>
         <article>
           <FileText size={18} />
           <span>
-            <strong>{summary.patent_count}</strong>
-            <small>专利族</small>
+            <strong>{number.format(summary.patent_count)}</strong>
+            <small>{text("专利族")}</small>
           </span>
-          <p>{summary.active_patent_count} 项法律状态有效</p>
+          <p>{text("{count} 项法律状态有效", { count: number.format(summary.active_patent_count) })}</p>
           {summary.unclassified_patent_status_count > 0 ? (
             <small className="summary-gap-note">
-              {summary.unclassified_patent_status_count} 项状态信息不完整，未计入有效统计
+              {text("{count} 项状态信息不完整，未计入有效统计", {
+                count: number.format(summary.unclassified_patent_status_count),
+              })}
             </small>
           ) : null}
         </article>
         <article>
           <FileCheck2 size={18} />
           <span>
-            <strong>{summary.regulatory_event_count}</strong>
-            <small>监管事件</small>
+            <strong>{number.format(summary.regulatory_event_count)}</strong>
+            <small>{text("监管事件")}</small>
           </span>
-          <p>{summary.approval_event_count} 项批准相关事件</p>
+          <p>{text("{count} 项批准相关事件", { count: number.format(summary.approval_event_count) })}</p>
         </article>
       </div>
       {profile.sequence ? (
         <article className="sequence-section">
-          <h3>蛋白序列</h3>
+          <h3>{text("蛋白序列")}</h3>
           <code>{profile.sequence}</code>
         </article>
       ) : null}
       <section className="coverage-section">
-        <h3>关联信息</h3>
+        <h3>{text("关联信息")}</h3>
         <div className="coverage-grid">
           {data.coverage.map((item) => {
-            const section = targetCoverageSections[item.domain];
+            const section = Object.hasOwn(targetCoverageSections, item.domain)
+              ? targetCoverageSections[item.domain]
+              : undefined;
             const opensEvidenceSearch = item.domain === "evidence" && Boolean(onOpenEvidence);
-            const label = targetCoverageLabels[item.domain] ?? item.domain.replaceAll("_", " ");
+            const label = Object.hasOwn(targetCoverageLabelKeys, item.domain)
+              ? text(targetCoverageLabelKeys[item.domain as keyof typeof targetCoverageLabelKeys])
+              : item.domain.replaceAll("_", " ");
             const note =
               item.status === "not_observed"
-                ? "暂无可展示信息"
+                ? text("暂无可展示信息")
                 : item.status === "truncated"
-                  ? `${item.total} 条相关信息，当前显示 ${item.returned} 条`
-                  : `${item.total} 条相关信息`;
+                  ? text("{total} 条相关信息，当前显示 {returned} 条", {
+                      total: number.format(item.total),
+                      returned: number.format(item.returned),
+                    })
+                  : text("{total} 条相关信息", { total: number.format(item.total) });
             return (
               <article key={item.domain} className={item.status}>
                 <span>{label}</span>
-                <strong>{item.total}</strong>
+                <strong>{number.format(item.total)}</strong>
                 <small>{note}</small>
                 {section || opensEvidenceSearch ? (
                   <button
@@ -136,7 +137,7 @@ export function Overview({
                       opensEvidenceSearch ? onOpenEvidence?.(profile.entity.name) : onOpenSection(section ?? "overview")
                     }
                   >
-                    查看{label}
+                    {text("查看{label}", { label })}
                   </button>
                 ) : null}
               </article>

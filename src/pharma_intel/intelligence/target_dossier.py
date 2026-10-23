@@ -12,6 +12,7 @@ from pharma_intel.intelligence.patents import _patent_filters
 from pharma_intel.intelligence.pipeline_filters import _program_filters
 from pharma_intel.intelligence.regulatory import _regulatory_filters
 from pharma_intel.intelligence.structures import structures_for_target
+from pharma_intel.intelligence.target_profile_identity import governed_target_profile
 from pharma_intel.intelligence.vocabulary import (
     _ACTIVE_PATENT_STATUSES,
     _APPROVAL_REGULATORY_EVENT_TYPES,
@@ -33,7 +34,6 @@ from pharma_intel.models import (
     RegulatoryEvent,
     ReviewStatus,
     TargetEvidenceObservation,
-    TargetProfile,
 )
 from pharma_intel.schemas import EntityRead, TargetDossierResponse, TargetDossierSummaryRead, TargetProfileResponse
 
@@ -48,63 +48,7 @@ def target_profile(context: QueryContext, entity_id: str) -> TargetProfileRespon
     )
     if entity is None or entity.entity_type != EntityType.TARGET:
         return None
-    profile = context.session.scalar(
-        select(TargetProfile).where(TargetProfile.entity_id == entity_id, TargetProfile.tenant_id == context.tenant_id)
-    )
-    if profile is None and entity.external_ids:
-        # Ingestion can briefly leave a verified target row and a second row with
-        # the governed profile before entity reconciliation creates a canonical
-        # link. Only reuse a profile when a tenant-scoped, target-scoped external
-        # identifier matches exactly; same-name matching would merge unrelated
-        # biological targets.
-        profile_candidates = context.session.execute(
-            select(Entity, TargetProfile)
-            .join(TargetProfile, TargetProfile.entity_id == Entity.id)
-            .where(
-                Entity.tenant_id == context.tenant_id,
-                Entity.entity_type == EntityType.TARGET,
-                Entity.id != entity.id,
-                TargetProfile.tenant_id == context.tenant_id,
-            )
-        ).all()
-
-        def shares_external_identifier(candidate: Entity) -> bool:
-            candidate_ids = {
-                (str(namespace).casefold().strip(), str(value).casefold().strip())
-                for namespace, value in candidate.external_ids.items()
-                if str(namespace).strip() and str(value).strip()
-            }
-            return any(
-                (str(namespace).casefold().strip(), str(value).casefold().strip()) in candidate_ids
-                for namespace, value in entity.external_ids.items()
-                if str(namespace).strip() and str(value).strip()
-            )
-
-        matching_profiles = [
-            (candidate, candidate_profile)
-            for candidate, candidate_profile in profile_candidates
-            if shares_external_identifier(candidate)
-        ]
-        if matching_profiles:
-            profile = max(
-                matching_profiles,
-                key=lambda item: (
-                    sum(
-                        bool(getattr(item[1], field))
-                        for field in (
-                            "gene_symbol",
-                            "uniprot_accession",
-                            "organism",
-                            "target_class",
-                            "sequence",
-                            "function_summary",
-                        )
-                    ),
-                    int(item[0].review_status == ReviewStatus.VERIFIED),
-                    str(item[1].updated_at or ""),
-                    str(item[1].id),
-                ),
-            )[1]
+    profile = governed_target_profile(context, entity_id)
     activity_count = (
         context.session.scalar(
             select(func.count(ActivityMeasurement.id)).where(
