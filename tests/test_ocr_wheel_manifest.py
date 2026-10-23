@@ -67,6 +67,7 @@ def test_ocr_image_source_build_keeps_hashes_and_runs_real_media_probes() -> Non
     assert "--no-binary=opencv-contrib-python" in build
     assert "--require-hashes --no-deps --no-build-isolation" in build
     assert "-DWITH_FFMPEG=OFF" in build and "-DWITH_GSTREAMER=OFF" in build
+    assert "videoio,gapi,python3" in build
     assert "--no-index --no-deps --require-hashes" in dockerfile
     assert "python -m pip check" in dockerfile and "python /tmp/verify-opencv.py" in dockerfile
     assert "from=wheel-builder,source=/wheelhouse" in dockerfile
