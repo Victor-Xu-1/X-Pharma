@@ -1,4 +1,5 @@
 import { emptyPipelineSearchFilters, type PipelineSearchFilters } from "../../lib/contracts/pipeline";
+import type { Entity } from "../../lib/types";
 import type {
   CompanyDossierSection,
   DiseaseDossierSection,
@@ -8,6 +9,35 @@ import type {
   ViewKey,
   WorkspaceLocation,
 } from "../../lib/workspaceRouting";
+
+/** One route authority; unknown source types retain the generic dossier. */
+export function specializedResearchView(
+  entityType: string | undefined,
+): "target" | "drug" | "company" | "disease" | null {
+  switch (entityType) {
+    case "target":
+      return "target";
+    case "drug":
+      return "drug";
+    case "organization":
+      return "company";
+    case "disease":
+      return "disease";
+    default:
+      return null;
+  }
+}
+
+/** Shared current-identity selection; a foreign response never becomes the route's entity. */
+export function researchRouteEntity(
+  requestedId: string | null | undefined,
+  selected: Entity | null,
+  loaded: Entity | undefined,
+): Entity | null {
+  if (!requestedId) return null;
+  if (selected?.id === requestedId) return selected;
+  return loaded?.id === requestedId ? loaded : null;
+}
 
 export const specializedSectionByEntitySection: Record<
   EntityDossierSection,

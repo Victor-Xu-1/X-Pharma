@@ -92,6 +92,13 @@
   height: 22px;
   stroke-width: 1.6;
 }
+.nav-button .sidebar-nav-label {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  overflow: visible;
+  text-overflow: clip;
+}
 .nav-button.active {
   font-weight: 500;
 }
@@ -164,8 +171,13 @@
   transform: none;
 }
 .mobile-workspace-context {
+  min-width: 0;
+  flex: 1;
   color: var(--ds-ink-muted);
   font-size: var(--ds-text-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .mobile-only {
   display: none;

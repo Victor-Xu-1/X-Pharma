@@ -1,15 +1,18 @@
 import { FileText } from "lucide-react";
 import type { KnowledgeVersionDiff } from "../../lib/contracts/knowledge";
+import { useMessages } from "../../lib/i18n";
+import { knowledgeMessages } from "../../lib/i18n/knowledge";
 import { KnowledgeFactValue } from "./KnowledgeFactValue";
 import { knowledgePredicateLabel, recordValue } from "./knowledgeReading";
 
 export function KnowledgeChangeList({ diff, kind }: { diff: KnowledgeVersionDiff; kind: "added" | "removed" }) {
+  const text = useMessages(knowledgeMessages);
   const facts = kind === "added" ? diff.added_facts : diff.removed_facts;
   const sources = kind === "added" ? diff.added_sources : diff.removed_sources;
-  const title = kind === "added" ? "新增" : "移除";
+  const title = kind === "added" ? text("新增") : text("移除");
   if (!facts.length && !sources.length) return null;
   return (
-    <section className={`knowledge-change-group ${kind}`} aria-label={`${title}要点`}>
+    <section className={`knowledge-change-group ${kind}`} aria-label={text("{kind}要点", { kind: title })}>
       <h4>{title}</h4>
       {facts.length ? (
         <div className="knowledge-change-list">
@@ -22,7 +25,7 @@ export function KnowledgeChangeList({ diff, kind }: { diff: KnowledgeVersionDiff
                   <KnowledgeFactValue value={fact.value} objectName={fact.object_entity_name} />
                 </div>
                 <small>
-                  {fact.source_title || (typeof locator === "string" ? "记录定位" : "未附带来源标注")}
+                  {fact.source_title || (typeof locator === "string" ? text("记录定位") : text("未附带来源标注"))}
                   {typeof locator === "string" ? ` · ${locator}` : ""}
                 </small>
               </article>

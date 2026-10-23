@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 
@@ -13,6 +13,7 @@ import {
 } from "../lib/contracts/pipeline";
 import { loadRecordProvenance } from "../lib/contracts/provenance";
 import { loadTargetDossier, loadTargetSar } from "../lib/contracts/target";
+import { setLocale } from "../lib/i18n";
 import type { Entity } from "../lib/types";
 import type { TargetDossierSection } from "../lib/workspaceRouting";
 import { TargetView } from "../views/TargetView";
@@ -63,6 +64,245 @@ type TargetPipelineAnalysisState = {
   stageScope: PipelineAnalysisStageScope;
   targetAggregation: PipelineTargetAggregation;
 };
+
+it("retains the same focused query input during pending refinements and ignores an older response", async () => {
+  renderTargetView({ initialSection: "pipeline" });
+  await screen.findByRole("table", { name: "靶点研发药物概览" });
+  const base = await vi.mocked(searchPipelines).mock.results.at(-1)?.value;
+  if (!base) throw new Error("Missing completed pipeline fixture");
+  let finishOlder!: (value: typeof base) => void;
+  let finishLatest!: (value: typeof base) => void;
+  vi.mocked(searchPipelines)
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishOlder = resolve;
+        }),
+    )
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishLatest = resolve;
+        }),
+    );
+  const input = screen.getByRole("searchbox", { name: "药物或机构" });
+  input.focus();
+  fireEvent.change(input, { target: { value: "Compound" } });
+  await waitFor(() => expect(finishOlder).toBeTypeOf("function"));
+  expect(input).toBeInTheDocument();
+  expect(input).toHaveFocus();
+  expect(screen.queryByRole("table", { name: "靶点研发药物概览" })).not.toBeInTheDocument();
+  fireEvent.change(input, { target: { value: "Compound B" } });
+  await waitFor(() => expect(finishLatest).toBeTypeOf("function"));
+  expect(input).toHaveFocus();
+  await act(async () => finishLatest({ ...base, items: [{ ...base.items[0], drug_name: "Compound B" }] }));
+  expect(await screen.findByRole("table", { name: "靶点研发药物概览" })).toHaveTextContent("Compound B");
+  await act(async () => finishOlder(base));
+  expect(screen.getByRole("searchbox", { name: "药物或机构" })).toBe(input);
+  expect(input).toHaveFocus();
+  expect(input).toHaveValue("Compound B");
+  expect(screen.getByRole("table", { name: "靶点研发药物概览" })).toHaveTextContent("Compound B");
+});
+
+it("keeps filters editable after a failed refinement and lets reset recover the completed query", async () => {
+  renderTargetView({ initialSection: "pipeline" });
+  await screen.findByRole("table", { name: "靶点研发药物概览" });
+  const input = screen.getByRole("searchbox", { name: "药物或机构" });
+  vi.mocked(searchPipelines).mockRejectedValueOnce(new Error("Controlled refinement failed"));
+  input.focus();
+  fireEvent.change(input, { target: { value: "Unfinished research query" } });
+  expect(await screen.findByText("Controlled refinement failed")).toBeVisible();
+  expect(screen.getByRole("searchbox", { name: "药物或机构" })).toBe(input);
+  expect(input).toHaveValue("Unfinished research query");
+  expect(input).toHaveFocus();
+  fireEvent.click(screen.getByRole("button", { name: "重置筛选" }));
+  await screen.findByRole("table", { name: "靶点研发药物概览" });
+  expect(input).toHaveValue("");
+  expect(screen.queryByText("Controlled refinement failed")).not.toBeInTheDocument();
+});
+
+it("does not present missing facet counts as observed zero while the first query is pending", async () => {
+  vi.mocked(searchPipelines).mockImplementationOnce(() => new Promise(() => {}));
+  renderTargetView({
+    initialSection: "pipeline",
+    initialPipelineFilters: { ...emptyPipelineSearchFilters(), targetEntityId: target.id, programStatus: "active" },
+  });
+  await screen.findByText("正在加载 EGFR 的在研项目");
+  expect(screen.getByRole("option", { name: "已停止" })).toBeEnabled();
+  expect(screen.getByRole("option", { name: "已有结果" })).toBeEnabled();
+  expect(screen.queryByRole("option", { name: "已停止 (0)" })).not.toBeInTheDocument();
+});
+
+it("retains an unknown selected facet count when the facet payload is missing", () => {
+  expect(pipelineSelectOptions("phase_3", undefined)).toEqual([["phase_3", undefined]]);
+  expect(pipelineSelectOptions("phase_3", {})).toEqual([["phase_3", 0]]);
+});
+
+it("localizes the target pipeline while retaining scientific names, selection and cached query reads", async () => {
+  setLocale("en");
+  renderTargetView({ initialSection: "pipeline" });
+  const table = await screen.findByRole("table", { name: "Target drug development overview" });
+  expect(table).toHaveTextContent("Compound A");
+  expect(table).toHaveTextContent("非小细胞肺癌");
+  expect(table).toHaveTextContent("EGFR inhibitor");
+  const select = screen.getByRole("checkbox", { name: "Compare Compound A" });
+  fireEvent.click(select);
+  const reads = vi.mocked(searchPipelines).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("table", { name: "靶点研发药物概览" })).toHaveTextContent("非小细胞肺癌");
+  expect(screen.getByRole("checkbox", { name: "选择对比 Compound A" })).toBeChecked();
+  expect(searchPipelines).toHaveBeenCalledTimes(reads);
+  act(() => setLocale("en"));
+  expect(screen.getByRole("button", { name: "Drug overview" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("checkbox", { name: "Compare Compound A" })).toBeChecked();
+  expect(searchPipelines).toHaveBeenCalledTimes(reads);
+});
+
+it("keeps the target's advanced group open through clearing its last condition and the resulting query", async () => {
+  renderTargetView({
+    initialSection: "pipeline",
+    initialPipelineFilters: {
+      ...emptyPipelineSearchFilters(),
+      targetEntityId: target.id,
+      innovationTypes: ["First-in-Class"],
+    },
+  });
+  await screen.findByRole("table", { name: "靶点研发药物概览" });
+  expect(document.querySelector(".target-pipeline-panel .pipeline-advanced-filters")).toHaveAttribute("open");
+  fireEvent.click(screen.getByRole("button", { name: "重置筛选" }));
+  await waitFor(() =>
+    expect(searchPipelines).toHaveBeenCalledWith(
+      expect.objectContaining({ innovationTypes: [] }),
+      expect.anything(),
+      expect.any(AbortSignal),
+      "drug",
+    ),
+  );
+  await screen.findByRole("table", { name: "靶点研发药物概览" });
+  expect(document.querySelector(".target-pipeline-panel .pipeline-advanced-filters")).toHaveAttribute("open");
+});
+
+it("localizes only the known application coverage warning while retaining original source warnings", async () => {
+  const base = await vi.mocked(searchPipelines)(
+    emptyPipelineSearchFilters(),
+    { limit: 20, stageScope: "overall", targetAggregation: "all" },
+    undefined,
+    "drug",
+  );
+  vi.mocked(searchPipelines).mockResolvedValue({
+    ...base,
+    warnings: [
+      "暂无记录不代表全球不存在；结果受来源授权、更新时间和可见范围影响。",
+      "原始来源警告 / Unchanged source warning",
+    ],
+  });
+  setLocale("en");
+  renderTargetView({ initialSection: "pipeline" });
+  expect(
+    await screen.findByText(
+      "Missing records do not imply that none exist globally. Results depend on source access, update time and visibility.",
+    ),
+  ).toBeVisible();
+  expect(screen.getByText("原始来源警告 / Unchanged source warning")).toBeVisible();
+  const reads = vi.mocked(searchPipelines).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("暂无记录不代表全球不存在；结果受来源授权、更新时间和可见范围影响。")).toBeVisible();
+  expect(searchPipelines).toHaveBeenCalledTimes(reads);
+});
+
+it("keeps a compact target header without removing identifiers, query qualification or raw aliases", async () => {
+  const base = await vi.mocked(loadTargetDossier)("template", new AbortController().signal);
+  vi.mocked(loadTargetDossier).mockResolvedValue({
+    ...base,
+    profile: { ...base.profile, entity: { ...base.profile.entity, aliases: ["ERBB1", "原始靶点代号"] } },
+  });
+  setLocale("en");
+  renderTargetView();
+  await screen.findByRole("heading", { name: "EGFR" });
+  const header = screen.getByRole("region", { name: "Target profile summary" });
+  expect(header.querySelectorAll(".target-header-stats > div")).toHaveLength(3);
+  expect(within(header).getByText("P00533", { exact: true })).toBeVisible();
+  expect(within(header).getByText("Query time", { exact: true })).toBeVisible();
+  const disclosure = header.querySelector("details.target-header-details");
+  expect(disclosure).not.toHaveAttribute("open");
+  expect(within(header).getByText("原始靶点代号", { exact: true })).not.toBeVisible();
+  fireEvent.click(within(header).getByText("Identifiers and aliases", { exact: true }));
+  expect(disclosure).toHaveAttribute("open");
+  expect(within(header).getByText("原始靶点代号", { exact: true })).toBeVisible();
+  expect(within(header).getByText("Gene symbol", { exact: true })).toBeVisible();
+  expect(within(header).getByText("Dossier query time, not the last update of every source")).toBeVisible();
+  const reads = vi.mocked(loadTargetDossier).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("标识与别名", { exact: true })).toBeVisible();
+  expect(disclosure).toHaveAttribute("open");
+  expect(screen.getByText("原始靶点代号", { exact: true })).toBeVisible();
+  expect(loadTargetDossier).toHaveBeenCalledTimes(reads);
+});
+
+it("retains absent identifiers and an unknown target class in the compact header", async () => {
+  const base = await vi.mocked(loadTargetDossier)("template", new AbortController().signal);
+  vi.mocked(loadTargetDossier).mockResolvedValue({
+    ...base,
+    profile: { ...base.profile, gene_symbol: null, uniprot_accession: null, target_class: "future_raw_class" },
+  });
+  setLocale("en");
+  renderTargetView();
+  await screen.findByRole("heading", { name: "EGFR" });
+  const header = screen.getByRole("region", { name: "Target profile summary" });
+  expect(header).toHaveTextContent("future_raw_class");
+  expect(within(header).getByText("UniProt", { exact: true }).parentElement).toHaveTextContent("--");
+  fireEvent.click(within(header).getByText("Identifiers and aliases", { exact: true }));
+  expect(within(header).getByText("Gene symbol", { exact: true }).parentElement).toHaveTextContent("--");
+});
+
+it("limits unfiltered target pipeline primary controls while keeping secondary filters available", async () => {
+  setLocale("en");
+  renderTargetView({ initialSection: "pipeline" });
+  await screen.findByRole("table", { name: "Target drug development overview" });
+  const primary = document.querySelector(".target-pipeline-panel > .target-evidence-filters");
+  expect(primary?.querySelectorAll(":scope > label, :scope > .facet-multi-select")).toHaveLength(5);
+  expect(primary).not.toHaveTextContent("Therapeutic area");
+  expect(primary).not.toHaveTextContent("Geography");
+  expect(primary).not.toHaveTextContent("Clinical results");
+  expect(primary).not.toHaveTextContent("Deal signals");
+  const secondary = document.querySelector(".target-pipeline-panel .pipeline-advanced-filters");
+  expect(secondary).toHaveAttribute("data-active-count", "0");
+  expect(secondary).not.toHaveAttribute("open");
+  fireEvent.click(screen.getByText("More filters", { exact: true }));
+  expect(screen.getByRole("combobox", { name: "Geography" })).toBeVisible();
+  expect(screen.getByRole("combobox", { name: "Clinical results" })).toBeVisible();
+  expect(screen.getByRole("combobox", { name: "Deal signals" })).toBeVisible();
+});
+
+it("automatically discloses four selected secondary target filters and preserves false choices through reset", async () => {
+  setLocale("en");
+  renderTargetView({
+    initialSection: "pipeline",
+    initialPipelineFilters: {
+      ...emptyPipelineSearchFilters(),
+      targetEntityId: target.id,
+      therapeuticAreas: ["肿瘤领域"],
+      geography: "global",
+      hasClinicalResults: "false",
+      hasDeal: "false",
+    },
+  });
+  await screen.findByRole("table", { name: "Target drug development overview" });
+  const secondary = document.querySelector(".target-pipeline-panel .pipeline-advanced-filters");
+  expect(secondary).toHaveAttribute("data-active-count", "4");
+  expect(secondary).toHaveAttribute("open");
+  expect(screen.getByRole("combobox", { name: "Clinical results" })).toHaveValue("false");
+  expect(screen.getByRole("combobox", { name: "Deal signals" })).toHaveValue("false");
+  const reads = vi.mocked(searchPipelines).mock.calls.length;
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("combobox", { name: "临床结果" })).toHaveValue("false");
+  expect(searchPipelines).toHaveBeenCalledTimes(reads);
+  fireEvent.click(screen.getByRole("button", { name: "重置筛选" }));
+  await waitFor(() => expect(secondary).toHaveAttribute("data-active-count", "0"));
+  expect(secondary).toHaveAttribute("open");
+  expect(screen.getByRole("combobox", { name: "临床结果" })).toHaveValue("");
+  expect(screen.getByRole("combobox", { name: "交易信号" })).toHaveValue("");
+});
 
 function renderTargetView({
   onOpenEntity = vi.fn(),
@@ -139,6 +379,7 @@ function renderTargetView({
 }
 
 beforeEach(() => {
+  vi.mocked(searchPipelines).mockReset();
   vi.mocked(searchPipelines).mockResolvedValue({
     items: [
       {
@@ -430,6 +671,125 @@ beforeEach(() => {
     license_scopes: [],
     warnings: [],
   });
+});
+
+it("localizes the target overview without rewriting evidence or reloading the dossier", async () => {
+  setLocale("en");
+  const onOpenEvidence = vi.fn();
+  renderTargetView({ onOpenEvidence });
+  expect(await screen.findByRole("heading", { name: "EGFR" })).toBeInTheDocument();
+  expect(screen.getByText("Single protein · Human")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Function summary" })).toBeInTheDocument();
+  expect(screen.getByText("Governed EGFR summary")).toBeInTheDocument();
+  expect(screen.getByText("Phase II")).toBeInTheDocument();
+  expect(screen.getByText("Approved")).toBeInTheDocument();
+  expect(screen.getByRole("tablist", { name: "Target dossier views" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "View Source evidence" }));
+  expect(onOpenEvidence).toHaveBeenCalledExactlyOnceWith("EGFR");
+  fireEvent.click(screen.getByRole("tab", { name: "Structures" }));
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("tab", { name: "结构" })).toHaveAttribute("aria-selected", "true");
+  act(() => setLocale("en"));
+  expect(screen.getByRole("tab", { name: "Structures" })).toHaveAttribute("aria-selected", "true");
+  expect(loadTargetDossier).toHaveBeenCalledOnce();
+});
+
+it("localizes complete authorized coverage counts without counting the bounded arrays", async () => {
+  const data = await loadTargetDossier("target-1", new AbortController().signal);
+  vi.mocked(loadTargetDossier).mockClear();
+  vi.mocked(loadTargetDossier).mockResolvedValueOnce({
+    ...data,
+    summary: {
+      ...data.summary,
+      clinical_trial_count: 1200,
+      recruiting_trial_count: 137,
+      unclassified_trial_status_count: 11,
+      patent_count: 2042,
+      active_patent_count: 123,
+      unclassified_patent_status_count: 7,
+    },
+    coverage: [{ domain: "clinical_trials", total: 1200, returned: 50, status: "truncated", note: "原始来源说明" }],
+    warnings: ["原始来源限制，不进行机器翻译。"],
+  });
+  setLocale("en");
+  renderTargetView();
+  expect(await screen.findByRole("heading", { name: "EGFR" })).toBeInTheDocument();
+  expect(screen.getByText("137 recruiting trials")).toBeInTheDocument();
+  expect(
+    screen.getByText("11 trials have incomplete status data and are excluded from recruiting counts"),
+  ).toBeInTheDocument();
+  expect(screen.getByText("123 patent families with active legal status")).toBeInTheDocument();
+  expect(
+    screen.getByText("7 patent families have incomplete status data and are excluded from active counts"),
+  ).toBeInTheDocument();
+  expect(screen.getByText("1,200 related records; 50 currently shown")).toBeInTheDocument();
+  expect(screen.getByText("原始来源限制，不进行机器翻译。")).toBeInTheDocument();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("1,200 条相关信息，当前显示 50 条")).toBeInTheDocument();
+  expect(loadTargetDossier).toHaveBeenCalledOnce();
+});
+
+it("keeps translational filters and original study narratives while switching languages", async () => {
+  setLocale("en");
+  renderTargetView({ initialSection: "evidence" });
+  expect(await screen.findByRole("heading", { name: "EGFR" })).toBeInTheDocument();
+  const type = screen.getByRole("combobox", { name: "Evidence type" });
+  const direction = screen.getByRole("combobox", { name: "Evidence direction" });
+  expect(screen.getByText("Supports the target hypothesis")).toBeInTheDocument();
+  expect(screen.getByText("遗传关联支持 EGFR 靶点假设")).toBeInTheDocument();
+  fireEvent.change(type, { target: { value: "expression" } });
+  expect(screen.getByText("No evidence matches the current filters")).toBeInTheDocument();
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByRole("combobox", { name: "证据类型" })).toHaveValue("expression");
+  expect(screen.getByText("当前筛选条件下无匹配证据")).toBeInTheDocument();
+  fireEvent.change(type, { target: { value: "genetic_association" } });
+  fireEvent.change(direction, { target: { value: "supports" } });
+  act(() => setLocale("en"));
+  expect(screen.getByRole("combobox", { name: "Evidence type" })).toHaveValue("genetic_association");
+  expect(screen.getByRole("combobox", { name: "Evidence direction" })).toHaveValue("supports");
+  expect(screen.getByRole("table", { name: "Target translational evidence" })).toBeInTheDocument();
+  expect(screen.getByText("遗传关联支持 EGFR 靶点假设")).toBeInTheDocument();
+  expect(loadTargetDossier).toHaveBeenCalledOnce();
+});
+
+it("distinguishes original registry sponsor labels from verified organizations in relationships", async () => {
+  const data = await loadTargetDossier("target-1", new AbortController().signal);
+  vi.mocked(loadTargetDossier).mockClear();
+  vi.mocked(loadTargetDossier).mockResolvedValueOnce({
+    ...data,
+    relationships: [
+      {
+        id: "registry-relationship",
+        direction: "incoming",
+        predicate: "trial_lead_sponsor",
+        related_entity: {
+          ...data.profile.entity,
+          id: "source-sponsor",
+          canonical_entity_id: "source-sponsor",
+          entity_type: "organization",
+          name: "原始登记申办方",
+          attributes: { identity_scope: "provider_label" },
+        },
+        review_status: "verified",
+        attributes: {},
+        valid_from: null,
+        valid_to: null,
+      },
+    ],
+  });
+  setLocale("en");
+  const onOpenOrganization = vi.fn();
+  renderTargetView({ initialSection: "relationships", onOpenOrganization });
+  expect(await screen.findByRole("heading", { name: "EGFR" })).toBeInTheDocument();
+  expect(screen.getByRole("table", { name: "Target entity relationships" })).toBeInTheDocument();
+  expect(screen.getByText("Registry sponsor")).toBeInTheDocument();
+  expect(screen.getByText("From")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "原始登记申办方" }));
+  expect(onOpenOrganization).toHaveBeenCalledExactlyOnceWith("source-sponsor");
+  act(() => setLocale("zh-CN"));
+  expect(screen.getByText("登记申办方")).toBeInTheDocument();
+  expect(screen.getByText("来自")).toBeInTheDocument();
+  expect(loadTargetDossier).toHaveBeenCalledOnce();
 });
 
 it("presents linked trial phases and recruitment states in novice-friendly Chinese", async () => {
@@ -1142,9 +1502,16 @@ it("explains when a target has no publicly displayable pipeline records", async 
   renderTargetView();
   fireEvent.click(await screen.findByRole("tab", { name: "竞品管线" }));
 
+  expect(await screen.findByText("当前暂无可公开展示的研发项目记录；现有来源可能尚未覆盖该靶点。")).toBeInTheDocument();
+  expect(screen.queryByText(/来源资料正在完成质量核查/)).not.toBeInTheDocument();
+  const reads = vi.mocked(searchPipelines).mock.calls.length;
+  act(() => setLocale("en"));
   expect(
-    await screen.findByText("当前暂无可公开展示的研发项目记录；来源资料正在完成质量核查或尚未覆盖该靶点。"),
+    screen.getByText(
+      "No public development program records are available; existing sources may not cover this target.",
+    ),
   ).toBeInTheDocument();
+  expect(searchPipelines).toHaveBeenCalledTimes(reads);
 });
 
 it("disables empty pipeline facet choices without disabling a selected zero-count deep link", async () => {

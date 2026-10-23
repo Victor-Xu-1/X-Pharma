@@ -1,7 +1,10 @@
+import { useMessages } from "../lib/i18n";
+import { entityPreviewMessages } from "../lib/i18n/entityPreview";
 import type { Entity } from "../lib/types";
 import "./EntityNames.css";
 
 export function EntityNames({ entity }: { entity: Pick<Entity, "name" | "aliases"> }) {
+  const t = useMessages(entityPreviewMessages);
   const canonical = entity.name.trim().replace(/\s+/g, " ").toLowerCase();
   const names = new Map<string, string>();
   for (const raw of entity.aliases ?? []) {
@@ -19,12 +22,12 @@ export function EntityNames({ entity }: { entity: Pick<Entity, "name" | "aliases
     </ul>
   );
   return (
-    <section className="entity-names" aria-label="别名与研发代号">
-      <h3>别名与研发代号</h3>
+    <section className="entity-names" aria-label={t("别名与研发代号")}>
+      <h3>{t("别名与研发代号")}</h3>
       {renderNames(aliases.slice(0, 6))}
       {aliases.length > 6 ? (
         <details>
-          <summary>更多别名（{aliases.length - 6}）</summary>
+          <summary>{t("更多别名（{count}）", { count: aliases.length - 6 })}</summary>
           {renderNames(aliases.slice(6))}
         </details>
       ) : null}

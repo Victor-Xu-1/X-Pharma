@@ -1,6 +1,6 @@
 # 研发工作流审计与升级
 
-产品仍为 **X-Pharma v0.1.0 / Apache-2.0**。本轮顺序为只读审计、方案/可行性、失败回归、实施、定向验收、GitHub CI/并线及精确主线部署；不把生产外部批准写成代码完成。
+产品为 **X-Pharma / Apache-2.0**，软件版本以 [`pyproject.toml`](../pyproject.toml) 为唯一权威，按[贡献规范](../CONTRIBUTING.md#product-version-counter)的 PR 合并计数递增。本轮顺序为只读审计、方案/可行性、失败回归、实施、定向验收、GitHub CI/并线及精确主线部署；不把生产外部批准写成代码完成。
 
 ## 审计范围与证据边界
 

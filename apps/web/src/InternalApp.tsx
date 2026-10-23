@@ -1,10 +1,11 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
-
 import { AccessDeniedState, Spinner } from "./components/common";
+import { LanguageSwitcher } from "./components/LanguageSwitcher";
 import { OrganizationPanel } from "./components/OrganizationPanel";
 import { SessionBoundary } from "./components/SessionBoundary";
 import { WorkspaceShell } from "./components/WorkspaceShell";
 import type { AuthMode } from "./lib/contracts/session";
+import { t, useLocale } from "./lib/i18n";
 import type { User } from "./lib/types";
 import {
   canAccessView,
@@ -61,6 +62,7 @@ function InternalWorkspace({
   logoutPending: boolean;
   logoutError: string | null;
 }) {
+  useLocale();
   const [location, setLocation] = useState<WorkspaceLocation>(() =>
     parseWorkbenchLocation("internal", window.location.search),
   );
@@ -97,7 +99,8 @@ function InternalWorkspace({
   if (!canAccessWorkbench("internal", user.role)) {
     return (
       <div className="session-loading">
-        <AccessDeniedState onReturn={onLogout} actionLabel={logoutPending ? "退出中…" : "退出账号"} />
+        <LanguageSwitcher />
+        <AccessDeniedState onReturn={onLogout} actionLabel={logoutPending ? t("退出中…") : t("退出账号")} />
         <OrganizationPanel />
         {logoutError ? (
           <p className="form-error" role="alert">
@@ -119,7 +122,7 @@ function InternalWorkspace({
       logoutPending={logoutPending}
       logoutError={logoutError}
     >
-      <Suspense fallback={<Spinner label="正在加载内部工作区" />}>
+      <Suspense fallback={<Spinner label={t("正在加载内部工作区")} />}>
         {!allowed ? <AccessDeniedState onReturn={() => navigateToView("factory", true)} /> : null}
         {allowed && location.view === "factory" ? <DataFactoryView user={user} /> : null}
         {allowed && location.view === "governance" ? <GovernanceView /> : null}

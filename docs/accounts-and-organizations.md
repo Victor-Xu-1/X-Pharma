@@ -50,6 +50,15 @@ subscriptions, exports, preferences or audit history.
 
 The account page receives the server-owned authentication mode through the same session boundary. Local email is explicitly an unverified login identifier, not proof of ownership. Enterprise mode makes the identity email read-only and removes the local password form; password and account recovery stay with the enterprise IdP, without a local-password fallback. These UI controls do not replace production OIDC configuration or actual IdP/recovery acceptance.
 
+The identity card does not infer account standing from a status-free user
+response. Local email ownership remains visibly unverified even when the longer
+sign-in/recovery guidance is collapsed. The complete guidance uses native
+keyboard-accessible disclosure, retaining its open state and profile drafts
+across language switching without another identity request. Enterprise recovery
+ownership remains explicit; no local-password fallback is introduced.
+Unbroken original names and email addresses wrap within the identity card rather
+than overflowing or being abbreviated; the email icon retains its size.
+
 In local development mode, external researchers can register an independent
 viewer account when self-registration is enabled. New internal accounts require
 an administrator-issued invitation. An existing identity instead uses the
@@ -77,6 +86,21 @@ it. Deployments must configure their real IdP to supply these verified claims;
 the local protocol tests do not attest a production IdP configuration.
 
 ## Session and browser behavior
+
+Account profile/password forms share one synchronous local intent owner. Pending
+inputs and account exit are disabled until settlement; repeated submission does
+not create another request, and unmounted account responses do not publish UI
+updates. Organization dialogs similarly freeze input, Close and Escape through
+invitation acceptance and active membership reconciliation. If acceptance succeeds
+but the catalog read fails, retry only the read, not the invitation. Passwords and
+invitation codes stay local to the current form, are absent from generic mutation
+history, and are not echoed in credential error feedback. The existing session
+write counter also governs sidebar exit and same-tab switch protection; it is not
+a second authorization model. Enterprise password ownership remains with the IdP.
+
+These frontend controls require focused component and rendered-interaction checks
+on the identified candidate. They do not replace server authorization, invitation
+transactions, real IdP acceptance or exact-main deployment verification.
 
 `POST /api/v1/auth/login` can accept an optional organization ID. Without one,
 the service chooses an active home membership or another active membership; it

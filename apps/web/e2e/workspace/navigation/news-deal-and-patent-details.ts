@@ -96,7 +96,7 @@ export async function verifyNewsDealAndPatentDetails(
   await expect(page.getByText("Exclusive commercialization rights for the controlled browser asset")).toBeVisible();
   const dealRightsVisual = page.locator(".deal-professional-body");
   await expect(dealRightsVisual).toHaveCount(1);
-  await expect(dealRightsVisual).toHaveScreenshot("research-deal-rights.png", {
+  await expect.soft(dealRightsVisual).toHaveScreenshot("research-deal-rights.png", {
     animations: "disabled",
     caret: "hide",
     mask: [dealRightsVisual.locator(".deal-rights-table button")],
@@ -130,7 +130,7 @@ export async function verifyNewsDealAndPatentDetails(
   await expect(page.getByText("Controlled composition claim for browser acceptance")).toBeVisible();
   const patentTimelineVisual = page.locator(".patent-professional-body");
   await expect(patentTimelineVisual).toHaveCount(1);
-  await expect(patentTimelineVisual).toHaveScreenshot("research-patent-timeline.png", {
+  await expect.soft(patentTimelineVisual).toHaveScreenshot("research-patent-timeline.png", {
     animations: "disabled",
     caret: "hide",
     maxDiffPixelRatio: 0.001,

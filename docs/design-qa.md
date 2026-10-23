@@ -1,6 +1,280 @@
 # Design QA: X-Pharma 工作台
 
+The current product version is owned by [`pyproject.toml`](../pyproject.toml)
+and follows [the PR-merge counter](../CONTRIBUTING.md#product-version-counter).
+Dated captures below retain their original version and revision; they are not
+current-deployment evidence merely because the product version advances.
+
 ## 2026-10-07: research-first frontend craft
+
+### 2026-10-09: complete pipeline interface language continuity (candidate)
+
+The drug/pipeline filters, result columns, signals, applied captions, save outcomes
+and bounded competitive landscape use the single English-first locale owner.
+`PipelineView` falls from1254 to415 lines, and `PipelineLandscape` from466 to179;
+short presentation modules retain one root query/draft/selection authority.
+Phase/modality/role captions reuse existing controlled dictionaries. Raw names,
+mechanisms, regions, milestones, unknown codes, zero amounts and server reasons
+remain literal. Saved/partial/rejected results retain structured identity rather
+than pretranslated messages. No HTTP schema, database, dependency, version or
+scientific-data change belongs to this iteration.
+
+Genuine red regressions establish missing English body captions, unescaped source
+HTML in chart tooltips, Chinese empty-state copy, unnatural refresh wording and
+an uncleareable unsubmitted draft. Seventy-seven affected tests plus the selected
+existing pipeline-save consumer pass; strict app/E2E types and original build
+limits pass. Tooltip source strings are escaped; an empty result still explicitly
+distinguishes visibility/coverage from scientific absence. The exact changed-file
+formatter retains existing CSS-specificity warnings, not a relaxed gate.
+
+Read-only native Chrome155 checks cover both languages at1440/390/320, drafts,
+disclosures, reload persistence and save entry. The current preview has no matching
+EGFR programs; actual empty-result captures are not populated scientific acceptance.
+Sixteen separate browser-fixture captures cover populated results/landscape/chart,
+selection, pending/rejected saves, normal second-tab language synchronization and
+failed refresh/recovery at1440/390. Its two503 writes are fulfilled only in the
+browser; no business server mutation occurs. Reflow and selected WCAG-tag checks
+pass. Ordinary exact-head CI, normal merge, automatic version reconciliation,
+fresh backup/restore, deployment and affected deployed acceptance remain required.
+Other complete professional/dossier/internal bodies remain outstanding; this is
+not global accessibility certification or an award-quality/production claim.
+
+### 2026-10-09: balanced shared workspace headings (candidate)
+
+Actual390px Chinese monitoring rendering ends with the single character醒.
+The native text-range regression fails before the sole language/header owner adds
+`text-wrap: balance`, with full copy, original font size and controls retained.
+Three selected heading/sidebar/toolbar contracts and original build limits pass.
+Twenty-four read-only Chrome155 captures cover monitoring, trials, environment
+and enterprise headings in both languages at1440/390/320. Full text, language
+control bounds/center-hit, page reflow and WCAG tags pass; no business operations
+occur. This is representative shared-heading acceptance, not full body, global
+accessibility, award or deployment acceptance. Ordinary CI/merge/deployment gates
+remain required.
+
+### 2026-10-09: bilingual monitoring and truthful snapshot recovery (candidate)
+
+The monitoring shell, alerts, topics, saved queries, mobile field labels and
+metadata feedback use the existing English-first locale. Original event/source
+text, saved query JSON, opaque identifier boundaries, immutable pinned versions,
+zero/false and unknown codes stay unchanged. Existing replay/latest-intent locks
+and metadata pending locks remain; no second state/query owner is introduced.
+
+Genuine regressions reproduce cached data still visible after401/403, untranslated
+English controls, incomplete saved-condition fields, the generic "Set" summary,
+raw read-state captions and misleading duplicate empty options. The current
+snapshot is hidden on denied reads, including pending recovery, while successful
+recovery retains the tab and draft. Ordinary failed refresh identifies its old
+snapshot. The original bounded API's unread count now explicitly refers to the
+current returned results, not all historical alerts.
+
+The294-line summary and duplicate entity captions become99/181/64-line summary/
+field/value modules. A schema-derived check requires all seven professional query
+models' filters, dates, bounds and sort intent; only separately shown keyword and
+display-mode fields are excluded. Complete conditions use native disclosure with
+retained open state and no raw structure/internal IDs. Recognized scientific
+vocabularies reuse existing producers; clinical captions move to one shared
+adapter and the old knowledge translation/intermediate function are removed.
+
+Seventy-nine focused monitoring/condition and directly affected knowledge-reader
+tests pass, along with strict application/E2E types, exact formatting and original
+build limits. Two controlled Chrome155 desktop/mobile cases pass rich conditions,
+literal text, cross-tab language, pending/rejected metadata, pinned-query notices,
+access denial and recovery. Their single503 metadata PATCH is browser-only; no
+identity/provider/business write reaches a server. Two selected existing browser
+read-receipt/sharing consumers also pass; the obsolete raw read-caption assertion
+now verifies the same transition through the correct localized badge.
+
+Eighteen actual read-only Chrome155 states at1440/390/320 verify all three tabs,
+draft/cache/route continuity, reflow and WCAG tags. This preview account's monitoring
+records are empty, so populated behavior is controlled browser evidence, not real
+scientific acceptance. Initial actual mobile rendering fails at413px on a390px
+viewport: the module-owned toolbar now wraps its complete tabs and refresh button,
+without hiding overflow or relaxing limits. A real empty selection initially
+implies a choice despite having none; the single disabled option is corrected.
+An initial condition-disclosure consumer still expects protected text visible
+before expanding; it now checks hidden-then-expanded and retains the no-SMILES
+assertion. No original gate is removed. Remaining site quality, normal CI/merges,
+the actual merge counter and exact-main deployment remain independent closure.
+
+### 2026-10-09: bilingual governed research lists (candidate, not deployed)
+
+List catalogue, members, comparison, history, shared metadata editor and export
+controls use the existing English-first locale. Drafts, selected comparisons,
+cached reads, export choices, request locks and idempotency remain in their
+original owners. Structured feedback identities keep completed notices localized
+without replaying writes/downloads. Raw names, descriptions, license attribution,
+coverage notes and unknown status/modality values stay literal. Unknown historical
+sharing scope no longer silently claims private ownership; its regression fails
+before correction. The long matrix is split into186/166/115-line query/display/
+presentation modules, with the original query owners unchanged.
+
+Forty-seven focused list/export/editor/catalog tests and two selected monitoring
+metadata consumers pass. Strict app/E2E types, exact-file format and original build
+budgets pass. Four native read-only Chrome155 states at1440/390 verify actual empty
+directories and retained create drafts: this account has no existing lists, so
+these captures do not establish real populated-list/comparison acceptance.
+Two controlled desktop/mobile Chrome cases separately cover mixed and drug
+comparisons, pending saves, cross-tab language, recoverable version conflicts,
+export settings/attribution and history. Their single conflict PATCH is fulfilled
+in-browser; no identity, provider, source, list or export reaches a business server.
+
+Image review identifies member names and descriptions compressed side-by-side,
+and a clipped/untranslated sharing badge. A native geometry regression fails
+before vertically stacking member copy and the catalogue's name/status. Status
+tone keeps its original value while the existing badge-label contract localizes
+the caption. The first badge geometry locator incorrectly names a nonexistent
+class; the exact real .badge owner is corrected without dropping the bounds check.
+An initial controlled unknown phase violates the closed API enum; it is replaced
+by the legal registered phase, while unknown open status/modality values and
+unit-level literal phase preservation remain checked. No type casts, relaxed
+limits or unlicensed source completion are used. Remaining full-site body/state,
+ordinary CI/merge counter and exact-main deployment gates are still separate.
+
+### 2026-10-09: knowledge reading language continuity (candidate, not deployed)
+
+The directory, document controls, coverage and immutable history now use the sole
+English-first locale owner. Topic names, source Markdown, citations, unknown
+clinical codes, zero, false and recorded date precision remain unchanged.
+Coverage/history presentation is extracted into small modules without new query
+or state owners; KnowledgeView retains its original five queries, URL, selection,
+draft and focus. Shared directory disclosure labels update without discarding
+their state; the direct research-list consumer is checked separately.
+
+A genuine English-rendering regression fails before implementation. Seventy-two
+focused knowledge/document/structured-field/catalog tests and two selected compact-list consumer
+tests pass. Exact formatting, application/E2E types and original build budgets
+pass. Ten actual read-only Chrome155 desktop/mobile states at1440/390 verify the
+directory, full source original, coverage/history, retained drafts, cache and
+locale; reflow, page errors and WCAG-tag checks pass. Captures are private native
+evidence, not AI mockups or global accessibility/scientific acceptance.
+
+Controlled browser regressions additionally exercise raw structured values,
+source disclosure, failed coverage/retry, selected immutable versions and empty
+results. Two desktop1440/mobile390 cases pass, with reflow and WCAG-tag checks.
+They use browser-only responses and never publish scientific evidence
+or create identities. Publication, exact-head CI, normal merging, automatic
+versioning and exact-main deployment remain independent acceptance gates.
+Native visual review also exposes one-line topic-title truncation. A real Chrome
+text-range regression first fails (the complete text extends past its owner),
+then the knowledge-owned style replaces ellipsis/nowrap with full wrapping.
+The existing bounded scrolling directory and original scientific names remain.
+Review of actual repeated source records also exposes an overclaim in the old
+"Independent sources" caption: the backend counts source record identities, not
+independent studies/providers. A failing caption regression precedes the truthful
+"Source records" / "来源记录" wording. Counts, facts, versions and citations are
+not deduplicated or rewritten by the frontend.
+
+### 2026-10-09: bilingual environment workflow and truthful state presentation
+
+The existing environment panels use the sole English-first locale runtime.
+Fixed first-party captions are translated; unknown diagnostics, paths, commands,
+versions, costs, report metadata and audit identifiers remain literal. Query keys
+and authorization/install contracts are unchanged.
+
+Behavior regressions reproduce missing-observation compatibility, unlocked pending
+plan inputs, tab-switch draft loss and unknown queue counts silently rendered as
+zero. The single small installation hook now retains drafts/request/result state
+across tabs and locale, locks pending inputs and refresh, and checks available/
+offline-supported scopes without automatic substitution. The old panel state and
+inline count implementations are removed. Counts remain unknown unless safely
+observed; true zero is preserved. Empty probes use the existing status component.
+
+Twenty-five focused environment/readiness/catalog/metric tests, five selected
+platform consumers, the exact probe-layout contract, strict app/E2E types and
+original build limits pass. Fourteen actual read-only Chrome155 states at1440/390
+pass all three panels, cached reads, drafts, reflow and WCAG-tag checks. Native
+review additionally reproduces a desktop status column offscreen: the inherited
+nowrap rule is overridden only in the probe table's owner; full original values
+wrap in bounded columns while the mobile named scroll region remains.
+
+Two controlled desktop/mobile browser cases cover incomplete probes, pending/
+prepared/failed plans, cross-tab drafts/results, raw commands/diagnostics and
+unknown-vs-zero counts. All plan responses are browser-only fixtures, not actual
+host/production/identity/scientific acceptance. No installation or real plan
+creation occurs. Initial E2E fixture compilation used a browser-only product define;
+it now consumes the generated package-version mirror rather than a new hardcoded
+version. One initial empty-state selector expected a heading; it was corrected to
+the existing status semantics, retaining the absence-of-empty-table assertion.
+Ordinary PR CI, main versioning, merge and exact-main deployment remain separate.
+
+### 2026-10-09: readable bilingual navigation and unobscured language control
+
+Real rendering exposed English primary/organization labels clipped by nowrap and
+ellipsis. Only controlled action labels now wrap; raw identity summaries, the224px
+desktop sidebar, original five-workflow structure and collapsed visibility remain.
+Two behavior-level ownership regressions and a native text-rectangle overflow
+first fail, then pass. Existing62 focused shell/locale/navigation/design and exact
+enterprise/environment presentation checks pass, with strict app/E2E types and
+unchanged build limits. Eleven pre-existing unrelated enterprise CSS specificity
+warnings remain; no warning suppression or unrelated mass-reordering is performed.
+
+Initial native research states pass, then the internal environment scan reveals
+the language select obscured by the toolbar (WCAG target-size). The sole shared
+enterprise-toolbar owner still used-58px top margin; remove that collision and
+its redundant mobile reset, allow normal-flow wrapping. The genuine source
+contract fails before the fix. Twenty actual read-only Chrome155 captures at1440
+and390 now pass navigation, language-control hit testing, reflow and WCAG-tag
+checks, including both toolbar consumers and desktop/mobile opening states.
+These captures do not certify environment readiness or translated internal bodies.
+No installation, administrative or scientific writes occur.
+
+The first internal selector used the navigation label instead of the source-owned
+page title; it was corrected to the exact canonical title, not broadened. Native
+launch failures before process startup are retained separately from test results.
+Normal PR/CI/main-version/deployment closure and whole-site quality remain pending.
+
+### 2026-10-09: target dossier language continuity (candidate, not deployed)
+
+The target shell, overview and relationship/translational-evidence panels use
+the same English-first locale owner. Controlled classification, phases, counts,
+coverage, options and feedback are translated; sequences, original study text,
+attribution, source warnings and unknown vocabulary are not. Summary counts
+remain the server's complete authorized aggregate, not bounded-array counts.
+Registry sponsor labels retain their narrower identity scope in relationships.
+
+Four new behavior regressions first failed, then passed. The affected target,
+module ownership, controlled catalog and identity consumers pass44 focused
+tests, strict application/E2E types, exact-file formatting and unchanged build
+resource limits. Eight native Chrome155 read-only states at1440/320 verify actual
+EGFR shell/overview reflow, preserved query/tab/cache and raw narrative handling.
+Desktop1440/mobile390 controlled browser cases separately verify complete counts,
+evidence filter drafts, source narratives and registry identity with WCAG-tag
+checks. Synthetic responses are never written to a scientific database.
+
+The initial native narrative assertion incorrectly treated an absent-summary
+UI fallback as a source quote; it was corrected against the actual response.
+The initial controlled browser run flagged the existing performance telemetry
+POST, not a business mutation; that exact endpoint is now fulfilled locally,
+while all scientific/account writes remain blocked. The parallel failed run's
+incomplete memory-pressure trace is retained; focused single-worker cases pass.
+Other dossier bodies and complete site-language/quality closure remain pending.
+Visual review also reproduced the fieldset's inherited three-dimensional border
+and compressed English selects. An explicit border reset retains the token-based
+bottom divider; the existing auto-fit grid now uses180px so narrow controls stack.
+Both actual browser regressions failed first; functional and pixel budgets are
+unchanged. This is a target-owned correction, not another global theme override.
+Normal exact-head CI, PR merging, the automatic version counter and exact-final-main
+deployment/postdeploy acceptance remain independent gates, not implied by these
+candidate checks. No award, global WCAG or scientific acceptance is claimed.
+
+### 2026-10-09: canonical-match accessibility consumer alignment
+
+Exact child-head1d23fb3 CI37805421909 finishes160/164, with four original workspace
+flows failing the same obsolete visible canonical-name match assertion. The
+controlled snapshots, original pixel/geometry/resource gates and other160 cases
+pass; no failed reference is adopted. The intentional row simplification retains
+the full match in `aria-description` and the original summary visibly, rather than
+repeating the canonical name in the bounded metadata line.
+
+The consumer now checks the full match context, no duplicate visible match node,
+and visible summary against the same authorized entity response; external-ID
+matching remains a visible hard assertion. Exact and partial-name component
+regressions pass. A scoped browser-only long-alias/partial-name check retains
+column bounds and full source text; it is not scientific/auth/persistence evidence.
+No scenarios, masks, tolerance, performance or authorization guards are removed.
+The failed ordinary CI is retained; normal main-version13 integration and a new
+exact-head PR run are required before merge/deployment closure.
 
 The award-inspired quality target is assessed through task clarity, visual
 coherence, readable evidence, responsive behavior, keyboard access and

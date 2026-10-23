@@ -330,6 +330,7 @@
   }
   .pipeline-result-toolbar .result-summary {
     width: 100%;
+    flex-wrap: wrap;
   }
   .pipeline-result-toolbar .result-summary small {
     width: 100%;

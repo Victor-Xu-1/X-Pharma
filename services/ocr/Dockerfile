@@ -1,13 +1,21 @@
 ARG DOCKER_LIBRARY_REGISTRY=public.ecr.aws/docker/library
-FROM ${DOCKER_LIBRARY_REGISTRY}/python:3.13.14-slim@sha256:9662417aace5ae7b8e2609cce472b72a8958e134ba372808abe9cc1a0c0125e6
+FROM ${DOCKER_LIBRARY_REGISTRY}/python:3.13.16-slim@sha256:bf44cdfcb76cd3b41e879bc058fc37ec5872002ccfde7fcb765e218cde0cd79c AS wheel-builder
 
 ARG OCR_PYPI_INDEX_URL=https://pypi.org/simple
-ARG CPYTHON_HTML_PARSER_COMMIT=7933f4bf7131aa4140750f9404f5de0aa2969ced
-ARG CPYTHON_HTML_PARSER_SHA256=4274e9112adf3fa57c7f9afa7c9b5c631456b18b7403cc627cc5027d02cdd2ae
-ARG CPYTHON_TARFILE_COMMIT=9c17bace90f88dfba6d0e2fe23c8e7ae35f83955
-ARG CPYTHON_TARFILE_SHA256=0fd87b49826f745c16e3ee68b2390a206b2dfcfe9a0b1118bd7fcd7c06deaff1
-LABEL io.pharma.cpython-html-parser-commit=${CPYTHON_HTML_PARSER_COMMIT} \
-      io.pharma.cpython-tarfile-commit=${CPYTHON_TARFILE_COMMIT}
+ENV PIP_DEFAULT_TIMEOUT=300 PIP_RETRIES=3 PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_INDEX_URL=${OCR_PYPI_INDEX_URL}
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends build-essential pkg-config libjpeg62-turbo-dev libpng-dev libtiff-dev \
+    && rm -rf /var/lib/apt/lists/*
+COPY services/ocr/opencv-build.lock /build/opencv-build.lock
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    python -m pip install --require-hashes -r /build/opencv-build.lock
+COPY services/ocr/requirements.lock services/ocr/opencv-build.sh services/ocr/wheel_manifest.py /build/
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    bash /build/opencv-build.sh
+
+FROM ${DOCKER_LIBRARY_REGISTRY}/python:3.13.16-slim@sha256:bf44cdfcb76cd3b41e879bc058fc37ec5872002ccfde7fcb765e218cde0cd79c
+
+ARG OCR_PYPI_INDEX_URL=https://pypi.org/simple
 
 ENV PIP_DEFAULT_TIMEOUT=300 \
     PIP_RETRIES=3 \
@@ -20,27 +28,23 @@ RUN bash /tmp/install-security-packages.sh /tmp/security-packages.lock \
     && rm -f /tmp/security-packages.lock /tmp/install-security-packages.sh
 
 RUN apt-get update \
-    && apt-get install --yes --no-install-recommends libgl1 libglib2.0-0t64 libgomp1 \
+    && apt-get install --yes --no-install-recommends libglib2.0-0t64 libgomp1 libjpeg62-turbo libpng16-16t64 libtiff6 \
     && rm -rf /var/lib/apt/lists/*
-COPY deploy/cpython/html-parser.py /tmp/cpython-html-parser.py
-COPY deploy/cpython/tarfile.py /tmp/cpython-tarfile.py
-COPY scripts/verify_cpython_tarfile.py /tmp/verify-tarfile.py
-RUN echo "${CPYTHON_HTML_PARSER_SHA256}  /tmp/cpython-html-parser.py" | sha256sum --check --strict \
-    && install -m 0644 /tmp/cpython-html-parser.py /usr/local/lib/python3.13/html/parser.py \
-    && rm -f /tmp/cpython-html-parser.py \
-    && rm -f /usr/local/lib/python3.13/html/__pycache__/parser.*.pyc \
-    && python -c "from html.parser import HTMLParser; p=HTMLParser(); p.feed('<!--'); [p.feed('a' * 64) for _ in range(200000)]; p.feed('-->'); p.close()"
-RUN echo "${CPYTHON_TARFILE_SHA256}  /tmp/cpython-tarfile.py" | sha256sum --check --strict \
-    && install -m 0644 /tmp/cpython-tarfile.py /usr/local/lib/python3.13/tarfile.py \
-    && rm -f /tmp/cpython-tarfile.py \
-    && rm -f /usr/local/lib/python3.13/__pycache__/tarfile.*.pyc \
-    && python -c "import inspect, tarfile; assert 'if not data:' in inspect.getsource(tarfile._Stream.seek); assert 'unfiltered.replace(name=tarinfo.name' in inspect.getsource(tarfile.TarFile.makelink_with_filter)"
-RUN python /tmp/verify-tarfile.py && rm -f /tmp/verify-tarfile.py
+COPY scripts/verify_cpython_tarfile.py scripts/verify_cpython_tls.py scripts/verify_cpython_html.py /tmp/cpython-probes/
+RUN python /tmp/cpython-probes/verify_cpython_tarfile.py \
+    && python /tmp/cpython-probes/verify_cpython_tls.py \
+    && python /tmp/cpython-probes/verify_cpython_html.py \
+    && rm -rf /tmp/cpython-probes
 
 WORKDIR /service
 COPY services/ocr/requirements.lock ./requirements.lock
-RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    python -m pip install --require-hashes -r requirements.lock
+RUN --mount=type=bind,from=wheel-builder,source=/wheelhouse,target=/wheelhouse,readonly \
+    python -m pip install --no-index --no-deps --require-hashes --find-links=/wheelhouse -r /wheelhouse/requirements.lock \
+    && python -m pip check
+
+COPY services/ocr/verify_opencv.py /tmp/verify-opencv.py
+RUN PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True python /tmp/verify-opencv.py \
+    && rm /tmp/verify-opencv.py
 
 RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --no-create-home app
 COPY --chown=app:app services/ocr/service.py ./service.py

@@ -35,3 +35,16 @@ def test_account_budget_does_not_admit_unbounded_new_keys(session: Session, monk
     with pytest.raises(AccountRateExceeded, match="服务繁忙"):
         consume_login_budget(session, "another-peer", "user@example.test")
     assert len(list(session.scalars(select(AccountRegistrationBudget)))) == 2
+
+
+def test_registration_budget_resets_at_the_fixed_window_boundary(session: Session) -> None:
+    before = datetime(2026, 10, 1, 0, 9, 59, 999998, tzinfo=UTC)
+    for _ in range(10):
+        consume_account_budget(session, "boundary-peer", now=before)
+    with pytest.raises(AccountRateExceeded, match="注册尝试过多"):
+        consume_account_budget(session, "boundary-peer", now=before + timedelta(microseconds=1))
+    boundary = before + timedelta(microseconds=2)
+    consume_account_budget(session, "boundary-peer", now=boundary)
+    row = session.scalar(select(AccountRegistrationBudget))
+    assert row is not None and row.attempts == 1
+    assert row.window_start.replace(tzinfo=UTC) == boundary

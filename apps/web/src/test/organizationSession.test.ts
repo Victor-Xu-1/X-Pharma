@@ -1,9 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  captureOrganizationSession,
   hasPendingSessionWrites,
   organizationHeaders,
   setOrganizationSession,
+  subscribeSessionWrites,
   suspendOrganizationSession,
   trackSessionWrite,
 } from "../lib/organizationSession";
@@ -11,6 +13,23 @@ import {
 afterEach(() => setOrganizationSession(null));
 
 describe("organization request boundary", () => {
+  it("invalidates captured operations across suspension and account round trips", () => {
+    const identity = { id: "account-a", tenant_id: "organization-a" };
+    setOrganizationSession(identity);
+    const current = captureOrganizationSession();
+    setOrganizationSession({ ...identity });
+    expect(current()).toBe(true);
+    suspendOrganizationSession();
+    const suspended = captureOrganizationSession();
+    setOrganizationSession(identity);
+    expect(current()).toBe(false);
+    expect(suspended()).toBe(false);
+    const beforeRoundTrip = captureOrganizationSession();
+    setOrganizationSession({ ...identity, tenant_id: "organization-b" });
+    setOrganizationSession(identity);
+    expect(beforeRoundTrip()).toBe(false);
+  });
+
   it("binds protected requests to the expected account and organization", () => {
     setOrganizationSession({ id: "account-a", tenant_id: "organization-a" });
     const original = organizationHeaders("/api/v1/entities", "POST");
@@ -41,5 +60,21 @@ describe("organization request boundary", () => {
     expect(hasPendingSessionWrites()).toBe(false);
     trackSessionWrite("GET")();
     expect(hasPendingSessionWrites()).toBe(false);
+  });
+
+  it("notifies pending observers only at the boundaries of the existing write counter", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeSessionWrites(listener);
+    const first = trackSessionWrite("POST");
+    const second = trackSessionWrite("PATCH");
+    expect(listener).toHaveBeenCalledTimes(1);
+    first();
+    expect(hasPendingSessionWrites()).toBe(true);
+    expect(listener).toHaveBeenCalledTimes(1);
+    second();
+    expect(listener).toHaveBeenCalledTimes(2);
+    unsubscribe();
+    trackSessionWrite("POST")();
+    expect(listener).toHaveBeenCalledTimes(2);
   });
 });

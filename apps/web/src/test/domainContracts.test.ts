@@ -721,7 +721,7 @@ it("saves and subscribes a typed professional pipeline query", async () => {
     name: "EGFR global",
     saved_search_id: "saved-pipeline",
   });
-  expect(result.message).toBe("管线检索已保存并启用监控");
+  expect(result).toEqual({ kind: "saved", monitoring: true });
 });
 
 it("saves and subscribes a complete typed clinical trial query", async () => {
@@ -838,7 +838,7 @@ it("saves and subscribes a complete typed clinical trial query", async () => {
     name: "EGFR trial results",
     saved_search_id: "saved-trials",
   });
-  expect(result.message).toBe("临床试验检索已保存并启用监控");
+  expect(result).toEqual({ kind: "saved", monitoring: true });
 });
 
 it("maps governed deal role, stage, rights, time and amount filters to the generated client", async () => {

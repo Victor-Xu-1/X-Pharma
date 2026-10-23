@@ -1,7 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { initialPublicSourceDraft, sourceRoutingRules } from "../views/dataFactory/sourceRules";
+import {
+  initialPublicSourceDraft,
+  isPublicResearchSource,
+  sourceRoutingRules,
+  toLocalDateTimeInput,
+} from "../views/dataFactory/sourceRules";
 
 describe("public-source routing contracts", () => {
+  it("does not classify prototype-like values as public source connectors", () => {
+    expect(isPublicResearchSource("constructor" as Parameters<typeof isPublicResearchSource>[0])).toBe(false);
+    expect(isPublicResearchSource("__proto__" as Parameters<typeof isPublicResearchSource>[0])).toBe(false);
+  });
+  it("leaves an unknown authorization timestamp blank instead of crashing or inventing a start time", () => {
+    expect(toLocalDateTimeInput(null)).toBe("");
+    expect(toLocalDateTimeInput("INVALID_SOURCE_DATE")).toBe("");
+  });
+  it("rejects impossible calendar dates and out-of-contract synchronization windows", () => {
+    const draft = { ...initialPublicSourceDraft(), queryTerm: "Original query" };
+    expect(() => sourceRoutingRules("clinicaltrials_gov", { ...draft, startDate: "2026-02-30" })).toThrow(
+      "历史起始日期",
+    );
+    expect(() => sourceRoutingRules("clinicaltrials_gov", { ...draft, windowDays: 1.5 })).toThrow("日期分区");
+    expect(() => sourceRoutingRules("clinicaltrials_gov", { ...draft, overlapDays: 31 })).toThrow("更新回看");
+    expect(() => sourceRoutingRules("clinicaltrials_gov", { ...draft, reconcileIntervalDays: 0 })).toThrow(
+      "完整复核周期",
+    );
+  });
   it("requires explicit bounded activity enrichment and keeps disabled legacy rules unchanged", () => {
     const draft = {
       ...initialPublicSourceDraft(),

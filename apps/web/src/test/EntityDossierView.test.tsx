@@ -1,7 +1,7 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
-
+import { ApiError } from "../lib/api";
 import { loadCompanyTimeline } from "../lib/contracts/company";
 import { loadEntityDossier } from "../lib/contracts/entityDossier";
 import { loadRecordProvenance } from "../lib/contracts/provenance";
@@ -53,6 +53,7 @@ function renderEntityDossier(
     onOpenDeal = vi.fn(),
     onOpenRegulatoryEvent = vi.fn(),
     onOpenNewsEvent = vi.fn(),
+    onSectionChange = vi.fn(),
   }: {
     initialSection?: EntityDossierSection;
     onOpenEntity?: (entityId: string) => void;
@@ -64,6 +65,7 @@ function renderEntityDossier(
     onOpenDeal?: (dealId: string) => void;
     onOpenRegulatoryEvent?: (eventId: string) => void;
     onOpenNewsEvent?: (eventId: string) => void;
+    onSectionChange?: (section: EntityDossierSection, replace?: boolean) => void;
   } = {},
 ) {
   function Harness() {
@@ -72,7 +74,10 @@ function renderEntityDossier(
       <EntityDossierView
         entity={entity}
         activeSection={activeSection}
-        onSectionChange={(section) => setActiveSection(section)}
+        onSectionChange={(section, replace) => {
+          onSectionChange(section, replace);
+          setActiveSection(section);
+        }}
         onOpenEntity={onOpenEntity}
         onOpenDrug={onOpenDrug}
         onOpenTarget={onOpenTarget}
@@ -220,6 +225,108 @@ it("renders an explicit empty state instead of implying global absence", async (
   fireEvent.click(await screen.findByRole("tab", { name: "活性数据" }));
   expect(screen.getByText("暂无关联活性数据")).toBeInTheDocument();
 });
+
+it("rejects a foreign dossier without using it to redirect the requested section and recovers through retry", async () => {
+  const base = await vi.mocked(loadEntityDossier)("template", new AbortController().signal);
+  vi.mocked(loadEntityDossier).mockResolvedValueOnce({
+    ...base,
+    entity: { ...base.entity, id: "foreign-drug", name: "FOREIGN DOSSIER" },
+  });
+  const onSectionChange = vi.fn();
+  renderEntityDossier(drug, { initialSection: "company_intelligence", onSectionChange });
+  await screen.findByText("领域档案与请求实体不一致");
+  expect(screen.queryByRole("heading", { name: "FOREIGN DOSSIER" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+  expect(onSectionChange).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "重试" }));
+  await screen.findByRole("heading", { name: drug.name });
+  await waitFor(() => expect(onSectionChange).toHaveBeenCalledWith("overview", true));
+});
+
+it("rejects a same-ID dossier with the wrong entity type", async () => {
+  const base = await vi.mocked(loadEntityDossier)("template", new AbortController().signal);
+  vi.mocked(loadEntityDossier).mockResolvedValueOnce({
+    ...base,
+    entity: { ...base.entity, entity_type: "organization", name: "FOREIGN TYPE" },
+  });
+  renderEntityDossier(drug);
+  await screen.findByText("领域档案与请求实体不一致");
+  expect(screen.queryByRole("heading", { name: "FOREIGN TYPE" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+});
+
+it.each(["id", "type"])(
+  "keeps a foreign company timeline %s out of summaries and event rows while retaining the valid dossier",
+  async (mismatch) => {
+    const base = await vi.mocked(loadEntityDossier)("template", new AbortController().signal);
+    const company = {
+      ...base.entity,
+      id: "org-1",
+      canonical_entity_id: "org-1",
+      entity_type: "organization" as const,
+      name: "Acme Pharma",
+    };
+    vi.mocked(loadEntityDossier).mockResolvedValue({ ...base, entity: { ...base.entity, ...company } });
+    const timeline = await vi.mocked(loadCompanyTimeline)(company.id, 0, new AbortController().signal);
+    vi.mocked(loadCompanyTimeline).mockResolvedValueOnce({
+      ...timeline,
+      company: {
+        ...timeline.company,
+        id: mismatch === "id" ? "foreign-company" : company.id,
+        entity_type: mismatch === "type" ? "drug" : "organization",
+      },
+      total: 913,
+      items: [
+        {
+          id: "foreign-event",
+          event_type: "program_status",
+          occurred_at: "2026-07-01T00:00:00Z",
+          title: "FOREIGN TIMELINE EVENT",
+          program: null,
+          deal: null,
+        },
+      ],
+    });
+    renderEntityDossier(company, { initialSection: "company_intelligence" });
+    await screen.findByText("公司时间线与请求实体不一致");
+    expect(screen.getByRole("heading", { name: company.name })).toBeInTheDocument();
+    expect(screen.queryByText("FOREIGN TIMELINE EVENT")).not.toBeInTheDocument();
+    expect(document.querySelector(".company-intelligence-metrics")).not.toHaveTextContent("913");
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
+    await screen.findByText("暂无带日期的公司事件");
+  },
+);
+
+it.each([401, 403, 503])(
+  "handles timeline %s without displaying unauthorized facts or discarding authorized cached totals",
+  async (status) => {
+    const base = await vi.mocked(loadEntityDossier)("template", new AbortController().signal);
+    const company = {
+      ...base.entity,
+      id: "org-1",
+      canonical_entity_id: "org-1",
+      entity_type: "organization" as const,
+      name: "Acme Pharma",
+    };
+    vi.mocked(loadEntityDossier).mockResolvedValue({ ...base, entity: { ...base.entity, ...company } });
+    const timeline = await vi.mocked(loadCompanyTimeline)(company.id, 0, new AbortController().signal);
+    vi.mocked(loadCompanyTimeline).mockResolvedValue({ ...timeline, total: 913 });
+    const { queryClient } = renderEntityDossier(company, { initialSection: "company_intelligence" });
+    await screen.findByRole("heading", { name: company.name });
+    await waitFor(() => expect(document.querySelector(".company-intelligence-metrics")).toHaveTextContent("913"));
+    vi.mocked(loadCompanyTimeline).mockRejectedValue(new ApiError("原始时间线错误 / Raw timeline error", status, null));
+    await act(async () => {
+      await queryClient.invalidateQueries({ queryKey: ["company-timeline", company.id] });
+    });
+    await screen.findByText("原始时间线错误 / Raw timeline error");
+    const metrics = document.querySelector(".company-intelligence-metrics");
+    if (status === 503) expect(metrics).toHaveTextContent("913");
+    else {
+      expect(metrics).not.toHaveTextContent("913");
+      expect(metrics?.querySelector(":scope > div:last-child dd")).toHaveTextContent("--");
+    }
+  },
+);
 
 it("opens an available domain directly from the dossier coverage summary", async () => {
   renderEntityDossier(drug);

@@ -1,0 +1,52 @@
+import { createTranslator } from "./translator";
+export const governanceEvidenceMessages = {
+  "来源运行记录不可用，不能确认解析方式。":
+    "The source run record is unavailable; its parsing method cannot be confirmed.",
+  解析方式: "Parsing method",
+  "确定性适配器（非模型推断）": "Deterministic adapter (not model inference)",
+  模型提取: "Model extraction",
+  "解析器 / 模型": "Parser / model",
+  "来源文件 · 版本 {version}": "Source file · version {version}",
+  来源: "Source",
+  采集时间: "Collected at",
+  "业务字段一致；引证元数据另行保留。": "Business fields match. Citation metadata is retained separately.",
+  "{before}与{after}字段对照": "{before} and {after} field comparison",
+  字段: "Field",
+  正在读取来源与冲突对照: "Loading source and conflict comparisons",
+  来源与冲突对照读取失败: "Source and conflict comparisons could not be loaded",
+  对照记录与当前审核事实不匹配: "Comparison data does not match the requested fact",
+  来源与解析方式: "Source and parsing method",
+  "解析评分不代表事实正确性。存在冲突时，必须核对来源并填写审核依据。":
+    "Extraction scores do not establish correctness. Conflicts require source verification and documented review evidence.",
+  规范化差异: "Normalization differences",
+  来源解析值: "Source-parsed value",
+  平台规范化结果: "Platform-normalized result",
+  "历史事实对照 · {count} 条": "Historical fact comparison · {count} records",
+  "历史事实对照 · 1 条": "Historical fact comparison · 1 record",
+  历史记录: "Historical record",
+  本次候选: "Current candidate",
+  "来源定位：{locator}": "Source locator: {locator}",
+  未提供: "Not provided",
+  "本次有 {count} 条历史记录不可用；不会跨组织读取。":
+    "{count} historical records are unavailable. No cross-organization records are read.",
+  "本次展示至多 20 条记录；其余历史未删除。":
+    "Up to 20 records are shown. Other historical records have not been deleted.",
+  技术详情与完整原始记录: "Technical details and complete original records",
+  "来源解析值（确定性适配器）": "Source-parsed values (deterministic adapter)",
+  模型提取值: "Model-extracted values",
+  "来源解析值（方式未确认）": "Source-parsed values (method unconfirmed)",
+  "来源摘要：{hash}": "Source hash: {hash}",
+  质量发现: "Quality findings",
+  历史事实与本次候选包含不同字段值: "Historical and candidate facts contain different field values",
+  来源结构字段与平台RDKit派生结果不一致: "Reported structure fields differ from the platform's RDKit-derived result",
+  引文未在本次输入片段中找到: "The citation was not found in the supplied segment",
+  "该来源记录已有更新版本，本次旧版本不能覆盖": "A newer source version exists; this older version cannot overwrite it",
+  "按当前字段类型或提取策略，需要人工审核": "The field type or extraction policy requires human review",
+  "结构已经关联到另一规范对象，需要核对身份":
+    "This structure is linked to another canonical entity; identity review is required",
+  "字段：{field}": "Field: {field}",
+  "来源值：{value}": "Reported value: {value}",
+  "平台派生值：{value}": "Platform-derived value: {value}",
+  完整质量记录: "Complete quality record",
+} as const;
+export const governanceEvidenceText = createTranslator(governanceEvidenceMessages);

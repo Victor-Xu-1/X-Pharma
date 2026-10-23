@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
-import subprocess
 import tomllib
 from pathlib import Path
 
@@ -12,40 +10,8 @@ from pharma_intel.platform.environment_compatibility import (
     version_state,
     versions_equal,
 )
+from pharma_intel.platform.environment_interpreter import project_python_probe
 from pharma_intel.schemas.environment import EnvironmentProbeRead
-
-_INTERPRETER_PROBE = (
-    "import importlib.metadata as m,json,platform; "
-    "print(json.dumps({'python':platform.python_version(),"
-    "'packages':{d.metadata['Name']:d.version for d in m.distributions() if d.metadata['Name']}}))"
-)
-
-
-def project_python_probe(root: Path) -> dict[str, object] | None:
-    executable = root / ".venv/bin/python"
-    if (root / ".venv").is_symlink() or not executable.is_file():
-        return None
-    # A venv legitimately links to its installed WSL interpreter. Reject mounted Windows
-    # targets, but do not misreport a Linux-root interpreter as a missing venv.
-    if executable.resolve().is_relative_to(Path("/mnt")):
-        return None
-    try:
-        # Fixed code and project-owned interpreter only. No shell, installer or network operation.
-        result = subprocess.run(  # noqa: S603
-            [str(executable), "-I", "-c", _INTERPRETER_PROBE],
-            cwd=root,
-            stdin=subprocess.DEVNULL,
-            capture_output=True,
-            timeout=5,
-            check=False,
-            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
-        )
-        if result.returncode or len(result.stdout) > 64 * 1024:
-            return None
-        payload = json.loads(result.stdout)
-        return payload if isinstance(payload, dict) else None
-    except (OSError, subprocess.TimeoutExpired, ValueError):
-        return None
 
 
 def project_dependency_probes(root: Path) -> list[EnvironmentProbeRead]:

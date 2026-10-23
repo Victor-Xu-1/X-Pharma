@@ -1,9 +1,10 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { expect, it, vi } from "vitest";
 
 import { type ColumnDef, VirtualDataTable } from "../components/VirtualDataTable";
 import { sessionKeys } from "../lib/contracts/session";
+import { setLocale } from "../lib/i18n";
 import { renderWithQueryClient } from "./renderWithQueryClient";
 
 type Row = { id: string; name: string; score: number };
@@ -12,6 +13,95 @@ const columns: ColumnDef<Row, unknown>[] = [
   { accessorKey: "name", header: "名称", size: 180 },
   { accessorKey: "score", header: "评分", size: 120 },
 ];
+
+it("reserves readable sortable column tracks without widening action controls or changing virtual row height", () => {
+  renderWithQueryClient(
+    <VirtualDataTable
+      ariaLabel="Readable research results"
+      columns={[
+        { accessorKey: "name", header: "Name", size: 180 },
+        { accessorKey: "score", header: "Estimated expiration", size: 100 },
+        { id: "actions", header: "Actions", size: 80, enableSorting: false, cell: () => "Details" },
+      ]}
+      data={[{ id: "1", name: "Original EGFR", score: 1 }]}
+      getRowId={(row) => row.id}
+      preferenceKey="entity-search"
+    />,
+  );
+  const table = screen.getByRole("table", { name: "Readable research results" });
+  expect(table).toHaveStyle({ minWidth: "380px" });
+  expect(table.style.getPropertyValue("--virtual-table-columns")).toBe(
+    "minmax(180px, 180fr) minmax(120px, 120fr) minmax(80px, 80fr)",
+  );
+  expect(table.querySelector(".virtual-table-data-row")).toHaveStyle({ height: "68px" });
+});
+
+it("preserves an unapplied sort draft across equivalent applied props and locale-driven headers", () => {
+  const onSortingChange = vi.fn();
+  const data = [{ id: "1", name: "Original name", score: 1 }];
+  const { rerender } = renderWithQueryClient(
+    <VirtualDataTable
+      ariaLabel="Results"
+      columns={columns}
+      data={data}
+      preferenceKey="entity-search"
+      sorting={[]}
+      onSortingChange={onSortingChange}
+    />,
+  );
+  fireEvent.click(screen.getByText("排序", { selector: "summary" }));
+  fireEvent.click(screen.getByRole("button", { name: "添加排序字段" }));
+  fireEvent.change(screen.getByLabelText("第 1 排序字段"), { target: { value: "score" } });
+  act(() => setLocale("en"));
+  const englishColumns = [
+    { accessorKey: "name", header: "Name", size: 180 },
+    { accessorKey: "score", header: "Score", size: 120 },
+  ];
+  rerender(
+    <VirtualDataTable
+      ariaLabel="Results"
+      columns={englishColumns}
+      data={data}
+      preferenceKey="entity-search"
+      sorting={[]}
+      onSortingChange={onSortingChange}
+    />,
+  );
+  expect(screen.getByLabelText("Sort field 1")).toHaveValue("score");
+  expect(onSortingChange).not.toHaveBeenCalled();
+  rerender(
+    <VirtualDataTable
+      ariaLabel="Results"
+      columns={englishColumns}
+      data={data}
+      preferenceKey="entity-search"
+      sorting={[{ id: "name", desc: true }]}
+      onSortingChange={onSortingChange}
+    />,
+  );
+  expect(screen.getByLabelText("Sort field 1")).toHaveValue("name");
+  expect(screen.getByLabelText("Sort direction 1: descending")).toHaveAttribute("aria-pressed", "true");
+});
+
+it("localizes table controls and current sorting without resetting the local presentation or editing facts", () => {
+  renderWithQueryClient(
+    <VirtualDataTable
+      ariaLabel="Research results"
+      columns={columns}
+      data={[{ id: "1", name: "中文原名 EGFR", score: 1 }]}
+      getRowId={(row) => row.id}
+      preferenceKey="entity-search"
+      totalRows={24}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "紧凑" }));
+  fireEvent.click(within(screen.getByRole("columnheader", { name: "名称" })).getByRole("button"));
+  act(() => setLocale("en"));
+  expect(screen.getByRole("button", { name: "Compact" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByText("On this page: 1 / Total: 24 · Current page · Sort: 名称 Ascending")).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Research results scroll area" })).toBeInTheDocument();
+  expect(screen.getByText("中文原名 EGFR")).toBeInTheDocument();
+});
 
 it("renders a keyboard-scrollable table and exposes deterministic sorting state", () => {
   renderWithQueryClient(

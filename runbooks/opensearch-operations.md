@@ -26,7 +26,7 @@ docker compose -f compose.yaml -f compose.dev.yaml logs --since 30m worker
 - `entities`、`evidence`、`knowledge` 的 read/write alias 都存在且指向预期物理索引。
 - `pending`/`retry` 能持续下降，`processing` 不长期超过 lease 时间，`dead` 为零。
 
-API readiness 在配置为 OpenSearch 时会检查集群可达。管理员还可通过工作台后端的 `/api/v1/admin/search/status` 查看相同边界信息；该 API 需要管理员会话，不能暴露为第三个入口。
+API readiness 在配置为 OpenSearch 时会检查集群可达。获授 `ingestion:read` 的运营身份还可通过工作台后端的 `/api/v1/admin/search/status` 查看集群边界信息与当前组织的投递计数；HTTP 不枚举其他组织，受信主机 CLI 才保留全局聚合。集群 green 不能替代死信为零和权威数据/投影一致性核对，也不能暴露为第三个入口。
 
 ## 投影与重试
 

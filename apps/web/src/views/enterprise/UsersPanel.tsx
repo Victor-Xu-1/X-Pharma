@@ -4,11 +4,17 @@ import { formatDate, StatusBadge } from "../../components/common";
 import { ScrollableTableRegion } from "../../components/ScrollableTableRegion";
 import type { EnterpriseOperation, EnterpriseUser } from "../../lib/contracts/enterprise";
 import type { AuthMode } from "../../lib/contracts/session";
+import { useLocale } from "../../lib/i18n";
+import { type EnterpriseMessageKey, enterpriseWorkspaceText as t } from "../../lib/i18n/enterpriseWorkspace";
 import type { UserRole } from "../../lib/types";
 import { ModalShell } from "./ModalShell";
 import type { UserAction } from "./types";
 
-export const roleLabels: Record<UserRole, string> = { admin: "管理员", analyst: "分析师", viewer: "浏览者" };
+export const roleLabels: Record<UserRole, EnterpriseMessageKey> = {
+  admin: "管理员",
+  analyst: "分析师",
+  viewer: "浏览者",
+};
 
 export function UsersPanel({
   users,
@@ -23,25 +29,26 @@ export function UsersPanel({
   onCreate: () => void;
   onAction: (action: UserAction) => void;
 }) {
+  useLocale();
   return (
     <>
       <div className="section-toolbar">
-        <span>{users.length} 个企业账户</span>
+        <span>{t("{count} 个企业账户", { count: users.length })}</span>
         <button className="primary-button" type="button" onClick={onCreate} disabled={Boolean(busy)}>
           <Plus size={16} />
-          新建用户
+          {t("新建用户")}
         </button>
       </div>
-      <ScrollableTableRegion className="enterprise-table" ariaLabel="企业用户滚动区域">
-        <table aria-label="企业用户">
+      <ScrollableTableRegion className="enterprise-table" ariaLabel={t("企业用户滚动区域")}>
+        <table aria-label={t("企业用户")}>
           <thead>
             <tr>
-              <th>用户</th>
-              <th>角色</th>
-              <th>状态</th>
-              <th>身份源</th>
-              <th>最近登录</th>
-              <th aria-label="操作" />
+              <th>{t("用户")}</th>
+              <th>{t("角色")}</th>
+              <th>{t("状态")}</th>
+              <th>{t("身份源")}</th>
+              <th>{t("最近登录")}</th>
+              <th aria-label={t("操作")} />
             </tr>
           </thead>
           <tbody>
@@ -51,19 +58,19 @@ export function UsersPanel({
                   <strong>{item.display_name}</strong>
                   <span className="cell-subtitle">{item.email}</span>
                 </td>
-                <td>{roleLabels[item.role]}</td>
+                <td>{t(roleLabels[item.role])}</td>
                 <td>
                   <StatusBadge value={item.active ? "active" : "disabled"} />
                 </td>
-                <td>{item.oidc_issuer ? "OIDC" : "本地账户"}</td>
+                <td>{item.oidc_issuer ? "OIDC" : t("本地账户")}</td>
                 <td>{formatDate(item.last_login_at, true)}</td>
                 <td>
                   <div className="row-actions">
                     <button
                       className="icon-button"
                       type="button"
-                      title="调整角色"
-                      aria-label={`调整 ${item.display_name} 的角色`}
+                      title={t("调整角色")}
+                      aria-label={t("调整 {name} 的角色", { name: item.display_name })}
                       onClick={() => onAction({ user: item, kind: "role" })}
                       disabled={item.id === currentUserId || Boolean(busy)}
                     >
@@ -72,8 +79,8 @@ export function UsersPanel({
                     <button
                       className="icon-button"
                       type="button"
-                      title={item.active ? "停用账户" : "启用账户"}
-                      aria-label={`${item.active ? "停用" : "启用"} ${item.display_name}`}
+                      title={item.active ? t("停用账户") : t("启用账户")}
+                      aria-label={t(item.active ? "停用 {name}" : "启用 {name}", { name: item.display_name })}
                       onClick={() => onAction({ user: item, kind: "status" })}
                       disabled={item.id === currentUserId || Boolean(busy)}
                     >
@@ -101,6 +108,7 @@ export function CreateUserModal({
   close: () => void;
   submit: (operation: EnterpriseOperation) => Promise<void>;
 }) {
+  useLocale();
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState<UserRole>("viewer");
@@ -108,7 +116,7 @@ export function CreateUserModal({
   const [issuer, setIssuer] = useState("");
   const [subject, setSubject] = useState("");
   return (
-    <ModalShell title="新建企业用户" close={close}>
+    <ModalShell title={t("新建企业用户")} close={close}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -126,24 +134,24 @@ export function CreateUserModal({
         }}
       >
         <label>
-          邮箱
+          {t("邮箱")}
           <input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
         </label>
         <label>
-          显示名称
+          {t("显示名称")}
           <input required value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
         </label>
         <label>
-          企业角色
+          {t("企业角色")}
           <select value={role} onChange={(event) => setRole(event.target.value as UserRole)}>
-            <option value="viewer">浏览者</option>
-            <option value="analyst">分析师</option>
-            <option value="admin">管理员</option>
+            <option value="viewer">{t("浏览者")}</option>
+            <option value="analyst">{t("分析师")}</option>
+            <option value="admin">{t("管理员")}</option>
           </select>
         </label>
         {authMode === "local" ? (
           <label>
-            初始密码
+            {t("初始密码")}
             <input
               type="password"
               minLength={12}
@@ -168,11 +176,11 @@ export function CreateUserModal({
         )}
         <div className="form-actions">
           <button className="secondary-button" type="button" onClick={close}>
-            取消
+            {t("取消")}
           </button>
           <button className="primary-button" type="submit" disabled={busy}>
             <ShieldCheck size={16} />
-            创建用户
+            {t("创建用户")}
           </button>
         </div>
       </form>
@@ -191,11 +199,12 @@ export function UserActionModal({
   close: () => void;
   submit: (operation: EnterpriseOperation) => Promise<void>;
 }) {
+  useLocale();
   const [role, setRole] = useState<UserRole>(action.user.role);
   const [reason, setReason] = useState("");
   const title = action.kind === "role" ? "调整用户角色" : action.user.active ? "停用企业用户" : "启用企业用户";
   return (
-    <ModalShell title={title} close={close}>
+    <ModalShell title={t(title)} close={close}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -224,16 +233,16 @@ export function UserActionModal({
         </p>
         {action.kind === "role" ? (
           <label>
-            新角色
+            {t("新角色")}
             <select value={role} onChange={(event) => setRole(event.target.value as UserRole)}>
-              <option value="viewer">浏览者</option>
-              <option value="analyst">分析师</option>
-              <option value="admin">管理员</option>
+              <option value="viewer">{t("浏览者")}</option>
+              <option value="analyst">{t("分析师")}</option>
+              <option value="admin">{t("管理员")}</option>
             </select>
           </label>
         ) : null}
         <label>
-          变更原因
+          {t("变更原因")}
           <textarea
             required
             minLength={3}
@@ -244,14 +253,14 @@ export function UserActionModal({
         </label>
         <div className="form-actions">
           <button className="secondary-button" type="button" onClick={close}>
-            取消
+            {t("取消")}
           </button>
           <button
             className="primary-button"
             type="submit"
             disabled={busy || (action.kind === "role" && role === action.user.role)}
           >
-            确认变更
+            {t("确认变更")}
           </button>
         </div>
       </form>
