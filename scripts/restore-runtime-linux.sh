@@ -4,6 +4,7 @@ set -euo pipefail
 umask 077
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+source "$root/scripts/lib/runtime_archive_container.sh"
 project_name="${COMPOSE_PROJECT_NAME:-pharma-intelligence}"
 backup=""
 
@@ -50,7 +51,7 @@ done
   echo "unsafe Compose project name: $project_name" >&2
   exit 2
 }
-for command in docker python3 sha256sum realpath openssl cmp wc mktemp; do
+for command in docker python3 sha256sum realpath openssl cmp wc mktemp timeout; do
   command -v "$command" >/dev/null 2>&1 || {
     echo "required command is unavailable: $command" >&2
     exit 1
@@ -154,7 +155,7 @@ ensure_exact_image() {
 ensure_exact_image "$postgres_image" "$postgres_image_id" PostgreSQL
 ensure_exact_image "$api_image" "$api_image_id" API
 
-busybox_image='busybox:1.36.1@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662'
+busybox_image=$(runtime_archive_image)
 if ! docker image inspect "$busybox_image" >/dev/null 2>&1; then
   echo "required checksummed BusyBox image is absent; load it before offline restore" >&2
   exit 1
@@ -379,13 +380,18 @@ docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -v ON_ERROR
 for archive_spec in "object-store.tar.gz:$object_volume" "markdown-wiki.tar.gz:$markdown_volume"; do
   archive=${archive_spec%%:*}
   volume=${archive_spec#*:}
-  docker run --rm --read-only \
+  case "$archive" in
+    object-store.tar.gz) archive_kind=object ;;
+    markdown-wiki.tar.gz) archive_kind=markdown ;;
+    *) echo 'Refusing an unknown restore archive' >&2; exit 2 ;;
+  esac
+  run_runtime_archive "pharma-restore-archive-$suffix-$archive_kind-list" \
     --mount "type=bind,src=$backup,dst=/backup,readonly" \
-    "$busybox_image" tar -tzf "/backup/$archive" >/dev/null
-  docker run --rm --read-only \
+    -- tar -tzf "/backup/$archive" >/dev/null
+  run_runtime_archive "pharma-restore-archive-$suffix-$archive_kind-extract" \
     --mount "type=bind,src=$backup,dst=/backup,readonly" \
     --mount "type=volume,src=$volume,dst=/restore" \
-    "$busybox_image" tar -xzf "/backup/$archive" -C /restore
+    -- tar -xzf "/backup/$archive" -C /restore
 done
 
 docker exec -i "$container" psql -X -U "$bootstrap_user" -d postgres -v ON_ERROR_STOP=1 <<SQL >/dev/null

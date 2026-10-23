@@ -198,3 +198,13 @@ def test_backup_and_isolated_restore_share_the_one_bounded_archive_owner(script:
     assert source.count("run_runtime_archive ") == 2
     assert "--rm" not in source
     assert "busybox:" not in source
+
+
+def test_clean_target_restore_shares_the_archive_owner_and_its_image_authority() -> None:
+    source = (LIBRARY.parents[1] / "restore-runtime-linux.sh").read_text()
+    assert source.count('source "$root/scripts/lib/runtime_archive_container.sh"') == 1
+    assert source.count("run_runtime_archive ") == 2
+    assert "busybox_image=$(runtime_archive_image)" in source
+    assert '"$busybox_image" tar' not in source
+    assert "pharma-restore-archive-$suffix-$archive_kind-list" in source
+    assert "pharma-restore-archive-$suffix-$archive_kind-extract" in source

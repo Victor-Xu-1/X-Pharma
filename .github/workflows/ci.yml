@@ -278,6 +278,20 @@ jobs:
           docker compose config --quiet
           docker compose -f compose.yaml -f compose.dev.yaml -f compose.telemetry.yaml config --quiet
 
+      - name: Verify fixture-only runtime archive round trip
+        run: |
+          source scripts/lib/runtime_archive_container.sh
+          timeout --kill-after=5s 120s docker pull "$(runtime_archive_image)"
+          bash scripts/verify-runtime-archive.sh > /tmp/runtime-archive-contract.json
+          python3 -m json.tool /tmp/runtime-archive-contract.json
+      - name: Archive runtime archive contract evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: runtime-archive-contract
+          path: /tmp/runtime-archive-contract.json
+          if-no-files-found: warn
+
   two-entry-smoke:
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.refresh_visual_baselines && 60 || 45 }}

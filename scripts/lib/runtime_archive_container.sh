@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+runtime_archive_image() {
+  printf '%s\n' 'busybox:1.36.1@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662'
+}
+
 # One owner for short-lived archive containers; stdout remains the archive stream.
 run_runtime_archive() (
   set -Eeuo pipefail
@@ -20,7 +24,7 @@ run_runtime_archive() (
   done
   [[ ${1:-} == -- && ${2:-} == tar ]] || return 2
   shift
-  image='busybox:1.36.1@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662'
+  image=$(runtime_archive_image)
   parent=$(realpath -e -- "${TMPDIR:-/tmp}")
   [[ "$parent" != / && -d "$parent" ]] || return 2
   work=$(mktemp -d "$parent/pharma-archive.XXXXXX")
