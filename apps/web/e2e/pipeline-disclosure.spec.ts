@@ -61,6 +61,7 @@ test("[pipeline-disclosure] retains unsent dates and false-valued signal filters
   });
   await page.goto("/workspace/research?view=pipeline");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await page.screenshot({ path: testInfo.outputPath("pipeline-default-en.png"), animations: "disabled" });
   const exact = page.locator(".pipeline-entity-disclosure");
   await expect(exact).not.toHaveAttribute("open", "");
   await expect(exact.getByRole("combobox")).toHaveCount(0);

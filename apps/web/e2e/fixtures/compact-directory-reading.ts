@@ -20,7 +20,7 @@ export async function expectIntermediateDirectoryReading(
     const layout = page.locator(kind === "knowledge" ? ".knowledge-layout" : ".collections-layout");
     const geometry = await layout.evaluate((node) => ({
       width: node.clientWidth,
-      readingWidth: node.lastElementChild?.getBoundingClientRect().width ?? 0,
+      readingWidth: node.lastElementChild?.clientWidth ?? 0,
     }));
     expect(geometry.readingWidth).toBeGreaterThanOrEqual(geometry.width);
     await page.screenshot({ path: testInfo.outputPath(`${kind}-reading-768.png`), animations: "disabled" });

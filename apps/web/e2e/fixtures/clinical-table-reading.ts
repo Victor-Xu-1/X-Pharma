@@ -40,8 +40,10 @@ export async function expectClinicalTableReading(page: Page, testInfo: TestInfo)
     const headers = await table.getByRole("columnheader").allTextContents();
     const position = (label: string) => headers.findIndex((header) => header.startsWith(label));
     expect(position("Phase")).toBeGreaterThanOrEqual(0);
-    expect(position("Phase")).toBeLessThan(position("Trial acronym"));
-    expect(position("Status")).toBeLessThan(position("Trial acronym"));
+    expect(position("Status")).toBeGreaterThanOrEqual(0);
+    expect(position("Study acronym")).toBeGreaterThanOrEqual(0);
+    expect(position("Phase")).toBeLessThan(position("Study acronym"));
+    expect(position("Status")).toBeLessThan(position("Study acronym"));
     await page.screenshot({ path: testInfo.outputPath("clinical-table-default-en.png"), animations: "disabled" });
     const cachedReads = reads;
     await selectInterfaceLanguage(page, "zh-CN");
@@ -57,7 +59,7 @@ export async function expectClinicalTableReading(page: Page, testInfo: TestInfo)
       .poll(async () => (await table.getByRole("columnheader").allTextContents()).filter(Boolean).slice(0, 4))
       .toEqual([
         expect.stringMatching(/^Registry/),
-        expect.stringMatching(/^Trial acronym/),
+        expect.stringMatching(/^Study acronym/),
         expect.stringMatching(/^Status/),
         expect.stringMatching(/^Phase/),
       ]);
