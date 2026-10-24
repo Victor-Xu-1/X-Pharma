@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from pharma_intel.config import Settings
 from pharma_intel.models import Entity, EntityType, ReviewStatus
+from pharma_intel.public_identity import is_public_entity_identifier_namespace
 from pharma_intel.repository import EntityRepository
 from pharma_intel.schemas import ENTITY_SORT_FIELDS, EntitySortField, SortDirection
 from pharma_intel.search.client import OpenSearchGateway, SearchProjectionError, get_opensearch_gateway
@@ -162,12 +163,14 @@ class EntitySearchService:
             identifiers = [
                 (namespace, str(value), str(value).strip().casefold())
                 for namespace, value in entity.external_ids.items()
+                if is_public_entity_identifier_namespace(namespace)
             ]
             known_identifiers = {(namespace.casefold(), value.casefold()) for namespace, value, _ in identifiers}
             identifiers.extend(
                 (item.namespace, item.value, item.normalized_value)
                 for item in entity.identity_identifiers
-                if (item.namespace.casefold(), item.value.casefold()) not in known_identifiers
+                if is_public_entity_identifier_namespace(item.namespace)
+                and (item.namespace.casefold(), item.value.casefold()) not in known_identifiers
             )
             if canonical == normalized:
                 matches[entity.id] = EntitySearchMatch("canonical_name", "exact", entity.name)

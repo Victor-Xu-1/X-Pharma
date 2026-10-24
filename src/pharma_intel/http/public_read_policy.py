@@ -12,6 +12,7 @@ from pharma_intel.models import (
     Entity,
     ReviewStatus,
 )
+from pharma_intel.public_identity import is_public_entity_identifier_namespace
 from pharma_intel.schemas import (
     CompanyDossierResponse,
     DiseaseDossierResponse,
@@ -59,14 +60,6 @@ _PUBLIC_ENTITY_ATTRIBUTE_KEYS = frozenset(
 )
 
 
-_PUBLIC_ENTITY_IDENTIFIER_HIDDEN_PREFIXES = (
-    "pharmcube",
-    "internal",
-    "source",
-    "ingestion",
-)
-
-
 def _is_public_entity_attribute_value(value: Any) -> bool:
     """Keep arbitrary nested governance payloads outside the human API."""
 
@@ -75,14 +68,6 @@ def _is_public_entity_attribute_value(value: Any) -> bool:
     if isinstance(value, list):
         return all(item is None or isinstance(item, str | int | float | bool) for item in value)
     return False
-
-
-def _is_public_entity_identifier_namespace(namespace: str) -> bool:
-    normalized = namespace.strip().casefold().replace("-", "_")
-    return bool(normalized) and not any(
-        normalized == prefix or normalized.startswith(f"{prefix}_")
-        for prefix in _PUBLIC_ENTITY_IDENTIFIER_HIDDEN_PREFIXES
-    )
 
 
 def _public_entity_read(entity: Any) -> EntityRead:
@@ -97,12 +82,12 @@ def _public_entity_read(entity: Any) -> EntityRead:
     external_ids = {
         namespace: value
         for namespace, value in read.external_ids.items()
-        if _is_public_entity_identifier_namespace(namespace)
+        if is_public_entity_identifier_namespace(namespace)
     }
     identifiers = [
         identifier.model_copy(update={"source_document_id": None})
         for identifier in read.identity_identifiers
-        if _is_public_entity_identifier_namespace(identifier.namespace)
+        if is_public_entity_identifier_namespace(identifier.namespace)
     ]
     return read.model_copy(
         update={"attributes": attributes, "external_ids": external_ids, "identity_identifiers": identifiers}

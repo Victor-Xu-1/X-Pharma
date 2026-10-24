@@ -404,3 +404,33 @@ def test_agent_domain_rejects_stale_projection_without_issuing_a_cursor(
     assert response.json() == {"detail": "Entity search projection unavailable"}
     commercial.authorize_paginated_query.assert_called_once()
     commercial.issue_next_cursor.assert_not_called()
+
+
+def test_agent_domain_uses_the_same_public_identifier_display_policy(
+    session: Session,
+    tenant: Tenant,
+    client: TestClient,
+    index_client: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entity = _entity(session, tenant)
+    entity.external_ids = {"internal_row": "private-routing-value"}
+    session.commit()
+    _project(index_client, entity)
+    commercial = MagicMock()
+    commercial.authorize_paginated_query.return_value = SimpleNamespace(page_offset=0, page_depth=0)
+    commercial.issue_next_cursor.return_value = None
+    monkeypatch.setattr("pharma_intel.http.agent_entities._commercial_service", lambda *_: commercial)
+
+    response = client.get(
+        "/internal/v1/domain/entities",
+        params={"q": "private-routing", "billing_class": "entity.search"},
+        headers={"X-Commercial-Reservation-ID": "00000000-0000-4000-8000-000000000001"},
+    )
+
+    assert response.status_code == 200
+    item = response.json()["items"][0]
+    assert item["id"] == entity.id and item["external_ids"] == {}
+    assert "private-routing-value" not in response.text and "internal_row" not in response.text
+    commercial.authorize_paginated_query.assert_called_once()
+    commercial.issue_next_cursor.assert_called_once()
