@@ -5,6 +5,7 @@ umask 077
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 source "$root/scripts/lib/runtime_archive_container.sh"
+source "$root/scripts/lib/runtime_restore_resources.sh"
 project_name="${COMPOSE_PROJECT_NAME:-pharma-intelligence}"
 backup=""
 
@@ -16,6 +17,9 @@ Restore an authoritative WSL runtime backup into a clean Compose project.
 The command refuses existing project containers or volumes. It restores
 PostgreSQL, Temporal, object evidence and Markdown, then verifies exact row
 counts, Alembic, RDKit and runtime RLS before retaining the new volumes.
+Only this run's nonce-owned resources may be cleaned. Success requires a
+clean PostgreSQL shutdown and confirmed temporary-container removal; an
+unconfirmed cleanup retains evidence and never publishes a passed receipt.
 EOF
 }
 
@@ -51,13 +55,13 @@ done
   echo "unsafe Compose project name: $project_name" >&2
   exit 2
 }
-for command in docker python3 sha256sum realpath openssl cmp wc mktemp timeout; do
+for command in docker python3 sha256sum realpath openssl cmp wc mktemp timeout rmdir; do
   command -v "$command" >/dev/null 2>&1 || {
     echo "required command is unavailable: $command" >&2
     exit 1
   }
 done
-docker version --format '{{.Server.Version}}' >/dev/null
+runtime_restore_docker 10 version --format '{{.Server.Version}}' >/dev/null
 
 backup=$(realpath "$backup")
 manifest="$backup/manifest.json"
@@ -137,132 +141,105 @@ IFS=$'\t' read -r database expected_head postgres_image postgres_image_id api_im
 ensure_exact_image() {
   local name=$1
   local expected_id=$2
-  local label=$3
-  docker image inspect "$expected_id" >/dev/null 2>&1 || {
+  local label=$3 actual_id
+  runtime_restore_docker 5 image inspect "$expected_id" >/dev/null 2>&1 || {
     echo "$label image ID is not installed; load the signed release image first: $expected_id" >&2
     return 1
   }
-  if docker image inspect "$name" >/dev/null 2>&1; then
-    actual_id=$(docker image inspect "$name" --format '{{.Id}}')
+  if runtime_restore_docker 5 image inspect "$name" >/dev/null 2>&1; then
+    actual_id=$(runtime_restore_docker 5 image inspect "$name" --format '{{.Id}}')
     [[ "$actual_id" == "$expected_id" ]] || {
       echo "$label image tag points to a different image: $name" >&2
       return 1
     }
   else
-    docker image tag "$expected_id" "$name"
+    runtime_restore_docker 10 image tag "$expected_id" "$name"
   fi
 }
 ensure_exact_image "$postgres_image" "$postgres_image_id" PostgreSQL
 ensure_exact_image "$api_image" "$api_image_id" API
 
 busybox_image=$(runtime_archive_image)
-if ! docker image inspect "$busybox_image" >/dev/null 2>&1; then
+if ! runtime_restore_docker 5 image inspect "$busybox_image" >/dev/null 2>&1; then
   echo "required checksummed BusyBox image is absent; load it before offline restore" >&2
   exit 1
 fi
 
 compose=(
-  docker compose
+  runtime_restore_docker 15 compose
   --project-name "$project_name"
   -f "$root/compose.yaml"
   -f "$root/compose.dev.yaml"
   -f "$root/compose.telemetry.yaml"
 )
-if [[ -n "$("${compose[@]}" ps -aq)" ]]; then
+existing_containers=$("${compose[@]}" ps -aq)
+if [[ -n "$existing_containers" ]]; then
   echo "refusing to restore while target Compose containers exist: $project_name" >&2
   exit 1
 fi
 
-postgres_volume="${project_name}_pharma_postgres18_data"
-object_volume="${project_name}_pharma_object_store"
-markdown_volume="${project_name}_pharma_markdown_wiki"
+suffix="$(date +%s)-$$"
+runtime_restore_resources_init "$project_name" "$suffix" "$postgres_image_id" "$api_image_id"
+work_dir=$restore_work_dir
+cleanup() {
+  local status=$?
+  trap - EXIT INT TERM
+  if ! runtime_restore_cleanup; then
+    printf 'Restore cleanup is incomplete; retained workspace=%s project=%s\n' "$work_dir" "$project_name" >&2
+    [[ $status -ne 0 ]] || status=1
+  fi
+  exit "$status"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+postgres_volume=${restore_volumes[0]}
+object_volume=${restore_volumes[1]}
+markdown_volume=${restore_volumes[2]}
 redis_volume="${project_name}_pharma_redis_data"
 opensearch_volume="${project_name}_pharma_opensearch_data"
 authoritative_volumes=("$postgres_volume" "$object_volume" "$markdown_volume")
 for volume in "${authoritative_volumes[@]}" "$redis_volume" "$opensearch_volume"; do
-  if docker volume inspect "$volume" >/dev/null 2>&1; then
+  existing_volume=$(runtime_restore_docker 5 volume ls --filter "name=^$volume$" --format '{{.Name}}')
+  if [[ -n "$existing_volume" ]]; then
     echo "refusing to overwrite existing Docker volume: $volume" >&2
     exit 1
   fi
 done
 
-created_volumes=()
-cleanup_created_volumes() {
-  status=$?
-  trap - EXIT INT TERM
-  for volume in "${created_volumes[@]}"; do
-    case "$volume" in
-      "${project_name}_pharma_postgres18_data"|"${project_name}_pharma_object_store"|"${project_name}_pharma_markdown_wiki")
-        docker volume rm -f "$volume" >/dev/null 2>&1 || true
-        ;;
-      *) echo "refusing to clean unexpected restore volume: $volume" >&2 ;;
-    esac
-  done
-  return "$status"
-}
-trap cleanup_created_volumes EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
-
-compose_version=$(docker compose version --short)
-volume_keys=(pharma_postgres18_data pharma_object_store pharma_markdown_wiki)
+compose_version=$(runtime_restore_docker 10 compose version --short)
 for index in "${!authoritative_volumes[@]}"; do
-  docker volume create \
-    --label "com.docker.compose.project=$project_name" \
-    --label "com.docker.compose.version=$compose_version" \
-    --label "com.docker.compose.volume=${volume_keys[$index]}" \
-    "${authoritative_volumes[$index]}" >/dev/null
-  created_volumes+=("${authoritative_volumes[$index]}")
+  runtime_restore_create_volume "$index" "$compose_version"
 done
 
-suffix="$(date +%s)-$$"
-container="pharma-runtime-restore-$suffix"
+container_name=${restore_containers[0]}
+probe_name=${restore_containers[1]}
 token=$(openssl rand -hex 6)
 bootstrap_user=$postgres_admin
 bootstrap_database="restore_$token"
 probe_role="restore_probe_$token"
 bootstrap_password=$(openssl rand -hex 32)
 probe_password=$(openssl rand -hex 32)
-work_dir=$(mktemp -d /tmp/pharma-runtime-restore.XXXXXX)
 started_epoch=$(date +%s)
-success=0
 
-cleanup() {
-  status=$?
-  trap - EXIT INT TERM
-  docker rm -f "$container" >/dev/null 2>&1 || true
-  if [[ $success -ne 1 ]]; then
-    for volume in "${authoritative_volumes[@]}"; do
-      case "$volume" in
-        "${project_name}_pharma_postgres18_data"|"${project_name}_pharma_object_store"|"${project_name}_pharma_markdown_wiki")
-          docker volume rm -f "$volume" >/dev/null 2>&1 || true
-          ;;
-        *) echo "refusing to clean unexpected restore volume: $volume" >&2 ;;
-      esac
-    done
-  fi
-  case "$work_dir" in
-    /tmp/pharma-runtime-restore.*) rm -rf -- "$work_dir" ;;
-    *) echo "refusing to clean unexpected restore workspace: $work_dir" >&2 ;;
-  esac
-  return "$status"
-}
-trap cleanup EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
-
-docker run -d \
-  --name "$container" \
+runtime_restore_assert_volume "$postgres_volume"
+container=$(runtime_restore_docker 20 create --pull=never \
+  --name "$container_name" \
+  --label "io.pharma.runtime-restore-owner=$restore_owner" \
   --network none \
   -e "POSTGRES_DB=$bootstrap_database" \
   -e "POSTGRES_USER=$bootstrap_user" \
   -e "POSTGRES_PASSWORD=$bootstrap_password" \
   --mount "type=volume,src=$postgres_volume,dst=/var/lib/postgresql" \
-  "$postgres_image_id" >/dev/null
+  "$postgres_image_id")
+[[ "$container" =~ ^[a-f0-9]{64}$ ]] || { echo 'Invalid restore PostgreSQL identity' >&2; exit 1; }
+runtime_restore_docker 20 start "$container" >/dev/null
 
 ready=0
-for _ in $(seq 1 90); do
-  if docker exec "$container" pg_isready -U "$bootstrap_user" -d "$bootstrap_database" >/dev/null 2>&1; then
+ready_deadline=$((SECONDS + 180))
+while ((SECONDS < ready_deadline)); do
+  if runtime_restore_docker 5 exec "$container" pg_isready -U "$bootstrap_user" -d "$bootstrap_database" >/dev/null 2>&1; then
     ready=1
     break
   fi
@@ -274,26 +251,26 @@ done
 }
 
 for file in postgres-globals.sql postgres.dump temporal.dump temporal-visibility.dump; do
-  docker cp "$backup/$file" "$container:/tmp/$file" >/dev/null
-  docker exec -u 0 "$container" chown postgres:postgres "/tmp/$file"
+  runtime_restore_docker 120 cp "$backup/$file" "$container:/tmp/$file" >/dev/null
+  runtime_restore_docker 15 exec -u 0 "$container" chown postgres:postgres "/tmp/$file"
 done
-role_create_count=$(docker exec "$container" grep -Ec "^CREATE ROLE (\"$bootstrap_user\"|$bootstrap_user);$" /tmp/postgres-globals.sql || true)
+role_create_count=$(runtime_restore_docker 15 exec "$container" grep -Ec "^CREATE ROLE (\"$bootstrap_user\"|$bootstrap_user);$" /tmp/postgres-globals.sql || true)
 [[ "$role_create_count" == 1 ]] || {
   echo "expected exactly one CREATE ROLE statement for the declared PostgreSQL administrator" >&2
   exit 1
 }
-docker exec "$container" sh -c \
+runtime_restore_docker 15 exec "$container" sh -c \
   "sed -E '/^CREATE ROLE (\"$bootstrap_user\"|$bootstrap_user);$/d' /tmp/postgres-globals.sql > /tmp/postgres-globals-restore.sql"
-docker exec "$container" psql -X -U "$bootstrap_user" -d "$bootstrap_database" \
+runtime_restore_docker 300 exec "$container" psql -X -U "$bootstrap_user" -d "$bootstrap_database" \
   -v ON_ERROR_STOP=1 -f /tmp/postgres-globals-restore.sql >/dev/null
 
 for record in "${database_records[@]:1}"; do
   IFS=$'\t' read -r target_database owner dump <<< "$record"
-  docker exec "$container" createdb -U "$bootstrap_user" -O "$owner" "$target_database"
+  runtime_restore_docker 30 exec "$container" createdb -U "$bootstrap_user" -O "$owner" "$target_database"
 done
-docker exec "$container" pg_restore -U "$bootstrap_user" -d "$database" --exit-on-error /tmp/postgres.dump >/dev/null
-docker exec "$container" pg_restore -U "$bootstrap_user" -d temporal --exit-on-error /tmp/temporal.dump >/dev/null
-docker exec "$container" pg_restore -U "$bootstrap_user" -d temporal_visibility --exit-on-error /tmp/temporal-visibility.dump >/dev/null
+runtime_restore_docker 900 exec "$container" pg_restore -U "$bootstrap_user" -d "$database" --exit-on-error /tmp/postgres.dump >/dev/null
+runtime_restore_docker 900 exec "$container" pg_restore -U "$bootstrap_user" -d temporal --exit-on-error /tmp/temporal.dump >/dev/null
+runtime_restore_docker 900 exec "$container" pg_restore -U "$bootstrap_user" -d temporal_visibility --exit-on-error /tmp/temporal-visibility.dump >/dev/null
 
 expected_counts="$work_dir/expected-counts.tsv"
 actual_counts="$work_dir/actual-counts.tsv"
@@ -309,7 +286,7 @@ lines = [f"{table}\t{count}" for table, count in sorted(document["rowCounts"].it
 Path(sys.argv[2]).write_text("\n".join(lines) + "\n", encoding="utf-8")
 PY
 
-table_list=$(docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At -F $'\t' \
+table_list=$(runtime_restore_docker 30 exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At -F $'\t' \
   -v ON_ERROR_STOP=1 \
   -c "SELECT schemaname, tablename FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema') ORDER BY 1, 2")
 : > "$actual_counts"
@@ -319,7 +296,7 @@ while IFS=$'\t' read -r schema relation; do
     echo "unsafe restored table identifier: $schema.$relation" >&2
     exit 1
   }
-  count=$(docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At \
+  count=$(runtime_restore_docker 60 exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At \
     -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM \"$schema\".\"$relation\"")
   printf '%s.%s\t%s\n' "$schema" "$relation" "$count" >> "$actual_counts"
 done <<< "$table_list"
@@ -329,26 +306,26 @@ if ! cmp --silent "$expected_counts" "$actual_counts"; then
   exit 1
 fi
 
-actual_head=$(docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At \
+actual_head=$(runtime_restore_docker 15 exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At \
   -v ON_ERROR_STOP=1 -c 'SELECT version_num FROM alembic_version')
 [[ "$actual_head" == "$expected_head" ]] || {
   echo "Alembic head mismatch: expected=$expected_head actual=$actual_head" >&2
   exit 1
 }
-rdkit_version=$(docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At \
+rdkit_version=$(runtime_restore_docker 15 exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At \
   -v ON_ERROR_STOP=1 -c "SELECT extversion FROM pg_extension WHERE extname = 'rdkit'")
 [[ -n "$rdkit_version" ]] || {
   echo "RDKit extension is missing from the restored database" >&2
   exit 1
 }
-rdkit_probe=$(docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At \
+rdkit_probe=$(runtime_restore_docker 15 exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At \
   -v ON_ERROR_STOP=1 -c "SELECT mol_to_smiles(mol_from_smiles('CCO'))")
 [[ "$rdkit_probe" == CCO ]] || {
   echo "RDKit function probe failed" >&2
   exit 1
 }
 for temporal_database in temporal temporal_visibility; do
-  temporal_tables=$(docker exec "$container" psql -X -U "$bootstrap_user" -d "$temporal_database" -At \
+  temporal_tables=$(runtime_restore_docker 30 exec "$container" psql -X -U "$bootstrap_user" -d "$temporal_database" -At \
     -v ON_ERROR_STOP=1 \
     -c "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')")
   [[ "$temporal_tables" =~ ^[1-9][0-9]*$ ]] || {
@@ -357,9 +334,9 @@ for temporal_database in temporal temporal_visibility; do
   }
 done
 
-docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -v ON_ERROR_STOP=1 \
+runtime_restore_docker 30 exec "$container" psql -X -U "$bootstrap_user" -d "$database" -v ON_ERROR_STOP=1 \
   -c "CREATE ROLE $probe_role LOGIN PASSWORD '$probe_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS; GRANT pharma_runtime TO $probe_role" >/dev/null
-tenant_signing_secret=$(docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At \
+tenant_signing_secret=$(runtime_restore_docker 15 exec "$container" psql -X -U "$bootstrap_user" -d "$database" -At \
   -v ON_ERROR_STOP=1 \
   -c "SELECT secret_value FROM platform_private.runtime_secrets WHERE secret_name = 'tenant_context'")
 [[ -n "$tenant_signing_secret" ]] || {
@@ -367,14 +344,21 @@ tenant_signing_secret=$(docker exec "$container" psql -X -U "$bootstrap_user" -d
   exit 1
 }
 probe_url="postgresql+psycopg://$probe_role:$probe_password@127.0.0.1:5432/$database"
-docker run --rm \
+probe_container=$(runtime_restore_docker 20 create --pull=never \
+  --name "$probe_name" \
+  --label "io.pharma.runtime-restore-owner=$restore_owner" \
   --network "container:$container" \
   --read-only \
   --tmpfs /tmp \
   -e "DATABASE_URL=$probe_url" \
   -e "TENANT_CONTEXT_SIGNING_SECRET=$tenant_signing_secret" \
-  "$api_image_id" pharma-verify-rls >/dev/null
-docker exec "$container" psql -X -U "$bootstrap_user" -d "$database" -v ON_ERROR_STOP=1 \
+  "$api_image_id" pharma-verify-rls)
+[[ "$probe_container" =~ ^[a-f0-9]{64}$ ]] || { echo 'Invalid restore RLS probe identity' >&2; exit 1; }
+runtime_restore_docker 180 start --attach "$probe_container" >/dev/null
+[[ $(runtime_restore_docker 5 inspect --format '{{.State.Status}} {{.State.ExitCode}}' "$probe_container") == 'exited 0' ]] || {
+  echo 'Restore RLS probe did not exit successfully' >&2; exit 1;
+}
+runtime_restore_docker 30 exec "$container" psql -X -U "$bootstrap_user" -d "$database" -v ON_ERROR_STOP=1 \
   -c "DROP ROLE $probe_role" >/dev/null
 
 for archive_spec in "object-store.tar.gz:$object_volume" "markdown-wiki.tar.gz:$markdown_volume"; do
@@ -385,16 +369,18 @@ for archive_spec in "object-store.tar.gz:$object_volume" "markdown-wiki.tar.gz:$
     markdown-wiki.tar.gz) archive_kind=markdown ;;
     *) echo 'Refusing an unknown restore archive' >&2; exit 2 ;;
   esac
+  runtime_restore_assert_volume "$volume"
   run_runtime_archive "pharma-restore-archive-$suffix-$archive_kind-list" \
     --mount "type=bind,src=$backup,dst=/backup,readonly" \
     -- tar -tzf "/backup/$archive" >/dev/null
+  runtime_restore_assert_volume "$volume"
   run_runtime_archive "pharma-restore-archive-$suffix-$archive_kind-extract" \
     --mount "type=bind,src=$backup,dst=/backup,readonly" \
     --mount "type=volume,src=$volume,dst=/restore" \
     -- tar -xzf "/backup/$archive" -C /restore
 done
 
-docker exec -i "$container" psql -X -U "$bootstrap_user" -d postgres -v ON_ERROR_STOP=1 <<SQL >/dev/null
+runtime_restore_docker 30 exec -i "$container" psql -X -U "$bootstrap_user" -d postgres -v ON_ERROR_STOP=1 <<SQL >/dev/null
 ALTER DATABASE postgres OWNER TO "$postgres_admin";
 ALTER DATABASE template0 OWNER TO "$postgres_admin";
 ALTER DATABASE template1 OWNER TO "$postgres_admin";
@@ -402,6 +388,9 @@ DROP DATABASE "$bootstrap_database";
 SQL
 
 tables_verified=$(wc -l < "$expected_counts")
+# Stop the temporary database cleanly, verify both temporary containers are gone,
+# and only then promote the three exact owned volumes and publish a passed receipt.
+runtime_restore_cleanup preserve
 duration_seconds=$(( $(date +%s) - started_epoch ))
 report_directory="$root/manifests/runtime/recovery"
 mkdir -p "$report_directory"
@@ -436,6 +425,7 @@ document = {
     "schema_version": 1,
     "created_at": datetime.now(UTC).isoformat(),
     "status": "passed",
+    "cleanup_verified": True,
     "backup": backup,
     "project": project,
     "tables_verified": int(tables),
@@ -460,7 +450,6 @@ temporary.replace(path)
 PY
 chmod 600 "$report"
 
-success=1
 printf 'restore_status=passed\n'
 printf 'project=%s\n' "$project_name"
 printf 'tables_verified=%s\n' "$tables_verified"

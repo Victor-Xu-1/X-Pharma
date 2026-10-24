@@ -53,6 +53,7 @@ def restore_preflight(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[
                 "database": "pharma_intel",
                 "authority": names,
                 "rowCounts": {"public.alembic_version": 1},
+                "alembicHead": "abc123",
                 "postgresImage": "backup-postgres",
                 "postgresImageId": POSTGRES_ID,
                 "apiImage": "backup-api",
@@ -68,14 +69,29 @@ def restore_preflight(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[
         "#!/usr/bin/env bash\n"
         'printf \'%s\\n\' "$*" >> "$RESTORE_DOCKER_TRACE"\n'
         'case "$1:$2:${3:-}" in\n'
+        "  version:--format:*) exit 0 ;;\n"
+        "  compose:*)\n"
+        '    case "${RESTORE_CLEAN_TARGET_MODE:-normal}" in\n'
+        "      compose-failure) exit 18 ;;\n"
+        "      existing-containers) printf 'controlled-existing-container\\n' ;;\n"
+        "    esac ;;\n"
         f"  image:inspect:backup-postgres) printf '%s\\n' '{POSTGRES_ID}' ;;\n"
         f"  image:inspect:backup-api) printf '%s\\n' '{API_ID}' ;;\n"
+        f"  image:inspect:{POSTGRES_ID}) printf '%s\\n' '{POSTGRES_ID}' ;;\n"
+        f"  image:inspect:{API_ID}) printf '%s\\n' '{API_ID}' ;;\n"
+        "  image:inspect:busybox:*) exit 0 ;;\n"
         f"  image:inspect:{CANDIDATE_ID})\n"
         '    case "${RESTORE_CANDIDATE_MODE:-present}" in\n'
         "      missing) exit 1 ;;\n"
         "      mismatch) printf 'sha256:%064d\\n' 4 ;;\n"
         f"      *) printf '%s\\n' '{CANDIDATE_ID}' ;;\n"
         "    esac ;;\n"
+        "  volume:ls:*)\n"
+        "    [[ ${RESTORE_CLEAN_TARGET_MODE:-normal} != volume-inventory-failure ]] || exit 19\n"
+        "    if [[ ${RESTORE_CLEAN_TARGET_MODE:-normal} == existing-volume "
+        '&& $* == *"name=^$RESTORE_CLEAN_VOLUME$"* ]]; then\n'
+        '      printf "%s\\n" "$RESTORE_CLEAN_VOLUME"\n'
+        "    fi ;;\n"
         "  volume:create:*) exit 86 ;;\n"
         "  create:*) exit 89 ;;\n"
         "  container:ls:*) exit 0 ;;\n"
@@ -212,3 +228,57 @@ def test_restore_workspace_follows_the_explicit_temp_parent_without_a_tmp_only_c
     assert 'temp_parent=$(realpath -e -- "${TMPDIR:-/tmp}")' in source
     assert 'work_dir=$(mktemp -d "$temp_parent/pharma-restore-smoke.XXXXXX")' in source
     assert 'case "$work_dir" in' not in source
+
+
+def test_clean_target_restore_verifies_owned_cleanup_before_publishing_success() -> None:
+    source = (ROOT / "scripts" / "restore-runtime-linux.sh").read_text(encoding="utf-8")
+    assert 'source "$root/scripts/lib/runtime_restore_resources.sh"' in source
+    assert "runtime_restore_cleanup preserve" in source
+    assert source.index("runtime_restore_cleanup preserve") < source.index('"status": "passed"')
+    assert "docker volume rm -f" not in source
+    assert "docker run --rm" not in source
+    assert '"cleanup_verified": True' in source
+
+
+@pytest.mark.parametrize(
+    ("mode", "status"), [("compose-failure", 18), ("volume-inventory-failure", 19), ("existing-containers", 1)]
+)
+def test_clean_target_inventory_failure_cannot_be_treated_as_an_empty_target(
+    restore_preflight: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch, mode: str, status: int
+) -> None:
+    backup, trace = restore_preflight
+    monkeypatch.setenv("RESTORE_CLEAN_TARGET_MODE", mode)
+    monkeypatch.setenv("TMPDIR", str(backup.parent))
+    result = _run_restore("--project-name", "restore-fixture", str(backup), script="restore-runtime-linux.sh")
+    assert result.returncode == status, result.stderr
+    calls = trace.read_text().splitlines()
+    assert not any(call.startswith("volume create ") or call.startswith("create ") for call in calls)
+    assert "restore_status=passed" not in result.stdout
+
+
+@pytest.mark.parametrize(
+    "volume_key",
+    [
+        "pharma_postgres18_data",
+        "pharma_object_store",
+        "pharma_markdown_wiki",
+        "pharma_redis_data",
+        "pharma_opensearch_data",
+    ],
+)
+def test_clean_target_preserves_every_preexisting_authority_or_projection_volume(
+    restore_preflight: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch, volume_key: str
+) -> None:
+    backup, trace = restore_preflight
+    volume = "restore-fixture_" + volume_key
+    monkeypatch.setenv("RESTORE_CLEAN_TARGET_MODE", "existing-volume")
+    monkeypatch.setenv("RESTORE_CLEAN_VOLUME", volume)
+    monkeypatch.setenv("TMPDIR", str(backup.parent))
+    result = _run_restore("--project-name", "restore-fixture", str(backup), script="restore-runtime-linux.sh")
+    assert result.returncode == 1 and "refusing to overwrite" in result.stderr
+    calls = trace.read_text().splitlines()
+    assert not any(
+        call.startswith("volume create ") or call.startswith("create ") or call.startswith("volume rm ")
+        for call in calls
+    )
+    assert "restore_status=passed" not in result.stdout
