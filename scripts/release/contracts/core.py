@@ -5,6 +5,10 @@ import re
 STATEMENT_SCHEMA = "pharma.release-gate-statement.v1"
 
 
+# Frozen policy snapshots predating an explicit migration target retain their original authority.
+LEGACY_DATABASE_ALEMBIC_HEAD = "5d7e1a3c9b24"
+
+
 BUNDLE_SCHEMA = "pharma.release-evidence-bundle.v1"
 
 

@@ -5,6 +5,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
+from scripts.release.contracts.core import LEGACY_DATABASE_ALEMBIC_HEAD
 from scripts.release.contracts.platform import (
     RUNTIME_ACCEPTANCE_FIELDS,
     RUNTIME_ACCEPTANCE_REPORT,
@@ -37,6 +38,7 @@ def _validate_runtime_acceptance_evidence(
     schema_version = report.get("schema_version")
     if (
         set(report) != RUNTIME_ACCEPTANCE_FIELDS
+        or type(schema_version) is not int
         or not (
             (schema == RUNTIME_ACCEPTANCE_SCHEMA_V1 and schema_version == 1)
             or (schema == RUNTIME_ACCEPTANCE_SCHEMA_V2 and schema_version == 2)
@@ -50,6 +52,9 @@ def _validate_runtime_acceptance_evidence(
         or report.get("main_runtime_modified") is not False
     ):
         raise ReleaseEvidenceError("runtime acceptance report has an invalid local scope or status")
+    minimum = policy.minimum_report_schema_versions.get("runtime", 1) if policy is not None else 1
+    if schema_version < minimum:
+        raise ReleaseEvidenceError("runtime report schema is older than the policy minimum")
     statement_time = _parse_timestamp(statement.get("generated_at"), "runtime statement generated_at")
     report_time = _parse_timestamp(report.get("generated_at"), "runtime generated_at")
     maximum_age_hours = policy.categories["runtime"] if policy is not None else 168
@@ -161,7 +166,8 @@ def _validate_runtime_acceptance_evidence(
     if (
         not isinstance(database, dict)
         or set(database) != {"alembic_head", "postgresql_version", "rdkit_version"}
-        or database.get("alembic_head") != "5d7e1a3c9b24"
+        or database.get("alembic_head")
+        != (policy.database_alembic_head if policy is not None else LEGACY_DATABASE_ALEMBIC_HEAD)
         or not isinstance(database.get("postgresql_version"), str)
         or not database["postgresql_version"].startswith("18.4 ")
         or database.get("rdkit_version") != "4.8.0"

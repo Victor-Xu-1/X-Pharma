@@ -4,6 +4,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
+from scripts.release.contracts.core import LEGACY_DATABASE_ALEMBIC_HEAD
 from scripts.release.contracts.data import (
     DATABASE_ACCEPTANCE_FIELDS,
     DATABASE_ACCEPTANCE_REPORT,
@@ -30,6 +31,7 @@ def _validate_database_acceptance_evidence(
     report = _load_json_object(statement_path.parent / DATABASE_ACCEPTANCE_REPORT, "database acceptance report")
     if (
         set(report) != DATABASE_ACCEPTANCE_FIELDS
+        or type(report.get("schema_version")) is not int
         or report.get("schema") != DATABASE_ACCEPTANCE_SCHEMA
         or report.get("schema_version") != 1
         or report.get("status") != "passed"
@@ -52,7 +54,8 @@ def _validate_database_acceptance_evidence(
         or not isinstance(database.get("postgresql_version"), str)
         or not database["postgresql_version"].startswith("18.4 ")
         or database.get("rdkit_version") != "4.8.0"
-        or database.get("alembic_head") != "5d7e1a3c9b24"
+        or database.get("alembic_head")
+        != (policy.database_alembic_head if policy is not None else LEGACY_DATABASE_ALEMBIC_HEAD)
         or database.get("migration_drift") is not False
     ):
         raise ReleaseEvidenceError("database authority version or migration evidence is invalid")

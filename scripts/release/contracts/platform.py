@@ -1,36 +1,13 @@
 from __future__ import annotations
 
-BACKUP_RESTORE_SCHEMA = "pharma.local-backup-restore-acceptance.v1"
-
+from pharma_intel.platform.backup_contract import (
+    BACKUP_RESTORE_FIELDS as BACKUP_RESTORE_FIELDS,
+)
+from pharma_intel.platform.backup_contract import (
+    BACKUP_RESTORE_SCHEMA as BACKUP_RESTORE_SCHEMA,
+)
 
 BACKUP_RESTORE_REPORT = "report.json"
-
-
-BACKUP_RESTORE_FIELDS = frozenset(
-    {
-        "schema",
-        "schema_version",
-        "generated_at",
-        "status",
-        "environment",
-        "production_claim",
-        "credentials_recorded",
-        "backup_reference",
-        "backup_manifest_sha256",
-        "backup_checksums_sha256",
-        "authority_artifacts",
-        "authority_bytes",
-        "tables_verified",
-        "alembic_head",
-        "rdkit_version",
-        "temporal_databases_restored",
-        "rls_probe",
-        "archives_verified",
-        "main_runtime_modified",
-        "duration_seconds",
-        "sensitive_backup_embedded",
-    }
-)
 
 
 KUBERNETES_VALIDATION_SCHEMA = "pharma.local-kubernetes-validation.v3"

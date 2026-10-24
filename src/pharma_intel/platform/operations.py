@@ -24,12 +24,17 @@ from pharma_intel.models import (
     StagedFact,
 )
 from pharma_intel.operations_contract import load_operations_contract
+from pharma_intel.platform.backup_contract import (
+    BACKUP_RESTORE_SCHEMA,
+    BACKUP_RESTORE_SCHEMA_V1,
+    validate_backup_restore_report,
+)
 from pharma_intel.platform.service_health import service_statuses
 
 MAX_EVIDENCE_BYTES = 16 * 1024 * 1024
 STALE_INGESTION_SECONDS = 300
 EVIDENCE_CONTRACTS = {
-    "backup_restore": ("backup_restore/report.json", "pharma.local-backup-restore-acceptance.v1", {"passed"}),
+    "backup_restore": ("backup_restore/report.json", BACKUP_RESTORE_SCHEMA, {"passed"}),
     "release_candidate": ("candidate-summary.json", None, {"eligible"}),
     "production_topology": (
         "production_topology/report.json",
@@ -106,6 +111,17 @@ def _evidence_entries(root: Path | None) -> list[dict[str, Any]]:
             report_status = document.get("status")
             schema_valid = expected_schema is None or document.get("schema") == expected_schema
             valid = document.get("schema_version") == 1 and schema_valid and isinstance(report_status, str)
+            if category == "backup_restore":
+                if document.get("schema") == BACKUP_RESTORE_SCHEMA_V1:
+                    # Keep the existing historical snapshot reader; this is not release admission.
+                    valid = type(document.get("schema_version")) is int and document["schema_version"] == 1
+                    valid = valid and isinstance(report_status, str)
+                else:
+                    try:
+                        validate_backup_restore_report(document)
+                        valid = document.get("schema") == BACKUP_RESTORE_SCHEMA
+                    except ValueError:
+                        valid = False
             status = "passed" if valid and report_status in passed_statuses else "failed" if valid else "invalid"
             observed_at = document.get("generated_at") or document.get("tested_at")
             entries.append(

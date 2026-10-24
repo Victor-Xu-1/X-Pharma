@@ -89,7 +89,18 @@ make restore-smoke BACKUP_DIR=backups/runtime-YYYYMMDD-HHMMSS
 4. Alembic head 对账。
 5. 使用 `NOSUPERUSER NOBYPASSRLS` 临时角色执行真实 `pharma-verify-rls`。
 6. 对象证据和 Markdown 归档完整性与解压测试。
-7. 无论成功或失败都删除隔离容器和临时卷，保留原备份供审计。
+7. 成功或失败都尝试有界清理，只删除本次隔离容器和临时卷，保留原备份供审计。无法确认清理完成时，演练失败并保留临时计数文件，不能发布通过报告。
+
+数据库镜像升级前，必须另外证明现有权威备份能在目标镜像中恢复，不能把旧镜像演练当作新镜像兼容性证据。两条现有验收入口均接受可选的 `--postgres-image-id sha256:...`，只允许本机已存在的完整小写不可变镜像 ID；不接受标签，不自动拉取，也不更改原备份或在线卷。原备份的 PostgreSQL/API 镜像身份校验仍然保留，临时容器按镜像 ID 启动并禁止拉取。缺失或身份不符的目标在创建隔离资源前失败；组合备份入口还会在暂停写入与生成备份前检查目标。
+
+```bash
+./scripts/restore-smoke-linux.sh backups/runtime-YYYYMMDD-HHMMSS --postgres-image-id 'sha256:<64-lowercase-hex>'
+./scripts/verify-local-backup-restore.sh --quiesce-runtime --postgres-image-id 'sha256:<64-lowercase-hex>' --output /absolute/e-drive/restore-target.json
+```
+
+目标镜像仍必须通过全部原有逐表行数、Alembic、RLS、两个 Temporal 库和两个归档检查，另执行真实 RDKit `mol_from_smiles`/`mol_to_smiles` 往返。报告保留备份与实际恢复镜像 ID、镜像是否改变和函数验证结果；扩展安装版本不等同于 RDKit 工具包版本。上述成功只证明隔离恢复，不代表目标已部署或已有生产风险批准。
+
+RLS 探测使用本次运行的明确容器名，由同一清理模块移除，不依赖 Docker 前台 `--rm` 的隐式等待。探测上限为 120 秒并有 10 秒强制终止边界；清理调用与清单读取分别有独立的严格时间边界。目录只接受当前解析后的临时父目录下、由本次 `mktemp` 创建的独立目录，不再假定父目录只能是系统默认值。清理必须再次证明两个容器与三个卷全部不在清单中，之后才移除计数文件并输出通过报告；Docker 不可用或仍处于 removing 的资源均不能视作已移除。恢复脚本不会重启 Docker、WSL 或其他项目。
 
 只有目标 Compose 项目不存在任何权威卷时，才可以执行完整恢复：
 

@@ -14,6 +14,7 @@ from scripts.release.contracts.goal import (
     GOAL_SECTION_19_REQUIREMENTS,
 )
 from scripts.release.contracts.mcp import MCP_SENDER_CONSTRAINT_REPORT, MCP_SENDER_CONSTRAINT_SCHEMA
+from scripts.release.contracts.migrations import policy_migration_head
 from scripts.release.contracts.topology import (
     PRODUCTION_TOPOLOGY_LIVE_REPORT,
     PRODUCTION_TOPOLOGY_LIVE_SCHEMA,
@@ -36,6 +37,10 @@ def load_policy(path: Path) -> EvidencePolicy:
     document = _load_json_object(resolved, "release evidence policy")
     if document.get("schema_version") != 1:
         raise ReleaseEvidenceError("unsupported release evidence policy schema")
+    try:
+        database_head = policy_migration_head(document, resolved)
+    except ValueError as exc:
+        raise ReleaseEvidenceError(str(exc)) from exc
     raw_categories = document.get("categories")
     raw_levels = document.get("levels")
     raw_security_age = document.get("security_max_age_hours")
@@ -48,6 +53,7 @@ def load_policy(path: Path) -> EvidencePolicy:
     ):
         raise ReleaseEvidenceError("release evidence policy sections are invalid")
     categories: dict[str, int] = {}
+    minimum_report_versions: dict[str, int] = {}
     for name, configuration in raw_categories.items():
         if not isinstance(name, str) or not CATEGORY_PATTERN.fullmatch(name) or not isinstance(configuration, dict):
             raise ReleaseEvidenceError("release evidence policy contains an invalid category")
@@ -55,6 +61,11 @@ def load_policy(path: Path) -> EvidencePolicy:
         if not isinstance(maximum_age, int) or isinstance(maximum_age, bool) or maximum_age <= 0:
             raise ReleaseEvidenceError(f"category {name} has an invalid maximum age")
         categories[name] = maximum_age
+        if "minimum_report_schema_version" in configuration:
+            minimum = configuration["minimum_report_schema_version"]
+            if type(minimum) is not int or not 1 <= minimum <= 1000:
+                raise ReleaseEvidenceError(f"category {name} has an invalid minimum report schema version")
+            minimum_report_versions[name] = minimum
     production_contracts: dict[str, ProductionEvidenceContract] = {}
     for category, configuration in raw_production_contracts.items():
         if not isinstance(category, str) or category not in categories or not isinstance(configuration, dict):
@@ -119,7 +130,7 @@ def load_policy(path: Path) -> EvidencePolicy:
         production_categories is None or not production_contracts.keys() <= production_categories.required_categories
     ):
         raise ReleaseEvidenceError("production evidence contracts must map to required production categories")
-    return EvidencePolicy(resolved, categories, levels, production_contracts)
+    return EvidencePolicy(resolved, categories, levels, production_contracts, minimum_report_versions, database_head)
 
 
 def _goal_categories(value: object, *, label: str, policy: EvidencePolicy) -> frozenset[str]:

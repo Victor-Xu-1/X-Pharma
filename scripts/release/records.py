@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+
+from scripts.release.contracts.core import LEGACY_DATABASE_ALEMBIC_HEAD
 
 
 class ReleaseEvidenceError(ValueError):
@@ -51,6 +53,8 @@ class EvidencePolicy:
     categories: dict[str, int]
     levels: dict[str, PolicyLevel]
     production_contracts: dict[str, ProductionEvidenceContract]
+    minimum_report_schema_versions: dict[str, int] = field(default_factory=dict)
+    database_alembic_head: str = LEGACY_DATABASE_ALEMBIC_HEAD
 
 
 @dataclass(frozen=True)
