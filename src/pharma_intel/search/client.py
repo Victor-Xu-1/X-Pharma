@@ -461,7 +461,7 @@ class OpenSearchGateway:
             "query": query_clause,
             "sort": sort_spec,
             "aggs": aggregations,
-            "_source": {"includes": ["entity_id", "name", "entity_type"], "excludes": ["embedding"]},
+            "_source": {"includes": ["entity_id"], "excludes": ["embedding"]},
         }
         if retrieval_mode == "hybrid" and exact_identity_sort:
             body["track_scores"] = False
@@ -494,13 +494,6 @@ class OpenSearchGateway:
 
         buckets = facet_buckets("entity_types")
         review_buckets = facet_buckets("review_statuses")
-        suggestions = list(
-            dict.fromkeys(
-                str((hit.get("_source") or {}).get("name", ""))
-                for hit in hits
-                if (hit.get("_source") or {}).get("name")
-            )
-        )[:10]
         return EntitySearchPage(
             entity_ids=[str((hit.get("_source") or {}).get("entity_id", "")) for hit in hits],
             total=total,
@@ -508,7 +501,6 @@ class OpenSearchGateway:
                 "entity_type": {str(bucket["key"]): int(bucket["doc_count"]) for bucket in buckets},
                 "review_status": {str(bucket["key"]): int(bucket["doc_count"]) for bucket in review_buckets},
             },
-            suggestions=suggestions,
             engine="opensearch-hybrid" if retrieval_mode == "hybrid" else "opensearch",
             took_ms=int(response.get("took", 0)),
         )

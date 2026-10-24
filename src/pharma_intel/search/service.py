@@ -119,12 +119,21 @@ class EntitySearchService:
                 "OpenSearch entity projection is inconsistent with the authoritative database "
                 f"({missing_count} of {len(page.entity_ids)} page entities are unavailable)"
             )
+        # Projection filters are not authority: publication/type changes may still
+        # be waiting in the outbox. Reject the whole page, preserving its counts.
+        for item in items:
+            if review_status is not None and item.review_status != review_status:
+                raise SearchProjectionError(
+                    "OpenSearch entity projection does not match the authoritative review status"
+                )
+            if selected_types and item.entity_type not in selected_types:
+                raise SearchProjectionError("OpenSearch entity projection does not match the authoritative entity type")
         return EntitySearchResultSet(
             items,
             self._matches(items, query, related),
             page.total,
             page.facets,
-            page.suggestions,
+            list(dict.fromkeys(item.name for item in items))[:10],
             page.engine,
             page.took_ms,
             effective_sort[0].field,

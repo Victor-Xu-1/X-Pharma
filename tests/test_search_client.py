@@ -223,9 +223,9 @@ def test_gateway_initializes_projects_searches_and_swaps_aliases(monkeypatch: py
         "entity_type": {"target": 1},
         "review_status": {"verified": 1},
     }
-    assert entity_page.suggestions == ["EGFR"]
     assert entity_page.took_ms == 6
     entity_request = fake.search_calls[0]
+    assert entity_request["body"]["_source"] == {"includes": ["entity_id"], "excludes": ["embedding"]}
     assert entity_request["routing"] == "tenant-a"
     assert {"term": {"tenant_id": "tenant-a"}} in entity_request["body"]["query"]["bool"]["filter"]
     assert entity_request["body"]["aggs"]["entity_types"]["filter"]["bool"]["must"] == [entity_request["body"]["query"]]

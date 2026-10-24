@@ -20,7 +20,6 @@ class EntitySearchPage:
     entity_ids: list[str]
     total: int
     facets: dict[str, dict[str, int]] = field(default_factory=dict)
-    suggestions: list[str] = field(default_factory=list)
     engine: str = "opensearch"
     took_ms: int | None = None
 
