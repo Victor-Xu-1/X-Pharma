@@ -1,6 +1,7 @@
 import type { PlaywrightTestArgs, PlaywrightWorkerArgs, TestInfo } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { resolveBrowserCredentials } from "../../src/lib/browserAcceptanceCredentials";
+import { linkedTrialProgramDisclosure } from "../fixtures/clinical-disclosure";
 import { selectInterfaceLanguage } from "../interface-language";
 
 export async function verifyClinicalNormalizedDrugOr(
@@ -142,7 +143,9 @@ export async function verifyClinicalNormalizedDrugOr(
   expect(linkedPositivePayload.total).toBe(1);
   expect(linkedPositivePayload.items.map((item) => item.id)).toEqual([trialProfileId]);
   const linkedProgramFilters = page.getByRole("form", { name: "临床试验筛选" });
-  await expect(linkedProgramFilters.locator("details.trial-linked-program-filters")).toHaveAttribute("open", "");
+  const linkedDisclosure = linkedTrialProgramDisclosure(page, linkedProgramFilters, "关联药物属性");
+  await expect(linkedDisclosure).toHaveCount(1);
+  await expect(linkedDisclosure).toHaveAttribute("open", "");
   await expect(linkedProgramFilters.getByLabel("全球最高阶段")).toHaveValue("phase_3");
   await expect(linkedProgramFilters.getByLabel("研发机构国家/地区")).toHaveValue("US");
   await expect(page.getByRole("table", { name: "临床试验结果" })).toContainText(`NCT-E2E-${fixtureKeyBase}`);
