@@ -428,6 +428,12 @@ def test_external_entity_projection_filters_internal_attributes(
             assert search.json()["items"][0]["attributes"] == expected
             assert search.json()["items"][0]["external_ids"] == {"uniprot": "P00533"}
 
+            identifier_search = client.get("/api/v1/entities", params={"q": "internal-target"})
+            assert identifier_search.status_code == 200
+            assert identifier_search.json()["items"][0]["id"] == entity_id
+            assert "internal-target-hash" not in identifier_search.text
+            assert "pharmcube_target" not in identifier_search.text
+
             dossier = client.get(f"/api/v1/entities/{entity_id}/dossier")
             assert dossier.status_code == 200
             dossier_payload = dossier.json()

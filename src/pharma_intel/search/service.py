@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from pharma_intel.config import Settings
 from pharma_intel.models import Entity, EntityType, ReviewStatus
+from pharma_intel.public_identity import is_public_entity_identifier_namespace
 from pharma_intel.repository import EntityRepository
 from pharma_intel.schemas import ENTITY_SORT_FIELDS, EntitySortField, SortDirection
 from pharma_intel.search.client import OpenSearchGateway, SearchProjectionError, get_opensearch_gateway
@@ -119,12 +120,21 @@ class EntitySearchService:
                 "OpenSearch entity projection is inconsistent with the authoritative database "
                 f"({missing_count} of {len(page.entity_ids)} page entities are unavailable)"
             )
+        # Projection filters are not authority: publication/type changes may still
+        # be waiting in the outbox. Reject the whole page, preserving its counts.
+        for item in items:
+            if review_status is not None and item.review_status != review_status:
+                raise SearchProjectionError(
+                    "OpenSearch entity projection does not match the authoritative review status"
+                )
+            if selected_types and item.entity_type not in selected_types:
+                raise SearchProjectionError("OpenSearch entity projection does not match the authoritative entity type")
         return EntitySearchResultSet(
             items,
             self._matches(items, query, related),
             page.total,
             page.facets,
-            page.suggestions,
+            list(dict.fromkeys(item.name for item in items))[:10],
             page.engine,
             page.took_ms,
             effective_sort[0].field,
@@ -153,12 +163,14 @@ class EntitySearchService:
             identifiers = [
                 (namespace, str(value), str(value).strip().casefold())
                 for namespace, value in entity.external_ids.items()
+                if is_public_entity_identifier_namespace(namespace)
             ]
             known_identifiers = {(namespace.casefold(), value.casefold()) for namespace, value, _ in identifiers}
             identifiers.extend(
                 (item.namespace, item.value, item.normalized_value)
                 for item in entity.identity_identifiers
-                if (item.namespace.casefold(), item.value.casefold()) not in known_identifiers
+                if is_public_entity_identifier_namespace(item.namespace)
+                and (item.namespace.casefold(), item.value.casefold()) not in known_identifiers
             )
             if canonical == normalized:
                 matches[entity.id] = EntitySearchMatch("canonical_name", "exact", entity.name)
