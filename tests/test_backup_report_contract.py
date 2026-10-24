@@ -355,3 +355,27 @@ def test_ambiguous_candidate_migration_authority_fails_closed(tmp_path: Path) ->
         )
     with pytest.raises(ValueError, match="exactly one head"):
         known_migration_revisions(tmp_path)
+
+
+def test_actual_stdin_receipt_can_be_published_after_private_workspace_cleanup(tmp_path: Path) -> None:
+    output, _, statement = generate_report(tmp_path)
+    arguments = producer_arguments(tmp_path)
+    restored = Path(arguments[2]).read_text(encoding="utf-8")
+    arguments[2] = "/dev/stdin"
+    output.unlink()
+    result = subprocess.run(  # noqa: S603 - Same owned stdlib producer, only controlled JSON on stdin.
+        [sys.executable, "-S", str(ROOT / "scripts/lib/runtime_backup_report.py"), *arguments],
+        input=restored,
+        text=True,
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == json.loads(output.read_text(encoding="utf-8"))
+    assert output.stat().st_mode & 0o777 == 0o600
+    _validate_backup_restore_evidence(
+        output.with_name("gate-statement.json"),
+        statement,
+        policy=load_policy(ROOT / "deploy/release/evidence-policy.json"),
+    )

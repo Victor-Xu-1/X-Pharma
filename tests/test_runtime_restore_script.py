@@ -83,6 +83,7 @@ def restore_preflight(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[
         f"  image:inspect:{CANDIDATE_ID})\n"
         '    case "${RESTORE_CANDIDATE_MODE:-present}" in\n'
         "      missing) exit 1 ;;\n"
+        f"      nonzero-with-match) printf '%s\\n' '{CANDIDATE_ID}'; exit 17 ;;\n"
         "      mismatch) printf 'sha256:%064d\\n' 4 ;;\n"
         f"      *) printf '%s\\n' '{CANDIDATE_ID}' ;;\n"
         "    esac ;;\n"
@@ -179,8 +180,8 @@ def test_restore_runs_only_exact_local_images_and_probes_the_actual_cartridge() 
 
 def test_release_backup_verifies_target_before_quiescing_and_preserves_restore_identity() -> None:
     source = (ROOT / "scripts" / "verify-local-backup-restore.sh").read_text(encoding="utf-8")
-    assert source.index('docker image inspect "$postgres_image_id"') < source.index(
-        'docker pause "${paused_containers[@]}"'
+    assert source.index('runtime_backup_docker 5 image inspect "$postgres_image_id"') < source.index(
+        'runtime_backup_quiesce "$project_name"'
     )
     assert 'restore_arguments+=(--postgres-image-id "$postgres_image_id")' in source
     assert 'python3 "$root/scripts/lib/runtime_backup_report.py"' in source
@@ -189,8 +190,26 @@ def test_release_backup_verifies_target_before_quiescing_and_preserves_restore_i
     assert '"restored_postgres_image_id": restore["restored_postgres_image_id"]' in report_source
     assert '"rdkit_function_probe": restore["rdkit_function_probe"]' not in source
     probe = source.index('run_runtime_archive "pharma-backup-archive-$started_epoch-$$-object-probe"')
-    assert source.index('docker image inspect "$postgres_image_id"') < probe
-    assert probe < source.index("systemd-run --user") < source.index('docker pause "${paused_containers[@]}"')
+    assert source.index('runtime_backup_docker 5 image inspect "$postgres_image_id"') < probe
+    assert (
+        probe < source.index("runtime_backup_lifecycle_init") < source.index('runtime_backup_quiesce "$project_name"')
+    )
+    owner = (ROOT / "scripts/lib/runtime_backup_lifecycle.sh").read_text(encoding="utf-8")
+    assert owner.index("systemd-run --user") < owner.index(
+        'runtime_backup_docker 15 pause "${backup_lifecycle_ids[@]}"'
+    )
+    assert '"$(command -v timeout)" --kill-after=2s 30s "$(command -v docker)" unpause' in owner
+
+
+def test_failed_target_inspection_cannot_accept_matching_stdout(
+    restore_preflight: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, trace = restore_preflight
+    monkeypatch.setenv("RESTORE_CANDIDATE_MODE", "nonzero-with-match")
+    result = _run_restore("--postgres-image-id", CANDIDATE_ID, script="verify-local-backup-restore.sh")
+    assert result.returncode != 0
+    assert trace.read_text().splitlines() == [f"image inspect {CANDIDATE_ID} --format {{{{.Id}}}}"]
 
 
 def test_unhealthy_archive_infrastructure_rejects_fresh_backup_before_any_writer_pause(

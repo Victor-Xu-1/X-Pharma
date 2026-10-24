@@ -6,6 +6,7 @@ umask 077
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
 source "$root/scripts/lib/runtime_archive_container.sh"
+source "$root/scripts/lib/runtime_backup_lifecycle.sh"
 output_path=""
 backup_root="$root/backups/release-candidates"
 project_name="${COMPOSE_PROJECT_NAME:-pharma-intelligence}"
@@ -23,8 +24,8 @@ containers and volumes. The successful backup is retained below backups/;
 database dumps and archives are never copied into release evidence.
 
 --quiesce-runtime briefly pauses application writers and Temporal while the
-authority snapshot is captured, then always resumes containers before restore
-verification. Use it for a deterministic release gate on an active runtime.
+authority snapshot is captured. Confirmed writer recovery precedes restore
+verification; failed or unknown recovery is never accepted as a passed gate.
 
 --postgres-image-id tests an installed immutable target image in the isolated
 restore only. It never pulls an image, changes the backup, or deploys the target.
@@ -77,14 +78,18 @@ done
   echo "unsafe Compose project name: $project_name" >&2
   exit 2
 }
-for command in docker python3 realpath dirname basename mktemp sha256sum; do
+for command in docker python3 realpath dirname basename mktemp sha256sum timeout stat rmdir flock; do
   command -v "$command" >/dev/null 2>&1 || {
     echo "required command is unavailable: $command" >&2
     exit 1
   }
 done
 if [[ -n "$postgres_image_id" ]]; then
-  [[ $(docker image inspect "$postgres_image_id" --format '{{.Id}}') == "$postgres_image_id" ]] || {
+  if ! inspected_postgres_image=$(runtime_backup_docker 5 image inspect "$postgres_image_id" --format '{{.Id}}'); then
+    echo "target PostgreSQL image inspection failed" >&2
+    exit 1
+  fi
+  [[ "$inspected_postgres_image" == "$postgres_image_id" ]] || {
     echo "target PostgreSQL image is unavailable or its identity differs" >&2
     exit 1
   }
@@ -102,80 +107,9 @@ case "$backup_root/" in
 esac
 chmod 700 "$backup_root"
 
-work=$(mktemp -d -t pharma-backup-restore-acceptance.XXXXXX)
-paused_containers=()
-watchdog_unit=""
-
-resume_runtime_writers() {
-  local failed=0 index container
-  for (( index=${#paused_containers[@]}-1; index>=0; index-- )); do
-    container=${paused_containers[$index]}
-    if [[ $(docker inspect --format '{{.State.Paused}}' "$container" 2>/dev/null || true) == true ]]; then
-      docker unpause "$container" >/dev/null || failed=1
-    fi
-  done
-  if [[ $failed -ne 0 ]]; then
-    return 1
-  fi
-  paused_containers=()
-  if [[ -n "$watchdog_unit" ]]; then
-    systemctl --user stop "$watchdog_unit.timer" >/dev/null 2>&1 || true
-    systemctl --user reset-failed "$watchdog_unit.service" "$watchdog_unit.timer" >/dev/null 2>&1 || true
-    watchdog_unit=""
-  fi
-}
-
-cleanup() {
-  resume_runtime_writers || echo "failed to resume one or more quiesced runtime containers" >&2
-  case "$work" in
-    /tmp/pharma-backup-restore-acceptance.*) rm -rf -- "$work" ;;
-    *) echo "refusing to clean unexpected backup acceptance workspace: $work" >&2 ;;
-  esac
-}
-trap cleanup EXIT INT TERM
-
+runtime_backup_lifecycle_init "$authority_root"
 if [[ $quiesce_runtime -eq 1 ]]; then
-  for command in systemctl systemd-run; do
-    command -v "$command" >/dev/null 2>&1 || {
-      echo "required quiesce recovery command is unavailable: $command" >&2
-      exit 1
-    }
-  done
-  compose=(
-    docker compose
-    --project-name "$project_name"
-    -f compose.yaml
-    -f compose.dev.yaml
-    -f compose.telemetry.yaml
-  )
-  writer_services=(api worker temporal)
-  writer_containers=()
-  for service in "${writer_services[@]}"; do
-    container=$("${compose[@]}" ps -q "$service")
-    [[ -n "$container" ]] || {
-      echo "required runtime writer service is unavailable: $service" >&2
-      exit 1
-    }
-    state=$(docker inspect --format '{{.State.Running}} {{.State.Paused}}' "$container")
-    [[ "$state" == "true false" ]] || {
-      echo "runtime writer service is not running and unpaused: $service ($state)" >&2
-      exit 1
-    }
-    [[ "$container" =~ ^[a-f0-9]{12,64}$ ]] || {
-      echo "runtime writer service returned an unsafe container id: $service" >&2
-      exit 1
-    }
-    writer_containers+=("$container")
-  done
-  watchdog_unit="pharma-backup-resume-$$-$(date +%s)"
-  systemd-run --user --quiet --unit="$watchdog_unit" --on-active=10m \
-    "$(command -v docker)" unpause "${writer_containers[@]}"
-  systemctl --user is-active --quiet "$watchdog_unit.timer" || {
-    echo "failed to arm the independent runtime resume watchdog" >&2
-    exit 1
-  }
-  paused_containers=("${writer_containers[@]}")
-  docker pause "${paused_containers[@]}" >/dev/null
+  runtime_backup_quiesce "$project_name"
 fi
 
 backup_path=$(./scripts/backup-runtime-linux.sh --output-root "$backup_root" --project-name "$project_name")
@@ -184,7 +118,7 @@ case "$backup_path/" in
   "$backup_root"/*) ;;
   *) echo "backup command returned a path outside the requested root" >&2; exit 1 ;;
 esac
-resume_runtime_writers || {
+runtime_backup_resume || {
   echo "failed to resume the quiesced runtime after backup capture" >&2
   exit 1
 }
@@ -192,8 +126,8 @@ restore_arguments=("$backup_path")
 if [[ -n "$postgres_image_id" ]]; then
   restore_arguments+=(--postgres-image-id "$postgres_image_id")
 fi
-./scripts/restore-smoke-linux.sh "${restore_arguments[@]}" > "$work/restore.json"
-chmod 600 "$work/restore.json"
+./scripts/restore-smoke-linux.sh "${restore_arguments[@]}" > "$backup_lifecycle_work/restore.json"
+chmod 600 "$backup_lifecycle_work/restore.json"
 
 if [[ -n "$output_path" ]]; then
   output_parent=$(dirname -- "$output_path")
@@ -206,9 +140,14 @@ if [[ -n "$output_path" ]]; then
   output_parent=$(realpath "$output_parent")
   output_path="$output_parent/$output_name"
 fi
+restore_result=$(< "$backup_lifecycle_work/restore.json")
+runtime_backup_lifecycle_cleanup || {
+  echo "Fresh-backup recovery/cleanup is incomplete; no passed report will be published" >&2
+  exit 1
+}
 duration_seconds=$(( $(date +%s) - started_epoch ))
-python3 "$root/scripts/lib/runtime_backup_report.py" \
-  "$backup_path/manifest.json" "$backup_path/checksums.sha256" "$work/restore.json" \
+printf '%s\n' "$restore_result" | python3 "$root/scripts/lib/runtime_backup_report.py" \
+  "$backup_path/manifest.json" "$backup_path/checksums.sha256" /dev/stdin \
   "$backup_path" "$authority_root" "$duration_seconds" "$output_path" "$postgres_image_id"
 
 if [[ -n "$output_path" ]]; then
