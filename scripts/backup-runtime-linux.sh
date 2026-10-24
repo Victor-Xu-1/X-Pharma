@@ -197,9 +197,9 @@ for archive_spec in   "$object_volume:object-store.tar.gz"   "$markdown_volume:m
 done
 
 postgres_image=$(docker inspect --format '{{.Config.Image}}' "$postgres_container")
-postgres_image_id=$(docker image inspect --format '{{.Id}}' "$postgres_image")
+postgres_image_id=$(docker inspect --format '{{.Image}}' "$postgres_container")
 api_image=$(docker inspect --format '{{.Config.Image}}' "$api_container")
-api_image_id=$(docker image inspect --format '{{.Id}}' "$api_image")
+api_image_id=$(docker inspect --format '{{.Image}}' "$api_container")
 alembic_head=$(docker exec "$postgres_container" psql -X -U "$admin_user" -d "$database" -At   -v ON_ERROR_STOP=1 -c 'SELECT version_num FROM alembic_version')
 docker_server_version=$(docker version --format '{{.Server.Version}}')
 
