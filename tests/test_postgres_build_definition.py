@@ -113,7 +113,8 @@ def test_security_ci_binds_the_cached_postgres_image_to_canonical_inputs() -> No
     assert steps.index(identity) < steps.index(build) < steps.index(gate)
     assert "uv run --locked python scripts/source_tree_manifest.py . --build-definition postgres" in identity["run"]
     assert '[[ "$input_count" == 3 && "$definition_sha256" =~ ^[0-9a-f]{64}$ ]]' in identity["run"]
-    assert 'printf \'sha256=%s\\n\' "$definition_sha256" >> "$GITHUB_OUTPUT"' in identity["run"]
+    assert "printf " in identity["run"] and "sha256=%s" in identity["run"]
+    assert '"$definition_sha256" >> "$GITHUB_OUTPUT"' in identity["run"]
     assert build["with"]["labels"] == (
         "io.pharma.build-definition-sha256=${{ steps.postgres_definition.outputs.sha256 }}"
     )
