@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 from scripts.source_tree_manifest import POSTGRES_BUILD_INPUTS, SourceTreeManifestError, build_source_tree_manifest
 
@@ -97,3 +98,26 @@ def test_selected_inputs_reject_file_or_parent_symlinks(tmp_path: Path, parent_l
     relative = "linked/input" if parent_link else "linked"
     with pytest.raises(SourceTreeManifestError, match="symbolic link"):
         build_source_tree_manifest(tmp_path, relative_paths=(relative,))
+
+
+def test_security_ci_binds_the_cached_postgres_image_to_canonical_inputs() -> None:
+    root = Path(__file__).parents[1]
+    workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
+    job = workflow["jobs"]["security-supply-chain"]
+    steps = job["steps"]
+    identity = next((step for step in steps if step.get("id") == "postgres_definition"), None)
+    assert identity is not None
+    build = next(step for step in steps if step.get("name") == "Build PostgreSQL 18 / RDKit release image")
+    gate = next(step for step in steps if step.get("name") == "Run source, dependency, SBOM and image security gates")
+
+    assert steps.index(identity) < steps.index(build) < steps.index(gate)
+    assert "uv run --locked python scripts/source_tree_manifest.py . --build-definition postgres" in identity["run"]
+    assert '[[ "$input_count" == 3 && "$definition_sha256" =~ ^[0-9a-f]{64}$ ]]' in identity["run"]
+    assert "printf " in identity["run"] and "sha256=%s" in identity["run"]
+    assert '"$definition_sha256" >> "$GITHUB_OUTPUT"' in identity["run"]
+    assert build["with"]["labels"] == (
+        "io.pharma.build-definition-sha256=${{ steps.postgres_definition.outputs.sha256 }}"
+    )
+    assert build["with"]["tags"] == "pharma-postgres-rdkit:18.4-2026.03.3"
+    assert gate["run"] == "./scripts/run-security-gates.sh"
+    assert job["timeout-minutes"] == 60

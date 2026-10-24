@@ -498,6 +498,14 @@ jobs:
           tags: pharma-intelligence-api:latest
           cache-from: type=gha,scope=pharma-api-security
           cache-to: type=gha,mode=max,scope=pharma-api-security
+      - name: Identify canonical PostgreSQL build inputs
+        id: postgres_definition
+        run: |
+          read -r input_count definition_sha256 < <(
+            uv run --locked python scripts/source_tree_manifest.py . --build-definition postgres
+          )
+          [[ "$input_count" == 3 && "$definition_sha256" =~ ^[0-9a-f]{64}$ ]]
+          printf 'sha256=%s\n' "$definition_sha256" >> "$GITHUB_OUTPUT"
       - name: Build PostgreSQL 18 / RDKit release image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -506,6 +514,7 @@ jobs:
           build-args: DOCKER_LIBRARY_REGISTRY=docker.io/library
           load: true
           tags: pharma-postgres-rdkit:18.4-2026.03.3
+          labels: io.pharma.build-definition-sha256=${{ steps.postgres_definition.outputs.sha256 }}
           cache-from: type=gha,scope=postgres-rdkit
           cache-to: type=gha,mode=max,scope=postgres-rdkit
       - name: Run source, dependency, SBOM and image security gates
