@@ -2113,7 +2113,7 @@ wheels = [
 
 [[package]]
 name = "x-pharma"
-version = "0.1.91"
+version = "0.1.92"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },
