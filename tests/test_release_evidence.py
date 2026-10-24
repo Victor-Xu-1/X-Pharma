@@ -6,6 +6,7 @@ import shutil
 import stat
 import subprocess
 import sys
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -43,6 +44,7 @@ from scripts.release import (
     verify_production_evidence_handoff,
     verify_production_evidence_handoff_offline,
 )
+from scripts.release.contracts.core import LEGACY_DATABASE_ALEMBIC_HEAD
 
 
 def _git(repo: Path, *arguments: str) -> None:
@@ -2451,7 +2453,7 @@ def _database_acceptance_statement(
         "database": {
             "postgresql_version": "18.4 (Debian 18.4-1.pgdg13+1)",
             "rdkit_version": "4.8.0",
-            "alembic_head": "5d7e1a3c9b24",
+            "alembic_head": policy.database_alembic_head,
             "migration_drift": False,
         },
         "rls": {
@@ -3055,7 +3057,7 @@ def _runtime_acceptance_statement(
             "parser": {"backend": "service", "readiness": "passed"},
         },
         "database": {
-            "alembic_head": "5d7e1a3c9b24",
+            "alembic_head": policy.database_alembic_head,
             "postgresql_version": "18.4 (Debian 18.4-1.pgdg13+1)",
             "rdkit_version": "4.8.0",
         },
@@ -3100,6 +3102,10 @@ def test_runtime_evidence_requires_all_services_entries_and_authorities(tmp_path
 
 def test_runtime_evidence_keeps_historical_v1_reports_verifiable(tmp_path: Path) -> None:
     statement_path, statement, report, policy = _runtime_acceptance_statement(tmp_path)
+    policy = replace(policy, database_alembic_head=LEGACY_DATABASE_ALEMBIC_HEAD, minimum_report_schema_versions={})
+    database = report["database"]
+    assert isinstance(database, dict)
+    database["alembic_head"] = LEGACY_DATABASE_ALEMBIC_HEAD
     report["schema"] = release_evidence.RUNTIME_ACCEPTANCE_SCHEMA_V1
     report["schema_version"] = 1
     entrypoints = report["entrypoints"]
@@ -3114,6 +3120,10 @@ def test_runtime_evidence_keeps_historical_v1_reports_verifiable(tmp_path: Path)
 
 def test_runtime_evidence_keeps_historical_v2_reports_verifiable(tmp_path: Path) -> None:
     statement_path, statement, report, policy = _runtime_acceptance_statement(tmp_path)
+    policy = replace(policy, database_alembic_head=LEGACY_DATABASE_ALEMBIC_HEAD, minimum_report_schema_versions={})
+    database = report["database"]
+    assert isinstance(database, dict)
+    database["alembic_head"] = LEGACY_DATABASE_ALEMBIC_HEAD
     report["schema"] = release_evidence.RUNTIME_ACCEPTANCE_SCHEMA_V2
     report["schema_version"] = 2
     entrypoints = report["entrypoints"]

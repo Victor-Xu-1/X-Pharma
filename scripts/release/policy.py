@@ -14,6 +14,7 @@ from scripts.release.contracts.goal import (
     GOAL_SECTION_19_REQUIREMENTS,
 )
 from scripts.release.contracts.mcp import MCP_SENDER_CONSTRAINT_REPORT, MCP_SENDER_CONSTRAINT_SCHEMA
+from scripts.release.contracts.migrations import policy_migration_head
 from scripts.release.contracts.topology import (
     PRODUCTION_TOPOLOGY_LIVE_REPORT,
     PRODUCTION_TOPOLOGY_LIVE_SCHEMA,
@@ -36,6 +37,10 @@ def load_policy(path: Path) -> EvidencePolicy:
     document = _load_json_object(resolved, "release evidence policy")
     if document.get("schema_version") != 1:
         raise ReleaseEvidenceError("unsupported release evidence policy schema")
+    try:
+        database_head = policy_migration_head(document, resolved)
+    except ValueError as exc:
+        raise ReleaseEvidenceError(str(exc)) from exc
     raw_categories = document.get("categories")
     raw_levels = document.get("levels")
     raw_security_age = document.get("security_max_age_hours")
@@ -125,7 +130,7 @@ def load_policy(path: Path) -> EvidencePolicy:
         production_categories is None or not production_contracts.keys() <= production_categories.required_categories
     ):
         raise ReleaseEvidenceError("production evidence contracts must map to required production categories")
-    return EvidencePolicy(resolved, categories, levels, production_contracts, minimum_report_versions)
+    return EvidencePolicy(resolved, categories, levels, production_contracts, minimum_report_versions, database_head)
 
 
 def _goal_categories(value: object, *, label: str, policy: EvidencePolicy) -> frozenset[str]:

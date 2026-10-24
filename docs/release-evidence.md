@@ -394,6 +394,25 @@ MCP 互操作验收脚本现在显式绑定 `COMPOSE_PROJECT_NAME`/`--project-na
 
 内部平台运营页只读取受控证据根目录，不生成或改写发布证据。部署方可将仓库外目录以只读方式挂载并设置 `PLATFORM_EVIDENCE_ROOT`；读取器接受 `backup_restore/report.json` 的历史 `pharma.local-backup-restore-acceptance.v1` 与当前 `v2`、`candidate-summary.json` 和 `production_topology/report.json` 的 `pharma.production-topology-live-probe.v1`，同时执行文件类型、大小、版本匹配、状态和摘要边界检查；v2 还使用同一完整数据合同。目录未配置、文件缺失、无效或只含本地证据时，UI 必须分别显示 `not_configured`、`missing`、`invalid` 或非生产结论，不能把它们折算为生产健康。API 不执行报告命令，也不需要 Docker socket 或写入证据目录。
 
+## 数据库迁移证据与历史快照
+
+`deploy/release/evidence-policy.json` 的 `database_alembic_head` 唯一声明当前发布
+所需的完整迁移身份。加载当前源码中的规范政策时，发布工具解析候选的完整 Alembic
+迁移图；缺少唯一 head、断裂的祖先、遗漏或过期的政策目标都会失败关闭。`database`
+和 `runtime` 报告必须精确等于这一目标，不能使用任意已知祖先、前缀或未知 revision
+替代当前迁移。备份恢复仍验证其记录的已发布源迁移，合法回滚祖先不能冒充当前
+数据库或运行时验收。
+
+政策会随签名证据包冻结。离线重放只使用包内声明的迁移目标；没有这一可选字段的
+历史政策保留其原始迁移身份，不因验证工具今天的源码更新而改变含义。当前政策的
+`runtime.minimum_report_schema_version=3` 禁止新候选降级缺失工作台文档身份的报告；
+历史政策快照仍可读取原 v1/v2 报告。报告版本必须是真正整数，不接受布尔或浮点替代。
+测试直接执行两个入口的标准库报告程序，并通过真实 Ed25519 签名、组包和离线校验
+检查历史兼容；这些受控元数据不代表真实业务数据库恢复或部署验收。
+
+`status.sh` 的固定入口属于 `compose+dev+telemetry` 验收配置，仍为
+`18380`/`18390`；它不声明维护者的其他部署端口已经完成验收。
+
 ## 信任边界
 
 - `capture` 仅在工作树干净、当前提交与安全报告的源码树摘要一致时启动命令；命令结束后再次核对，源码变化会使记录失败。

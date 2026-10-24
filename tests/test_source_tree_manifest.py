@@ -257,7 +257,7 @@ def test_enterprise_database_acceptance_requires_explicit_tenant_signing_secret(
 
 
 @pytest.mark.parametrize(
-    ("name", "help_fragment", "embedded_python_blocks"),
+    ("name", "help_fragment", "expected_python_programs"),
     [
         ("verify-automatic-ingestion.sh", "never invokes a manual ingest command", 1),
         ("verify-local-ingestion.sh", "never creates source files", 1),
@@ -272,7 +272,7 @@ def test_enterprise_database_acceptance_requires_explicit_tenant_signing_secret(
     ],
 )
 def test_pilot_acceptance_scripts_are_executable_and_help_is_side_effect_free(
-    name: str, help_fragment: str, embedded_python_blocks: int
+    name: str, help_fragment: str, expected_python_programs: int
 ) -> None:
     root = Path(__file__).parents[1]
     script = root / "scripts" / name
@@ -289,7 +289,16 @@ def test_pilot_acceptance_scripts_are_executable_and_help_is_side_effect_free(
     )
     assert help_result.returncode == 0, help_result.stderr
     assert help_fragment in " ".join(help_result.stdout.split())
-    embedded = re.findall(r"<<'PY'\n(.*?)\nPY\n", script.read_text(encoding="utf-8"), flags=re.DOTALL)
-    assert len(embedded) == embedded_python_blocks
+    script_source = script.read_text(encoding="utf-8")
+    embedded = re.findall(r"<<'PY'\n(.*?)\nPY\n", script_source, flags=re.DOTALL)
+    delegated: list[Path] = []
+    if name == "verify-local-backup-restore.sh":
+        assert script_source.count('python3 "$root/scripts/lib/runtime_backup_report.py"') == 1
+        delegated.append(root / "scripts/lib/runtime_backup_report.py")
+    # Keep the original program inventory and compilation gate after extracting its owner.
+    assert len(embedded) + len(delegated) == expected_python_programs
     for index, source in enumerate(embedded):
         compile(source, f"{name}:heredoc:{index}", "exec")
+    for module in delegated:
+        assert module.is_file() and not module.is_symlink()
+        compile(module.read_text(encoding="utf-8"), str(module), "exec")

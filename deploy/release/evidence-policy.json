@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "database_alembic_head": "b8f41d6c2e93",
   "security_max_age_hours": {
     "development": 168,
     "pilot": 168,
@@ -22,7 +23,7 @@
     "ocr": {"max_age_hours": 168},
     "ingestion_readiness": {"max_age_hours": 168},
     "backup_restore": {"max_age_hours": 720, "minimum_report_schema_version": 2},
-    "runtime": {"max_age_hours": 72},
+    "runtime": {"max_age_hours": 72, "minimum_report_schema_version": 3},
     "ingestion_pilot": {"max_age_hours": 168},
     "ingestion": {"max_age_hours": 168},
     "kubernetes": {"max_age_hours": 720},

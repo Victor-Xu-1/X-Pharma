@@ -6,6 +6,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from pharma_intel.platform.backup_contract import validate_backup_restore_report
+from scripts.release.contracts.core import LEGACY_DATABASE_ALEMBIC_HEAD
 from scripts.release.contracts.migrations import known_migration_revisions
 from scripts.release.contracts.platform import BACKUP_RESTORE_REPORT
 from scripts.release.io import _load_json_object, _parse_timestamp
@@ -50,7 +51,7 @@ def _validate_backup_restore_evidence(
         or reference.parts[:2] != ("backups", "release-candidates")
     ):
         raise ReleaseEvidenceError("backup restore authority reference is unsafe")
-    if version == 1 and report.get("alembic_head") != "5d7e1a3c9b24":
+    if version == 1 and report.get("alembic_head") != LEGACY_DATABASE_ALEMBIC_HEAD:
         raise ReleaseEvidenceError("backup restore authority assertions are incomplete")
     if version == 2:
         try:
