@@ -21,7 +21,7 @@
     "parser_sandbox": {"max_age_hours": 168},
     "ocr": {"max_age_hours": 168},
     "ingestion_readiness": {"max_age_hours": 168},
-    "backup_restore": {"max_age_hours": 720},
+    "backup_restore": {"max_age_hours": 720, "minimum_report_schema_version": 2},
     "runtime": {"max_age_hours": 72},
     "ingestion_pilot": {"max_age_hours": 168},
     "ingestion": {"max_age_hours": 168},

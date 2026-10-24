@@ -183,8 +183,11 @@ def test_release_backup_verifies_target_before_quiescing_and_preserves_restore_i
         'docker pause "${paused_containers[@]}"'
     )
     assert 'restore_arguments+=(--postgres-image-id "$postgres_image_id")' in source
-    assert '"rdkit_function_probe": restore["rdkit_function_probe"]' in source
-    assert '"restored_postgres_image_id": restore["restored_postgres_image_id"]' in source
+    assert 'python3 "$root/scripts/lib/runtime_backup_report.py"' in source
+    report_source = (ROOT / "scripts/lib/runtime_backup_report.py").read_text(encoding="utf-8")
+    assert '"rdkit_function_probe": restore["rdkit_function_probe"]' in report_source
+    assert '"restored_postgres_image_id": restore["restored_postgres_image_id"]' in report_source
+    assert '"rdkit_function_probe": restore["rdkit_function_probe"]' not in source
     probe = source.index('run_runtime_archive "pharma-backup-archive-$started_epoch-$$-object-probe"')
     assert source.index('docker image inspect "$postgres_image_id"') < probe
     assert probe < source.index("systemd-run --user") < source.index('docker pause "${paused_containers[@]}"')

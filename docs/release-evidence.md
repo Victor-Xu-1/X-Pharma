@@ -2,6 +2,26 @@
 
 当前软件版本以 [`pyproject.toml`](../pyproject.toml) 为唯一权威，按[贡献规范](../CONTRIBUTING.md#product-version-counter)递增。以下日期、版本、分支和计数是对应提交的历史快照；当前合并主线、CI 和部署身份须独立核对，历史记录不随新发布号改写。
 
+## 备份恢复报告的当前合同
+
+新鲜备份恢复只生成 `pharma.local-backup-restore-acceptance.v2`，报告协议版本
+独立于产品版本。唯一数据合同位于 `src/pharma_intel/platform/backup_contract.py`；
+标准库独立生成器、发布验证器和平台只读入口复用该合同。生成器不要求宿主安装
+应用分发包，保留原子、独占、`0600` 输出；它还核对备份清单与实际恢复的表数量、
+迁移号、源镜像和请求目标，失败不能留下通过报告。
+
+v2 强制记录 `rdkit_function_probe`、`backup_postgres_image_id`、
+`restored_postgres_image_id` 和严格布尔值 `postgres_image_changed`。实际镜像不同
+时，发布验证还要求恢复目标与 statement 中经过安全扫描的 PostgreSQL subject
+一致；默认恢复原镜像仍是有效回滚证据，但不声称已经验证另一个升级目标。
+备份迁移号必须是候选现有 Alembic 图中的完整已发布版本，不能用未知号或缩写。
+恢复已知祖先版本证明的是原备份可恢复，不证明在线候选已完成当前迁移。
+
+当前策略只为 `backup_restore` 增加 `minimum_report_schema_version=2`，
+原类别、有效期和其他门禁不变。历史 v1 报告与没有最小版本字段的旧策略快照
+仍按原合同读取；当前发布不能通过降级为 v1 绕过镜像与功能证据。平台只展示
+机器报告，不授予发布或生产批准；受控报告夹具也不代替真实 Docker／业务库恢复。
+
 ## 2026-10-02 架构候选与证据使用边界
 
 当时软件显示版本为 `X-Pharma v0.1.0`，工程分支为 `refactor/architecture`；原 `main`、原业务数据库和原预览未被此次架构迁移覆盖。以下旧日期的测试计数和运行状态仅用于历史追溯，不可冒充当前提交的完整门禁结果。
@@ -372,7 +392,7 @@ MCP 互操作验收脚本现在显式绑定 `COMPOSE_PROJECT_NAME`/`--project-na
 
 候选末尾的 `runtime` 门禁必须附带 `pharma.local-runtime-acceptance.v3`。报告从实际 Compose 状态、健康检查、两个受治理人员工作台、MCP/parser 入口、Alembic、PostgreSQL/RDKit、OpenSearch 投影和持久数据卫生命令生成，以 `0600` 原子独占写入；两个工作台必须分别通过 GET/HEAD、HTML 类型、SPA shell、CSP 和防嵌入响应头验证，并记录匹配的入口文档、`data-workbench` 标记和互不相同的 HTML SHA-256。发布工具会拒绝缺少任一必需服务或工作台、两个路由返回相同文档、未认证 MCP 不再返回 401、迁移或版本漂移、搜索队列积压、测试残留以及主运行时修改。验证器保留对历史 `v1`、`v2` 候选的读取能力，但新候选只生成 `v3`。该证据证明当前本地运行线在候选结束时仍健康，不等于目标环境可用性或 SLO 证明。
 
-内部平台运营页只读取受控证据根目录，不生成或改写发布证据。部署方可将仓库外目录以只读方式挂载并设置 `PLATFORM_EVIDENCE_ROOT`；读取器只接受 `backup_restore/report.json` 的 `pharma.local-backup-restore-acceptance.v1`、`candidate-summary.json` 和 `production_topology/report.json` 的 `pharma.production-topology-live-probe.v1`，同时执行文件类型、大小、JSON schema、状态和摘要边界检查。目录未配置、文件缺失、无效或只含本地证据时，UI 必须分别显示 `not_configured`、`missing`、`invalid` 或非生产结论，不能把它们折算为生产健康。API 不执行报告命令，也不需要 Docker socket 或写入证据目录。
+内部平台运营页只读取受控证据根目录，不生成或改写发布证据。部署方可将仓库外目录以只读方式挂载并设置 `PLATFORM_EVIDENCE_ROOT`；读取器接受 `backup_restore/report.json` 的历史 `pharma.local-backup-restore-acceptance.v1` 与当前 `v2`、`candidate-summary.json` 和 `production_topology/report.json` 的 `pharma.production-topology-live-probe.v1`，同时执行文件类型、大小、版本匹配、状态和摘要边界检查；v2 还使用同一完整数据合同。目录未配置、文件缺失、无效或只含本地证据时，UI 必须分别显示 `not_configured`、`missing`、`invalid` 或非生产结论，不能把它们折算为生产健康。API 不执行报告命令，也不需要 Docker socket 或写入证据目录。
 
 ## 信任边界
 
@@ -406,7 +426,7 @@ make release-candidate \
   RELEASE_CANDIDATE_ARGS="--include-backup-restore --include-kubernetes"
 ```
 
-该候选在普通 Development 基础上额外记录恢复和 Kubernetes 两类门禁。`backup_restore` 会在 `backups/release-candidates` 保留一份完整备份，发布包仅收录 `pharma.local-backup-restore-acceptance.v1` 摘要；Pilot 候选在快照期间会短暂停顿 API、MCP、后台写入服务及 Temporal，并通过退出清理保证恢复，避免自动调度写入破坏跨存储快照的一致性。WSL systemd 同时注册独立的十分钟恢复守卫，即使采集进程被强制终止也不会无限期保留暂停状态。`kubernetes` 使用可销毁的三节点 kind 集群和固定摘要资产，发布包仅收录 `pharma.local-kubernetes-validation.v3` 报告；除 server-side dry-run 外，v3 还实际启动双副本 ClamAV StatefulSet，验证跨两个 worker/测试 zone 分布、独立 PVC、签名 freshness、干净/EICAR 扫描和单 Pod 删除期间至少一个 Service endpoint 持续 Ready。两类报告都会被捕获、审计、组包和离线验包重新做语义校验，但仍是 `production_claim=false` 的本地工程证据，不能代替目标云环境的 HA/PITR、灾备演练、容量或变更审批。普通 Development 默认不生成完整备份；Pilot 仍无条件要求备份恢复。
+该候选在普通 Development 基础上额外记录恢复和 Kubernetes 两类门禁。`backup_restore` 会在 `backups/release-candidates` 保留一份完整备份，发布包仅收录 `pharma.local-backup-restore-acceptance.v2` 摘要；Pilot 候选在快照期间会短暂停顿 API、MCP、后台写入服务及 Temporal，并通过退出清理保证恢复，避免自动调度写入破坏跨存储快照的一致性。WSL systemd 同时注册独立的十分钟恢复守卫，即使采集进程被强制终止也不会无限期保留暂停状态。`kubernetes` 使用可销毁的三节点 kind 集群和固定摘要资产，发布包仅收录 `pharma.local-kubernetes-validation.v3` 报告；除 server-side dry-run 外，v3 还实际启动双副本 ClamAV StatefulSet，验证跨两个 worker/测试 zone 分布、独立 PVC、签名 freshness、干净/EICAR 扫描和单 Pod 删除期间至少一个 Service endpoint 持续 Ready。两类报告都会被捕获、审计、组包和离线验包重新做语义校验，但仍是 `production_claim=false` 的本地工程证据，不能代替目标云环境的 HA/PITR、灾备演练、容量或变更审批。普通 Development 默认不生成完整备份；Pilot 仍无条件要求备份恢复。
 
 Pilot 的 AI 治理必须由部署环境注入已批准的第三方 HTTPS 模型 API 配置。发布工具不启动、不下载也不缓存本地模型；provider 的真实协议、费用、限流、usage、request ID 和失败关闭行为必须作为独立验收证据。
 

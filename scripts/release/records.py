@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
@@ -51,6 +51,7 @@ class EvidencePolicy:
     categories: dict[str, int]
     levels: dict[str, PolicyLevel]
     production_contracts: dict[str, ProductionEvidenceContract]
+    minimum_report_schema_versions: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

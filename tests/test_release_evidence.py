@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
@@ -1830,9 +1832,11 @@ def _backup_restore_statement(
     root = Path(__file__).parents[1]
     policy = load_policy(root / "deploy" / "release" / "evidence-policy.json")
     generated_at = datetime.now(UTC).isoformat()
+    head = ScriptDirectory.from_config(Config(str(root / "alembic.ini"))).get_current_head()
+    assert isinstance(head, str)
     report: dict[str, object] = {
         "schema": release_evidence.BACKUP_RESTORE_SCHEMA,
-        "schema_version": 1,
+        "schema_version": 2,
         "generated_at": generated_at,
         "status": "passed",
         "environment": "local-wsl",
@@ -1844,8 +1848,12 @@ def _backup_restore_statement(
         "authority_artifacts": 8,
         "authority_bytes": 4096,
         "tables_verified": 42,
-        "alembic_head": "5d7e1a3c9b24",
+        "alembic_head": head,
         "rdkit_version": "4.8.0",
+        "rdkit_function_probe": "passed",
+        "backup_postgres_image_id": "sha256:" + "1" * 64,
+        "restored_postgres_image_id": "sha256:" + "1" * 64,
+        "postgres_image_changed": False,
         "temporal_databases_restored": 2,
         "rls_probe": "passed",
         "archives_verified": 2,
