@@ -16,7 +16,7 @@ from packaging.version import Version
         ("opentelemetry-api", "1.45.1"),
         ("opentelemetry-sdk", "1.45.1"),
         ("Pillow", "13.0.0"),
-        ("pypdf", "6.21.1"),
+        ("pypdf", "6.21.2"),
     ],
 )
 def test_audited_dependencies_meet_the_october_security_floor(distribution: str, minimum: str) -> None:

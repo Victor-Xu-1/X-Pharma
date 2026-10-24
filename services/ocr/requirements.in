@@ -5,6 +5,6 @@ paddlepaddle==3.3.1
 pydantic-settings==2.10.1
 certifi==2026.10.19
 Pillow==13.0.0
-pypdf==6.21.1
+pypdf==6.21.2
 uvicorn==0.35.0
 urllib3==2.8.0
