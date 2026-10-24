@@ -8,6 +8,7 @@ import { localizedDevelopmentPhase, localizedProgramModality } from "../../lib/i
 import { programStatusLabels } from "./filterLabels";
 import { pipelineFilterOptions } from "./filterOptions";
 import type { PipelineFilterProps } from "./filterTypes";
+import "./PipelinePrimaryFilters.css";
 export function PipelinePrimaryFilters({
   filters,
   updateFilter,
@@ -76,52 +77,63 @@ export function PipelinePrimaryFilters({
         </label>
       </div>
 
-      <fieldset className="pipeline-entity-filters" aria-label={t("药品、靶点、适应症与研发机构")}>
-        <EntityFilterSelect
-          label={t("药品")}
-          entityType="drug"
-          value={filters.drugEntityId}
-          placeholder={t("输入规范药品")}
-          onChange={(entityId, name) => {
-            updateFilter("drugEntityId", entityId);
-            rememberEntity("drug_entity_id", entityId, name);
-          }}
-          onResolved={(entityId, name) => rememberEntity("drug_entity_id", entityId, name)}
-        />
-        <EntityFilterSelect
-          label={t("靶点")}
-          entityType="target"
-          value={filters.targetEntityId}
-          placeholder={t("输入至少 2 个字符")}
-          onChange={(entityId, name) => {
-            updateFilter("targetEntityId", entityId);
-            rememberEntity("target_entity_id", entityId, name);
-          }}
-          onResolved={(entityId, name) => rememberEntity("target_entity_id", entityId, name)}
-        />
-        <EntityFilterSelect
-          label={t("适应症")}
-          entityType="disease"
-          value={filters.diseaseEntityId}
-          placeholder={t("输入疾病或适应症")}
-          onChange={(entityId, name) => {
-            updateFilter("diseaseEntityId", entityId);
-            rememberEntity("disease_entity_id", entityId, name);
-          }}
-          onResolved={(entityId, name) => rememberEntity("disease_entity_id", entityId, name)}
-        />
-        <EntityFilterSelect
-          label={t("研发机构")}
-          entityType="organization"
-          value={filters.organizationEntityId}
-          placeholder={t("输入机构名称")}
-          onChange={(entityId, name) => {
-            updateFilter("organizationEntityId", entityId);
-            rememberEntity("organization_entity_id", entityId, name);
-          }}
-          onResolved={(entityId, name) => rememberEntity("organization_entity_id", entityId, name)}
-        />
-      </fieldset>
+      <SecondaryFilters
+        label={t("药品、靶点、适应症与研发机构")}
+        className="pipeline-entity-disclosure"
+        contentClassName="pipeline-entity-disclosure-content"
+        activeCount={
+          [filters.drugEntityId, filters.targetEntityId, filters.diseaseEntityId, filters.organizationEntityId].filter(
+            Boolean,
+          ).length
+        }
+      >
+        <fieldset className="pipeline-entity-filters" aria-label={t("药品、靶点、适应症与研发机构")}>
+          <EntityFilterSelect
+            label={t("药品")}
+            entityType="drug"
+            value={filters.drugEntityId}
+            placeholder={t("输入规范药品")}
+            onChange={(entityId, name) => {
+              updateFilter("drugEntityId", entityId);
+              rememberEntity("drug_entity_id", entityId, name);
+            }}
+            onResolved={(entityId, name) => rememberEntity("drug_entity_id", entityId, name)}
+          />
+          <EntityFilterSelect
+            label={t("靶点")}
+            entityType="target"
+            value={filters.targetEntityId}
+            placeholder={t("输入至少 2 个字符")}
+            onChange={(entityId, name) => {
+              updateFilter("targetEntityId", entityId);
+              rememberEntity("target_entity_id", entityId, name);
+            }}
+            onResolved={(entityId, name) => rememberEntity("target_entity_id", entityId, name)}
+          />
+          <EntityFilterSelect
+            label={t("适应症")}
+            entityType="disease"
+            value={filters.diseaseEntityId}
+            placeholder={t("输入疾病或适应症")}
+            onChange={(entityId, name) => {
+              updateFilter("diseaseEntityId", entityId);
+              rememberEntity("disease_entity_id", entityId, name);
+            }}
+            onResolved={(entityId, name) => rememberEntity("disease_entity_id", entityId, name)}
+          />
+          <EntityFilterSelect
+            label={t("研发机构")}
+            entityType="organization"
+            value={filters.organizationEntityId}
+            placeholder={t("输入机构名称")}
+            onChange={(entityId, name) => {
+              updateFilter("organizationEntityId", entityId);
+              rememberEntity("organization_entity_id", entityId, name);
+            }}
+            onResolved={(entityId, name) => rememberEntity("organization_entity_id", entityId, name)}
+          />
+        </fieldset>
+      </SecondaryFilters>
 
       <SecondaryFilters
         label={t("药物分类与记录地区")}

@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { collectionLanguageFixture } from "./fixtures/collection-language";
+import { expectIntermediateDirectoryReading } from "./fixtures/compact-directory-reading";
 import { selectInterfaceLanguage } from "./interface-language";
 
 test("[collection-language] keeps comparison, export and pending editor state across cross-tab language changes", async ({
@@ -14,6 +15,7 @@ test("[collection-language] keeps comparison, export and pending editor state ac
     simulatedUpdates = 0,
     finishUpdate: (() => void) | undefined,
     detailVersion = 2;
+  let emptyCatalog = false;
   page.on("pageerror", (error) => errors.push(error.message));
   // This entire scenario uses browser-only responses. The one controlled PATCH
   // simulates a conflict and never reaches an account, provider or business server.
@@ -49,8 +51,8 @@ test("[collection-language] keeps comparison, export and pending editor state ac
     if (path.endsWith("/comparison-sets/catalog"))
       return route.fulfill({
         json: {
-          items: [fixture.detail],
-          total: 1,
+          items: emptyCatalog ? [] : [fixture.detail],
+          total: emptyCatalog ? 0 : 1,
           limit: 25,
           offset: 0,
         },
@@ -97,6 +99,7 @@ test("[collection-language] keeps comparison, export and pending editor state ac
     expect(member.descriptionTop).toBeGreaterThanOrEqual(member.nameBottom ?? 0);
   }
   await audit("collection-comparison-en");
+  await expectIntermediateDirectoryReading(page, testInfo, "collections", "List directory");
   if ((page.viewportSize()?.width ?? 1440) < 900)
     await page.getByRole("button", { name: "Expand List directory", exact: true }).click();
   await expect(page.locator(".collection-picker").getByText("Private", { exact: true })).toBeVisible();
@@ -169,6 +172,21 @@ test("[collection-language] keeps comparison, export and pending editor state ac
   await selectInterfaceLanguage(page, "zh-CN");
   await expect(page.getByRole("table", { name: "研发情报对比表", exact: true })).toContainText("小分子");
   await audit("collection-drug-zh");
+  await selectInterfaceLanguage(page, "en");
+  emptyCatalog = true;
+  await page.goto("/workspace/research?view=collections");
+  const firstList = page.getByRole("textbox", { name: "List name", exact: true });
+  await expect(firstList).toBeVisible();
+  await expect(page.locator(".collections-list .stack-form")).toHaveCount(1);
+  await expect(page.locator(".collections-list nav")).toHaveCount(0);
+  await firstList.fill("EGFR / 原始列表草稿");
+  await audit("collection-empty-en");
+  const emptyReads = reads;
+  await selectInterfaceLanguage(page, "zh-CN");
+  await expect(page.getByRole("textbox", { name: "列表名称", exact: true })).toHaveValue("EGFR / 原始列表草稿");
+  await expect(page.locator(".collections-list .stack-form")).toHaveCount(1);
+  expect(reads).toBe(emptyReads);
+  await audit("collection-empty-zh");
   expect(simulatedUpdates).toBe(1);
   expect(writes).toEqual([]);
 });

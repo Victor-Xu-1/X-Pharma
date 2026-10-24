@@ -245,6 +245,28 @@ it("retains selection, draft fields and linked-filter disclosure on a language s
   ).toEqual(originalCache);
 });
 
+it("opens applied linked filters and clears the same mounted disclosure without a second query", async () => {
+  renderWithQueryClient(<TrialsView {...props} initialLinkedDrugOrganizationCountryRegion="China" />);
+  await screen.findByRole("table", { name: "临床试验结果" });
+  const disclosure = screen.getByText("关联药物属性").closest("details");
+  if (!disclosure) throw new Error("Missing linked filter disclosure");
+  expect(disclosure).toHaveAttribute("open");
+  expect(disclosure).toHaveAttribute("data-active-count", "1");
+  expect(screen.getByLabelText("研发机构国家/地区")).toHaveValue("China");
+  const summary = disclosure.querySelector("summary");
+  if (!summary) throw new Error("Missing linked filter summary");
+  fireEvent.click(summary);
+  await waitFor(() => expect(disclosure).not.toHaveAttribute("open"));
+  fireEvent.click(screen.getByRole("button", { name: /^清除$/ }));
+  await waitFor(() => expect(disclosure).toHaveAttribute("data-active-count", "0"));
+  expect(disclosure).not.toHaveAttribute("open");
+  expect(screen.getByLabelText("研发机构国家/地区")).toHaveValue("");
+  expect(props.onSearchChange).toHaveBeenLastCalledWith(
+    expect.objectContaining({ linkedDrugOrganizationCountryRegion: "", offset: 0 }),
+  );
+  expect(searchTrials).toHaveBeenCalledTimes(1);
+});
+
 it("does not submit twice or lose modal intent when language changes during a pending save", async () => {
   let finish: ((result: Awaited<ReturnType<typeof saveClinicalTrialSearch>>) => void) | undefined;
   vi.mocked(saveClinicalTrialSearch).mockImplementationOnce(

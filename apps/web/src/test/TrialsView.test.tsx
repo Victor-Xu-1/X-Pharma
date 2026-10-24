@@ -97,6 +97,12 @@ it("renders governed trial intelligence, filters it and opens linked records", a
   );
 
   expect(await screen.findByRole("table", { name: "临床试验结果" })).toBeInTheDocument();
+  const headers = within(screen.getByRole("table", { name: "临床试验结果" })).getAllByRole("columnheader");
+  const position = (label: string) => headers.findIndex((header) => header.textContent?.startsWith(label));
+  expect(position("分期")).toBeGreaterThanOrEqual(0);
+  expect(position("分期")).toBeLessThan(position("试验简称"));
+  expect(position("状态")).toBeLessThan(position("发起类型"));
+  expect(position("适应症/疾病")).toBeLessThan(position("治疗线次"));
   expect(screen.getByText("结果可能受数据覆盖范围和来源更新时间影响。")).toBeInTheDocument();
   expect(document.body).not.toHaveTextContent(/治理|授权来源/);
   expect(screen.getByText(/全部结果按最近更新降序/)).toBeInTheDocument();
@@ -492,7 +498,7 @@ it("renders the explicit empty state and clears active filters", async () => {
     screen.getByText("可调整或清除筛选条件。查询仅覆盖当前组织有权访问的已发布数据，不代表相关研究不存在。"),
   ).toBeInTheDocument();
   expect(
-    screen.getByText("聚合注册平台的试验设计、状态、分期、适应症、干预和申办方，并关联药物与靶点信息。"),
+    screen.getByText("注册干预列表不自动区分主药与联合用药；角色条件只匹配有明确角色证据的记录。"),
   ).toBeInTheDocument();
   expect(screen.getByRole("group", { name: "试验药物（任一）多选" })).toBeInTheDocument();
   fireEvent.click(screen.getByText("联用药物与靶点"));
