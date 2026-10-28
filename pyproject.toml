@@ -13,7 +13,7 @@ license-files = ["LICENSE", "NOTICE", "licenses/*"]
 authors = [{ name = "Victor Xu" }]
 
 dependencies = [
-  "alembic==1.16.4",
+  "alembic==1.20.1",
   "anyio==4.15.1",
   "fastapi==0.139.0",
   "beautifulsoup4==4.15.0",
