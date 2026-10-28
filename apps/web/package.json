@@ -20,7 +20,7 @@
     "@rdkit/rdkit": "2026.3.6",
     "@tanstack/react-query": "5.104.1",
     "@tanstack/react-table": "8.21.3",
-    "@tanstack/react-virtual": "3.14.6",
+    "@tanstack/react-virtual": "3.14.22",
     "echarts": "6.1.0",
     "ketcher-core": "3.17.1",
     "ketcher-react": "3.17.1",
